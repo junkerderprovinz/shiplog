@@ -1,6 +1,7 @@
-# shiplog — design spec (2026-06-11)
+# ShipLog — design spec (2026-06-11)
 
-⚓ **shiplog** is a self-hosted, read-only **update advisor** for Docker hosts
+⚓ **ShipLog** (repo slug `shiplog`, like BombVault/`bombvault`) is a
+self-hosted, read-only **update advisor** for Docker hosts
 (Unraid first): it tells you **what actually changes** between the image a
 container is running and the newest available one — changelog, version jump,
 and a risk verdict — before you press "update".
@@ -14,7 +15,7 @@ how risky is it?". shiplog fills exactly that gap.
 
 | Topic | Decision |
 |---|---|
-| Name | **shiplog** (working title was "Kassandra"; collision check: only small namesakes in unrelated niches, `junkerderprovinz/shiplog` free on GitHub + Docker Hub, no CA entry) |
+| Name | **ShipLog** — CamelCase like BombVault (working title was "Kassandra"; collision check: only small namesakes in unrelated niches, `junkerderprovinz/shiplog` free on GitHub + Docker Hub, no CA entry) |
 | Form | **Docker container**, own image (no Unraid plugin — plugins have no clean daemon model, run as root in the host OS, and are Unraid-only). A thin companion plugin that injects badges into the native Docker tab can come later (v2+); the engine stays in the container. |
 | Role | **Advisor only, read-only.** Docker socket mounted read-only; shiplog never pulls, recreates, or stops anything. |
 | Stack | **Go backend + embedded React SPA** in a single binary (BombVault pattern). Polling, registry calls, scheduling are Go's home turf; image stays tiny. |

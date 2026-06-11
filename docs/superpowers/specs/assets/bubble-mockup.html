@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>ShipLog — UI mockup (dashboard + info bubble)</title>
+<style>
+  :root{
+    --bg:#161616; --bg2:#1c1c1c; --panel:#1d1d1d; --line:#2a2a2a; --line2:#333;
+    --txt:#e6e6e6; --dim:#9a9a9a; --dim2:#6f6f6f; --sel:#525252;
+    --low:#3fae6a; --mid:#d6a243; --high:#d9534f; --grey:#8a8a8a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--txt);
+       font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif; padding:0 0 48px}
+  /* ── top bar ─────────────────────────────────────────── */
+  header{display:flex; align-items:center; gap:28px; padding:18px 32px;
+         border-bottom:1px solid var(--line); background:var(--bg)}
+  .brand{display:flex; align-items:center; gap:10px; font-size:20px; font-weight:600; letter-spacing:.2px}
+  .brand .anchor{font-size:22px}
+  .brand b{font-weight:700}
+  .tabs{display:flex; gap:6px; margin-left:12px}
+  .tab{padding:7px 14px; border-radius:8px; color:var(--dim); cursor:pointer; border:1px solid transparent}
+  .tab.active{background:var(--bg2); color:var(--txt); border-color:var(--line2)}
+  .tab .n{color:var(--dim2); font-size:12px; margin-left:6px}
+  .spacer{flex:1}
+  .meta{color:var(--dim2); font-size:12.5px}
+  .iconbtn{width:34px; height:34px; border:1px solid var(--line2); border-radius:8px;
+           display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:15px}
+  /* ── table ───────────────────────────────────────────── */
+  main{max-width:1180px; margin:26px auto 0; padding:0 32px}
+  .cols{display:grid; grid-template-columns: 34px 1.5fr 1.3fr 1.3fr 130px 110px;
+        gap:14px; padding:0 18px 10px; color:var(--dim2); font-size:11.5px;
+        text-transform:uppercase; letter-spacing:.8px}
+  .row{display:grid; grid-template-columns: 34px 1.5fr 1.3fr 1.3fr 130px 110px;
+       gap:14px; align-items:center; padding:13px 18px; border:1px solid var(--line);
+       border-radius:10px; margin-bottom:8px; background:var(--bg)}
+  .row:hover{background:var(--bg2)}
+  .row.open{background:var(--bg2); border-color:var(--sel)}
+  .dot{width:30px; height:30px; border-radius:8px; background:var(--bg2);
+       border:1px solid var(--line2); display:flex; align-items:center; justify-content:center;
+       font-size:13px; color:var(--dim)}
+  .name{font-weight:600}
+  .name small{display:block; font-weight:400; color:var(--dim2); font-size:11.5px}
+  .ver{font-family:Consolas,monospace; font-size:13px; color:var(--dim)}
+  .ver.new{color:var(--txt)}
+  .arrow{color:var(--dim2); margin:0 6px}
+  .badge{display:inline-flex; align-items:center; gap:6px; padding:3px 10px;
+         border-radius:999px; font-size:11.5px; font-weight:600; letter-spacing:.4px;
+         border:1px solid; background:transparent; justify-self:start}
+  .b-low {color:var(--low);  border-color:color-mix(in srgb,var(--low) 45%,transparent)}
+  .b-mid {color:var(--mid);  border-color:color-mix(in srgb,var(--mid) 45%,transparent)}
+  .b-high{color:var(--high); border-color:color-mix(in srgb,var(--high) 45%,transparent)}
+  .b-grey{color:var(--grey); border-color:var(--line2)}
+  .b-ok  {color:var(--dim2); border-color:var(--line)}
+  .clog{color:var(--dim); font-size:12.5px; display:flex; align-items:center; gap:6px; cursor:pointer}
+  .clog.active{color:var(--txt)}
+  /* ── info bubble ─────────────────────────────────────── */
+  .bubblewrap{position:relative; margin:2px 0 14px}
+  .bubble{margin-left:52px; max-width:780px; background:var(--panel);
+          border:1px solid var(--sel); border-radius:12px; padding:0;
+          box-shadow:0 14px 40px rgba(0,0,0,.55)}
+  .bubble:before{content:""; position:absolute; top:-7px; left:120px; width:12px; height:12px;
+          background:var(--panel); border-left:1px solid var(--sel); border-top:1px solid var(--sel);
+          transform:rotate(45deg)}
+  .bh{display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line)}
+  .bh .ver{font-size:13.5px}
+  .bh .jump{color:var(--dim2); font-size:12px}
+  .bsec{padding:14px 18px; border-bottom:1px solid var(--line)}
+  .bsec h4{font-size:11.5px; text-transform:uppercase; letter-spacing:.8px;
+           color:var(--dim2); margin-bottom:8px; display:flex; align-items:center; gap:8px}
+  .ai-tag{font-size:10px; border:1px solid var(--line2); border-radius:4px; padding:1px 6px;
+          color:var(--dim2); text-transform:none; letter-spacing:0}
+  .bsec ul{list-style:none}
+  .bsec li{padding:3px 0 3px 18px; position:relative; color:var(--txt)}
+  .bsec li:before{content:"–"; position:absolute; left:2px; color:var(--dim2)}
+  .bsec li.warn:before{content:"⚠"; color:var(--mid); font-size:12px}
+  .raw{font-family:Consolas,monospace; font-size:12px; color:var(--dim); background:var(--bg);
+       border:1px solid var(--line); border-radius:8px; padding:10px 12px; white-space:pre; overflow:hidden}
+  .raw .h{color:var(--txt)}
+  .bf{display:flex; align-items:center; gap:10px; padding:12px 18px; color:var(--dim2); font-size:12px}
+  .bf .src{display:flex; align-items:center; gap:6px}
+  .bf .link{margin-left:auto; color:var(--dim); border:1px solid var(--line2);
+            border-radius:7px; padding:5px 11px; font-size:12px}
+  .footer-hint{max-width:1180px; margin:18px auto 0; padding:0 32px; color:var(--dim2); font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="anchor">⚓</span><span><b>Ship</b>Log</span></div>
+  <nav class="tabs">
+    <div class="tab">Alle<span class="n">54</span></div>
+    <div class="tab active">Updates<span class="n">5</span></div>
+    <div class="tab">Hohes Risiko<span class="n">1</span></div>
+  </nav>
+  <div class="spacer"></div>
+  <div class="meta">zuletzt geprüft: vor 12 min · nächster Lauf: 17:40</div>
+  <div class="iconbtn">⟳</div><div class="iconbtn">◐</div><div class="iconbtn">🇩🇪</div>
+</header>
+
+<main>
+  <div class="cols"><span></span><span>Container</span><span>Läuft</span><span>Neueste</span><span>Risiko</span><span>Changelog</span></div>
+
+  <div class="row">
+    <div class="dot">▶</div>
+    <div class="name">Plex<small>plexinc/pms-docker</small></div>
+    <div class="ver">1.41.3.9314</div>
+    <div class="ver new"><span class="arrow">→</span>1.41.9.9961</div>
+    <div class="badge b-low">NIEDRIG · Patch</div>
+    <div class="clog">📜 ansehen</div>
+  </div>
+
+  <div class="row open">
+    <div class="dot">🖼</div>
+    <div class="name">Immich<small>ghcr.io/imagegenius/immich</small></div>
+    <div class="ver">v1.122.0</div>
+    <div class="ver new"><span class="arrow">→</span>v1.124.2</div>
+    <div class="badge b-mid">MITTEL · 2× Minor</div>
+    <div class="clog active">📜 offen</div>
+  </div>
+
+  <div class="bubblewrap">
+    <div class="bubble">
+      <div class="bh">
+        <span class="ver">v1.122.0 <span class="arrow">→</span> <span class="new" style="color:var(--txt)">v1.124.2</span></span>
+        <span class="badge b-mid">MITTEL</span>
+        <span class="jump">überspringt 2 Releases (v1.123.0, v1.124.0)</span>
+      </div>
+      <div class="bsec">
+        <h4>⚡ Zusammenfassung <span class="ai-tag">KI-generiert · Ollama</span></h4>
+        <ul>
+          <li>Neues Gesichtserkennungs-Modell — beim ersten Start wird die Bibliothek neu indiziert (kann bei großen Sammlungen dauern)</li>
+          <li class="warn">Breaking: benötigt PostgreSQL ≥ 15 mit pgvecto-rs ≥ 0.3 — ältere DB-Container vorher aktualisieren</li>
+          <li>Fixes: Speicherleck im Video-Transcoder, HEIC-Thumbnails, Android-Upload-Duplikate</li>
+        </ul>
+      </div>
+      <div class="bsec">
+        <h4>Changelog (roh, Auszug)</h4>
+        <div class="raw"><span class="h">## v1.124.2</span>
+- fix(server): video transcode memory leak (#13412)
+- fix(web): HEIC thumbnails not rendering (#13388)
+<span class="h">## v1.124.0</span>
+- feat(ml): new facial recognition model — requires re-index (#13201)
+- breaking(server): requires PostgreSQL >= 15 + pgvecto-rs >= 0.3 (#13176)</div>
+      </div>
+      <div class="bf">
+        <span class="src">Quelle: OCI-Label → GitHub Releases · github.com/immich-app/immich</span>
+        <span class="link">Vollständig auf GitHub öffnen ↗</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="dot">☁</div>
+    <div class="name">Nextcloud<small>lscr.io/linuxserver/nextcloud</small></div>
+    <div class="ver">29.0.4</div>
+    <div class="ver new"><span class="arrow">→</span>30.0.1</div>
+    <div class="badge b-high">HOCH · Major</div>
+    <div class="clog">📜 ansehen</div>
+  </div>
+
+  <div class="row">
+    <div class="dot">⬇</div>
+    <div class="name">JDownloader<small>ghcr.io/junkerderprovinz/jdownloader</small></div>
+    <div class="ver">:latest <span style="color:var(--dim2)">(a3f29c1)</span></div>
+    <div class="ver new"><span class="arrow">→</span>:latest <span style="color:var(--dim2)">(b40cc5e)</span></div>
+    <div class="badge b-low">NIEDRIG · Digest</div>
+    <div class="clog">📜 ansehen</div>
+  </div>
+
+  <div class="row">
+    <div class="dot">🎮</div>
+    <div class="name">Enshrouded<small>nodiaque/steamcmd:enshrouded</small></div>
+    <div class="ver">:enshrouded</div>
+    <div class="ver new"><span class="arrow">→</span>neuer Digest</div>
+    <div class="badge b-grey">UNBEKANNT</div>
+    <div class="clog">kein Changelog auffindbar</div>
+  </div>
+
+  <div class="row">
+    <div class="dot">🪶</div>
+    <div class="name">featherdrop<small>ghcr.io/junkerderprovinz/featherdrop</small></div>
+    <div class="ver">v4.0.1</div>
+    <div class="ver" style="color:var(--dim2)">aktuell</div>
+    <div class="badge b-ok">✓ AKTUELL</div>
+    <div class="clog" style="color:var(--dim2)">—</div>
+  </div>
+</main>
+
+<div class="footer-hint">ShipLog ist read-only — Updates wendest du wie gewohnt in Unraid an. · Risiko-Badge: deterministisch aus dem Versionssprung; die Zusammenfassung ist optional (Ollama) und als KI-generiert markiert.</div>
+</body>
+</html>
