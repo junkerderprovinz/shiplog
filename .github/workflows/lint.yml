@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     name: Vet + race tests
@@ -43,6 +46,9 @@ jobs:
         with:
           go-version: "1.25"
           check-latest: true
-      - uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+      # Build golangci-lint with the 1.25 toolchain — the action's prebuilt
+      # binary is built with an older Go and refuses a go.mod targeting 1.25.
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+      - name: Run golangci-lint
+        run: golangci-lint run --timeout 5m

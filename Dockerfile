@@ -19,10 +19,12 @@ ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags="-s -w" -o /out/shiplog ./cmd/shiplog
 
-# distroless/static ships CA certs (for the HTTPS registry/GitHub calls) and a
-# nonroot user. The Docker socket is mounted read-only; document that the socket
-# must be group-readable by the container user on the host.
-FROM gcr.io/distroless/static-debian12:nonroot
+# distroless/static ships CA certs (for the HTTPS registry/GitHub calls). It runs
+# as root on purpose: ShipLog must READ /var/run/docker.sock (root-owned on
+# Unraid) and write its SQLite db under /config. Security comes from the socket
+# being mounted READ-ONLY (:ro) — even as root the container cannot write it; the
+# binary never issues a non-GET Docker call.
+FROM gcr.io/distroless/static-debian12
 LABEL org.opencontainers.image.title="ShipLog" \
       org.opencontainers.image.description="Read-only update advisor — what changes between your running image and the newest one, and how risky." \
       org.opencontainers.image.source="https://github.com/junkerderprovinz/shiplog" \
