@@ -37,8 +37,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Mirror active only once DOCKERHUB_USERNAME (variable) + DOCKERHUB_TOKEN
+      # (secret) are set together. NB: the `secrets` context is not allowed in a
+      # step `if`, so gate on the variable; pair the token with it when you set it.
       - name: Log in to Docker Hub
-        if: ${{ vars.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ vars.DOCKERHUB_USERNAME != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -50,7 +53,7 @@ jobs:
         with:
           images: |
             ${{ env.IMAGE_NAME }}
-            name=docker.io/${{ vars.DOCKERHUB_USERNAME }}/shiplog,enable=${{ vars.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+            name=docker.io/${{ vars.DOCKERHUB_USERNAME }}/shiplog,enable=${{ vars.DOCKERHUB_USERNAME != '' }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-,format=short
