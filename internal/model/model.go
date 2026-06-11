@@ -1,0 +1,89 @@
+// Package model holds the types shared across every ShipLog engine unit.
+package model
+
+import "time"
+
+// Container is a single container as discovered on the host.
+type Container struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Image  string `json:"image"`  // image ref as referenced, e.g. "ghcr.io/x/y:1.2.3" or "redis"
+	Repo   string `json:"repo"`   // normalized, e.g. "ghcr.io/x/y" or "docker.io/library/redis"
+	Tag    string `json:"tag"`    // "1.2.3" / "latest"
+	Digest string `json:"digest"` // running image digest, "sha256:..."
+	Source string `json:"source"` // org.opencontainers.image.source label, may be ""
+	State  string `json:"state"`  // "running" / "exited" / ...
+}
+
+// RiskLevel is the severity verdict for an available update.
+type RiskLevel string
+
+const (
+	RiskNone    RiskLevel = "none"
+	RiskLow     RiskLevel = "low"
+	RiskMedium  RiskLevel = "medium"
+	RiskHigh    RiskLevel = "high"
+	RiskUnknown RiskLevel = "unknown"
+)
+
+var riskRank = map[RiskLevel]int{RiskNone: 0, RiskUnknown: 1, RiskLow: 2, RiskMedium: 3, RiskHigh: 4}
+
+// MoreSevere reports whether r outranks o (unknown never outranks a real level).
+func (r RiskLevel) MoreSevere(o RiskLevel) bool { return riskRank[r] > riskRank[o] }
+
+// Kind classifies the version delta between the running and newest image.
+type Kind string
+
+const (
+	KindNone    Kind = "none"
+	KindDigest  Kind = "digest" // same tag, new digest (e.g. :latest moved)
+	KindPatch   Kind = "patch"
+	KindMinor   Kind = "minor"
+	KindMajor   Kind = "major"
+	KindUnknown Kind = "unknown" // non-semver tag, can't classify
+)
+
+// UpdateStatus is the per-container result the engine stores and serves.
+type UpdateStatus struct {
+	Container    Container  `json:"container"`
+	NewestTag    string     `json:"newest_tag"`
+	NewestDigest string     `json:"newest_digest"`
+	Kind         Kind       `json:"kind"`
+	Risk         RiskLevel  `json:"risk"`
+	RiskReason   string     `json:"risk_reason"`
+	Changelog    *Changelog `json:"changelog,omitempty"`
+	CheckedAt    time.Time  `json:"checked_at"`
+	Error        string     `json:"error,omitempty"` // per-container failure, never fatal
+}
+
+// HasUpdate reports whether this status represents an actionable update.
+func (s UpdateStatus) HasUpdate() bool { return s.Kind != KindNone && s.Kind != "" }
+
+// Changelog is the resolved "what changed" payload for an update.
+type Changelog struct {
+	FromTag      string         `json:"from_tag"`
+	ToTag        string         `json:"to_tag"`
+	SkippedCount int            `json:"skipped_count"`
+	Entries      []ReleaseEntry `json:"entries"` // newest first
+	Raw          string         `json:"raw"`
+	Summary      *AISummary     `json:"summary,omitempty"` // P1 (Ollama)
+	Source       string         `json:"source"`            // human label, e.g. "GitHub releases via OCI label"
+	URL          string         `json:"url"`               // releases/compare link
+	Provider     string         `json:"provider"`          // "github" / "fallback" / ...
+}
+
+// ReleaseEntry is a single upstream release in a changelog span.
+type ReleaseEntry struct {
+	Tag         string    `json:"tag"`
+	Body        string    `json:"body"`
+	URL         string    `json:"url"`
+	PublishedAt time.Time `json:"published_at"`
+}
+
+// AISummary is populated only when Ollama is configured (P1).
+type AISummary struct {
+	Bullets  []string `json:"bullets"`
+	Breaking []string `json:"breaking"`
+	Risk     string   `json:"risk"`
+	Model    string   `json:"model"`
+}
