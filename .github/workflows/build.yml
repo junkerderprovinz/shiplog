@@ -1,0 +1,121 @@
+name: Build & Push Docker Image
+
+# Builds the multi-arch image and pushes it to GHCR on every push to main (and
+# manually). Mirrors to Docker Hub once DOCKERHUB_USERNAME (var) + DOCKERHUB_TOKEN
+# (secret) are set together. A boot smoke gate boots BOTH arches and requires the
+# READY banner + a served request before anything is pushed.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/junkerderprovinz/shiplog
+
+jobs:
+  build:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: ${{ vars.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.IMAGE_NAME }}
+            name=docker.io/${{ vars.DOCKERHUB_USERNAME }}/shiplog,enable=${{ vars.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Build amd64 image for smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: shiplog:smoke-amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build arm64 image for smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: shiplog:smoke-arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Boot BOTH arches before the push. A green build only proves it compiles;
+      # this proves it starts (prints the READY banner) and serves /. SIGPIPE-safe:
+      # capture docker logs into a var and substring-match in bash — never
+      # `docker logs | grep -q` under pipefail (dies of SIGPIPE when the log grows).
+      - name: Smoke test — both arches must boot and serve /
+        run: |
+          set -euo pipefail
+          smoke() {
+            local tag="$1" platform="$2" budget="$3"
+            local name="sl-smoke-${platform##*/}"
+            echo "::group::smoke ${platform}"
+            docker run -d --name "$name" --platform "$platform" -p 8484:8484 \
+              -v /var/run/docker.sock:/var/run/docker.sock:ro "$tag"
+            for i in $(seq 1 "$budget"); do
+              logs=$(docker logs "$name" 2>&1 || true)
+              if [[ "$logs" == *"SHIPLOG IS READY"* ]] && curl -fsS -o /dev/null http://localhost:8484/; then
+                echo "✅ ${platform} ready + serving / after ${i}s"
+                docker rm -f "$name" >/dev/null
+                echo "::endgroup::"
+                return 0
+              fi
+              sleep 1
+            done
+            echo "❌ ${platform} not ready within ${budget}s — logs:"
+            docker logs "$name" || true
+            docker rm -f "$name" >/dev/null
+            echo "::endgroup::"
+            return 1
+          }
+          smoke shiplog:smoke-amd64 linux/amd64 30
+          smoke shiplog:smoke-arm64 linux/arm64 90
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
