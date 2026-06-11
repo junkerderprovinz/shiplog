@@ -64,15 +64,15 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	if _, err := db.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("store: set WAL: %w", err)
 	}
 	if _, err := db.Exec(`PRAGMA busy_timeout=5000;`); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("store: set busy_timeout: %w", err)
 	}
 	if _, err := db.Exec(schema); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("store: create schema: %w", err)
 	}
 	return &Store{db: db}, nil
@@ -164,7 +164,7 @@ func (s *Store) List() ([]model.UpdateStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("store: list: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []model.UpdateStatus
 	for rows.Next() {
@@ -200,7 +200,7 @@ func (s *Store) History(id string) ([]HistoryEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("store: history: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []HistoryEntry
 	for rows.Next() {
