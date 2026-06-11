@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("shiplog: open store: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Collaborators. The changelog chain tries GitHub (via the OCI source label)
 	// then always-succeeds with the fallback.

@@ -21,7 +21,7 @@ const initArt = `
 
 // Init prints the ASCII init banner at startup.
 func Init(w io.Writer) {
-	fmt.Fprint(w, initArt)
+	_, _ = fmt.Fprint(w, initArt)
 }
 
 // Ready prints a loud, unmistakable readiness banner once the HTTP listener is
@@ -29,7 +29,7 @@ func Init(w io.Writer) {
 // (grep it in `docker logs`), so do not reword it without updating build.yml.
 func Ready(w io.Writer, addr string) {
 	const bar = "==================================================================="
-	fmt.Fprintln(w, bar)
-	fmt.Fprintf(w, "   SHIPLOG IS READY  -  listening on http://%s\n", addr)
-	fmt.Fprintln(w, bar)
+	_, _ = fmt.Fprintln(w, bar)
+	_, _ = fmt.Fprintf(w, "   SHIPLOG IS READY  -  listening on http://%s\n", addr)
+	_, _ = fmt.Fprintln(w, bar)
 }

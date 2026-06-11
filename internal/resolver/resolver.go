@@ -94,7 +94,7 @@ func (r *Resolver) fetchTags(ctx context.Context, base, host, pathRepo string) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("tags/list: unexpected status %d for %s", resp.StatusCode, pathRepo)
 	}
@@ -115,7 +115,7 @@ func (r *Resolver) fetchDigest(ctx context.Context, base, host, pathRepo, tag st
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("manifests/%s: unexpected status %d", tag, resp.StatusCode)
 	}
@@ -136,7 +136,7 @@ func (r *Resolver) doAuthed(ctx context.Context, method, url, host, pathRepo str
 	}
 
 	challenge := resp.Header.Get("WWW-Authenticate")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if !strings.HasPrefix(strings.ToLower(challenge), "bearer ") {
 		return nil, fmt.Errorf("401 without bearer challenge for %s", url)
 	}
@@ -184,7 +184,7 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo string) (
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("token: unexpected status %d from realm %s", resp.StatusCode, realm)
 	}

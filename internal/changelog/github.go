@@ -95,7 +95,7 @@ func (g *GitHub) fetchReleases(ctx context.Context, owner, repo string) ([]ghRel
 	if err != nil {
 		return nil, false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, false
 	}

@@ -61,7 +61,7 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query docker: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
