@@ -25,6 +25,36 @@ how risky is it?". ShipLog fills exactly that gap.
 | Auth | None in v1 (read-only LAN tool; document trusted-LAN assumption). Revisit if a reverse-proxy-exposed use case emerges. |
 | Distribution | GHCR + Docker Hub dual push, CA template in the `unraid-docker-templates` feed, boot smoke gate (both arches — fast Go web server), ASCII init banner + READY banner, 26-language i18n, dark/light UI (house standards). |
 
+## Why Go for the engine
+
+The engine is a **24/7, I/O-bound daemon in a small always-on container** — it
+spends its life *waiting on the network* (Docker socket, registries, GitHub,
+optional Ollama/Matrix), not crunching CPU. That shape — not habit — drives the
+choice:
+
+- **Tiny always-on footprint:** one static binary → `FROM scratch`/distroless
+  image (~15–20 MB), ~10–30 MB idle RAM. For a tool that runs forever on a home
+  server, footprint matters more than raw speed.
+- **Cheap I/O fan-out:** goroutines poll many containers / fetch many changelogs
+  concurrently with no async ceremony.
+- **Multi-arch / cross-compile** to arm64 (Pi/NAS) is trivial.
+- **Already in the house** (BombVault) → shared patterns, no new learning.
+
+Honest take on the alternatives *for this specific workload*:
+- **Python / Node-TS:** fastest to write the scraping, but they ship a runtime →
+  ~100–150 MB image + higher idle RAM; that always-on tax isn't worth it for a
+  daemon. (Node *is* the right tool for the bubble — see below.)
+- **C++:** max speed + tiny binary, but the work is network-bound, so the speed
+  buys nothing — huge dev effort + memory-safety risk for no benefit. Wrong tool.
+- **Rust:** the one real technical peer — same tiny-binary/low-memory deployment,
+  memory-safe, great async. Loses only on familiarity + dev speed, with no
+  compensating win (zero-cost speed is moot when you're waiting on sockets).
+
+**ShipLog is already polyglot by design — right tool per layer:** Go for the I/O
+daemon, **JavaScript** for the bubble (DOM injection *is* a JS job), and the AI
+is **delegated to Ollama** (no ML code in ShipLog at all). The question was never
+"Go vs the rest" — each layer already uses the language that fits it.
+
 ## Core loop (background, in-process scheduler)
 
 Every `POLL_INTERVAL` (default 6h, configurable):
@@ -76,9 +106,12 @@ UI on non-Unraid hosts: simple table (container, current → newest, risk,
 changelog text), last/next poll, provider trace. No SPA framework heroics —
 keep it deliberately small; the bubble is the product.
 
-House standards apply to both: Carbon dark `#161616` (risk badges are the
-single deliberate colour exception — green/amber/red/grey carry meaning),
-dark/light, i18n (26 locales, count-neutral), READY banner in the engine log.
+House standards apply to both: Carbon dark `#161616`, dark/light theme, i18n
+(26 locales, count-neutral), READY banner in the engine log. **Risk badges are
+in colour by default** (green/amber/red/grey carry meaning) — the single
+deliberate exception to the monochrome palette — with a **colour ⇄ monochrome
+toggle** (cookie-persisted, like the theme switch; monochrome distinguishes
+risk by label + weight only). Default colour on.
 
 ## Configuration (env, all surfaced in the Unraid template; fixed-option fields as dropdowns)
 
