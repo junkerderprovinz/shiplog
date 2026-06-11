@@ -1,0 +1,254 @@
+// Package store persists per-container update status and version history in
+// a local SQLite database (pure-Go modernc.org/sqlite driver).
+package store
+
+import (
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/junkerderprovinz/shiplog/internal/model"
+
+	_ "modernc.org/sqlite"
+)
+
+// ErrNotFound is returned by Get when no status row matches the given id.
+var ErrNotFound = errors.New("store: not found")
+
+// Store is a SQLite-backed persistence layer for update status and history.
+type Store struct {
+	db *sql.DB
+}
+
+// HistoryEntry is a single recorded running-version change for a container.
+type HistoryEntry struct {
+	FromTag string
+	ToTag   string
+	SeenAt  time.Time
+}
+
+const schema = `
+CREATE TABLE IF NOT EXISTS status (
+	container_id   TEXT PRIMARY KEY,
+	name           TEXT,
+	repo           TEXT,
+	image          TEXT,
+	tag            TEXT,
+	digest         TEXT,
+	newest_tag     TEXT,
+	newest_digest  TEXT,
+	kind           TEXT,
+	risk           TEXT,
+	risk_reason    TEXT,
+	changelog_json TEXT,
+	checked_at     TEXT,
+	error          TEXT
+);
+CREATE TABLE IF NOT EXISTS history (
+	id           INTEGER PRIMARY KEY AUTOINCREMENT,
+	container_id TEXT,
+	name         TEXT,
+	from_tag     TEXT,
+	to_tag       TEXT,
+	seen_at      TEXT
+);
+`
+
+// Open opens (creating if needed) the SQLite database at path, applies the
+// pragmas, and ensures the schema exists.
+func Open(path string) (*Store, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("store: set WAL: %w", err)
+	}
+	if _, err := db.Exec(`PRAGMA busy_timeout=5000;`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("store: set busy_timeout: %w", err)
+	}
+	if _, err := db.Exec(schema); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("store: create schema: %w", err)
+	}
+	return &Store{db: db}, nil
+}
+
+// Close closes the underlying database.
+func (s *Store) Close() error { return s.db.Close() }
+
+// Upsert writes the status, and records a history row when the running tag
+// changed from a non-empty prior value.
+func (s *Store) Upsert(st model.UpdateStatus) error {
+	var priorTag string
+	err := s.db.QueryRow(`SELECT tag FROM status WHERE container_id = ?`, st.Container.ID).Scan(&priorTag)
+	switch {
+	case err == nil:
+		if priorTag != "" && priorTag != st.Container.Tag {
+			if _, err := s.db.Exec(
+				`INSERT INTO history (container_id, name, from_tag, to_tag, seen_at) VALUES (?, ?, ?, ?, ?)`,
+				st.Container.ID, st.Container.Name, priorTag, st.Container.Tag, st.CheckedAt.Format(time.RFC3339),
+			); err != nil {
+				return fmt.Errorf("store: append history: %w", err)
+			}
+		}
+	case errors.Is(err, sql.ErrNoRows):
+		// first time we see this container; no history to record
+	default:
+		return fmt.Errorf("store: read prior status: %w", err)
+	}
+
+	var changelogJSON string
+	if st.Changelog != nil {
+		b, err := json.Marshal(st.Changelog)
+		if err != nil {
+			return fmt.Errorf("store: marshal changelog: %w", err)
+		}
+		changelogJSON = string(b)
+	}
+
+	_, err = s.db.Exec(`
+INSERT INTO status (
+	container_id, name, repo, image, tag, digest,
+	newest_tag, newest_digest, kind, risk, risk_reason,
+	changelog_json, checked_at, error
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(container_id) DO UPDATE SET
+	name           = excluded.name,
+	repo           = excluded.repo,
+	image          = excluded.image,
+	tag            = excluded.tag,
+	digest         = excluded.digest,
+	newest_tag     = excluded.newest_tag,
+	newest_digest  = excluded.newest_digest,
+	kind           = excluded.kind,
+	risk           = excluded.risk,
+	risk_reason    = excluded.risk_reason,
+	changelog_json = excluded.changelog_json,
+	checked_at     = excluded.checked_at,
+	error          = excluded.error`,
+		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest,
+		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
+		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
+	)
+	if err != nil {
+		return fmt.Errorf("store: upsert status: %w", err)
+	}
+	return nil
+}
+
+// orderClause sorts by risk severity (high>medium>low>unknown>none) descending,
+// then by name ascending.
+const orderClause = `
+ORDER BY CASE risk
+	WHEN 'high'    THEN 4
+	WHEN 'medium'  THEN 3
+	WHEN 'low'     THEN 2
+	WHEN 'unknown' THEN 1
+	ELSE 0
+END DESC, name ASC`
+
+const selectCols = `
+SELECT container_id, name, repo, image, tag, digest,
+	newest_tag, newest_digest, kind, risk, risk_reason,
+	changelog_json, checked_at, error
+FROM status`
+
+// List returns all status rows ordered by risk severity then name.
+func (s *Store) List() ([]model.UpdateStatus, error) {
+	rows, err := s.db.Query(selectCols + orderClause)
+	if err != nil {
+		return nil, fmt.Errorf("store: list: %w", err)
+	}
+	defer rows.Close()
+
+	var out []model.UpdateStatus
+	for rows.Next() {
+		st, err := scanStatus(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, st)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list iterate: %w", err)
+	}
+	return out, nil
+}
+
+// Get returns the status for id, or ErrNotFound.
+func (s *Store) Get(id string) (model.UpdateStatus, error) {
+	row := s.db.QueryRow(selectCols+` WHERE container_id = ?`, id)
+	st, err := scanStatus(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return model.UpdateStatus{}, ErrNotFound
+	}
+	if err != nil {
+		return model.UpdateStatus{}, err
+	}
+	return st, nil
+}
+
+// History returns the recorded version-change history for id, newest first.
+func (s *Store) History(id string) ([]HistoryEntry, error) {
+	rows, err := s.db.Query(
+		`SELECT from_tag, to_tag, seen_at FROM history WHERE container_id = ? ORDER BY id DESC`, id)
+	if err != nil {
+		return nil, fmt.Errorf("store: history: %w", err)
+	}
+	defer rows.Close()
+
+	var out []HistoryEntry
+	for rows.Next() {
+		var e HistoryEntry
+		var seenAt string
+		if err := rows.Scan(&e.FromTag, &e.ToTag, &seenAt); err != nil {
+			return nil, fmt.Errorf("store: scan history: %w", err)
+		}
+		e.SeenAt, _ = time.Parse(time.RFC3339, seenAt)
+		out = append(out, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: history iterate: %w", err)
+	}
+	return out, nil
+}
+
+// scanner abstracts *sql.Row and *sql.Rows for shared column scanning.
+type scanner interface {
+	Scan(dest ...any) error
+}
+
+func scanStatus(sc scanner) (model.UpdateStatus, error) {
+	var (
+		st            model.UpdateStatus
+		kind, risk    string
+		changelogJSON string
+		checkedAt     string
+	)
+	err := sc.Scan(
+		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest,
+		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
+		&changelogJSON, &checkedAt, &st.Error,
+	)
+	if err != nil {
+		return model.UpdateStatus{}, err
+	}
+	st.Kind = model.Kind(kind)
+	st.Risk = model.RiskLevel(risk)
+	if checkedAt != "" {
+		st.CheckedAt, _ = time.Parse(time.RFC3339, checkedAt)
+	}
+	if changelogJSON != "" {
+		var cl model.Changelog
+		if err := json.Unmarshal([]byte(changelogJSON), &cl); err != nil {
+			return model.UpdateStatus{}, fmt.Errorf("store: unmarshal changelog: %w", err)
+		}
+		st.Changelog = &cl
+	}
+	return st, nil
+}
