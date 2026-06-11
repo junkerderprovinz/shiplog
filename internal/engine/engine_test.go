@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,16 +36,28 @@ func (f fakeResolver) Resolve(_ context.Context, repo, _, _ string) (string, str
 	return r.tag, r.dig, r.err
 }
 
-type fakeChangelog struct{ called int }
+// The fakes are written from the engine's concurrent workers, so they guard
+// their state with a mutex (the real store/changelog are concurrency-safe).
+type fakeChangelog struct {
+	mu     sync.Mutex
+	called int
+}
 
 func (f *fakeChangelog) Get(_ context.Context, _ model.Container, from, to string) (*model.Changelog, bool) {
+	f.mu.Lock()
 	f.called++
+	f.mu.Unlock()
 	return &model.Changelog{FromTag: from, ToTag: to, Provider: "fake"}, true
 }
 
-type fakeStore struct{ rows map[string]model.UpdateStatus }
+type fakeStore struct {
+	mu   sync.Mutex
+	rows map[string]model.UpdateStatus
+}
 
 func (f *fakeStore) Upsert(s model.UpdateStatus) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if f.rows == nil {
 		f.rows = map[string]model.UpdateStatus{}
 	}
