@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#161616"/>
+  <g fill="none" stroke="#e8e8e8" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <!-- ring -->
+    <circle cx="256" cy="92" r="30"/>
+    <!-- shank -->
+    <line x1="256" y1="122" x2="256" y2="408"/>
+    <!-- stock (crossbar) -->
+    <line x1="184" y1="164" x2="328" y2="164"/>
+    <!-- crown + arms (wide U) -->
+    <path d="M138 296 Q138 408 256 408 Q374 408 374 296"/>
+    <!-- left fluke -->
+    <path d="M138 296 l-40 -10"/>
+    <path d="M138 296 l24 -36"/>
+    <!-- right fluke -->
+    <path d="M374 296 l40 -10"/>
+    <path d="M374 296 l-24 -36"/>
+  </g>
+</svg>
