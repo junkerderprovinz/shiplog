@@ -3,25 +3,22 @@
 package bannerlog
 
 import (
+	_ "embed"
 	"fmt"
 	"io"
 )
 
-const initArt = `
-   _____ _     _       _
-  / ____| |   (_)     | |
- | (___ | |__  _ _ __ | |     ___   __ _
-  \___ \| '_ \| | '_ \| |    / _ \ / _' |
-  ____) | | | | | |_) | |___| (_) | (_| |
- |_____/|_| |_|_| .__/|______\___/ \__, |
-                | |                  __/ |
-                |_|                 |___/
-   anchor down  -  update intelligence for your docker fleet
-`
+// initArt is the house init banner: the ShipLog anchor in ASCII + the shared
+// "Junker der Provinz" wordmark (same signature the other own-image repos print).
+//
+//go:embed banner.txt
+var initArt string
 
-// Init prints the ASCII init banner at startup.
+// Init prints the ASCII init banner + the app line at startup.
 func Init(w io.Writer) {
 	_, _ = fmt.Fprint(w, initArt)
+	_, _ = fmt.Fprintln(w, "   ShipLog  -  read-only update intelligence for your Docker fleet")
+	_, _ = fmt.Fprintln(w)
 }
 
 // Ready prints a loud, unmistakable readiness banner once the HTTP listener is
