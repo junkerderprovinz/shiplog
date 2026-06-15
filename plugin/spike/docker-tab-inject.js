@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ShipLog — Docker-tab bubble (feasibility spike)
 // @namespace    https://github.com/junkerderprovinz/shiplog
-// @version      0.2.0
-// @description  P2.0 spike: add a small clickable "changelog" chip in Unraid's Docker-tab update column (next to "apply update" / "up-to-date"); clicking opens the changelog bubble. Proves the DOM hook on the real box and harvests the exact selectors before the full .plg plugin is built.
+// @version      0.3.0
+// @description  P2.0 spike: a discreet, Unraid-native "log · Changelog · traffic-light" control in the Docker-tab update column; clicking opens the changelog bubble. Proves the DOM hook on the real box and harvests the exact selectors before the full .plg plugin is built.
 // @match        http*://*/Docker
 // @match        http*://*/Dashboard
 // @run-at       document-idle
@@ -13,14 +13,13 @@
 //   1. Open Unraid → the DOCKER tab.
 //   2. Open the browser DevTools console (F12 → "Console").
 //   3. Paste this whole file, press Enter.
-//   => A small "● Changelog" chip appears in each container's UPDATE column
-//      (next to "Aktualisierung anwenden" / "Auf dem neusten Stand").
-//      Click it for the bubble. A toast (bottom-right) reports the count.
+//   => A discreet "▤ Changelog ●" control appears in each container's UPDATE
+//      column. The trailing dot is a risk traffic-light. Click it for the bubble.
 //
-// v0.2.0: the chip now goes in the update column (right), NOT before the name —
-// it no longer shifts the row layout. The dot colour shows the risk.
+// v0.3.0: restyled to match Unraid — dim link text, a small log glyph, and a
+//         traffic-light risk dot. No pill, no layout shift.
 //
-// WHAT TO SEND BACK if it does NOT add chips:
+// WHAT TO SEND BACK if it does NOT add the control:
 //   copy the "[ShipLog spike]" diagnostics block the console prints and paste
 //   it back — it dumps the Docker table structure so the exact selectors for
 //   your Unraid version can be locked in for the real plugin.
@@ -45,18 +44,34 @@
     "rebuild ready", "rebuild dndc",
   ];
 
+  // A small log/changelog glyph (inline SVG, inherits the link colour).
+  const LOG_ICON =
+    '<svg class="sl-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" ' +
+    'stroke-linecap="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/>' +
+    '<line x1="5.4" y1="5.5" x2="10.6" y2="5.5"/><line x1="5.4" y1="8" x2="10.6" y2="8"/>' +
+    '<line x1="5.4" y1="10.5" x2="9" y2="10.5"/></svg>';
+
   // ──────────────────────────────────────────────────────────── styles
   const CSS = `
-  .sl-chip{display:inline-flex;align-items:center;gap:6px;margin-left:14px;padding:2px 10px;
-    border-radius:999px;font:600 11px/1.5 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;
-    border:1px solid;background:transparent;cursor:pointer;vertical-align:middle;white-space:nowrap}
-  .sl-chip:hover{filter:brightness(1.25)}
-  .sl-chip .sl-dot{width:7px;height:7px;border-radius:50%}
-  .sl-low {color:#3fae6a;border-color:#2f6b46}  .sl-low  .sl-dot{background:#3fae6a}
-  .sl-mid {color:#d6a243;border-color:#7a6028}  .sl-mid  .sl-dot{background:#d6a243}
-  .sl-high{color:#d9534f;border-color:#7a3331}  .sl-high .sl-dot{background:#d9534f}
-  .sl-grey{color:#9a9a9a;border-color:#444}     .sl-grey .sl-dot{background:#8a8a8a}
-  .sl-ok  {color:#6f6f6f;border-color:#333}      .sl-ok   .sl-dot{background:#525252}
+  .sl-chip{display:inline-flex;align-items:center;gap:6px;margin-left:12px;
+    font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none}
+  .sl-chip:hover{color:#d8d8d8}
+  .sl-chip:hover .sl-amp{box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+  .sl-ico{width:13px;height:13px;opacity:.85;flex:none}
+  .sl-amp{width:8px;height:8px;border-radius:50%;flex:none}
+  .sl-amp.sl-low {background:#3fae6a}
+  .sl-amp.sl-mid {background:#d6a243}
+  .sl-amp.sl-high{background:#d9534f}
+  .sl-amp.sl-grey{background:#8a8a8a}
+  .sl-amp.sl-ok  {background:#525252}
+
+  .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
+    font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
+  .sl-pill .sl-dot{width:7px;height:7px;border-radius:50%}
+  .sl-pill.sl-low {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-low  .sl-dot{background:#3fae6a}
+  .sl-pill.sl-mid {color:#d6a243;border-color:#7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
+  .sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
+  .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 
   .sl-bubble{position:absolute;z-index:99999;width:560px;max-width:92vw;
     background:#1d1d1d;color:#e6e6e6;border:1px solid #525252;border-radius:12px;
@@ -172,8 +187,7 @@
     return (name.slice(0, 60) || "container");
   }
 
-  // The update-status cell (right column): the one whose text reads like an
-  // update status. Falls back to the last cell so a chip still lands somewhere.
+  // The update-status cell (right column), found by its status text.
   function findUpdateCell(tr) {
     const cells = Array.from(tr.querySelectorAll("td"));
     for (const td of cells) {
@@ -195,7 +209,7 @@
     b.innerHTML = `
       <div class="sl-bh">
         <span class="sl-ver">${esc(d.cur)} → <b>${esc(d.next)}</b></span>
-        <span class="sl-chip sl-${d.risk}" style="cursor:default;margin:0"><span class="sl-dot"></span>${esc(d.label)}</span>
+        <span class="sl-pill sl-${d.risk}"><span class="sl-dot"></span>${esc(d.label)}</span>
         <span class="sl-jump">${esc(d.jump)}</span>
         <span class="sl-x" title="close">✕</span>
       </div>
@@ -212,7 +226,7 @@
         <a class="sl-link" href="https://${repoGuess}" target="_blank" rel="noopener">Open on GitHub ↗</a>
       </div>`;
     document.body.appendChild(b);
-    // Position under the chip, clamped to the viewport so it never runs off-screen.
+    // Position under the control, clamped to the viewport so it never runs off-screen.
     const r = anchor.getBoundingClientRect();
     const width = b.offsetWidth || 560;
     const maxLeft = window.scrollX + document.documentElement.clientWidth - width - 12;
@@ -234,7 +248,9 @@
       if (!cell || cell.getAttribute(CONFIG.MARK)) continue;
       const name = rowName(tr);
       const d = demoFor(name);
-      const chip = el("span", `sl-chip sl-${d.risk}`, `<span class="sl-dot"></span>Changelog`);
+      // discreet control: log glyph · "Changelog" · risk traffic-light
+      const chip = el("a", "sl-chip", `${LOG_ICON}<span>Changelog</span><span class="sl-amp sl-${d.risk}"></span>`);
+      chip.href = "#";
       chip.title = `ShipLog: ${d.label} — click for the changelog`;
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, name, d); });
       cell.appendChild(chip);
@@ -279,8 +295,8 @@
       toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike:</b> couldn't find the update column. Open the <b>Docker</b> tab, then check the console and paste the diagnostics back.`);
       return;
     }
-    console.log(`${TAG} added ${res.tagged} chip(s) via selector: ${res.selector}`);
-    toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike active.</b> Added a Changelog chip to <b>${res.tagged}</b> container(s) — in the update column. Click one for the bubble. <code>(demo data · ${res.selector})</code>`);
+    console.log(`${TAG} added ${res.tagged} control(s) via selector: ${res.selector}`);
+    toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike active.</b> Added a discreet Changelog control to <b>${res.tagged}</b> container(s) in the update column. Click one for the bubble. <code>(demo data · ${res.selector})</code>`);
   }
 
   // close the bubble on outside click / Esc
