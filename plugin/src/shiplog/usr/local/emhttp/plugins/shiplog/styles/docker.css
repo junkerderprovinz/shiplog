@@ -1,7 +1,10 @@
 /* ShipLog — Docker-tab control + bubble. Discreet, Unraid-native. */
 
-.sl-chip{display:inline-flex;align-items:center;gap:6px;margin-left:12px;
-  font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none}
+/* own line below the status text — a block wrapper keeps the status line as its
+   own last line (so Unraid's justify doesn't stretch "Auf dem neusten Stand"). */
+.sl-chiprow{display:block;width:fit-content;margin-top:3px}
+.sl-chip{display:inline-flex;align-items:center;gap:6px;
+  font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none;text-align:left}
 .sl-chip:hover{color:#d8d8d8}
 .sl-chip:hover .sl-amp{box-shadow:0 0 0 2px rgba(255,255,255,.08)}
 .sl-ico{width:13px;height:13px;opacity:.85;flex:none}
@@ -20,7 +23,8 @@
 .sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 
-.sl-bubble{position:absolute;z-index:99999;width:560px;max-width:92vw;
+.sl-bubble{position:absolute;z-index:99999;width:640px;max-width:95vw;
+  min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
   background:#1d1d1d;color:#e6e6e6;border:1px solid #525252;border-radius:12px;
   box-shadow:0 14px 40px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -40,7 +44,9 @@
 .sl-bubble li:before{content:"–";position:absolute;left:2px;color:#6f6f6f}
 .sl-bubble li.sl-warn:before{content:"\26A0";color:#d6a243;font-size:12px}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:#9a9a9a;background:#161616;
-  border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;white-space:pre-wrap;overflow:auto;max-height:160px}
+  border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;white-space:pre-wrap;
+  overflow-wrap:anywhere;word-break:break-word}
+.sl-bubble .sl-raw a{color:#8ab4f8}
 .sl-bubble .sl-raw .h{color:#e6e6e6}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:#6f6f6f;font-size:12px}

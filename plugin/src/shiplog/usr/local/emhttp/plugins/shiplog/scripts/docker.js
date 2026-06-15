@@ -116,14 +116,27 @@
 
   // ──────────────────────────────────────────────────────── bubble
   let open = null;
-  function close() { if (open) { open.remove(); open = null; } }
+  const SZ_KEY = "shiplog.bubbleSize";
+  function close() {
+    if (open) {
+      if (open._ro) { try { open._ro.disconnect(); } catch (e) {} }
+      open.remove();
+      open = null;
+    }
+  }
 
   function bubbleHTML(st) {
     const c = st.container || {};
     const cl = st.changelog || {};
     const rc = riskClass(st);
-    const cur = c.tag ? (c.tag === "latest" ? ":latest" : c.tag) : (c.image || "?");
-    const next = st.newest_tag || cl.to_tag || "?";
+    // Prefer the changelog's resolved version tags over the running ":latest".
+    const shortDig = (x) => (x && x.indexOf("sha256:") === 0 ? x.slice(7, 19) : (x || ""));
+    const cur = cl.from_tag
+      || (c.tag && c.tag !== "latest" ? c.tag
+        : (c.digest ? (c.tag || "latest") + "@" + shortDig(c.digest) : (c.image || "?")));
+    const next = cl.to_tag
+      || (st.newest_tag && st.newest_tag !== "latest" ? st.newest_tag
+        : (st.newest_digest ? (st.newest_tag || "latest") + "@" + shortDig(st.newest_digest) : "?"));
     const jump = cl.skipped_count > 1 ? `skips ${cl.skipped_count} releases` : (st.risk_reason || "");
 
     let summary = "";
@@ -137,16 +150,21 @@
 
     let raw = "";
     if (cl.raw) {
-      raw = `<div class="sl-sec"><h4>Changelog (raw)</h4><div class="sl-raw">${
-        esc(cl.raw).replace(/^(#{1,3}.*)$/gm, '<span class="h">$1</span>')
-      }</div></div>`;
+      const body = esc(cl.raw)
+        .replace(/^(#{1,3}.*)$/gm, '<span class="h">$1</span>')
+        .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+      raw = `<div class="sl-sec"><h4>Changelog (raw)</h4><div class="sl-raw">${body}</div></div>`;
     } else if (!summary) {
       raw = `<div class="sl-sec"><div style="color:#6f6f6f">No changelog source resolved for this image.</div></div>`;
     }
 
+    // Link to the real repo: the changelog URL if the engine gave one, else the
+    // container's OCI source label → its releases page.
+    const repo = (c.source || "").replace(/\.git$/, "").replace(/\/$/, "");
+    const href = cl.url || (repo ? repo + "/releases" : "");
     const src = cl.source ? `Source: ${esc(cl.source)}` : "Source: —";
-    const link = cl.url
-      ? `<a class="sl-link" href="${esc(cl.url)}" target="_blank" rel="noopener">Open ↗</a>`
+    const link = href
+      ? `<a class="sl-link" href="${esc(href)}" target="_blank" rel="noopener">Open on GitHub ↗</a>`
       : "";
 
     return `
@@ -164,14 +182,28 @@
     close();
     const b = el("div", "sl-bubble", bubbleHTML(st));
     document.body.appendChild(b);
+    // restore the user's saved size (the bubble is resizable, drag the corner)
+    try {
+      const s = JSON.parse(localStorage.getItem(SZ_KEY) || "null");
+      if (s && s.w) b.style.width = s.w + "px";
+      if (s && s.h) b.style.height = s.h + "px";
+    } catch (e) {}
     const r = anchor.getBoundingClientRect();
-    const w = b.offsetWidth || 560;
+    const w = b.offsetWidth || 640;
     const maxLeft = window.scrollX + document.documentElement.clientWidth - w - 12;
     let left = Math.min(window.scrollX + r.left, maxLeft);
     left = Math.max(window.scrollX + 8, left);
     b.style.left = left + "px";
     b.style.top = window.scrollY + r.bottom + 8 + "px";
     b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); close(); });
+    // persist size whenever the user drags the resize handle
+    try {
+      const ro = new ResizeObserver(() => {
+        try { localStorage.setItem(SZ_KEY, JSON.stringify({ w: b.offsetWidth, h: b.offsetHeight })); } catch (e) {}
+      });
+      ro.observe(b);
+      b._ro = ro;
+    } catch (e) {}
     open = b;
   }
 
@@ -187,7 +219,9 @@
       chip.href = "#";
       chip.title = `ShipLog: ${kindLabel(st)} — click for the changelog`;
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, st); });
-      cell.appendChild(chip);
+      const row = el("div", "sl-chiprow");
+      row.appendChild(chip);
+      cell.appendChild(row);
       cell.setAttribute(MARK, "1");
       n++;
     }
