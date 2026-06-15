@@ -155,27 +155,33 @@
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
       raw = `<div class="sl-sec"><h4>Changelog (raw)</h4><div class="sl-raw">${body}</div></div>`;
     } else if (!summary) {
-      raw = `<div class="sl-sec"><div style="color:#6f6f6f">No changelog source resolved for this image.</div></div>`;
+      raw = `<div class="sl-sec"><div style="color:#6f6f6f">No changelog text found for this image — open the repo (top-right) for release notes.</div></div>`;
     }
 
-    // Link to the real repo: the changelog URL if the engine gave one, else the
-    // container's OCI source label → its releases page.
-    const repo = (c.source || "").replace(/\.git$/, "").replace(/\/$/, "");
-    const href = cl.url || (repo ? repo + "/releases" : "");
-    const src = cl.source ? `Source: ${esc(cl.source)}` : "Source: —";
-    const link = href
-      ? `<a class="sl-link" href="${esc(href)}" target="_blank" rel="noopener">Open on GitHub ↗</a>`
+    // Link to the repo's MAIN page. The engine's changelog URL is a compare link
+    // (e.g. .../compare/latest...latest) which is broken for :latest digests, so
+    // we don't use it. Prefer the OCI source label; else derive it from a ghcr
+    // image path (ghcr.io/owner/repo → github.com/owner/repo).
+    const ghFromImage = (r) => {
+      const m = /^ghcr\.io\/([^/]+)\/([^/:@]+)/.exec(r || "");
+      return m ? "https://github.com/" + m[1] + "/" + m[2] : "";
+    };
+    const repo = (c.source || "").replace(/\.git$/, "").replace(/\/+$/, "");
+    const href = repo || ghFromImage(c.repo || c.image);
+    const gh = href
+      ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">GitHub ↗</a>`
       : "";
+    const src = cl.source ? `Source: ${esc(cl.source)}` : "";
 
     return `
       <div class="sl-bh">
         <span class="sl-ver">${esc(cur)} → <b>${esc(next)}</b></span>
         <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${esc(kindLabel(st))}</span>
         <span class="sl-jump">${esc(jump)}</span>
-        <span class="sl-x" title="close">✕</span>
+        <span class="sl-bh-right">${gh}<span class="sl-x" title="close">✕</span></span>
       </div>
       ${summary}${raw}
-      <div class="sl-bf"><span>${src}</span>${link}</div>`;
+      ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
 
   function openFor(anchor, st) {

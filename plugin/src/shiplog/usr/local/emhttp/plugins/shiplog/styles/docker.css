@@ -28,12 +28,17 @@
   background:#1d1d1d;color:#e6e6e6;border:1px solid #525252;border-radius:12px;
   box-shadow:0 14px 40px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:12px 16px;border-bottom:1px solid #2a2a2a}
+  padding:12px 16px;border-bottom:1px solid #2a2a2a;
+  position:sticky;top:0;background:#1d1d1d;z-index:2}
 .sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:#9a9a9a}
 .sl-bubble .sl-ver b{color:#e6e6e6;font-weight:600}
 .sl-bubble .sl-jump{color:#6f6f6f;font-size:12px}
-.sl-bubble .sl-x{margin-left:auto;cursor:pointer;color:#9a9a9a;border:1px solid #333;
-  border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+.sl-bubble .sl-bh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.sl-bubble .sl-gh{color:#9a9a9a;border:1px solid #333;border-radius:7px;padding:4px 10px;
+  text-decoration:none;font-size:12px;white-space:nowrap}
+.sl-bubble .sl-gh:hover{color:#e6e6e6;border-color:#555}
+.sl-bubble .sl-x{cursor:pointer;color:#9a9a9a;border:1px solid #333;
+  border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
 .sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid #2a2a2a}
 .sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
   color:#6f6f6f;margin:0 0 8px;display:flex;align-items:center;gap:8px}
