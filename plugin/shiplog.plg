@@ -35,13 +35,13 @@
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>a4fb4bf8a660c8bd1412839b050d9759e4ff7f823a358c80360169e9bdefbd1b</SHA256>
+  <SHA256>3c47d39d7b13eed2de1139294d570f10bb27896add7dc6ae7bd08689524a7c66</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
 <FILE Run="/bin/bash">
 <INLINE>
-chmod +x &emhttp;/scripts/rc.shiplog &emhttp;/event/* 2>/dev/null
+chmod +x &emhttp;/bin/shiplog &emhttp;/scripts/rc.shiplog &emhttp;/event/* 2>/dev/null
 &emhttp;/scripts/rc.shiplog restart
 echo ""
 echo "ShipLog &version; installed — open Settings → ShipLog, or the Docker tab."

@@ -28,7 +28,10 @@ is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/d
 start() {
   if [ "$ENABLE" = "false" ]; then echo "shiplog: disabled in settings"; return 0; fi
   if is_running; then echo "shiplog: already running (pid $(cat "$PIDFILE"))"; return 0; fi
-  if [ ! -x "$BIN" ]; then echo "shiplog: binary missing at $BIN"; return 1; fi
+  # The package may arrive without the exec bit (e.g. built on a filesystem with
+  # no Unix mode bits) — enforce it here so the daemon is independent of that.
+  [ -f "$BIN" ] && chmod +x "$BIN" 2>/dev/null
+  if [ ! -x "$BIN" ]; then echo "shiplog: binary missing or not executable at $BIN"; return 1; fi
   mkdir -p "$DATA_DIR"
   export PORT DATA_DIR DOCKER_SOCKET POLL_INTERVAL GITHUB_TOKEN \
          OLLAMA_URL OLLAMA_MODEL MATRIX_HOMESERVER MATRIX_TOKEN MATRIX_ROOM
