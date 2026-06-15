@@ -1,0 +1,3 @@
+# build artifacts produced by pkg_build.sh — never commit these
+out/
+src/shiplog/usr/local/emhttp/plugins/shiplog/bin/

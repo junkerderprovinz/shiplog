@@ -1,0 +1,62 @@
+#!/bin/bash
+# ShipLog engine daemon control (start/stop/restart/status).
+# The engine is the same Go binary as the container image; here it runs as a
+# plain host daemon started by the plugin. Read-only Docker socket; never writes.
+
+NAME="shiplog"
+BIN="/usr/local/emhttp/plugins/${NAME}/bin/${NAME}"
+CFG="/boot/config/plugins/${NAME}/${NAME}.cfg"
+PIDFILE="/var/run/${NAME}.pid"
+LOG="/var/log/${NAME}.log"
+
+# Defaults — overridden by the cfg (written by the settings page as KEY="value").
+ENABLE="true"
+PORT="8484"
+DATA_DIR="/mnt/user/appdata/shiplog"
+DOCKER_SOCKET="/var/run/docker.sock"
+POLL_INTERVAL=""
+GITHUB_TOKEN=""
+OLLAMA_URL=""
+OLLAMA_MODEL=""
+MATRIX_HOMESERVER=""
+MATRIX_TOKEN=""
+MATRIX_ROOM=""
+[ -f "$CFG" ] && . "$CFG"
+
+is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }
+
+start() {
+  if [ "$ENABLE" = "false" ]; then echo "shiplog: disabled in settings"; return 0; fi
+  if is_running; then echo "shiplog: already running (pid $(cat "$PIDFILE"))"; return 0; fi
+  if [ ! -x "$BIN" ]; then echo "shiplog: binary missing at $BIN"; return 1; fi
+  mkdir -p "$DATA_DIR"
+  export PORT DATA_DIR DOCKER_SOCKET POLL_INTERVAL GITHUB_TOKEN \
+         OLLAMA_URL OLLAMA_MODEL MATRIX_HOMESERVER MATRIX_TOKEN MATRIX_ROOM
+  setsid "$BIN" >>"$LOG" 2>&1 &
+  echo $! >"$PIDFILE"
+  echo "shiplog: started (pid $(cat "$PIDFILE"), port $PORT)"
+}
+
+stop() {
+  if is_running; then
+    kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+    echo "shiplog: stopped"
+  else
+    pkill -f "$BIN" 2>/dev/null && echo "shiplog: stopped (by name)" || echo "shiplog: not running"
+    rm -f "$PIDFILE"
+  fi
+}
+
+status() {
+  if is_running; then echo "shiplog: running (pid $(cat "$PIDFILE"), port $PORT)";
+  else echo "shiplog: stopped"; fi
+}
+
+case "$1" in
+  start)   start ;;
+  stop)    stop ;;
+  restart) stop; sleep 1; start ;;
+  status)  status ;;
+  *) echo "usage: $0 {start|stop|restart|status}"; exit 1 ;;
+esac

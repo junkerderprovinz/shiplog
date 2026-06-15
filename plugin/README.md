@@ -1,52 +1,65 @@
 # ShipLog — the Unraid plugin (bubble in the native Docker tab)
 
-ShipLog has two parts:
+ShipLog is delivered as **one slim Unraid plugin**. The plugin bundles the Go
+**engine** and runs it as a host daemon (no separate Docker container), and it
+injects a discreet changelog control + bubble into Unraid's **native Docker tab**.
 
-| Part | What it is | Where it runs | Status |
-|------|------------|---------------|--------|
-| **Engine** | A read-only Go container: reads the Docker socket, resolves running→newest, computes the risk badge, fetches the changelog, exposes a small REST API + status page. | Any Docker host. | **Built** (`ghcr.io/junkerderprovinz/shiplog`). |
-| **Plugin** | A thin Unraid `.plg` that injects a risk badge + changelog **bubble next to every container in Unraid's own Docker tab**, reading the engine through a same-origin PHP proxy. | Unraid only. | **In progress** — this folder. |
+| Part | What it is | How it runs |
+|------|------------|-------------|
+| **Engine** | The read-only Go binary: reads the Docker socket, resolves running→newest, computes the risk, fetches the changelog, serves a small REST API + status page. | Started by the plugin as a host daemon (`scripts/rc.shiplog`). Same binary as the container image — the container is still buildable for non-Unraid hosts. |
+| **Injection** | A `*.Docker.page` that emhttp renders into the Docker tab and that loads `scripts/docker.js` + `styles/docker.css`. | In the browser, on the Docker tab. |
+| **Proxy** | `server/status.php` — same-origin bridge from the browser to the local engine (`127.0.0.1:<port>`), so there's no CORS and no token in the browser. | On the Unraid webserver. |
 
-**Why a plugin is required.** Unraid's Docker tab is server-rendered by emhttp
-(`DockerContainers.php`). A container can't draw into it; only code that ships as
-an Unraid plugin can add to that page. So the engine is the brain (and works on
-any Docker host via its status page), and the plugin is the thin Unraid-specific
-layer that renders the bubble where you actually want it. Precedent: the
-*Folder View* plugin restructures the whole Docker tab the same way.
+**Why a plugin (and why the engine isn't separate PHP).** Unraid's Docker tab is
+server-rendered by emhttp; only a plugin can draw into it. The data work
+(registry/OCI calls, changelog provider chain, risk, optional Ollama/Matrix) is
+the already-built, tested Go engine — so the plugin ships and runs that binary
+rather than reimplementing it in PHP. Precedent for the injection:
+[scolcipitato/folder.view](https://github.com/scolcipitato/folder.view) uses the
+same `folder.view.Docker.page` → `scripts/docker.js` + `server/*.php` pattern.
 
-## P2.0 — feasibility spike (run this first, on your box)
+## Layout
 
-[`spike/docker-tab-inject.js`](spike/docker-tab-inject.js) proves the DOM hook on
-**your** Unraid version before the full plugin is built, and renders the real
-bubble design (with demo data) so you can see exactly how it'll look in place.
+```
+plugin/
+  shiplog.plg                 installer: fetch the .txz from the GitHub release, start the daemon
+  pkg_build.sh                build the engine binary + package the .txz (+ sha256)
+  spike/docker-tab-inject.js  the P2.0 feasibility spike (paste-in-console; proven on a real box)
+  src/shiplog/usr/local/emhttp/plugins/shiplog/
+    shiplog.Docker.page       Menu="Docker" → injected into the Docker tab
+    ShipLog.page              Settings → ShipLog (port, enable, token, Ollama/Matrix)
+    scripts/docker.js         the injection: proxy fetch → per-row chip + bubble
+    styles/docker.css         the chip + bubble styles
+    server/status.php         same-origin proxy → the local engine
+    scripts/rc.shiplog        daemon control (start/stop/restart/status, PID file)
+    event/started             array start → start the daemon
+    event/stopping_svcs       array stop → stop the daemon
+    bin/shiplog               the engine binary (added by pkg_build.sh)
+```
 
-**Run it (no install):**
+- **Config** persists on flash at `/boot/config/plugins/shiplog/shiplog.cfg`
+  (written by the settings page; read by the proxy + the daemon).
+- **Data** (SQLite cache) lives in appdata (`DATA_DIR`, default
+  `/mnt/user/appdata/shiplog`) — never on the flash.
+- The chip appears **only for containers with an update**; up-to-date rows are
+  left untouched. If the engine is down, nothing renders and the Docker tab is
+  unaffected (the engine status page `http://<host>:<port>/` is the fallback).
 
-1. Open Unraid → the **Docker** tab.
-2. Open DevTools (**F12** → **Console**).
-3. Paste the whole file, press **Enter**.
+## Build + release
 
-A discreet, Unraid-native control appears in each container's **update column**
-(next to "Aktualisierung anwenden" / "Auf dem neusten Stand"): a small log
-glyph · **Changelog** · a risk traffic-light dot. It's dim link text (no pill),
-so it never shifts the row layout. Click it for the bubble. A toast
-(bottom-right) reports how many rows were tagged and which selector matched.
+```bash
+plugin/pkg_build.sh 2026.06.15            # → plugin/out/shiplog-2026.06.15-x86_64-1.txz (+ .sha256)
+```
 
-**If it does *not* tag your containers:** the script prints a `[ShipLog spike]`
-diagnostics block (the Docker table structure). Copy that block back — it pins
-down the exact selectors for your Unraid release so the real plugin targets them
-precisely.
+The release workflow attaches the `.txz` to a `plugin-<version>` GitHub release
+and injects its SHA256 into `shiplog.plg`. Users install by pasting the raw
+`shiplog.plg` URL into Unraid **Plugins → Install Plugin** (later: the CA plugins
+section).
 
-The spike uses **demo data**. The real plugin wires the bubble to the live engine
-through a server-side PHP proxy (same-origin → no CORS, token stays on the
-server). To preview live data now, set `ENGINE_URL` at the top of the script
-(only works if the engine sends CORS headers; otherwise it falls back to demo).
+## P2.0 — feasibility spike (already proven on a real box)
 
-## Build order
-
-- **P2.0** feasibility spike (this) → confirm selectors on the real box.
-- **P2.1** `.plg` skeleton + PHP proxy (`localhost:<PORT>` → engine).
-- **P2.2** Docker-tab injection JS (per-row badge + bubble, fed by the proxy).
-- **P2.3** plugin settings page (engine URL/port, enable/disable) + packaging.
-- **P2.4** graceful degradation (engine down / Unraid update breaks injection →
-  Docker tab unaffected, engine status page is the fallback).
+[`spike/docker-tab-inject.js`](spike/docker-tab-inject.js) is the throwaway proof
+that the DOM hook works (paste into the Docker tab's DevTools console). It was
+run on Bottich and confirmed the injection + the update-column placement. The
+production `scripts/docker.js` is the same approach wired to the engine via the
+proxy.

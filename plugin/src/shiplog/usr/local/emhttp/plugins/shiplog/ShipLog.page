@@ -1,0 +1,70 @@
+Menu="Utilities"
+Title="ShipLog"
+Icon="anchor"
+---
+<?php
+/* ShipLog plugin settings. Writes /boot/config/plugins/shiplog/shiplog.cfg via
+   Unraid's /update.php, then restarts the engine daemon. */
+$cfg = parse_plugin_cfg("shiplog", true);
+function v($cfg, $k, $def = "") { return htmlspecialchars(isset($cfg[$k]) && $cfg[$k] !== "" ? $cfg[$k] : $def); }
+?>
+
+<form markdown="1" name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="shiplog/shiplog.cfg">
+<input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
+<input type="hidden" name="#arg[1]" value="restart">
+
+_(Enable engine)_:
+: <select name="ENABLE">
+  <option value="true"  <?=v($cfg,'ENABLE','true')!=='false'?'selected':''?>>Yes</option>
+  <option value="false" <?=v($cfg,'ENABLE','true')==='false'?'selected':''?>>No</option>
+  </select>
+
+_(Engine port)_:
+: <input type="text" class="narrow" name="PORT" value="<?=v($cfg,'PORT','8484')?>"> &nbsp; <span id="sl-statuslink"></span>
+
+_(Data directory)_:
+: <input type="text" name="DATA_DIR" value="<?=v($cfg,'DATA_DIR','/mnt/user/appdata/shiplog')?>"> (SQLite cache — keep on appdata, not the flash)
+
+_(Poll interval)_:
+: <input type="text" class="narrow" name="POLL_INTERVAL" value="<?=v($cfg,'POLL_INTERVAL','6h')?>"> (Go duration, e.g. 1h, 6h, 24h)
+
+_(GitHub token)_:
+: <input type="password" name="GITHUB_TOKEN" value="<?=v($cfg,'GITHUB_TOKEN')?>"> (optional — raises the changelog API rate limit)
+
+> **Optional — AI summaries (Ollama)**
+
+_(Ollama URL)_:
+: <input type="text" name="OLLAMA_URL" value="<?=v($cfg,'OLLAMA_URL')?>"> (e.g. http://127.0.0.1:11434)
+
+_(Ollama model)_:
+: <input type="text" name="OLLAMA_MODEL" value="<?=v($cfg,'OLLAMA_MODEL')?>">
+
+> **Optional — Matrix notifications**
+
+_(Matrix homeserver)_:
+: <input type="text" name="MATRIX_HOMESERVER" value="<?=v($cfg,'MATRIX_HOMESERVER')?>">
+
+_(Matrix token)_:
+: <input type="password" name="MATRIX_TOKEN" value="<?=v($cfg,'MATRIX_TOKEN')?>">
+
+_(Matrix room)_:
+: <input type="text" name="MATRIX_ROOM" value="<?=v($cfg,'MATRIX_ROOM')?>">
+
+:shiplog_help_plug:
+> ShipLog is **read-only** — it never updates, pulls, or stops anything; it only
+> tells you what changes between your running image and the newest one. The
+> changelog appears as a small control in the Docker tab's update column.
+
+&nbsp;
+: <input type="submit" name="#apply" value="Apply"><input type="button" value="Done" onclick="done()">
+
+</form>
+
+<script>
+(function () {
+  var port = "<?=v($cfg,'PORT','8484')?>";
+  var a = document.getElementById("sl-statuslink");
+  if (a) a.innerHTML = 'Status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">http://' + location.hostname + ':' + port + '/</a>';
+})();
+</script>

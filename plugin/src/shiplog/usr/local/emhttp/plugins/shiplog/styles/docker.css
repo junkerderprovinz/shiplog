@@ -1,0 +1,48 @@
+/* ShipLog — Docker-tab control + bubble. Discreet, Unraid-native. */
+
+.sl-chip{display:inline-flex;align-items:center;gap:6px;margin-left:12px;
+  font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none}
+.sl-chip:hover{color:#d8d8d8}
+.sl-chip:hover .sl-amp{box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+.sl-ico{width:13px;height:13px;opacity:.85;flex:none}
+.sl-amp{width:8px;height:8px;border-radius:50%;flex:none}
+.sl-amp.sl-low {background:#3fae6a}
+.sl-amp.sl-mid {background:#d6a243}
+.sl-amp.sl-high{background:#d9534f}
+.sl-amp.sl-grey{background:#8a8a8a}
+.sl-amp.sl-ok  {background:#525252}
+
+.sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
+  font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
+.sl-pill .sl-dot{width:7px;height:7px;border-radius:50%}
+.sl-pill.sl-low {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-low  .sl-dot{background:#3fae6a}
+.sl-pill.sl-mid {color:#d6a243;border-color:#7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
+.sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
+.sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
+
+.sl-bubble{position:absolute;z-index:99999;width:560px;max-width:92vw;
+  background:#1d1d1d;color:#e6e6e6;border:1px solid #525252;border-radius:12px;
+  box-shadow:0 14px 40px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
+.sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 16px;border-bottom:1px solid #2a2a2a}
+.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:#9a9a9a}
+.sl-bubble .sl-ver b{color:#e6e6e6;font-weight:600}
+.sl-bubble .sl-jump{color:#6f6f6f;font-size:12px}
+.sl-bubble .sl-x{margin-left:auto;cursor:pointer;color:#9a9a9a;border:1px solid #333;
+  border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+.sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid #2a2a2a}
+.sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
+  color:#6f6f6f;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sl-bubble .sl-ai{font:400 10px/1 "Segoe UI",sans-serif;border:1px solid #333;border-radius:4px;
+  padding:2px 6px;color:#6f6f6f;text-transform:none;letter-spacing:0}
+.sl-bubble ul{list-style:none;margin:0;padding:0}
+.sl-bubble li{padding:3px 0 3px 18px;position:relative}
+.sl-bubble li:before{content:"–";position:absolute;left:2px;color:#6f6f6f}
+.sl-bubble li.sl-warn:before{content:"\26A0";color:#d6a243;font-size:12px}
+.sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:#9a9a9a;background:#161616;
+  border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;white-space:pre-wrap;overflow:auto;max-height:160px}
+.sl-bubble .sl-raw .h{color:#e6e6e6}
+.sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:11px 16px;color:#6f6f6f;font-size:12px}
+.sl-bubble .sl-link{margin-left:auto;color:#9a9a9a;border:1px solid #333;border-radius:7px;
+  padding:5px 11px;text-decoration:none}

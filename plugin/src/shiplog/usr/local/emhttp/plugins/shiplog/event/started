@@ -1,0 +1,3 @@
+#!/bin/bash
+# Unraid fires this when the array has started (so /mnt/user/appdata is mounted).
+/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog start

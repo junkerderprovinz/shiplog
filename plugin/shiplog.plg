@@ -1,0 +1,62 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "shiplog">
+  <!ENTITY author    "junkerderprovinz">
+  <!ENTITY version   "2026.06.15">
+  <!ENTITY launch    "Settings/ShipLog">
+  <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
+  <!ENTITY pluginURL "&gitURL;/&name;.plg">
+  <!ENTITY pkgURL    "https://github.com/junkerderprovinz/shiplog/releases/download/plugin-&version;">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
+  <!ENTITY plgPath   "/boot/config/plugins/&name;">
+  <!ENTITY txz       "&name;-&version;-x86_64-1.txz">
+]>
+
+<PLUGIN name="&name;"
+        author="&author;"
+        version="&version;"
+        launch="&launch;"
+        pluginURL="&pluginURL;"
+        icon="anchor"
+        min="6.10.0"
+        support="https://forums.unraid.net/topic/shiplog">
+
+<CHANGES>
+### &version;
+- First plugin release: read-only changelog/risk control in the native Docker tab.
+- Bundles the ShipLog engine and runs it as a host daemon (no separate container).
+</CHANGES>
+
+<!-- engine data dir on the flash is NOT used; SQLite lives in appdata (see settings) -->
+
+<!--
+  The package (engine binary + plugin files) is built by plugin/pkg_build.sh and
+  attached to the GitHub release "plugin-&version;". SHA256 is injected at release.
+-->
+<FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
+  <URL>&pkgURL;/&txz;</URL>
+  <SHA256>REPLACE_WITH_TXZ_SHA256_AT_RELEASE</SHA256>
+</FILE>
+
+<!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
+<FILE Run="/bin/bash">
+<INLINE>
+chmod +x &emhttp;/scripts/rc.shiplog &emhttp;/event/* 2>/dev/null
+&emhttp;/scripts/rc.shiplog restart
+echo ""
+echo "ShipLog &version; installed — open Settings → ShipLog, or the Docker tab."
+</INLINE>
+</FILE>
+
+<!-- Remove: stop the daemon, drop the package + files, keep user data + cfg. -->
+<REMOVE>
+<INLINE>
+&emhttp;/scripts/rc.shiplog stop 2>/dev/null
+removepkg &name; 2>/dev/null
+rm -rf &emhttp;
+rm -f &plgPath;/*.txz
+echo "ShipLog removed (appdata + settings kept)."
+</INLINE>
+</REMOVE>
+
+</PLUGIN>

@@ -198,3 +198,60 @@ least the LSIO + OCI-labeled images within one poll cycle. With the plugin
 absent or broken, the engine's status page shows the same data. Ollama/Matrix
 stay silent until configured; history survives a container restart (SQLite in
 /config); the engine never writes to the Docker socket.
+
+---
+
+## Update 2026-06-15 — delivery decision: plugin-only, engine as host daemon (Option B)
+
+The P2.0 feasibility spike (`plugin/spike/docker-tab-inject.js`) was run on the
+real box (Bottich) and **the DOM injection works** — the bubble can be placed
+in Unraid's native Docker tab. The auto-load mechanism is confirmed against the
+Folder View precedent: a **`shiplog.Docker.page`** file with header
+`Menu="Docker"` is rendered into the Docker tab by emhttp and loads the plugin's
+JS/CSS via `autov()`; `server/*.php` are the same-origin proxies.
+
+Given that, and the user's priority on a **slim, single-install** experience,
+the distribution changes from the original "Hybrid (separate engine container +
+plugin)" to:
+
+**The engine ships *inside* the plugin and runs as a host daemon — no separate
+Docker container.** The Go engine is unchanged (same binary, same API); only its
+packaging changes. One install (the plugin) gives both the brain and the bubble.
+
+- **Why:** the hard 80% (the engine) is already built, tested, CI-green. Option B
+  keeps it verbatim and only repackages it, versus rewriting it in PHP (rejected:
+  fragile, slow fan-out across ~55 containers, Unraid-locked). The container
+  variant (still buildable from the same source) stays available for non-Unraid
+  Docker hosts and as the portable fallback.
+- **Trade-off accepted:** a plugin-started background binary is less standard than
+  a container and runs on the host (no container isolation). Security is the same
+  read-only Docker-socket posture; the binary never writes to the socket.
+
+### Plugin layout (`/usr/local/emhttp/plugins/shiplog/`)
+
+```
+shiplog.plg                     # installer: fetch .txz from GitHub Releases, start daemon
+bin/shiplog                     # the Go engine binary (linux/amd64)
+shiplog.Docker.page             # Menu="Docker" → injected into the Docker tab; loads docker.js + docker.css
+ShipLog.page                    # settings page (port, enable, GitHub token, Ollama/Matrix)
+scripts/docker.js               # the injection (productionised spike): fetch proxy → chip + bubble per row
+styles/docker.css               # the bubble + chip styles
+server/status.php               # same-origin proxy → http://127.0.0.1:<PORT>/api/containers|container/{id}
+event/started                   # array start → (re)start the daemon if enabled
+event/stopping_svcs             # array stop → stop the daemon
+scripts/rc.shiplog              # start/stop/status of the daemon (PID file)
+shiplog.png                     # plugin icon
+```
+
+- **Config** persists on flash at `/boot/config/plugins/shiplog/shiplog.cfg`
+  (`key="value"`, read by the page, the event scripts, and the PHP proxy for the
+  port). **Data** (SQLite cache) lives in appdata (`DATA_DIR`, default
+  `/mnt/user/appdata/shiplog`) — **never** the flash (write wear).
+- **Daemon:** `rc.shiplog start` launches `bin/shiplog` with `PORT`, `DATA_DIR`,
+  `DOCKER_SOCKET=/var/run/docker.sock` and optional tokens from the cfg, writing
+  a PID file; `event/started` (re)starts it after an array start, the post-install
+  script starts it immediately (no reboot needed), `event/stopping_svcs` stops it.
+- **Graceful degradation unchanged:** engine down → the chip/bubble simply don't
+  render (Docker tab unaffected); the engine's own status page
+  (`http://<host>:<PORT>/`) remains the fallback view.
+
