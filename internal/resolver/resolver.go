@@ -299,12 +299,16 @@ func isSemver(t string) bool {
 	return ok
 }
 
-// parseSemver strips a leading 'v' and parses major.minor.patch numerically.
+// parseSemver strips a leading 'v' and parses a numeric version. It accepts
+// MAJOR.MINOR and MAJOR.MINOR.PATCH (a missing patch is 0): some projects publish
+// two-part tags only (e.g. OpenHands "0.18"), and requiring exactly three parts
+// hid the newest release. Tags with a non-numeric part (e.g. "1.8.0-rc1") stay
+// rejected, so a prerelease never ranks as the newest tag.
 func parseSemver(t string) ([3]int, bool) {
 	var v [3]int
-	t = strings.TrimPrefix(t, "v")
+	t = strings.TrimPrefix(strings.TrimSpace(t), "v")
 	parts := strings.Split(t, ".")
-	if len(parts) != 3 {
+	if len(parts) < 2 || len(parts) > 3 {
 		return v, false
 	}
 	for i, p := range parts {
