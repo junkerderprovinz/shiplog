@@ -4,9 +4,8 @@ Icon="anchor"
 ---
 <?php
 /* ShipLog settings → writes /boot/config/plugins/shiplog/shiplog.cfg via Unraid's
-   /update.php, then restarts the daemon. NB: do not define functions in a .page
-   (Unraid may include it more than once → "Cannot redeclare" → blank page); read
-   the values inline instead. */
+   /update.php, then restarts the daemon. NB: no functions defined in a .page
+   (Unraid may include it more than once → "Cannot redeclare" → blank page). */
 $cfg    = parse_plugin_cfg("shiplog");
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
 $port   = !empty($cfg['PORT'])          ? $cfg['PORT']          : '8484';
@@ -21,83 +20,123 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
 ?>
 
 <style>
-  .sl-set{max-width:760px}
-  .sl-set-hd{display:flex;align-items:center;gap:14px;margin:4px 0 4px;padding:16px 18px;
-    background:#1d1d1d;border:1px solid #2a2a2a;border-left:3px solid #6e6e6e;border-radius:10px}
-  .sl-set-hd .sl-a{font-size:30px;line-height:1}
-  .sl-set-hd .sl-t{font-size:19px;font-weight:600;color:#e6e6e6;letter-spacing:.2px}
-  .sl-set-hd .sl-t b{font-weight:700}
-  .sl-set-hd .sl-s{margin-top:2px;color:#9a9a9a;font-size:13px}
-  .sl-set-sec{margin:24px 0 8px;padding-top:12px;border-top:1px solid #2a2a2a;
-    font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8a8a8a;font-weight:600}
-  .sl-set-sec small{display:block;margin-top:3px;text-transform:none;letter-spacing:0;
-    font-weight:400;color:#6f6f6f}
-  .sl-set #sl-statuslink a{color:#8ab4f8;text-decoration:none}
+  .sl-cfg{max-width:780px;margin:6px auto 0;color:#e6e6e6;
+    font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
+  .sl-cfg *{box-sizing:border-box}
+  .sl-hd{display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:16px;
+    background:linear-gradient(180deg,#202020,#191919);border:1px solid #2c2c2c;
+    border-left:3px solid #6e6e6e;border-radius:12px}
+  .sl-hd .sl-anchor{font-size:30px;line-height:1}
+  .sl-hd .sl-ttl{font-size:20px;font-weight:600;letter-spacing:.2px}
+  .sl-hd .sl-ttl b{font-weight:700}
+  .sl-hd .sl-sub{margin-top:2px;color:#9a9a9a;font-size:13px}
+
+  .sl-card{background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;
+    padding:6px 18px 16px;margin-bottom:16px}
+  .sl-card > h3{display:flex;align-items:baseline;gap:10px;margin:14px 2px 14px;
+    font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#cfcfcf;
+    border-bottom:1px solid #2a2a2a;padding-bottom:10px}
+  .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:#7c7c7c;font-size:12px}
+
+  .sl-row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center;padding:7px 2px}
+  .sl-row > label{color:#bdbdbd;font-size:13px}
+  .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .sl-cfg input[type=text],.sl-cfg input[type=password],.sl-cfg select{
+    background:#141414;border:1px solid #343434;border-radius:7px;color:#e6e6e6;
+    padding:7px 10px;font:13px/1.2 inherit;min-width:240px;outline:none}
+  .sl-cfg input:focus,.sl-cfg select:focus{border-color:#6e6e6e}
+  .sl-cfg input.sl-narrow{min-width:120px;width:120px}
+  .sl-hint{color:#7c7c7c;font-size:12px}
+  .sl-cfg a{color:#8ab4f8;text-decoration:none}
+
+  .sl-btn{background:#262626;border:1px solid #3a3a3a;border-radius:7px;color:#e6e6e6;
+    padding:7px 14px;font:13px/1.2 inherit;cursor:pointer}
+  .sl-btn:hover{border-color:#5a5a5a;background:#2d2d2d}
+  .sl-btn.sl-primary{background:#3a3a3a;border-color:#555}
+  .sl-res{font-size:12.5px}
+  .sl-res.ok{color:#3fae6a}
+  .sl-res.err{color:#d9534f}
+  .sl-res.run{color:#9a9a9a}
+  .sl-actions{display:flex;gap:10px;margin:4px 2px 20px}
 </style>
 
-<div class="sl-set">
-<div class="sl-set-hd">
-  <span class="sl-a">⚓</span>
-  <div>
-    <div class="sl-t"><b>Ship</b>Log</div>
-    <div class="sl-s">Read-only update advisor — it never updates anything, it just shows what changed and how risky, right in the Docker tab.</div>
+<div class="sl-cfg">
+
+  <div class="sl-hd">
+    <span class="sl-anchor">⚓</span>
+    <div>
+      <div class="sl-ttl"><b>Ship</b>Log</div>
+      <div class="sl-sub">Read-only update advisor — it never updates anything, it shows what changed and how risky, right in the Docker tab.</div>
+    </div>
   </div>
-</div>
 
-<form markdown="1" name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
-<input type="hidden" name="#file" value="shiplog/shiplog.cfg">
-<input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
-<input type="hidden" name="#arg[1]" value="restart">
+  <form name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
+    <input type="hidden" name="#file" value="shiplog/shiplog.cfg">
+    <input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
+    <input type="hidden" name="#arg[1]" value="restart">
 
-<div class="sl-set-sec">Engine</div>
+    <div class="sl-card">
+      <h3>Engine</h3>
+      <div class="sl-row"><label>Enable</label><div class="sl-in">
+        <select name="ENABLE">
+          <option value="true"  <?=$enable!=='false'?'selected':''?>>Yes</option>
+          <option value="false" <?=$enable==='false'?'selected':''?>>No</option>
+        </select></div></div>
+      <div class="sl-row"><label>Port</label><div class="sl-in">
+        <input type="text" class="sl-narrow" name="PORT" value="<?=htmlspecialchars($port)?>">
+        <span id="sl-statuslink" class="sl-hint"></span></div></div>
+      <div class="sl-row"><label>Data directory</label><div class="sl-in">
+        <input type="text" name="DATA_DIR" value="<?=htmlspecialchars($ddir)?>">
+        <span class="sl-hint">SQLite cache — keep on appdata, not the flash</span></div></div>
+      <div class="sl-row"><label>Poll interval</label><div class="sl-in">
+        <input type="text" class="sl-narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>">
+        <span class="sl-hint">Go duration: 1h, 6h, 24h</span></div></div>
+      <div class="sl-row"><label>GitHub token</label><div class="sl-in">
+        <input type="password" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
+        <span class="sl-hint">classic PAT, no scopes — raises the changelog rate limit</span></div></div>
+    </div>
 
-_(Enable)_:
-: <select name="ENABLE">
-  <option value="true"  <?=$enable!=='false'?'selected':''?>>Yes</option>
-  <option value="false" <?=$enable==='false'?'selected':''?>>No</option>
-  </select>
+    <div class="sl-card">
+      <h3>AI summaries <small>Optional — Ollama condenses each changelog into "what changes / breaking / risk".</small></h3>
+      <div class="sl-row"><label>Ollama URL</label><div class="sl-in">
+        <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434"></div></div>
+      <div class="sl-row"><label>Ollama model</label><div class="sl-in">
+        <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>" placeholder="llama3.1">
+        <button type="button" class="sl-btn" onclick="slCheckOllama()">Check</button>
+        <span id="sl-ollama-result" class="sl-res"></span></div></div>
+    </div>
 
-_(Port)_:
-: <input type="text" class="narrow" name="PORT" value="<?=htmlspecialchars($port)?>"> &nbsp; <span id="sl-statuslink"></span>
+    <div class="sl-card">
+      <h3>Notifications <small>Optional — Matrix message when a new update is first seen.</small></h3>
+      <div class="sl-row"><label>Matrix homeserver</label><div class="sl-in">
+        <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
+      <div class="sl-row"><label>Matrix token</label><div class="sl-in">
+        <input type="password" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>"></div></div>
+      <div class="sl-row"><label>Matrix room</label><div class="sl-in">
+        <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server"></div></div>
+    </div>
 
-_(Data directory)_:
-: <input type="text" name="DATA_DIR" value="<?=htmlspecialchars($ddir)?>"> (SQLite cache — keep on appdata, not the flash)
-
-_(Poll interval)_:
-: <input type="text" class="narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>"> (Go duration: 1h, 6h, 24h)
-
-_(GitHub token)_:
-: <input type="password" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>"> (classic PAT, no scopes — raises the changelog rate limit)
-
-<div class="sl-set-sec">AI summaries<small>Optional — Ollama condenses each changelog into "what changes / breaking / risk".</small></div>
-
-_(Ollama URL)_:
-: <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>"> (e.g. http://127.0.0.1:11434)
-
-_(Ollama model)_:
-: <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>"> (e.g. llama3.1)
-
-<div class="sl-set-sec">Notifications<small>Optional — Matrix message when a new update is first seen.</small></div>
-
-_(Matrix homeserver)_:
-: <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>">
-
-_(Matrix token)_:
-: <input type="password" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
-
-_(Matrix room)_:
-: <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>">
-
-&nbsp;
-: <input type="submit" name="#apply" value="Apply"><input type="button" value="Done" onclick="done()">
-
-</form>
+    <div class="sl-actions">
+      <input type="submit" name="#apply" class="sl-btn sl-primary" value="Apply">
+      <input type="button" class="sl-btn" value="Done" onclick="done()">
+    </div>
+  </form>
 </div>
 
 <script>
 (function () {
   var port = "<?=htmlspecialchars($port)?>";
   var a = document.getElementById("sl-statuslink");
-  if (a) a.innerHTML = 'Status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">open ↗</a>';
+  if (a) a.innerHTML = 'status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">open ↗</a>';
 })();
+function slCheckOllama() {
+  var u = (document.querySelector('[name=OLLAMA_URL]') || {}).value || '';
+  var m = (document.querySelector('[name=OLLAMA_MODEL]') || {}).value || '';
+  var out = document.getElementById('sl-ollama-result');
+  out.className = 'sl-res run'; out.textContent = 'Checking…';
+  fetch('/plugins/shiplog/server/ollama-check.php?url=' + encodeURIComponent(u) + '&model=' + encodeURIComponent(m))
+    .then(function (r) { return r.json(); })
+    .then(function (d) { out.className = 'sl-res ' + (d.ok ? 'ok' : 'err'); out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message; })
+    .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
+}
 </script>

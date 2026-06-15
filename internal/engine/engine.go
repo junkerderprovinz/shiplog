@@ -26,13 +26,18 @@ type (
 	Changelogger interface {
 		Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool)
 	}
-	// Storer persists one status row.
+	// Storer persists one status row and reads the prior one (for notify dedupe).
 	Storer interface {
 		Upsert(model.UpdateStatus) error
+		Get(id string) (model.UpdateStatus, error)
 	}
 	// Summarizer optionally condenses a raw changelog into an AI summary.
 	Summarizer interface {
 		Summarize(ctx context.Context, c model.Container, fromTag, toTag, raw string) (*model.AISummary, bool)
+	}
+	// Notifier optionally pushes a message when a new update is first sighted.
+	Notifier interface {
+		Notify(ctx context.Context, st model.UpdateStatus) error
 	}
 )
 
@@ -43,6 +48,7 @@ type Engine struct {
 	changelog  Changelogger
 	store      Storer
 	summarizer Summarizer // optional; nil → no AI summaries
+	notifier   Notifier   // optional; nil → no notifications
 	interval   time.Duration
 	workers    int
 	refresh    chan struct{}
@@ -53,6 +59,13 @@ type Engine struct {
 // non-nil summariser only when Ollama is configured.
 func (e *Engine) WithSummarizer(s Summarizer) *Engine {
 	e.summarizer = s
+	return e
+}
+
+// WithNotifier enables update notifications (returns e for chaining). Pass a
+// non-nil notifier only when Matrix is configured.
+func (e *Engine) WithNotifier(n Notifier) *Engine {
+	e.notifier = n
 	return e
 }
 
@@ -122,8 +135,27 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 				}
 			}
 		}
+		e.maybeNotify(ctx, st)
 	}
 	return st
+}
+
+// maybeNotify pushes a notification only when a *new* update appears for a
+// container we've already seen: the previously stored row must exist (so we
+// don't flood on first run) and must not already represent this same update
+// target (so we don't repeat every poll).
+func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus) {
+	if e.notifier == nil {
+		return
+	}
+	prior, err := e.store.Get(st.Container.ID)
+	if err != nil {
+		return // unknown container (first sight) → seed silently
+	}
+	if prior.HasUpdate() && prior.NewestDigest == st.NewestDigest {
+		return // already notified for this exact update
+	}
+	_ = e.notifier.Notify(ctx, st)
 }
 
 // Refresh triggers an out-of-band sweep (non-blocking; coalesces).

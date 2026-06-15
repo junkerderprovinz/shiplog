@@ -65,6 +65,16 @@ func (f *fakeStore) Upsert(s model.UpdateStatus) error {
 	return nil
 }
 
+func (f *fakeStore) Get(id string) (model.UpdateStatus, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	s, ok := f.rows[id]
+	if !ok {
+		return model.UpdateStatus{}, errors.New("not found")
+	}
+	return s, nil
+}
+
 // --- tests ---
 
 func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {

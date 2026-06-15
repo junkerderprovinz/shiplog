@@ -19,6 +19,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/config"
 	"github.com/junkerderprovinz/shiplog/internal/dockercli"
 	"github.com/junkerderprovinz/shiplog/internal/engine"
+	"github.com/junkerderprovinz/shiplog/internal/notify"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 	"github.com/junkerderprovinz/shiplog/internal/summarize"
@@ -55,6 +56,19 @@ func main() {
 			log.Printf("shiplog: Ollama OK — AI summaries enabled (%s, model %s)", cfg.OllamaURL, cfg.OllamaModel)
 		}
 		cancelPing()
+	}
+
+	// Optional Matrix notifications. nil when unconfigured. Whoami at startup so
+	// the log says plainly whether notifications will work.
+	if n := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom); n != nil {
+		eng.WithNotifier(n)
+		whoCtx, cancelWho := context.WithTimeout(context.Background(), 10*time.Second)
+		if werr := n.Whoami(whoCtx); werr != nil {
+			log.Printf("shiplog: Matrix configured (%s) but NOT working: %v", cfg.MatrixHomeserver, werr)
+		} else {
+			log.Printf("shiplog: Matrix OK — notifications enabled (%s, room %s)", cfg.MatrixHomeserver, cfg.MatrixRoom)
+		}
+		cancelWho()
 	}
 
 	// Cancel everything on SIGTERM/SIGINT (the binary is PID 1 in the container).
