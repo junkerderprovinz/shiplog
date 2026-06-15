@@ -158,16 +158,19 @@
       raw = `<div class="sl-sec"><div style="color:#6f6f6f">No changelog text found for this image — open the repo (top-right) for release notes.</div></div>`;
     }
 
-    // Link to the repo's MAIN page. The engine's changelog URL is a compare link
-    // (e.g. .../compare/latest...latest) which is broken for :latest digests, so
-    // we don't use it. Prefer the OCI source label; else derive it from a ghcr
-    // image path (ghcr.io/owner/repo → github.com/owner/repo).
+    // Link to the repo's MAIN page. We don't use the engine's changelog URL
+    // verbatim (it's a .../compare/from...to link, broken for :latest), but its
+    // repo ROOT is good — so take the root from the OCI source, else from the
+    // changelog URL, else derive it from a ghcr image path.
     const ghFromImage = (r) => {
       const m = /^ghcr\.io\/([^/]+)\/([^/:@]+)/.exec(r || "");
       return m ? "https://github.com/" + m[1] + "/" + m[2] : "";
     };
-    const repo = (c.source || "").replace(/\.git$/, "").replace(/\/+$/, "");
-    const href = repo || ghFromImage(c.repo || c.image);
+    const repoRoot = (u) => {
+      const m = /^(https?:\/\/[^/]+\/[^/]+\/[^/]+)/.exec(u || "");
+      return m ? m[1].replace(/\.git$/, "") : "";
+    };
+    const href = repoRoot(c.source) || repoRoot(cl.url) || ghFromImage(c.repo || c.image);
     const gh = href
       ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">GitHub ↗</a>`
       : "";
