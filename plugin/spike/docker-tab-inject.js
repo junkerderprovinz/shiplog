@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ShipLog — Docker-tab bubble (feasibility spike)
 // @namespace    https://github.com/junkerderprovinz/shiplog
-// @version      0.1.0
-// @description  P2.0 spike: inject a risk badge + click-to-open changelog bubble next to every container in Unraid's native Docker tab. Proves the DOM hook on the real box and harvests the exact selectors before the full .plg plugin is built.
+// @version      0.2.0
+// @description  P2.0 spike: add a small clickable "changelog" chip in Unraid's Docker-tab update column (next to "apply update" / "up-to-date"); clicking opens the changelog bubble. Proves the DOM hook on the real box and harvests the exact selectors before the full .plg plugin is built.
 // @match        http*://*/Docker
 // @match        http*://*/Dashboard
 // @run-at       document-idle
@@ -13,18 +13,20 @@
 //   1. Open Unraid → the DOCKER tab.
 //   2. Open the browser DevTools console (F12 → "Console").
 //   3. Paste this whole file, press Enter.
-//   => A risk badge appears next to each container; click it for the bubble.
-//      A toast (bottom-right) reports how many rows were tagged.
+//   => A small "● Changelog" chip appears in each container's UPDATE column
+//      (next to "Aktualisierung anwenden" / "Auf dem neusten Stand").
+//      Click it for the bubble. A toast (bottom-right) reports the count.
 //
-// WHAT TO SEND BACK if it does NOT tag your containers:
+// v0.2.0: the chip now goes in the update column (right), NOT before the name —
+// it no longer shifts the row layout. The dot colour shows the risk.
+//
+// WHAT TO SEND BACK if it does NOT add chips:
 //   copy the "[ShipLog spike]" diagnostics block the console prints and paste
 //   it back — it dumps the Docker table structure so the exact selectors for
 //   your Unraid version can be locked in for the real plugin.
 //
 // This spike uses DEMO data. Real per-container data arrives in the plugin via a
-// server-side PHP proxy to the engine (same-origin → no CORS). Optionally set
-// ENGINE_URL below to try the live engine now (only works if the engine sends
-// CORS headers; otherwise it silently falls back to demo).
+// server-side PHP proxy to the engine (same-origin → no CORS).
 
 (function () {
   "use strict";
@@ -32,17 +34,24 @@
   // ──────────────────────────────────────────────────────────── config
   const CONFIG = {
     ENGINE_URL: "", // e.g. "http://192.168.20.51:8484" — leave "" for demo data
-    BADGE_ATTR: "data-shiplog", // marker so we never double-tag a row
+    MARK: "data-shiplog", // marker so we never double-tag a cell
   };
-
   const TAG = "[ShipLog spike]";
+
+  // Update-column status phrases (German Unraid + English), lower-case.
+  const UPDATE_PHRASES = [
+    "aktualisierung anwenden", "auf dem neu", "nicht verfügbar", "wird geprüft",
+    "up-to-date", "up to date", "update ready", "apply update", "not available",
+    "rebuild ready", "rebuild dndc",
+  ];
 
   // ──────────────────────────────────────────────────────────── styles
   const CSS = `
-  .sl-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;margin:0 6px 0 0;
-    border-radius:999px;font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;
+  .sl-chip{display:inline-flex;align-items:center;gap:6px;margin-left:14px;padding:2px 10px;
+    border-radius:999px;font:600 11px/1.5 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;
     border:1px solid;background:transparent;cursor:pointer;vertical-align:middle;white-space:nowrap}
-  .sl-badge .sl-dot{width:7px;height:7px;border-radius:50%}
+  .sl-chip:hover{filter:brightness(1.25)}
+  .sl-chip .sl-dot{width:7px;height:7px;border-radius:50%}
   .sl-low {color:#3fae6a;border-color:#2f6b46}  .sl-low  .sl-dot{background:#3fae6a}
   .sl-mid {color:#d6a243;border-color:#7a6028}  .sl-mid  .sl-dot{background:#d6a243}
   .sl-high{color:#d9534f;border-color:#7a3331}  .sl-high .sl-dot{background:#d9534f}
@@ -77,10 +86,11 @@
     padding:5px 11px;text-decoration:none}
 
   .sl-toast{position:fixed;right:16px;bottom:16px;z-index:99999;background:#1d1d1d;color:#e6e6e6;
-    border:1px solid #525252;border-radius:10px;padding:12px 16px;max-width:340px;
+    border:1px solid #525252;border-radius:10px;padding:12px 16px;max-width:360px;
     font:13px/1.45 "Segoe UI",system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.6)}
   .sl-toast b{color:#fff}
   .sl-toast .sl-anchor{font-size:15px;margin-right:6px}
+  .sl-toast code{color:#9a9a9a}
   `;
 
   // ─────────────────────────────────────────────────── demo payloads
@@ -125,9 +135,7 @@
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
     return Math.abs(h);
   }
-  function demoFor(name) {
-    return DEMOS[hash(name) % DEMOS.length];
-  }
+  function demoFor(name) { return DEMOS[hash(name) % DEMOS.length]; }
   function el(tag, cls, html) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -139,7 +147,6 @@
   }
 
   // Find container rows in the Docker table. Returns {rows, selector} or null.
-  // Tries known Unraid selectors, then falls back to a structural heuristic.
   function findRows() {
     const candidates = [
       "table#docker_list tbody tr",
@@ -149,43 +156,46 @@
     ];
     for (const sel of candidates) {
       const all = Array.from(document.querySelectorAll(sel));
-      // A real container row has an icon image and some text (skips header/spacer rows).
       const rows = all.filter((tr) => tr.querySelector("img") && tr.textContent.trim().length > 1);
       if (rows.length >= 1) return { rows, selector: sel };
     }
     return null;
   }
 
-  // Extract a display name + the cell that holds the icon (where the badge goes).
-  function rowInfo(tr) {
+  // Display name for a row (for the bubble title + stable demo selection).
+  function rowName(tr) {
     const img = tr.querySelector("img");
     const cell = img ? img.closest("td") || tr : tr;
-    // name: first non-empty anchor text, else the icon cell's text, else row text.
-    let name = "";
     const a = cell.querySelector("a");
-    if (a && a.textContent.trim()) name = a.textContent.trim();
-    if (!name) name = (cell.textContent || tr.textContent).trim().split("\n")[0].trim();
-    name = name.slice(0, 60) || "container";
-    return { name, cell, img };
+    let name = a && a.textContent.trim() ? a.textContent.trim()
+      : (cell.textContent || tr.textContent).trim().split("\n")[0].trim();
+    return (name.slice(0, 60) || "container");
+  }
+
+  // The update-status cell (right column): the one whose text reads like an
+  // update status. Falls back to the last cell so a chip still lands somewhere.
+  function findUpdateCell(tr) {
+    const cells = Array.from(tr.querySelectorAll("td"));
+    for (const td of cells) {
+      const t = td.textContent.toLowerCase();
+      if (UPDATE_PHRASES.some((p) => t.includes(p))) return td;
+    }
+    return cells[cells.length - 1] || tr;
   }
 
   // ──────────────────────────────────────────────────────── bubble
   let openBubble = null;
-  function closeBubble() {
-    if (openBubble) { openBubble.remove(); openBubble = null; }
-  }
-  function openFor(badge, name, d) {
+  function closeBubble() { if (openBubble) { openBubble.remove(); openBubble = null; } }
+  function openFor(anchor, name, d) {
     closeBubble();
     const repoGuess = "github.com/example/" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const lis = d.summary
-      .map(([t, warn]) => `<li class="${warn ? "sl-warn" : ""}">${esc(t)}</li>`)
-      .join("");
+    const lis = d.summary.map(([t, warn]) => `<li class="${warn ? "sl-warn" : ""}">${esc(t)}</li>`).join("");
     const raw = esc(d.raw).replace(/^(##.*)$/gm, '<span class="h">$1</span>');
     const b = el("div", "sl-bubble");
     b.innerHTML = `
       <div class="sl-bh">
         <span class="sl-ver">${esc(d.cur)} → <b>${esc(d.next)}</b></span>
-        <span class="sl-badge sl-${d.risk}"><span class="sl-dot"></span>${esc(d.label)}</span>
+        <span class="sl-chip sl-${d.risk}" style="cursor:default;margin:0"><span class="sl-dot"></span>${esc(d.label)}</span>
         <span class="sl-jump">${esc(d.jump)}</span>
         <span class="sl-x" title="close">✕</span>
       </div>
@@ -202,9 +212,14 @@
         <a class="sl-link" href="https://${repoGuess}" target="_blank" rel="noopener">Open on GitHub ↗</a>
       </div>`;
     document.body.appendChild(b);
-    const r = badge.getBoundingClientRect();
+    // Position under the chip, clamped to the viewport so it never runs off-screen.
+    const r = anchor.getBoundingClientRect();
+    const width = b.offsetWidth || 560;
+    const maxLeft = window.scrollX + document.documentElement.clientWidth - width - 12;
+    let left = Math.min(window.scrollX + r.left, maxLeft);
+    left = Math.max(window.scrollX + 8, left);
+    b.style.left = left + "px";
     b.style.top = window.scrollY + r.bottom + 8 + "px";
-    b.style.left = Math.max(8, window.scrollX + r.left) + "px";
     b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); closeBubble(); });
     openBubble = b;
   }
@@ -215,16 +230,15 @@
     if (!found) return null;
     let tagged = 0;
     for (const tr of found.rows) {
-      if (tr.getAttribute(CONFIG.BADGE_ATTR)) continue;
-      const { name, cell, img } = rowInfo(tr);
+      const cell = findUpdateCell(tr);
+      if (!cell || cell.getAttribute(CONFIG.MARK)) continue;
+      const name = rowName(tr);
       const d = demoFor(name);
-      const badge = el("span", `sl-badge sl-${d.risk}`,
-        `<span class="sl-dot"></span>${esc(d.label.split(" ")[0])}`);
-      badge.title = `ShipLog: ${d.label} — click for changelog`;
-      badge.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(badge, name, d); });
-      if (img && img.parentNode === cell) cell.insertBefore(badge, img);
-      else cell.insertBefore(badge, cell.firstChild);
-      tr.setAttribute(CONFIG.BADGE_ATTR, "1");
+      const chip = el("span", `sl-chip sl-${d.risk}`, `<span class="sl-dot"></span>Changelog`);
+      chip.title = `ShipLog: ${d.label} — click for the changelog`;
+      chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, name, d); });
+      cell.appendChild(chip);
+      cell.setAttribute(CONFIG.MARK, "1");
       tagged++;
     }
     return { tagged, total: found.rows.length, selector: found.selector };
@@ -237,16 +251,14 @@
   }
 
   function diagnostics() {
-    console.group(`${TAG} diagnostics — no container rows matched`);
+    console.group(`${TAG} diagnostics — no update cells matched`);
     const tables = Array.from(document.querySelectorAll("table"));
     console.log(`tables on page: ${tables.length}`);
     tables.forEach((t, i) => {
       const body = t.tBodies[0];
       const rows = body ? body.rows.length : 0;
       console.log(`#${i}  id="${t.id}"  class="${t.className}"  bodyRows=${rows}`);
-      if (body && body.rows[0]) {
-        console.log(`     sample row HTML:`, body.rows[0].outerHTML.slice(0, 600));
-      }
+      if (body && body.rows[0]) console.log(`     sample row HTML:`, body.rows[0].outerHTML.slice(0, 800));
     });
     console.log("→ copy this whole block and paste it back so the real selectors can be locked in.");
     console.groupEnd();
@@ -264,21 +276,20 @@
     const res = tagRows();
     if (!res || res.tagged === 0) {
       diagnostics();
-      toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike:</b> couldn't find container rows. Open the <b>Docker</b> tab, then check the console — paste the diagnostics back.`);
+      toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike:</b> couldn't find the update column. Open the <b>Docker</b> tab, then check the console and paste the diagnostics back.`);
       return;
     }
-    console.log(`${TAG} tagged ${res.tagged} container(s) via selector: ${res.selector}`);
-    toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike active.</b> Tagged <b>${res.tagged}</b> container(s). Click a badge for the bubble. <small style="color:#6f6f6f">(demo data — selector: <code>${res.selector}</code>)</small>`);
+    console.log(`${TAG} added ${res.tagged} chip(s) via selector: ${res.selector}`);
+    toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike active.</b> Added a Changelog chip to <b>${res.tagged}</b> container(s) — in the update column. Click one for the bubble. <code>(demo data · ${res.selector})</code>`);
   }
 
   // close the bubble on outside click / Esc
   document.addEventListener("click", (e) => {
-    if (openBubble && !openBubble.contains(e.target) && !e.target.classList.contains("sl-badge")
-        && !e.target.closest(".sl-badge")) closeBubble();
+    if (openBubble && !openBubble.contains(e.target) && !e.target.closest(".sl-chip")) closeBubble();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeBubble(); });
 
-  // Unraid re-renders the Docker table periodically (auto-refresh) — re-tag new rows.
+  // Unraid re-renders the Docker table on its auto-refresh — re-tag new cells.
   const mo = new MutationObserver(() => { if (document.getElementById("sl-spike-style")) tagRows(); });
   try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
