@@ -1,15 +1,16 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-  <!ENTITY name      "shiplog">
+  <!ENTITY name      "ShipLog">
+  <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.1">
+  <!ENTITY version   "2026.06.16.2">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
-  <!ENTITY pluginURL "&gitURL;/&name;.plg">
+  <!ENTITY pluginURL "&gitURL;/&slug;.plg">
   <!ENTITY pkgURL    "https://github.com/junkerderprovinz/shiplog/releases/download/plugin-&version;">
-  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
-  <!ENTITY plgPath   "/boot/config/plugins/&name;">
-  <!ENTITY txz       "&name;-&version;-x86_64-1.txz">
+  <!ENTITY emhttp    "/usr/local/emhttp/plugins/&slug;">
+  <!ENTITY plgPath   "/boot/config/plugins/&slug;">
+  <!ENTITY txz       "&slug;-&version;-x86_64-1.txz">
 ]>
 
 <PLUGIN name="&name;"
@@ -22,6 +23,10 @@
         support="https://forums.unraid.net/topic/shiplog">
 
 <CHANGES>
+### 2026.06.16.2
+- Plugin now shows as "ShipLog" in the Plugins list (display name; on-disk slug
+  stays lowercase).
+
 ### 2026.06.16.1
 - Matrix notifications wired up: a message when a new update is first sighted
   (deduped via the store; off unless MATRIX_* are set). Startup logs whether the
@@ -52,15 +57,13 @@
 - Bundles the ShipLog engine and runs it as a host daemon (no separate container).
 </CHANGES>
 
-<!-- engine data dir on the flash is NOT used; SQLite lives in appdata (see settings) -->
-
 <!--
   The package (engine binary + plugin files) is built by plugin/pkg_build.sh and
   attached to the GitHub release "plugin-&version;". SHA256 is injected at release.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>d944dd661907766e23d4a2fa4e43fff4c0de978c1b8eb57e9dbb590c62536f88</SHA256>
+  <SHA256>ca7129be04154e334eb4eda88a7f55c4e0c515cf5e5bf4ac71bef07bc133a831</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
@@ -69,7 +72,7 @@
 chmod +x &emhttp;/bin/shiplog &emhttp;/scripts/rc.shiplog &emhttp;/event/* 2>/dev/null
 &emhttp;/scripts/rc.shiplog restart
 echo ""
-echo "ShipLog &version; installed — open Settings → ShipLog, or the Docker tab."
+echo "ShipLog &version; installed — open Settings &gt; ShipLog, or the Docker tab."
 </INLINE>
 </FILE>
 
@@ -77,7 +80,7 @@ echo "ShipLog &version; installed — open Settings → ShipLog, or the Docker t
 <REMOVE>
 <INLINE>
 &emhttp;/scripts/rc.shiplog stop 2>/dev/null
-removepkg &name; 2>/dev/null
+removepkg &slug; 2>/dev/null
 rm -rf &emhttp;
 rm -f &plgPath;/*.txz
 echo "ShipLog removed (appdata + settings kept)."
