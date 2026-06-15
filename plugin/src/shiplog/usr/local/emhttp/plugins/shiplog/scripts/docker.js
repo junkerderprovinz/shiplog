@@ -129,15 +129,24 @@
     const c = st.container || {};
     const cl = st.changelog || {};
     const rc = riskClass(st);
-    // Prefer the changelog's resolved version tags over the running ":latest".
+    // changelog from/to are the image TAGS ("latest"/"7dtd"), not versions —
+    // show a real version when we have one. Newest release tag comes from the
+    // resolved release entries; current is the running tag if it looks like a
+    // version, else the short digest (a :latest digest can't be mapped to a tag).
     const shortDig = (x) => (x && x.indexOf("sha256:") === 0 ? x.slice(7, 19) : (x || ""));
-    const cur = cl.from_tag
-      || (c.tag && c.tag !== "latest" ? c.tag
-        : (c.digest ? (c.tag || "latest") + "@" + shortDig(c.digest) : (c.image || "?")));
-    const next = cl.to_tag
-      || (st.newest_tag && st.newest_tag !== "latest" ? st.newest_tag
-        : (st.newest_digest ? (st.newest_tag || "latest") + "@" + shortDig(st.newest_digest) : "?"));
-    const jump = cl.skipped_count > 1 ? `skips ${cl.skipped_count} releases` : (st.risk_reason || "");
+    const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
+    const entries = Array.isArray(cl.entries) ? cl.entries : [];
+    const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
+    const cur = verLike(c.tag) ? c.tag
+      : (c.tag && c.tag !== "latest" ? c.tag
+        : (c.digest ? shortDig(c.digest) : (c.tag || "?")));
+    const next = (verLike(st.newest_tag) ? st.newest_tag : "")
+      || (verLike(newestRel) ? newestRel : "")
+      || newestRel || st.newest_tag || "?";
+    const relDate = entries[0] && entries[0].published_at
+      ? String(entries[0].published_at).slice(0, 10) : "";
+    let jump = cl.skipped_count > 1 ? `skips ${cl.skipped_count} releases` : (st.risk_reason || "");
+    if (relDate) jump = (jump ? jump + " · " : "") + "newest " + relDate;
 
     let summary = "";
     if (cl.summary && (cl.summary.bullets || cl.summary.breaking)) {
