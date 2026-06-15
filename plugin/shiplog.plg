@@ -35,7 +35,7 @@
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>REPLACE_WITH_TXZ_SHA256_AT_RELEASE</SHA256>
+  <SHA256>a4fb4bf8a660c8bd1412839b050d9759e4ff7f823a358c80360169e9bdefbd1b</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
