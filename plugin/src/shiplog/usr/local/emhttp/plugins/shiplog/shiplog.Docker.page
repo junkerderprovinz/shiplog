@@ -1,0 +1,12 @@
+Menu="Docker"
+Icon="anchor"
+Tag="anchor"
+---
+<?php
+/* ShipLog — injected into Unraid's native Docker tab.
+   This page renders no visible panel; it only loads the styles + the script
+   that adds the per-container "Changelog" control and bubble. Data comes from
+   the same-origin proxy (server/status.php → the local engine daemon). */
+?>
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
+<script defer src="<?autov('/plugins/shiplog/scripts/docker.js')?>"></script>
