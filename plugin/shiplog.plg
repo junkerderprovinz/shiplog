@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.15">
+  <!ENTITY version   "2026.06.15.1">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&name;.plg">
@@ -22,7 +22,14 @@
         support="https://forums.unraid.net/topic/shiplog">
 
 <CHANGES>
-### &version;
+### 2026.06.15.1
+- Engine: accept two-part version tags (e.g. OpenHands "0.18"); newest release
+  is no longer hidden when a project doesn't use three-part tags.
+- Bubble: GitHub button moved into a sticky header (always visible); it links to
+  the repo's main page instead of a broken compare URL.
+- Docker-tab control sits on its own line so it no longer stretches the status text.
+
+### 2026.06.15
 - First plugin release: read-only changelog/risk control in the native Docker tab.
 - Bundles the ShipLog engine and runs it as a host daemon (no separate container).
 </CHANGES>
@@ -35,7 +42,7 @@
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>4338a69a4a68a56599ce1ac8924914443a58c41d2619ba3ff05022e5c32a5f3f</SHA256>
+  <SHA256>aeba9f4ee3eec321d970cc65d7cc4b0981cbd5a243b433d37c628458fec306cb</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
