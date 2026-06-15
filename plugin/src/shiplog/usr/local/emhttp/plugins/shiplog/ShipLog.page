@@ -20,20 +20,44 @@ $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
 ?>
 
+<style>
+  .sl-set{max-width:760px}
+  .sl-set-hd{display:flex;align-items:center;gap:14px;margin:4px 0 4px;padding:16px 18px;
+    background:#1d1d1d;border:1px solid #2a2a2a;border-left:3px solid #6e6e6e;border-radius:10px}
+  .sl-set-hd .sl-a{font-size:30px;line-height:1}
+  .sl-set-hd .sl-t{font-size:19px;font-weight:600;color:#e6e6e6;letter-spacing:.2px}
+  .sl-set-hd .sl-t b{font-weight:700}
+  .sl-set-hd .sl-s{margin-top:2px;color:#9a9a9a;font-size:13px}
+  .sl-set-sec{margin:24px 0 8px;padding-top:12px;border-top:1px solid #2a2a2a;
+    font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8a8a8a;font-weight:600}
+  .sl-set-sec small{display:block;margin-top:3px;text-transform:none;letter-spacing:0;
+    font-weight:400;color:#6f6f6f}
+  .sl-set #sl-statuslink a{color:#8ab4f8;text-decoration:none}
+</style>
+
+<div class="sl-set">
+<div class="sl-set-hd">
+  <span class="sl-a">⚓</span>
+  <div>
+    <div class="sl-t"><b>Ship</b>Log</div>
+    <div class="sl-s">Read-only update advisor — it never updates anything, it just shows what changed and how risky, right in the Docker tab.</div>
+  </div>
+</div>
+
 <form markdown="1" name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
 <input type="hidden" name="#file" value="shiplog/shiplog.cfg">
 <input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
 <input type="hidden" name="#arg[1]" value="restart">
 
-ShipLog is **read-only** — it never updates, pulls or stops anything; it only shows what changed between your running image and the newest one, as a small control in the Docker tab's update column.
+<div class="sl-set-sec">Engine</div>
 
-_(Enable engine)_:
+_(Enable)_:
 : <select name="ENABLE">
   <option value="true"  <?=$enable!=='false'?'selected':''?>>Yes</option>
   <option value="false" <?=$enable==='false'?'selected':''?>>No</option>
   </select>
 
-_(Engine port)_:
+_(Port)_:
 : <input type="text" class="narrow" name="PORT" value="<?=htmlspecialchars($port)?>"> &nbsp; <span id="sl-statuslink"></span>
 
 _(Data directory)_:
@@ -43,32 +67,37 @@ _(Poll interval)_:
 : <input type="text" class="narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>"> (Go duration: 1h, 6h, 24h)
 
 _(GitHub token)_:
-: <input type="password" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>"> (a classic PAT, no scopes needed — raises the changelog API rate limit)
+: <input type="password" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>"> (classic PAT, no scopes — raises the changelog rate limit)
 
-_(Ollama URL — optional)_:
+<div class="sl-set-sec">AI summaries<small>Optional — Ollama condenses each changelog into "what changes / breaking / risk".</small></div>
+
+_(Ollama URL)_:
 : <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>"> (e.g. http://127.0.0.1:11434)
 
-_(Ollama model — optional)_:
-: <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>">
+_(Ollama model)_:
+: <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>"> (e.g. llama3.1)
 
-_(Matrix homeserver — optional)_:
+<div class="sl-set-sec">Notifications<small>Optional — Matrix message when a new update is first seen.</small></div>
+
+_(Matrix homeserver)_:
 : <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>">
 
-_(Matrix token — optional)_:
+_(Matrix token)_:
 : <input type="password" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
 
-_(Matrix room — optional)_:
+_(Matrix room)_:
 : <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>">
 
 &nbsp;
 : <input type="submit" name="#apply" value="Apply"><input type="button" value="Done" onclick="done()">
 
 </form>
+</div>
 
 <script>
 (function () {
   var port = "<?=htmlspecialchars($port)?>";
   var a = document.getElementById("sl-statuslink");
-  if (a) a.innerHTML = 'Status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">http://' + location.hostname + ':' + port + '/</a>';
+  if (a) a.innerHTML = 'Status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">open ↗</a>';
 })();
 </script>

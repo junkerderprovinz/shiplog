@@ -30,18 +30,30 @@ type (
 	Storer interface {
 		Upsert(model.UpdateStatus) error
 	}
+	// Summarizer optionally condenses a raw changelog into an AI summary.
+	Summarizer interface {
+		Summarize(ctx context.Context, c model.Container, fromTag, toTag, raw string) (*model.AISummary, bool)
+	}
 )
 
 // Engine wires the collaborators and owns the poll schedule.
 type Engine struct {
-	collector Collector
-	resolver  Resolver
-	changelog Changelogger
-	store     Storer
-	interval  time.Duration
-	workers   int
-	refresh   chan struct{}
-	now       func() time.Time // injectable clock for tests
+	collector  Collector
+	resolver   Resolver
+	changelog  Changelogger
+	store      Storer
+	summarizer Summarizer // optional; nil → no AI summaries
+	interval   time.Duration
+	workers    int
+	refresh    chan struct{}
+	now        func() time.Time // injectable clock for tests
+}
+
+// WithSummarizer enables AI changelog summaries (returns e for chaining). Pass a
+// non-nil summariser only when Ollama is configured.
+func (e *Engine) WithSummarizer(s Summarizer) *Engine {
+	e.summarizer = s
+	return e
 }
 
 // New builds an Engine. workers caps the per-sweep concurrency.
@@ -104,6 +116,11 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 	if st.HasUpdate() {
 		if cl, ok := e.changelog.Get(ctx, c, c.Tag, newestTag); ok {
 			st.Changelog = cl
+			if e.summarizer != nil && cl.Raw != "" {
+				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, cl.Raw); ok {
+					cl.Summary = sum
+				}
+			}
 		}
 	}
 	return st

@@ -21,6 +21,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/engine"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/store"
+	"github.com/junkerderprovinz/shiplog/internal/summarize"
 )
 
 func main() {
@@ -42,6 +43,19 @@ func main() {
 		db,
 		cfg.PollInterval,
 	)
+
+	// Optional AI summaries (Ollama). nil when unconfigured → silently skipped.
+	// Ping once at startup so the log says plainly whether summaries will work.
+	if sum := summarize.New(cfg.OllamaURL, cfg.OllamaModel); sum != nil {
+		eng.WithSummarizer(sum)
+		pingCtx, cancelPing := context.WithTimeout(context.Background(), 10*time.Second)
+		if perr := sum.Ping(pingCtx); perr != nil {
+			log.Printf("shiplog: Ollama configured (%s, model %s) but NOT working: %v", cfg.OllamaURL, cfg.OllamaModel, perr)
+		} else {
+			log.Printf("shiplog: Ollama OK — AI summaries enabled (%s, model %s)", cfg.OllamaURL, cfg.OllamaModel)
+		}
+		cancelPing()
+	}
 
 	// Cancel everything on SIGTERM/SIGINT (the binary is PID 1 in the container).
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
