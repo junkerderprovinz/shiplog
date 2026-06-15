@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16">
+  <!ENTITY version   "2026.06.16.1">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&name;.plg">
@@ -22,6 +22,13 @@
         support="https://forums.unraid.net/topic/shiplog">
 
 <CHANGES>
+### 2026.06.16.1
+- Matrix notifications wired up: a message when a new update is first sighted
+  (deduped via the store; off unless MATRIX_* are set). Startup logs whether the
+  token works.
+- Settings page redesigned with cards, and a "Check" button next to the Ollama
+  model to test reachability + that the model exists, live, before Apply.
+
 ### 2026.06.16
 - AI summaries (Ollama) are now actually wired up: when configured, each
   changelog is condensed into "what changes / breaking / risk" in the bubble.
@@ -53,7 +60,7 @@
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>51aad6b47c441a2e5b7ce3bca408ad730ac3144cb8690aeee089cc829ddafd0c</SHA256>
+  <SHA256>d944dd661907766e23d4a2fa4e43fff4c0de978c1b8eb57e9dbb590c62536f88</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
