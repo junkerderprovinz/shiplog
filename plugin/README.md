@@ -26,11 +26,11 @@ bubble design (with demo data) so you can see exactly how it'll look in place.
 2. Open DevTools (**F12** → **Console**).
 3. Paste the whole file, press **Enter**.
 
-A small **`● Changelog`** chip appears in each container's **update column**
-(next to "Aktualisierung anwenden" / "Auf dem neusten Stand"), so it never
-shifts the row layout; the dot colour is the risk. Click it for the bubble. A
-toast (bottom-right) reports how many rows were tagged and which selector
-matched.
+A discreet, Unraid-native control appears in each container's **update column**
+(next to "Aktualisierung anwenden" / "Auf dem neusten Stand"): a small log
+glyph · **Changelog** · a risk traffic-light dot. It's dim link text (no pill),
+so it never shifts the row layout. Click it for the bubble. A toast
+(bottom-right) reports how many rows were tagged and which selector matched.
 
 **If it does *not* tag your containers:** the script prints a `[ShipLog spike]`
 diagnostics block (the Docker table structure). Copy that block back — it pins
