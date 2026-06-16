@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.4">
+  <!ENTITY version   "2026.06.16.5">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -23,10 +23,13 @@
         support="https://forums.unraid.net/topic/shiplog">
 
 <CHANGES>
-**ShipLog** — a read-only update advisor for your Docker containers. Right in the
-Docker tab it shows what changed between your running image and the newest one:
-changelog, version jump and a risk badge — with optional AI summaries (Ollama)
-and Matrix notifications. It never updates, pulls or stops anything.
+Shows the changelog of your installed Docker containers, right in the Docker tab:
+what changed from your running image to the newest, with a risk badge. Read-only —
+optional AI summaries (Ollama) and Matrix alerts.
+
+### 2026.06.16.5
+- Bubble follows Unraid's theme (light/dark) and language (DE/EN).
+- Shorter plugin description.
 
 ### 2026.06.16.4
 - Add a short plugin description (shown here in the Plugins page).
@@ -79,7 +82,7 @@ and Matrix notifications. It never updates, pulls or stops anything.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>6c29e0c08e53d98c79a7369e466d96f26337c10294c145c7e29c2663db871c9a</SHA256>
+  <SHA256>a2cceadc614ce237f74f718c8ff7efa81ebaf5770392073633fcc1d1ea31c20c</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

@@ -5,8 +5,7 @@
 .sl-chiprow{display:block;width:fit-content;margin-top:3px}
 .sl-chip{display:inline-flex;align-items:center;gap:6px;
   font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none;text-align:left}
-.sl-chip:hover{color:#d8d8d8}
-.sl-chip:hover .sl-amp{box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+.sl-chip:hover{color:#3c8ac0}
 .sl-ico{width:13px;height:13px;opacity:.85;flex:none}
 .sl-amp{width:8px;height:8px;border-radius:50%;flex:none}
 .sl-amp.sl-low {background:#3fae6a}
@@ -23,37 +22,42 @@
 .sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 
+/* The bubble adapts to Unraid's theme: defaults are dark; .sl-light is applied
+   by docker.js when the page background is light (detected by luminance). */
 .sl-bubble{position:absolute;z-index:99999;width:640px;max-width:95vw;
   min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
-  background:#1d1d1d;color:#e6e6e6;border:1px solid #525252;border-radius:12px;
-  box-shadow:0 14px 40px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
+  --sl-bg:#1d1d1d; --sl-bg2:#161616; --sl-txt:#e6e6e6; --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
+  --sl-line:#2a2a2a; --sl-line2:#333; --sl-edge:#525252; --sl-link:#8ab4f8;
+  background:var(--sl-bg);color:var(--sl-txt);border:1px solid var(--sl-edge);border-radius:12px;
+  box-shadow:0 14px 40px rgba(0,0,0,.55);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
+.sl-bubble.sl-light{ --sl-bg:#ffffff; --sl-bg2:#f3f3f3; --sl-txt:#1c1c1c; --sl-dim:#565656; --sl-dim2:#777;
+  --sl-line:#e3e3e3; --sl-line2:#d0d0d0; --sl-edge:#bcbcbc; --sl-link:#1a56db;
+  box-shadow:0 14px 40px rgba(0,0,0,.25)}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:12px 16px;border-bottom:1px solid #2a2a2a;
-  position:sticky;top:0;background:#1d1d1d;z-index:2}
-.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:#9a9a9a}
-.sl-bubble .sl-ver b{color:#e6e6e6;font-weight:600}
-.sl-bubble .sl-jump{color:#6f6f6f;font-size:12px}
+  padding:12px 16px;border-bottom:1px solid var(--sl-line);
+  position:sticky;top:0;background:var(--sl-bg);z-index:2}
+.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim)}
+.sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
+.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px}
 .sl-bubble .sl-bh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.sl-bubble .sl-gh{color:#9a9a9a;border:1px solid #333;border-radius:7px;padding:4px 10px;
+.sl-bubble .sl-gh{color:var(--sl-dim);border:1px solid var(--sl-line2);border-radius:7px;padding:4px 10px;
   text-decoration:none;font-size:12px;white-space:nowrap}
-.sl-bubble .sl-gh:hover{color:#e6e6e6;border-color:#555}
-.sl-bubble .sl-x{cursor:pointer;color:#9a9a9a;border:1px solid #333;
+.sl-bubble .sl-gh:hover{color:var(--sl-txt);border-color:var(--sl-edge)}
+.sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);border:1px solid var(--sl-line2);
   border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
-.sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid #2a2a2a}
+.sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid var(--sl-line)}
 .sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
-  color:#6f6f6f;margin:0 0 8px;display:flex;align-items:center;gap:8px}
-.sl-bubble .sl-ai{font:400 10px/1 "Segoe UI",sans-serif;border:1px solid #333;border-radius:4px;
-  padding:2px 6px;color:#6f6f6f;text-transform:none;letter-spacing:0}
+  color:var(--sl-dim2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sl-bubble .sl-ai{font:400 10px/1 "Segoe UI",sans-serif;border:1px solid var(--sl-line2);border-radius:4px;
+  padding:2px 6px;color:var(--sl-dim2);text-transform:none;letter-spacing:0}
 .sl-bubble ul{list-style:none;margin:0;padding:0}
 .sl-bubble li{padding:3px 0 3px 18px;position:relative}
-.sl-bubble li:before{content:"–";position:absolute;left:2px;color:#6f6f6f}
+.sl-bubble li:before{content:"–";position:absolute;left:2px;color:var(--sl-dim2)}
 .sl-bubble li.sl-warn:before{content:"\26A0";color:#d6a243;font-size:12px}
-.sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:#9a9a9a;background:#161616;
-  border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;white-space:pre-wrap;
+.sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
+  border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}
-.sl-bubble .sl-raw a{color:#8ab4f8}
-.sl-bubble .sl-raw .h{color:#e6e6e6}
+.sl-bubble .sl-raw a{color:var(--sl-link)}
+.sl-bubble .sl-raw .h{color:var(--sl-txt)}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:11px 16px;color:#6f6f6f;font-size:12px}
-.sl-bubble .sl-link{margin-left:auto;color:#9a9a9a;border:1px solid #333;border-radius:7px;
-  padding:5px 11px;text-decoration:none}
+  padding:11px 16px;color:var(--sl-dim2);font-size:12px}
