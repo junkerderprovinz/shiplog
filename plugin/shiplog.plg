@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.3">
+  <!ENTITY version   "2026.06.16.4">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -23,6 +23,14 @@
         support="https://forums.unraid.net/topic/shiplog">
 
 <CHANGES>
+**ShipLog** — a read-only update advisor for your Docker containers. Right in the
+Docker tab it shows what changed between your running image and the newest one:
+changelog, version jump and a risk badge — with optional AI summaries (Ollama)
+and Matrix notifications. It never updates, pulls or stops anything.
+
+### 2026.06.16.4
+- Add a short plugin description (shown here in the Plugins page).
+
 ### 2026.06.16.3
 - Fix false "update available" on every container: the engine compared the local
   image config id against the registry MANIFEST digest, which never match. It now
@@ -71,7 +79,7 @@
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>dd67c32109389009f5432f2d857408d6339db647e624171ae1645554d53865a5</SHA256>
+  <SHA256>6c29e0c08e53d98c79a7369e466d96f26337c10294c145c7e29c2663db871c9a</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
