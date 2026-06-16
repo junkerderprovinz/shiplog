@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.2">
+  <!ENTITY version   "2026.06.16.3">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -23,6 +23,14 @@
         support="https://forums.unraid.net/topic/shiplog">
 
 <CHANGES>
+### 2026.06.16.3
+- Fix false "update available" on every container: the engine compared the local
+  image config id against the registry MANIFEST digest, which never match. It now
+  reads the running image's manifest digest (RepoDigests), so a digest update is
+  only reported when the image truly moved. (This also means real updates now
+  surface a changelog to summarise.)
+- Settings: a "Check" button for Matrix too (tests homeserver + token live).
+
 ### 2026.06.16.2
 - Plugin now shows as "ShipLog" in the Plugins list (display name; on-disk slug
   stays lowercase).
@@ -63,7 +71,7 @@
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>ca7129be04154e334eb4eda88a7f55c4e0c515cf5e5bf4ac71bef07bc133a831</SHA256>
+  <SHA256>dd67c32109389009f5432f2d857408d6339db647e624171ae1645554d53865a5</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
