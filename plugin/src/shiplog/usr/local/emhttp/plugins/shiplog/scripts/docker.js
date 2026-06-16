@@ -38,13 +38,13 @@
     en: {
       changelog: "Changelog", clickHint: "click for the changelog",
       skips: "skips %n releases", newest: "newest %d",
-      summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close",
+      summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
       none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
     },
     de: {
       changelog: "Changelog", clickHint: "Changelog anzeigen",
       skips: "überspringt %n Releases", newest: "neuestes %d",
-      summary: "Zusammenfassung", raw: "Changelog (roh)", source: "Quelle", close: "schließen",
+      summary: "Zusammenfassung", raw: "Changelog (roh)", source: "Quelle", close: "schließen", uptodate: "aktuell",
       none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
     },
   };
@@ -158,7 +158,8 @@
   function bubbleHTML(st) {
     const c = st.container || {};
     const cl = st.changelog || {};
-    const rc = riskClass(st);
+    const upd = hasUpdate(st);
+    const rc = upd ? riskClass(st) : "grey";
     // changelog from/to are the image TAGS ("latest"/"7dtd"), not versions —
     // show a real version when we have one. Newest release tag comes from the
     // resolved release entries; current is the running tag if it looks like a
@@ -215,10 +216,13 @@
       : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
+    const verHdr = upd ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
+    const pillTxt = upd ? esc(kindLabel(st)) : esc(T("uptodate"));
+
     return `
       <div class="sl-bh">
-        <span class="sl-ver">${esc(cur)} → <b>${esc(next)}</b></span>
-        <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${esc(kindLabel(st))}</span>
+        <span class="sl-ver">${verHdr}</span>
+        <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${pillTxt}</span>
         <span class="sl-jump">${esc(jump)}</span>
         <span class="sl-bh-right">${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
@@ -261,12 +265,14 @@
     let n = 0;
     for (const tr of findRows()) {
       const st = byName[norm(rowName(tr))];
-      if (!st || !hasUpdate(st)) continue;
+      if (!st) continue; // no engine data for this row → leave it untouched
       const cell = findUpdateCell(tr);
       if (!cell || cell.getAttribute(MARK)) continue;
-      const chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${riskClass(st)}"></span>`);
+      const rc = hasUpdate(st) ? riskClass(st) : "ok";
+      const label = hasUpdate(st) ? kindLabel(st) : T("uptodate");
+      const chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
       chip.href = "#";
-      chip.title = `ShipLog: ${kindLabel(st)} — ${T("clickHint")}`;
+      chip.title = `ShipLog: ${label} — ${T("clickHint")}`;
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, st); });
       const row = el("div", "sl-chiprow");
       row.appendChild(chip);

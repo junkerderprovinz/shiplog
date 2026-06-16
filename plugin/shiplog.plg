@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.6">
+  <!ENTITY version   "2026.06.16.7">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -26,6 +26,12 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 2026.06.16.7
+- A Changelog control now shows on EVERY container, not only ones with an update:
+  up-to-date containers open the release notes of the version you're running
+  (grey dot). Containers with an update keep the coloured risk dot + "what
+  changed". (A GitHub token is recommended so the notes resolve for more images.)
 
 ### 2026.06.16.6
 - Fix the daemon dying after a restart/update: stop now waits for the engine to
@@ -88,7 +94,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>c21c7f4d68e6e9ded4b21aaef894432fc62580364a2e6251e1ed4a78ef63f54f</SHA256>
+  <SHA256>f7f25aa582ae5d9902449b8c94d6a741133332bc5ad98838cc8bdf01f10860f8</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

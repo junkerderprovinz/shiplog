@@ -55,6 +55,17 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 
 	entries := selectSpan(rels, fromTag, toTag)
 
+	// Up to date (running == newest): there's no span, but we still want to show
+	// the release notes of the version actually in use — the exact release for the
+	// tag, else the latest release (e.g. when the tag is "latest").
+	if fromTag == toTag {
+		if e := releaseByTag(rels, toTag); e != nil {
+			entries = []model.ReleaseEntry{*e}
+		} else if e := latestRelease(rels); e != nil {
+			entries = []model.ReleaseEntry{*e}
+		}
+	}
+
 	skipped := 0
 	if len(entries) > 1 {
 		skipped = len(entries) - 1
@@ -153,6 +164,45 @@ func selectSpan(rels []ghRelease, fromTag, toTag string) []model.ReleaseEntry {
 		entries = append(entries, k.e)
 	}
 	return entries
+}
+
+// toEntry maps a GitHub release to a ReleaseEntry.
+func toEntry(r ghRelease) *model.ReleaseEntry {
+	return &model.ReleaseEntry{Tag: r.TagName, Body: r.Body, URL: r.HTMLURL, PublishedAt: r.PublishedAt}
+}
+
+// releaseByTag returns the release whose tag equals tag (v-prefix tolerant).
+func releaseByTag(rels []ghRelease, tag string) *model.ReleaseEntry {
+	want := strings.TrimPrefix(tag, "v")
+	for i := range rels {
+		if rels[i].TagName == tag || strings.TrimPrefix(rels[i].TagName, "v") == want {
+			return toEntry(rels[i])
+		}
+	}
+	return nil
+}
+
+// latestRelease returns the highest-semver release, or the first one if none
+// parse as semver (the API returns newest-first).
+func latestRelease(rels []ghRelease) *model.ReleaseEntry {
+	best := -1
+	var bestV semver
+	for i := range rels {
+		v, ok := parseSemver(rels[i].TagName)
+		if !ok {
+			continue
+		}
+		if best < 0 || v.compare(bestV) > 0 {
+			best, bestV = i, v
+		}
+	}
+	if best < 0 {
+		if len(rels) == 0 {
+			return nil
+		}
+		best = 0
+	}
+	return toEntry(rels[best])
 }
 
 // parseGitHubRepo extracts owner/repo from a github.com URL, tolerating a
