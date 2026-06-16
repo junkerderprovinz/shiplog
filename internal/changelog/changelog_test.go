@@ -79,6 +79,45 @@ func TestGitHub_Get_SpansAndOrders(t *testing.T) {
 	}
 }
 
+func TestGitHub_Get_UpToDate_ShowsCurrentNotes(t *testing.T) {
+	srv := fakeGitHub(t)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+
+	// Up to date (from == to == running version): show that version's release notes.
+	cl, ok := gh.Get(context.Background(), c, "v1.3.0", "v1.3.0")
+	if !ok || cl == nil {
+		t.Fatal("expected a handled changelog")
+	}
+	if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.3.0" {
+		t.Fatalf("expected 1 entry v1.3.0, got %#v", cl.Entries)
+	}
+	if cl.Raw != "third feature" {
+		t.Errorf("Raw = %q, want 'third feature'", cl.Raw)
+	}
+	if cl.SkippedCount != 0 {
+		t.Errorf("SkippedCount = %d, want 0", cl.SkippedCount)
+	}
+}
+
+func TestGitHub_Get_UpToDate_LatestTagFallsBackToNewest(t *testing.T) {
+	srv := fakeGitHub(t)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+
+	// A ":latest" container that's up to date: no release is named "latest", so
+	// fall back to the newest release.
+	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
+	if !ok || cl == nil {
+		t.Fatal("expected a handled changelog")
+	}
+	if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.3.0" {
+		t.Fatalf("expected the newest release v1.3.0, got %#v", cl.Entries)
+	}
+}
+
 func TestGitHub_Get_NonGitHubSource_NotHandled(t *testing.T) {
 	gh := New("")
 	c := model.Container{Source: "https://gitlab.com/o/r"}

@@ -81,10 +81,12 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "1.2.0", Digest: "sha256:o", Source: "https://github.com/x/immich"},
 		{ID: "b", Name: "redis", Repo: "docker.io/library/redis", Tag: "7.2.0", Digest: "sha256:r"},
+		{ID: "c", Name: "caddy", Repo: "docker.io/library/caddy", Tag: "2.7.0", Digest: "sha256:c", Source: "https://github.com/caddyserver/caddy"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
 		"ghcr.io/x/immich":        {tag: "1.4.0", dig: "sha256:n"},
 		"docker.io/library/redis": {err: errors.New("registry timeout")},
+		"docker.io/library/caddy": {tag: "2.7.0", dig: "sha256:c"}, // up to date
 	}}
 	cl := &fakeChangelog{}
 	st := &fakeStore{}
@@ -101,8 +103,19 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	if immich.NewestTag != "1.4.0" || immich.Changelog == nil {
 		t.Fatalf("immich: expected newest tag + changelog, got %q / %v", immich.NewestTag, immich.Changelog)
 	}
-	if cl.called != 1 {
-		t.Fatalf("changelog should be fetched once (only for the update), got %d", cl.called)
+	// Changelog is fetched for every container that resolves (immich + caddy);
+	// redis fails at resolve, so it never reaches the changelog step.
+	if cl.called != 2 {
+		t.Fatalf("changelog should be fetched for each resolved container, got %d", cl.called)
+	}
+
+	// caddy is up to date but still gets a changelog (the running version's notes).
+	caddy := st.rows["c"]
+	if caddy.HasUpdate() {
+		t.Errorf("caddy: expected up-to-date (no update), got kind %s", caddy.Kind)
+	}
+	if caddy.Changelog == nil {
+		t.Error("caddy: expected a changelog even when up to date")
 	}
 
 	redis := st.rows["b"]

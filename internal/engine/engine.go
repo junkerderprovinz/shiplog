@@ -126,16 +126,19 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 	kind, level, reason := risk.Classify(c.Tag, newestTag, c.Digest, newestDigest)
 	st.Kind, st.Risk, st.RiskReason = kind, level, reason
 
-	if st.HasUpdate() {
-		if cl, ok := e.changelog.Get(ctx, c, c.Tag, newestTag); ok {
-			st.Changelog = cl
+	// Resolve a changelog for EVERY container, so each can show one: the update
+	// span when there's an update, or the running version's release notes when it
+	// is up to date. Summaries and notifications stay update-only.
+	if cl, ok := e.changelog.Get(ctx, c, c.Tag, newestTag); ok {
+		st.Changelog = cl
+		if st.HasUpdate() {
 			if e.summarizer != nil && cl.Raw != "" {
 				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, cl.Raw); ok {
 					cl.Summary = sum
 				}
 			}
+			e.maybeNotify(ctx, st)
 		}
-		e.maybeNotify(ctx, st)
 	}
 	return st
 }
