@@ -36,8 +36,10 @@ const nameSize = 168, claimSize = 44, gap = 56, lineGap = 20;
 const THEMES = [
   { suffix: "", bg: "#ffffff", name: "#242626", claim: "#5a5d5e", recolor: [] },
   {
+    // Dark mode: the anchor body goes light so it reads on dark, but the shading
+    // stays dark (cls-2) for depth — not light like the body.
     suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad",
-    recolor: [["#353738", "#aeb6bd"], ["#242626", "#e6edf3"]],
+    recolor: [["#353738", "#e6edf3"], ["#242626", "#3a3e42"]],
   },
 ];
 // ---------------------------------------------------------------------------
