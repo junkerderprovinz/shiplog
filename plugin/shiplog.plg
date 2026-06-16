@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.5">
+  <!ENTITY version   "2026.06.16.6">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -26,6 +26,12 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 2026.06.16.6
+- Fix the daemon dying after a restart/update: stop now waits for the engine to
+  fully exit (its graceful shutdown raced the restart and left the new instance
+  unable to bind the port). This is why the status page and the per-container
+  chips disappeared after an update.
 
 ### 2026.06.16.5
 - Bubble follows Unraid's theme (light/dark) and language (DE/EN).
@@ -82,7 +88,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>a2cceadc614ce237f74f718c8ff7efa81ebaf5770392073633fcc1d1ea31c20c</SHA256>
+  <SHA256>c21c7f4d68e6e9ded4b21aaef894432fc62580364a2e6251e1ed4a78ef63f54f</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
