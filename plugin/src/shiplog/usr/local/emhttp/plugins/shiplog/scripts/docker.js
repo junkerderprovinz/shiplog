@@ -175,8 +175,11 @@
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
       || (verLike(newestRel) ? newestRel : "")
       || newestRel || st.newest_tag || "?";
-    const relDate = entries[0] && entries[0].published_at
-      ? String(entries[0].published_at).slice(0, 10) : "";
+    const fmtDate = (iso) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+      return m ? `${m[3]}.${m[2]}.${m[1]}` : ""; // DD.MM.YYYY
+    };
+    const relDate = entries[0] ? fmtDate(entries[0].published_at) : "";
     let jump = cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "");
     if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
