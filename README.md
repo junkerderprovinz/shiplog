@@ -1,6 +1,9 @@
-# ShipLog
-
-<!-- banner: white 1600x500 logo + wordmark goes here once the brand asset exists -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/shiplog-banner-dark.png">
+    <img src=".github/assets/shiplog-banner.png" alt="ShipLog" width="100%">
+  </picture>
+</p>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/junkerderprovinz/shiplog/build.yml?branch=main&label=Build&style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/junkerderprovinz/shiplog/actions/workflows/build.yml)
 [![Lint](https://img.shields.io/github/actions/workflow/status/junkerderprovinz/shiplog/lint.yml?branch=main&label=Lint&style=for-the-badge&logo=go&logoColor=white)](https://github.com/junkerderprovinz/shiplog/actions/workflows/lint.yml)
