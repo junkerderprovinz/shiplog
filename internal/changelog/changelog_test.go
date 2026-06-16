@@ -118,6 +118,31 @@ func TestGitHub_Get_UpToDate_LatestTagFallsBackToNewest(t *testing.T) {
 	}
 }
 
+func TestGitHub_Get_DeprecatedWhenArchived(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/o/r/releases":
+			_, _ = w.Write([]byte(releasesJSON))
+		case "/repos/o/r":
+			_, _ = w.Write([]byte(`{"archived":true}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v1.3.0")
+	if !ok || cl == nil {
+		t.Fatal("expected a handled changelog")
+	}
+	if !cl.Deprecated {
+		t.Error("expected Deprecated=true for an archived repo")
+	}
+}
+
 func TestGitHub_Get_NonGitHubSource_NotHandled(t *testing.T) {
 	gh := New("")
 	c := model.Container{Source: "https://gitlab.com/o/r"}

@@ -85,8 +85,37 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 		Source:       "GitHub releases (OCI label)",
 		Provider:     "github",
 		URL:          "https://github.com/" + owner + "/" + repo + "/compare/" + fromTag + "..." + toTag,
+		Deprecated:   g.repoArchived(ctx, owner, repo),
 	}
 	return cl, true
+}
+
+// repoArchived reports whether the GitHub repo is archived (a good "deprecated /
+// EOL" signal). Best-effort: any error → false.
+func (g *GitHub) repoArchived(ctx context.Context, owner, repo string) bool {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.baseURL+"/repos/"+owner+"/"+repo, nil)
+	if err != nil {
+		return false
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if g.token != "" {
+		req.Header.Set("Authorization", "Bearer "+g.token)
+	}
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	var body struct {
+		Archived bool `json:"archived"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return false
+	}
+	return body.Archived
 }
 
 // fetchReleases pulls up to 100 releases. The bool is false on any transport or

@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.8">
+  <!ENTITY version   "2026.06.16.9">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -26,6 +26,11 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 2026.06.16.9
+- Deprecated/EOL badge: when a container's upstream GitHub repo is archived, the
+  bubble shows a "DEPRECATED" badge.
+- New brand icon (anchor logo on a white tile).
 
 ### 2026.06.16.8
 - Fix newest-version detection for registries with many tags (e.g. OpenHands):
@@ -103,7 +108,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>43b8034263e0a528bcf53a1b9e39459bbb4cd0f5e786e40db521644bed45de1d</SHA256>
+  <SHA256>cba26c0ac9108d438fb61f739cd77e5482d038ff38644c19570fb00da2975756</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

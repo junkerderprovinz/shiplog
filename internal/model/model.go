@@ -70,6 +70,7 @@ type Changelog struct {
 	Source       string         `json:"source"`            // human label, e.g. "GitHub releases via OCI label"
 	URL          string         `json:"url"`               // releases/compare link
 	Provider     string         `json:"provider"`          // "github" / "fallback" / ...
+	Deprecated   bool           `json:"deprecated"`        // upstream repo is archived (EOL)
 }
 
 // ReleaseEntry is a single upstream release in a changelog span.

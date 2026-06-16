@@ -39,12 +39,14 @@
       changelog: "Changelog", clickHint: "click for the changelog",
       skips: "skips %n releases", newest: "newest %d",
       summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
+      deprecated: "DEPRECATED",
       none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
     },
     de: {
       changelog: "Changelog", clickHint: "Changelog anzeigen",
       skips: "überspringt %n Releases", newest: "neuestes %d",
       summary: "Zusammenfassung", raw: "Changelog (roh)", source: "Quelle", close: "schließen", uptodate: "aktuell",
+      deprecated: "VERALTET",
       none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
     },
   };
@@ -222,6 +224,7 @@
       <div class="sl-bh">
         <span class="sl-ver">${verHdr}</span>
         <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${pillTxt}</span>
+        ${cl.deprecated ? `<span class="sl-pill sl-high" title="upstream repository is archived">⚠ ${esc(T("deprecated"))}</span>` : ""}
         <span class="sl-jump">${esc(jump)}</span>
         <span class="sl-bh-right">${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
