@@ -30,6 +30,36 @@
   // risk → css suffix used by both the chip dot and the bubble pill
   const RISK_CLASS = { low: "low", medium: "mid", high: "high", unknown: "grey" };
 
+  // ──────────────────────────────────────────────────────── i18n
+  // Follows Unraid's page language (full 26-locale catalogue is P1.5). The
+  // risk reason itself is engine-generated and stays English for now.
+  const LANG = (document.documentElement.lang || navigator.language || "en").slice(0, 2).toLowerCase();
+  const STR = {
+    en: {
+      changelog: "Changelog", clickHint: "click for the changelog",
+      skips: "skips %n releases", newest: "newest %d",
+      summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close",
+      none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
+    },
+    de: {
+      changelog: "Changelog", clickHint: "Changelog anzeigen",
+      skips: "überspringt %n Releases", newest: "neuestes %d",
+      summary: "Zusammenfassung", raw: "Changelog (roh)", source: "Quelle", close: "schließen",
+      none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
+    },
+  };
+  function T(k) { return ((STR[LANG] || STR.en)[k]) || STR.en[k]; }
+
+  // Light vs dark: detect from the page background luminance so the bubble
+  // matches whatever Unraid theme is active (white/azure → light; black/gray → dark).
+  function isLightBg() {
+    try {
+      const m = /(\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(document.body).backgroundColor);
+      if (!m) return false;
+      return (0.299 * +m[1] + 0.587 * +m[2] + 0.114 * +m[3]) / 255 > 0.5;
+    } catch (e) { return false; }
+  }
+
   // ──────────────────────────────────────────────────────── helpers
   function el(tag, cls, html) {
     const n = document.createElement(tag);
@@ -145,8 +175,8 @@
       || newestRel || st.newest_tag || "?";
     const relDate = entries[0] && entries[0].published_at
       ? String(entries[0].published_at).slice(0, 10) : "";
-    let jump = cl.skipped_count > 1 ? `skips ${cl.skipped_count} releases` : (st.risk_reason || "");
-    if (relDate) jump = (jump ? jump + " · " : "") + "newest " + relDate;
+    let jump = cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "");
+    if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
     let summary = "";
     if (cl.summary && (cl.summary.bullets || cl.summary.breaking)) {
@@ -154,7 +184,7 @@
         .concat((cl.summary.breaking || []).map((t) => `<li class="sl-warn">${esc(t)}</li>`))
         .concat((cl.summary.bullets || []).map((t) => `<li>${esc(t)}</li>`))
         .join("");
-      summary = `<div class="sl-sec"><h4>⚡ Summary <span class="sl-ai">AI · ${esc(cl.summary.model || "Ollama")}</span></h4><ul>${lis}</ul></div>`;
+      summary = `<div class="sl-sec"><h4>⚡ ${esc(T("summary"))} <span class="sl-ai">AI · ${esc(cl.summary.model || "Ollama")}</span></h4><ul>${lis}</ul></div>`;
     }
 
     let raw = "";
@@ -162,9 +192,9 @@
       const body = esc(cl.raw)
         .replace(/^(#{1,3}.*)$/gm, '<span class="h">$1</span>')
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-      raw = `<div class="sl-sec"><h4>Changelog (raw)</h4><div class="sl-raw">${body}</div></div>`;
+      raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${body}</div></div>`;
     } else if (!summary) {
-      raw = `<div class="sl-sec"><div style="color:#6f6f6f">No changelog text found for this image — open the repo (top-right) for release notes.</div></div>`;
+      raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("none"))}</div></div>`;
     }
 
     // Link to the repo's MAIN page. We don't use the engine's changelog URL
@@ -183,14 +213,14 @@
     const gh = href
       ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">GitHub ↗</a>`
       : "";
-    const src = cl.source ? `Source: ${esc(cl.source)}` : "";
+    const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
     return `
       <div class="sl-bh">
         <span class="sl-ver">${esc(cur)} → <b>${esc(next)}</b></span>
         <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${esc(kindLabel(st))}</span>
         <span class="sl-jump">${esc(jump)}</span>
-        <span class="sl-bh-right">${gh}<span class="sl-x" title="close">✕</span></span>
+        <span class="sl-bh-right">${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
       ${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
@@ -199,6 +229,7 @@
   function openFor(anchor, st) {
     close();
     const b = el("div", "sl-bubble", bubbleHTML(st));
+    if (isLightBg()) b.classList.add("sl-light"); // match Unraid's light themes
     document.body.appendChild(b);
     // restore the user's saved size (the bubble is resizable, drag the corner)
     try {
@@ -233,9 +264,9 @@
       if (!st || !hasUpdate(st)) continue;
       const cell = findUpdateCell(tr);
       if (!cell || cell.getAttribute(MARK)) continue;
-      const chip = el("a", "sl-chip", `${LOG_ICON}<span>Changelog</span><span class="sl-amp sl-${riskClass(st)}"></span>`);
+      const chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${riskClass(st)}"></span>`);
       chip.href = "#";
-      chip.title = `ShipLog: ${kindLabel(st)} — click for the changelog`;
+      chip.title = `ShipLog: ${kindLabel(st)} — ${T("clickHint")}`;
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, st); });
       const row = el("div", "sl-chiprow");
       row.appendChild(chip);
