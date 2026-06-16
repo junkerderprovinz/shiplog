@@ -160,7 +160,7 @@ func TestNewestSemver_AcceptsTwoPartTags(t *testing.T) {
 		tags []string
 		want string
 	}{
-		{[]string{"0.16", "0.17", "0.18", "latest"}, "0.18"},               // OpenHands-style two-part tags
+		{[]string{"0.16", "0.17", "0.18", "latest"}, "0.18"},                // OpenHands-style two-part tags
 		{[]string{"0.17.5", "0.18", "0.16.9"}, "0.18"},                      // a two-part tag beats an older three-part one
 		{[]string{"1.0.0", "1.2.0", "1.1.0", "latest", "nightly"}, "1.2.0"}, // three-part still works
 		{[]string{"1.8.0-rc1", "1.7.9"}, "1.7.9"},                           // prerelease never ranks as newest

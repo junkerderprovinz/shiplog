@@ -45,7 +45,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>eadfc52cd905e16b2fdf168e5d512035dfc0521d9b9fff0bfea04c6c4bd19c6f</SHA256>
+  <SHA256>1ebbd71f9639062d01ca73ea7f2267dfc49318a7554eedb7d64664067c7bdbb4</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
