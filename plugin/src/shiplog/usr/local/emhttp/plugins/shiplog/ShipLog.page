@@ -113,7 +113,9 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
       <div class="sl-row"><label>Matrix token</label><div class="sl-in">
         <input type="password" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>"></div></div>
       <div class="sl-row"><label>Matrix room</label><div class="sl-in">
-        <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server"></div></div>
+        <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server">
+        <button type="button" class="sl-btn" onclick="slCheckMatrix()">Check</button>
+        <span id="sl-matrix-result" class="sl-res"></span></div></div>
     </div>
 
     <div class="sl-actions">
@@ -129,14 +131,22 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
   var a = document.getElementById("sl-statuslink");
   if (a) a.innerHTML = 'status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">open ↗</a>';
 })();
-function slCheckOllama() {
-  var u = (document.querySelector('[name=OLLAMA_URL]') || {}).value || '';
-  var m = (document.querySelector('[name=OLLAMA_MODEL]') || {}).value || '';
-  var out = document.getElementById('sl-ollama-result');
+function slCheck(elId, url) {
+  var out = document.getElementById(elId);
   out.className = 'sl-res run'; out.textContent = 'Checking…';
-  fetch('/plugins/shiplog/server/ollama-check.php?url=' + encodeURIComponent(u) + '&model=' + encodeURIComponent(m))
+  fetch(url)
     .then(function (r) { return r.json(); })
     .then(function (d) { out.className = 'sl-res ' + (d.ok ? 'ok' : 'err'); out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message; })
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
+}
+function slVal(n) { return (document.querySelector('[name=' + n + ']') || {}).value || ''; }
+function slCheckOllama() {
+  slCheck('sl-ollama-result', '/plugins/shiplog/server/ollama-check.php?url=' +
+    encodeURIComponent(slVal('OLLAMA_URL')) + '&model=' + encodeURIComponent(slVal('OLLAMA_MODEL')));
+}
+function slCheckMatrix() {
+  slCheck('sl-matrix-result', '/plugins/shiplog/server/matrix-check.php?hs=' +
+    encodeURIComponent(slVal('MATRIX_HOMESERVER')) + '&token=' + encodeURIComponent(slVal('MATRIX_TOKEN')) +
+    '&room=' + encodeURIComponent(slVal('MATRIX_ROOM')));
 }
 </script>

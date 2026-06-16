@@ -5,9 +5,15 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
+)
+
+const (
+	immichManifest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	redisManifest  = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 )
 
 // cannedContainersJSON is a trimmed but realistic /containers/json?all=1 body
@@ -55,6 +61,15 @@ func TestListOverUnixSocket(t *testing.T) {
 		gotQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(cannedContainersJSON))
+	})
+	// Image inspect supplies the registry manifest digest (RepoDigests).
+	mux.HandleFunc("/v1.43/images/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "1111") {
+			_, _ = w.Write([]byte(`{"RepoDigests":["ghcr.io/imagegenius/immich@` + immichManifest + `"]}`))
+		} else {
+			_, _ = w.Write([]byte(`{"RepoDigests":["redis@` + redisManifest + `"]}`))
+		}
 	})
 
 	srv := &http.Server{Handler: mux}
@@ -108,8 +123,8 @@ func TestListOverUnixSocket(t *testing.T) {
 	if immich.State != "running" {
 		t.Errorf("immich State = %q, want running", immich.State)
 	}
-	if immich.Digest != "sha256:1111111111111111111111111111111111111111111111111111111111111111" {
-		t.Errorf("immich Digest = %q, want the ImageID sha", immich.Digest)
+	if immich.Digest != immichManifest {
+		t.Errorf("immich Digest = %q, want the manifest digest %q", immich.Digest, immichManifest)
 	}
 
 	redis, ok := byName["redis"]
@@ -127,6 +142,33 @@ func TestListOverUnixSocket(t *testing.T) {
 	}
 	if redis.State != "exited" {
 		t.Errorf("redis State = %q, want exited", redis.State)
+	}
+	if redis.Digest != redisManifest {
+		t.Errorf("redis Digest = %q, want the manifest digest %q", redis.Digest, redisManifest)
+	}
+}
+
+func TestPickDigest(t *testing.T) {
+	cases := []struct {
+		name        string
+		repoDigests []string
+		repo        string
+		want        string
+	}{
+		{"matches the container repo",
+			[]string{"ghcr.io/x/y@sha256:aaa", "docker.io/library/redis@sha256:bbb"},
+			"docker.io/library/redis", "sha256:bbb"},
+		{"short docker hub name normalises and matches",
+			[]string{"redis@sha256:bbb"}, "docker.io/library/redis", "sha256:bbb"},
+		{"no match falls back to the first digest",
+			[]string{"ghcr.io/x/y@sha256:aaa"}, "docker.io/library/redis", "sha256:aaa"},
+		{"empty list yields empty (locally-built image)",
+			nil, "docker.io/library/redis", ""},
+	}
+	for _, c := range cases {
+		if got := pickDigest(c.repoDigests, c.repo); got != c.want {
+			t.Errorf("%s: pickDigest = %q, want %q", c.name, got, c.want)
+		}
 	}
 }
 
