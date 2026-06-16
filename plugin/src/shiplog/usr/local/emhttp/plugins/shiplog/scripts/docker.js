@@ -164,13 +164,12 @@
     // show a real version when we have one. Newest release tag comes from the
     // resolved release entries; current is the running tag if it looks like a
     // version, else the short digest (a :latest digest can't be mapped to a tag).
-    const shortDig = (x) => (x && x.indexOf("sha256:") === 0 ? x.slice(7, 19) : (x || ""));
     const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
     const entries = Array.isArray(cl.entries) ? cl.entries : [];
     const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
-    const cur = verLike(c.tag) ? c.tag
-      : (c.tag && c.tag !== "latest" ? c.tag
-        : (c.digest ? shortDig(c.digest) : (c.tag || "?")));
+    // Current = the running tag (a version, or "latest"); never the cryptic
+    // digest hash — a :latest image can't be mapped back to a version number.
+    const cur = verLike(c.tag) ? c.tag : (c.tag || "latest");
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
       || (verLike(newestRel) ? newestRel : "")
       || newestRel || st.newest_tag || "?";

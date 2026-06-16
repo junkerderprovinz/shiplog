@@ -124,6 +124,37 @@ func TestResolve_NonSemverTag(t *testing.T) {
 	}
 }
 
+func TestResolve_FollowsTagPagination(t *testing.T) {
+	// Page 1 returns old tags + a Link to page 2; page 2 has the newer tags.
+	// Reading only page 1 would pick 0.59; following the Link finds 1.8.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v2/lib/app/tags/list" && r.URL.Query().Get("last") == "":
+			w.Header().Set("Link", `</v2/lib/app/tags/list?n=500&last=0.59>; rel="next"`)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"tags":["0.58","0.59"]}`))
+		case r.URL.Path == "/v2/lib/app/tags/list":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"tags":["1.7","1.8"]}`)) // page 2, no Link → stop
+		case strings.HasPrefix(r.URL.Path, "/v2/lib/app/manifests/"):
+			w.Header().Set("Docker-Content-Digest", "sha256:X")
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	r := newResolverFor(srv)
+	newest, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.7", "sha256:o")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if newest != "1.8" {
+		t.Errorf("newestTag = %q, want 1.8 (must follow pagination to page 2)", newest)
+	}
+}
+
 func TestNewestSemver_AcceptsTwoPartTags(t *testing.T) {
 	cases := []struct {
 		tags []string

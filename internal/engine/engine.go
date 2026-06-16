@@ -4,6 +4,7 @@ package engine
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -135,6 +136,8 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 			if e.summarizer != nil && cl.Raw != "" {
 				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, cl.Raw); ok {
 					cl.Summary = sum
+				} else {
+					log.Printf("shiplog: no AI summary for %s (Ollama configured but returned nothing)", c.Name)
 				}
 			}
 			e.maybeNotify(ctx, st)

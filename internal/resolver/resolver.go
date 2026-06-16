@@ -87,24 +87,65 @@ func splitRepo(repo string) (host, pathRepo string) {
 	return host, pathRepo
 }
 
-// fetchTags GETs /v2/<repo>/tags/list, handling the anonymous bearer flow.
+// fetchTags GETs /v2/<repo>/tags/list, handling the anonymous bearer flow and
+// FOLLOWING pagination (the `Link: …; rel="next"` header). Registries with many
+// tags page the list; reading only the first page picked a stale "newest" (e.g.
+// OpenHands has hundreds of tags and the 1.x ones were on a later page).
 func (r *Resolver) fetchTags(ctx context.Context, base, host, pathRepo string) ([]string, error) {
-	url := base + "/v2/" + pathRepo + "/tags/list"
-	resp, err := r.doAuthed(ctx, http.MethodGet, url, host, pathRepo)
-	if err != nil {
-		return nil, err
+	var all []string
+	url := base + "/v2/" + pathRepo + "/tags/list?n=500"
+	for page := 0; page < 100; page++ { // hard cap against a misbehaving registry
+		resp, err := r.doAuthed(ctx, http.MethodGet, url, host, pathRepo)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusOK {
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("tags/list: unexpected status %d for %s", resp.StatusCode, pathRepo)
+		}
+		var body struct {
+			Tags []string `json:"tags"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&body)
+		link := resp.Header.Get("Link")
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("tags/list: decode: %w", err)
+		}
+		all = append(all, body.Tags...)
+
+		next := nextLink(link, base)
+		if next == "" {
+			break
+		}
+		url = next
 	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("tags/list: unexpected status %d for %s", resp.StatusCode, pathRepo)
+	return all, nil
+}
+
+// nextLink extracts the rel="next" target from a Link header, resolved against
+// base (registries usually return a root-relative path). Returns "" if none.
+func nextLink(linkHeader, base string) string {
+	for _, part := range strings.Split(linkHeader, ",") {
+		if !strings.Contains(part, `rel="next"`) && !strings.Contains(part, "rel=next") {
+			continue
+		}
+		lt := strings.IndexByte(part, '<')
+		gt := strings.IndexByte(part, '>')
+		if lt < 0 || gt <= lt {
+			continue
+		}
+		u := strings.TrimSpace(part[lt+1 : gt])
+		switch {
+		case strings.HasPrefix(u, "http"):
+			return u
+		case strings.HasPrefix(u, "/"):
+			return base + u
+		default:
+			return base + "/" + u
+		}
 	}
-	var body struct {
-		Tags []string `json:"tags"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, fmt.Errorf("tags/list: decode: %w", err)
-	}
-	return body.Tags, nil
+	return ""
 }
 
 // fetchDigest HEADs the manifest for tag and returns its Docker-Content-Digest.
