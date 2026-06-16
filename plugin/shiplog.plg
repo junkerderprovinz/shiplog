@@ -3,11 +3,11 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "2026.06.16.9">
+  <!ENTITY version   "1.0.0">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
-  <!ENTITY pkgURL    "https://github.com/junkerderprovinz/shiplog/releases/download/plugin-&version;">
+  <!ENTITY pkgURL    "https://github.com/junkerderprovinz/shiplog/releases/download/v&version;">
   <!ENTITY emhttp    "/usr/local/emhttp/plugins/&slug;">
   <!ENTITY plgPath   "/boot/config/plugins/&slug;">
   <!ENTITY txz       "&slug;-&version;-x86_64-1.txz">
@@ -27,88 +27,25 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
-### 2026.06.16.9
-- Deprecated/EOL badge: when a container's upstream GitHub repo is archived, the
-  bubble shows a "DEPRECATED" badge.
-- New brand icon (anchor logo on a white tile).
-
-### 2026.06.16.8
-- Fix newest-version detection for registries with many tags (e.g. OpenHands):
-  the resolver now follows tag-list pagination, so a newer version on a later
-  page (1.8) is no longer missed.
-- Bubble header shows the running tag (e.g. "latest") instead of the cryptic
-  image-digest hash as the "from" version.
-- Log when Ollama is configured but returns no summary for a container (helps
-  diagnose missing AI summaries).
-
-### 2026.06.16.7
-- A Changelog control now shows on EVERY container, not only ones with an update:
-  up-to-date containers open the release notes of the version you're running
-  (grey dot). Containers with an update keep the coloured risk dot + "what
-  changed". (A GitHub token is recommended so the notes resolve for more images.)
-
-### 2026.06.16.6
-- Fix the daemon dying after a restart/update: stop now waits for the engine to
-  fully exit (its graceful shutdown raced the restart and left the new instance
-  unable to bind the port). This is why the status page and the per-container
-  chips disappeared after an update.
-
-### 2026.06.16.5
-- Bubble follows Unraid's theme (light/dark) and language (DE/EN).
-- Shorter plugin description.
-
-### 2026.06.16.4
-- Add a short plugin description (shown here in the Plugins page).
-
-### 2026.06.16.3
-- Fix false "update available" on every container: the engine compared the local
-  image config id against the registry MANIFEST digest, which never match. It now
-  reads the running image's manifest digest (RepoDigests), so a digest update is
-  only reported when the image truly moved. (This also means real updates now
-  surface a changelog to summarise.)
-- Settings: a "Check" button for Matrix too (tests homeserver + token live).
-
-### 2026.06.16.2
-- Plugin now shows as "ShipLog" in the Plugins list (display name; on-disk slug
-  stays lowercase).
-
-### 2026.06.16.1
-- Matrix notifications wired up: a message when a new update is first sighted
-  (deduped via the store; off unless MATRIX_* are set). Startup logs whether the
-  token works.
-- Settings page redesigned with cards, and a "Check" button next to the Ollama
-  model to test reachability + that the model exists, live, before Apply.
-
-### 2026.06.16
-- AI summaries (Ollama) are now actually wired up: when configured, each
-  changelog is condensed into "what changes / breaking / risk" in the bubble.
-  Startup logs whether Ollama is reachable and the model is present.
-- Bubble shows the newest release version (not just "latest") and the last
-  release date.
-- Settings page redesigned (header + grouped sections) and fixed (it rendered
-  blank before).
-- GitHub button always links to the repo's main page (derived even when the
-  container has no OCI source label).
-
-### 2026.06.15.1
-- Engine: accept two-part version tags (e.g. OpenHands "0.18"); newest release
-  is no longer hidden when a project doesn't use three-part tags.
-- Bubble: GitHub button moved into a sticky header (always visible); it links to
-  the repo's main page instead of a broken compare URL.
-- Docker-tab control sits on its own line so it no longer stretches the status text.
-
-### 2026.06.15
-- First plugin release: read-only changelog/risk control in the native Docker tab.
-- Bundles the ShipLog engine and runs it as a host daemon (no separate container).
+### 1.0.0
+- A changelog control next to every container in Unraid's native Docker tab: the
+  version jump, a deterministic risk badge, the release notes, and a DEPRECATED
+  badge when the upstream repo is archived. Up-to-date containers show the notes
+  of the version they're running.
+- Optional AI summaries via a local Ollama and Matrix notifications on new
+  updates — each with a live "Check" button in the settings.
+- Read-only by construction (read-only Docker socket); the engine runs as a host
+  daemon, no separate container.
+- Card settings page; the bubble follows Unraid's light/dark theme and language.
 </CHANGES>
 
 <!--
   The package (engine binary + plugin files) is built by plugin/pkg_build.sh and
-  attached to the GitHub release "plugin-&version;". SHA256 is injected at release.
+  attached to the GitHub release "v&version;". SHA256 is injected at release.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>cba26c0ac9108d438fb61f739cd77e5482d038ff38644c19570fb00da2975756</SHA256>
+  <SHA256>eadfc52cd905e16b2fdf168e5d512035dfc0521d9b9fff0bfea04c6c4bd19c6f</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
