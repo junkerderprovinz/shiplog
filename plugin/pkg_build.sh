@@ -30,7 +30,9 @@ chmod +x "$PKGROOT/$BIN_REL"
 mkdir -p "$OUT"
 TXZ="$OUT/shiplog-$VERSION-$ARCH-1.txz"
 echo "==> packaging → $TXZ"
-tar -C "$PKGROOT" -caf "$TXZ" .
+# --force-local: a Windows output path like "D:/..." has a colon that GNU tar
+# would otherwise read as a remote host[:path]. Harmless on Linux/CI.
+tar --force-local -C "$PKGROOT" -caf "$TXZ" .
 
 echo "==> sha256"
 sha256sum "$TXZ" | tee "$TXZ.sha256"

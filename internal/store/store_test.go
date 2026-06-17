@@ -45,9 +45,10 @@ func TestUpsertAndList(t *testing.T) {
 
 func TestHistoryAppendOnVersionChange(t *testing.T) {
 	s := newTestStore(t)
-	base := model.UpdateStatus{Container: model.Container{ID: "abc", Name: "immich", Tag: "1.122.0"}, CheckedAt: time.Now()}
+	base := model.UpdateStatus{Container: model.Container{ID: "abc", Name: "immich", Tag: "1.122.0"}, RunningVersion: "1.122.0", CheckedAt: time.Now()}
 	_ = s.Upsert(base)
 	base.Container.Tag = "1.124.2"
+	base.RunningVersion = "1.124.2"
 	_ = s.Upsert(base)
 	h, err := s.History("abc")
 	if err != nil {
@@ -55,6 +56,80 @@ func TestHistoryAppendOnVersionChange(t *testing.T) {
 	}
 	if len(h) < 1 {
 		t.Fatal("expected a history entry on running-version change")
+	}
+	if h[0].FromTag != "1.122.0" || h[0].ToTag != "1.124.2" {
+		t.Fatalf("history span wrong: got %q -> %q", h[0].FromTag, h[0].ToTag)
+	}
+}
+
+func TestRunningVersionRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{
+		Container:      model.Container{ID: "oh", Name: "openhands", Tag: "latest"},
+		RunningVersion: "1.8.0", NewestTag: "1.8.0", CheckedAt: time.Now(),
+	}
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("oh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.RunningVersion != "1.8.0" {
+		t.Fatalf("running_version did not round-trip: got %q", got.RunningVersion)
+	}
+}
+
+// For a :latest container the tag never changes, so history must key off the
+// remembered running version — and must NOT record a row the first time we
+// learn it (prior running version empty).
+func TestHistoryOnLatestRunningVersionChange(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{Container: model.Container{ID: "oh", Name: "openhands", Tag: "latest"}, CheckedAt: time.Now()}
+
+	// First sight: version unknown → no history.
+	_ = s.Upsert(st)
+	// We learn the version (e.g. running == :latest) → still no history (just learning).
+	st.RunningVersion = "1.7.0"
+	_ = s.Upsert(st)
+	if h, _ := s.History("oh"); len(h) != 0 {
+		t.Fatalf("learning the first version must not create history, got %d rows", len(h))
+	}
+	// User updates: 1.7.0 -> 1.8.0, tag still "latest" → one history row.
+	st.RunningVersion = "1.8.0"
+	_ = s.Upsert(st)
+	h, _ := s.History("oh")
+	if len(h) != 1 {
+		t.Fatalf("expected one history row on :latest version change, got %d", len(h))
+	}
+	if h[0].FromTag != "1.7.0" || h[0].ToTag != "1.8.0" {
+		t.Fatalf("history span wrong: got %q -> %q", h[0].FromTag, h[0].ToTag)
+	}
+}
+
+// A row migrated from a DB that predates running_version has the column
+// backfilled NULL. Upsert must tolerate that (COALESCE) instead of erroring on
+// the NULL->string scan and aborting the whole update.
+func TestUpsertToleratesNullRunningVersion(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{Container: model.Container{ID: "old", Name: "legacy", Tag: "latest"}, RunningVersion: "1.0.0", CheckedAt: time.Now()}
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	// Simulate the post-migration state: existing row with running_version NULL.
+	if _, err := s.db.Exec(`UPDATE status SET running_version = NULL WHERE container_id = 'old'`); err != nil {
+		t.Fatal(err)
+	}
+	st.RunningVersion = "1.1.0"
+	if err := s.Upsert(st); err != nil {
+		t.Fatalf("upsert must tolerate a NULL prior running_version, got: %v", err)
+	}
+	got, err := s.Get("old")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.RunningVersion != "1.1.0" {
+		t.Fatalf("row not updated after NULL prior: got %q", got.RunningVersion)
 	}
 }
 

@@ -5,12 +5,17 @@ package engine
 import (
 	"context"
 	"log"
+	"regexp"
 	"sync"
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/risk"
 )
+
+// versionLike matches a tag that starts like a version number ("1.8", "v2.3.1"),
+// the same shape the bubble uses to decide a tag is a real version.
+var versionLike = regexp.MustCompile(`^v?\d+\.\d+`)
 
 // The collaborators are interfaces so the engine stays unit-testable; the real
 // dockercli.Client / resolver.Resolver / changelog.Chain / store.Store satisfy them.
@@ -19,9 +24,12 @@ type (
 	Collector interface {
 		List(ctx context.Context) ([]model.Container, error)
 	}
-	// Resolver returns the newest tag and the same-tag digest for an image ref.
+	// Resolver returns, for an image ref: the newest tag (requested tag echoed if
+	// non-semver) and its same-tag digest for risk/digest-drift, plus the newest
+	// SEMVER version tag and that version's digest (to prove a rolling container's
+	// running version).
 	Resolver interface {
-		Resolve(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest string, err error)
+		Resolve(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error)
 	}
 	// Changelogger resolves the changelog for a version span (handled=false → none).
 	Changelogger interface {
@@ -113,16 +121,28 @@ func (e *Engine) Sweep(ctx context.Context) error {
 func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatus {
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
 
-	newestTag, newestDigest, err := e.resolver.Resolve(ctx, c.Repo, c.Tag, c.Digest)
+	// The prior row is the memory: it tells us the version we last believed was
+	// running and lets us dedupe notifications.
+	prior, hasPrior := model.UpdateStatus{}, false
+	if p, err := e.store.Get(c.ID); err == nil {
+		prior, hasPrior = p, true
+	}
+
+	newestTag, newestDigest, newestVerTag, newestVerDigest, err := e.resolver.Resolve(ctx, c.Repo, c.Tag, c.Digest)
 	if err != nil {
 		st.Error = "could not resolve upstream: " + err.Error()
 		st.Kind = model.KindUnknown
 		st.Risk = model.RiskUnknown
 		st.RiskReason = "upstream lookup failed"
+		// Keep what we remembered so a transient lookup failure doesn't blank it.
+		if hasPrior {
+			st.RunningVersion = prior.RunningVersion
+		}
 		return st
 	}
 	st.NewestTag = newestTag
 	st.NewestDigest = newestDigest
+	st.RunningVersion = decideRunningVersion(c, newestVerTag, newestVerDigest, prior, hasPrior)
 
 	kind, level, reason := risk.Classify(c.Tag, newestTag, c.Digest, newestDigest)
 	st.Kind, st.Risk, st.RiskReason = kind, level, reason
@@ -140,23 +160,48 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 					log.Printf("shiplog: no AI summary for %s (Ollama configured but returned nothing)", c.Name)
 				}
 			}
-			e.maybeNotify(ctx, st)
+			e.maybeNotify(ctx, st, prior, hasPrior)
 		}
 	}
 	return st
 }
 
-// maybeNotify pushes a notification only when a *new* update appears for a
-// container we've already seen: the previously stored row must exist (so we
-// don't flood on first run) and must not already represent this same update
-// target (so we don't repeat every poll).
-func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus) {
-	if e.notifier == nil {
-		return
+// decideRunningVersion determines the version we believe is currently running.
+//
+//   - A pinned version tag IS the running version.
+//   - For a rolling tag (":latest") the tag carries no version, so we only ever
+//     report a version we can stand behind:
+//     1. if the running image's digest equals the newest version's digest, the
+//     running image IS that version — proven, even if ":latest" itself lags a
+//     newer published tag;
+//     2. otherwise, if nothing changed since last sight, keep the remembered
+//     version (this is the memory that lets a later update show "1.7 -> 1.8");
+//     3. otherwise we don't know it yet (an out-of-date image we've never proven).
+//
+// newestVerTag/newestVerDigest are the newest SEMVER tag and its digest.
+func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest string, prior model.UpdateStatus, hasPrior bool) string {
+	if isVersion(c.Tag) {
+		return c.Tag
 	}
-	prior, err := e.store.Get(st.Container.ID)
-	if err != nil {
-		return // unknown container (first sight) → seed silently
+	if c.Digest != "" && newestVerDigest != "" && c.Digest == newestVerDigest {
+		return newestVerTag // running image proven to be the newest version
+	}
+	if hasPrior && c.Digest != "" && prior.Container.Digest == c.Digest && prior.RunningVersion != "" {
+		return prior.RunningVersion // unchanged since last sight → remembered
+	}
+	return ""
+}
+
+// isVersion reports whether a tag looks like a version number (e.g. "1.8", "v2.3.1").
+func isVersion(tag string) bool { return versionLike.MatchString(tag) }
+
+// maybeNotify pushes a notification only when a *new* update appears for a
+// container we've already seen: the prior row must exist (so we don't flood on
+// first run) and must not already represent this same update target (so we
+// don't repeat every poll). prior is the row read at the start of the check.
+func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior model.UpdateStatus, hasPrior bool) {
+	if e.notifier == nil || !hasPrior {
+		return // no notifier, or first sight → seed silently
 	}
 	if prior.HasUpdate() && prior.NewestDigest == st.NewestDigest {
 		return // already notified for this exact update
