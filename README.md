@@ -54,7 +54,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 
 ## 3. Install on Unraid
 
-The Community Applications template is published in the [unraid-docker-templates](https://github.com/junkerderprovinz/unraid-docker-templates) feed (search **ShipLog** in the Apps tab once it lands). The only required mount is the Docker socket, read-only:
+The Community Applications template is published in the [unraid-apps](https://github.com/junkerderprovinz/unraid-apps) feed (search **ShipLog** in the Apps tab once it lands). The only required mount is the Docker socket, read-only:
 
 ```
 -v /var/run/docker.sock:/var/run/docker.sock:ro
