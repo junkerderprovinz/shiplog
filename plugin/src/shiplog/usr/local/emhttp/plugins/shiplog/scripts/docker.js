@@ -169,9 +169,14 @@
     const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
     const entries = Array.isArray(cl.entries) ? cl.entries : [];
     const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
-    // Current = the running tag (a version, or "latest"); never the cryptic
-    // digest hash — a :latest image can't be mapped back to a version number.
-    const cur = verLike(c.tag) ? c.tag : (c.tag || "latest");
+    // Current version to show. Prefer the running tag when it's a version. For a
+    // non-version tag (":latest") that is UP TO DATE, the running image == the
+    // newest release, so show that resolved version (e.g. "1.8.0") instead of
+    // "latest". For an out-of-date :latest the running version is unknown, so
+    // fall back to the tag — never the cryptic digest hash.
+    const cur = verLike(c.tag) ? c.tag
+      : (!upd && verLike(newestRel) ? newestRel
+        : (c.tag || "latest"));
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
       || (verLike(newestRel) ? newestRel : "")
       || newestRel || st.newest_tag || "?";
