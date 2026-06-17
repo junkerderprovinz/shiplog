@@ -33,6 +33,12 @@ func newTestServer(requireAuth bool) *httptest.Server {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	// Manifest HEAD for the newest semver tag 1.2.0 → digest sha256:NEWEST.
+	mux.HandleFunc("/v2/lib/app/manifests/1.2.0", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Docker-Content-Digest", "sha256:NEWEST")
+		w.WriteHeader(http.StatusOK)
+	})
+
 	// Manifest HEAD for tag latest → digest sha256:LATEST.
 	mux.HandleFunc("/v2/lib/app/manifests/latest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Docker-Content-Digest", "sha256:LATEST")
@@ -73,7 +79,7 @@ func TestResolve_NewestTagAndDigest(t *testing.T) {
 
 	r := newResolverFor(srv)
 
-	newestTag, sameTagDigest, err := r.Resolve(
+	newestTag, sameTagDigest, newestVerTag, newestVerDigest, err := r.Resolve(
 		context.Background(), "docker.io/lib/app", "1.0.0", "sha256:OLD")
 	if err != nil {
 		t.Fatalf("Resolve returned error: %v", err)
@@ -84,6 +90,13 @@ func TestResolve_NewestTagAndDigest(t *testing.T) {
 	if sameTagDigest != "sha256:NEW" {
 		t.Errorf("sameTagDigest = %q, want %q", sameTagDigest, "sha256:NEW")
 	}
+	if newestVerTag != "1.2.0" {
+		t.Errorf("newestVerTag = %q, want %q", newestVerTag, "1.2.0")
+	}
+	// Pinned semver tag: the proof-digest fetch is skipped, so it stays empty.
+	if newestVerDigest != "" {
+		t.Errorf("newestVerDigest = %q, want empty for a pinned tag", newestVerDigest)
+	}
 }
 
 func TestResolve_AnonymousTokenFlow(t *testing.T) {
@@ -92,7 +105,7 @@ func TestResolve_AnonymousTokenFlow(t *testing.T) {
 
 	r := newResolverFor(srv)
 
-	newestTag, sameTagDigest, err := r.Resolve(
+	newestTag, sameTagDigest, _, _, err := r.Resolve(
 		context.Background(), "docker.io/lib/app", "1.0.0", "sha256:OLD")
 	if err != nil {
 		t.Fatalf("Resolve returned error: %v", err)
@@ -111,7 +124,7 @@ func TestResolve_NonSemverTag(t *testing.T) {
 
 	r := newResolverFor(srv)
 
-	newestTag, sameTagDigest, err := r.Resolve(
+	newestTag, sameTagDigest, newestVerTag, newestVerDigest, err := r.Resolve(
 		context.Background(), "docker.io/lib/app", "latest", "sha256:OLD")
 	if err != nil {
 		t.Fatalf("Resolve returned error: %v", err)
@@ -121,6 +134,14 @@ func TestResolve_NonSemverTag(t *testing.T) {
 	}
 	if sameTagDigest != "sha256:LATEST" {
 		t.Errorf("sameTagDigest = %q, want %q", sameTagDigest, "sha256:LATEST")
+	}
+	// A rolling tag still resolves the newest version AND its digest, so the
+	// engine can prove which version a :latest container is running.
+	if newestVerTag != "1.2.0" {
+		t.Errorf("newestVerTag = %q, want %q", newestVerTag, "1.2.0")
+	}
+	if newestVerDigest != "sha256:NEWEST" {
+		t.Errorf("newestVerDigest = %q, want %q", newestVerDigest, "sha256:NEWEST")
 	}
 }
 
@@ -146,7 +167,7 @@ func TestResolve_FollowsTagPagination(t *testing.T) {
 	defer srv.Close()
 
 	r := newResolverFor(srv)
-	newest, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.7", "sha256:o")
+	newest, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.7", "sha256:o")
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}

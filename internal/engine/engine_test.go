@@ -23,17 +23,18 @@ func (errCollector) List(context.Context) ([]model.Container, error) {
 }
 
 type resolveResult struct {
-	tag, dig string
-	err      error
+	tag, dig       string // newestTag (as-is) + same-tag digest
+	verTag, verDig string // newest semver tag + its digest
+	err            error
 }
 type fakeResolver struct{ byRepo map[string]resolveResult }
 
-func (f fakeResolver) Resolve(_ context.Context, repo, _, _ string) (string, string, error) {
+func (f fakeResolver) Resolve(_ context.Context, repo, _, _ string) (string, string, string, string, error) {
 	r, ok := f.byRepo[repo]
 	if !ok {
-		return "", "", errors.New("no such repo")
+		return "", "", "", "", errors.New("no such repo")
 	}
-	return r.tag, r.dig, r.err
+	return r.tag, r.dig, r.verTag, r.verDig, r.err
 }
 
 // The fakes are written from the engine's concurrent workers, so they guard
@@ -126,6 +127,111 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 		t.Fatalf("redis: failed lookup should be unknown risk, got %s", redis.Risk)
 	}
 	// The whole sweep still succeeded despite one container failing.
+}
+
+func TestDecideRunningVersion(t *testing.T) {
+	const (
+		dRun = "sha256:running" // digest of the running image
+		dNew = "sha256:newver"  // digest of the newest semver version
+	)
+	cases := []struct {
+		name            string
+		c               model.Container
+		newestVerTag    string
+		newestVerDigest string
+		prior           model.UpdateStatus
+		hasPrior        bool
+		want            string
+	}{
+		{
+			name: "pinned version tag is the running version",
+			c:    model.Container{Tag: "1.7.0", Digest: dRun},
+			want: "1.7.0",
+		},
+		{
+			name:            "pinned tag wins even with a prior memory",
+			c:               model.Container{Tag: "2.1.0", Digest: dRun},
+			prior:           model.UpdateStatus{RunningVersion: "9.9.9"},
+			hasPrior:        true,
+			newestVerTag:    "2.2.0",
+			newestVerDigest: dNew,
+			want:            "2.1.0",
+		},
+		{
+			name:            "latest proven to be newest by matching digest",
+			c:               model.Container{Tag: "latest", Digest: dNew},
+			newestVerTag:    "1.8.0",
+			newestVerDigest: dNew, // running image == the newest version's image
+			want:            "1.8.0",
+		},
+		{
+			name:            "latest unchanged carries the remembered version forward",
+			c:               model.Container{Tag: "latest", Digest: dRun},
+			newestVerTag:    "1.9.0",
+			newestVerDigest: dNew, // running != newest → not proven this sweep
+			prior:           model.UpdateStatus{Container: model.Container{Digest: dRun}, RunningVersion: "1.7.0"},
+			hasPrior:        true,
+			want:            "1.7.0",
+		},
+		{
+			name:            "latest lagging a newer published tag is NOT mislabeled",
+			c:               model.Container{Tag: "latest", Digest: dRun}, // running an older image
+			newestVerTag:    "2.0.0",
+			newestVerDigest: dNew, // 2.0.0's digest differs from what's running
+			want:            "",   // must NOT claim the running image is 2.0.0
+		},
+		{
+			name:            "first sight of an out-of-date latest is unknown",
+			c:               model.Container{Tag: "latest", Digest: dRun},
+			newestVerTag:    "1.8.0",
+			newestVerDigest: dNew,
+			want:            "",
+		},
+		{
+			name:            "repo without semver tags stays unknown",
+			c:               model.Container{Tag: "latest", Digest: dRun},
+			newestVerTag:    "", // no semver tags
+			newestVerDigest: "",
+			want:            "",
+		},
+		{
+			name:         "empty running digest never carries forward",
+			c:            model.Container{Tag: "latest", Digest: ""},
+			prior:        model.UpdateStatus{Container: model.Container{Digest: ""}, RunningVersion: "1.7.0"},
+			hasPrior:     true,
+			newestVerTag: "1.8.0",
+			want:         "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := decideRunningVersion(tc.c, tc.newestVerTag, tc.newestVerDigest, tc.prior, tc.hasPrior)
+			if got != tc.want {
+				t.Errorf("decideRunningVersion = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// After a :latest container updates under ShipLog's watch, the stored status
+// must carry the version we resolved so the next sweep can show "prev -> new".
+func TestSweepRemembersLatestVersion(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "oh", Name: "openhands", Repo: "ghcr.io/x/openhands", Tag: "latest", Digest: "sha256:v18"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		// :latest echoed as newestTag; running digest == newest VERSION's digest
+		// → proven to be running 1.8.0.
+		"ghcr.io/x/openhands": {tag: "latest", dig: "sha256:v18", verTag: "1.8.0", verDig: "sha256:v18"},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := st.rows["oh"].RunningVersion; got != "1.8.0" {
+		t.Fatalf("running version not remembered for up-to-date :latest: got %q, want 1.8.0", got)
+	}
 }
 
 func TestSweepReturnsCollectorError(t *testing.T) {

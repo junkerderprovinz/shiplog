@@ -31,20 +31,21 @@ type HistoryEntry struct {
 
 const schema = `
 CREATE TABLE IF NOT EXISTS status (
-	container_id   TEXT PRIMARY KEY,
-	name           TEXT,
-	repo           TEXT,
-	image          TEXT,
-	tag            TEXT,
-	digest         TEXT,
-	newest_tag     TEXT,
-	newest_digest  TEXT,
-	kind           TEXT,
-	risk           TEXT,
-	risk_reason    TEXT,
-	changelog_json TEXT,
-	checked_at     TEXT,
-	error          TEXT
+	container_id    TEXT PRIMARY KEY,
+	name            TEXT,
+	repo            TEXT,
+	image           TEXT,
+	tag             TEXT,
+	digest          TEXT,
+	running_version TEXT,
+	newest_tag      TEXT,
+	newest_digest   TEXT,
+	kind            TEXT,
+	risk            TEXT,
+	risk_reason     TEXT,
+	changelog_json  TEXT,
+	checked_at      TEXT,
+	error           TEXT
 );
 CREATE TABLE IF NOT EXISTS history (
 	id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,23 +76,31 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("store: create schema: %w", err)
 	}
+	// Migrate older databases that predate the running_version column. On a fresh
+	// DB the column already exists, so the duplicate-column error is expected and
+	// ignored.
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN running_version TEXT`)
 	return &Store{db: db}, nil
 }
 
 // Close closes the underlying database.
 func (s *Store) Close() error { return s.db.Close() }
 
-// Upsert writes the status, and records a history row when the running tag
-// changed from a non-empty prior value.
+// Upsert writes the status, and records a history row when the running version
+// changed from a non-empty prior value. Keying off running_version (not the raw
+// tag) means a ":latest" upgrade — where the tag stays "latest" but the resolved
+// version moves 1.7.0 -> 1.8.0 — is recorded too.
 func (s *Store) Upsert(st model.UpdateStatus) error {
-	var priorTag string
-	err := s.db.QueryRow(`SELECT tag FROM status WHERE container_id = ?`, st.Container.ID).Scan(&priorTag)
+	var priorVer string
+	// COALESCE so a row migrated from a pre-running_version DB (column backfilled
+	// NULL) scans into a string instead of erroring and aborting the upsert.
+	err := s.db.QueryRow(`SELECT COALESCE(running_version, '') FROM status WHERE container_id = ?`, st.Container.ID).Scan(&priorVer)
 	switch {
 	case err == nil:
-		if priorTag != "" && priorTag != st.Container.Tag {
+		if priorVer != "" && priorVer != st.RunningVersion && st.RunningVersion != "" {
 			if _, err := s.db.Exec(
 				`INSERT INTO history (container_id, name, from_tag, to_tag, seen_at) VALUES (?, ?, ?, ?, ?)`,
-				st.Container.ID, st.Container.Name, priorTag, st.Container.Tag, st.CheckedAt.Format(time.RFC3339),
+				st.Container.ID, st.Container.Name, priorVer, st.RunningVersion, st.CheckedAt.Format(time.RFC3339),
 			); err != nil {
 				return fmt.Errorf("store: append history: %w", err)
 			}
@@ -113,25 +122,26 @@ func (s *Store) Upsert(st model.UpdateStatus) error {
 
 	_, err = s.db.Exec(`
 INSERT INTO status (
-	container_id, name, repo, image, tag, digest,
+	container_id, name, repo, image, tag, digest, running_version,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(container_id) DO UPDATE SET
-	name           = excluded.name,
-	repo           = excluded.repo,
-	image          = excluded.image,
-	tag            = excluded.tag,
-	digest         = excluded.digest,
-	newest_tag     = excluded.newest_tag,
-	newest_digest  = excluded.newest_digest,
-	kind           = excluded.kind,
-	risk           = excluded.risk,
-	risk_reason    = excluded.risk_reason,
-	changelog_json = excluded.changelog_json,
-	checked_at     = excluded.checked_at,
-	error          = excluded.error`,
-		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest,
+	name            = excluded.name,
+	repo            = excluded.repo,
+	image           = excluded.image,
+	tag             = excluded.tag,
+	digest          = excluded.digest,
+	running_version = excluded.running_version,
+	newest_tag      = excluded.newest_tag,
+	newest_digest   = excluded.newest_digest,
+	kind            = excluded.kind,
+	risk            = excluded.risk,
+	risk_reason     = excluded.risk_reason,
+	changelog_json  = excluded.changelog_json,
+	checked_at      = excluded.checked_at,
+	error           = excluded.error`,
+		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.RunningVersion,
 		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
 		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
 	)
@@ -153,7 +163,7 @@ ORDER BY CASE risk
 END DESC, name ASC`
 
 const selectCols = `
-SELECT container_id, name, repo, image, tag, digest,
+SELECT container_id, name, repo, image, tag, digest, COALESCE(running_version, ''),
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error
 FROM status`
@@ -231,7 +241,7 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		checkedAt     string
 	)
 	err := sc.Scan(
-		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest,
+		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest, &st.RunningVersion,
 		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
 		&changelogJSON, &checkedAt, &st.Error,
 	)

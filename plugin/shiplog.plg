@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.3">
+  <!ENTITY version   "1.0.4">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -26,6 +26,14 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.0.4
+- Remembers the running version per container. A rolling ":latest" image is
+  pinned to a real version once its digest matches the newest release, then
+  carried forward — so a later update shows a true "1.7 -> 1.8" instead of
+  "latest". The newest version is proven by digest, so a :latest that lags a
+  newer published tag is never mislabeled.
+- The bubble header now shows the remembered version as the current one.
 
 ### 1.0.3
 - Resolve changelogs for ghcr.io images even without an OCI source label
@@ -60,7 +68,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>7802ca9240374dde927e82d0db70e2f3a9e4000249cd0e7a0cfde7f6821e1ac5</SHA256>
+  <SHA256>d575a07df75fa6d580d8a5543cbd20494ad22143c47c4c505b34352b301c32a2</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

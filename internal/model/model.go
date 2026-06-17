@@ -45,15 +45,20 @@ const (
 
 // UpdateStatus is the per-container result the engine stores and serves.
 type UpdateStatus struct {
-	Container    Container  `json:"container"`
-	NewestTag    string     `json:"newest_tag"`
-	NewestDigest string     `json:"newest_digest"`
-	Kind         Kind       `json:"kind"`
-	Risk         RiskLevel  `json:"risk"`
-	RiskReason   string     `json:"risk_reason"`
-	Changelog    *Changelog `json:"changelog,omitempty"`
-	CheckedAt    time.Time  `json:"checked_at"`
-	Error        string     `json:"error,omitempty"` // per-container failure, never fatal
+	Container Container `json:"container"`
+	// RunningVersion is the version label we believe is currently running. For a
+	// pinned tag it's the tag itself; for a rolling tag (":latest") it's resolved
+	// when the running image is the registry's current one, then REMEMBERED across
+	// sweeps so a later update shows a real "prev -> new" jump.
+	RunningVersion string     `json:"running_version"`
+	NewestTag      string     `json:"newest_tag"`
+	NewestDigest   string     `json:"newest_digest"`
+	Kind           Kind       `json:"kind"`
+	Risk           RiskLevel  `json:"risk"`
+	RiskReason     string     `json:"risk_reason"`
+	Changelog      *Changelog `json:"changelog,omitempty"`
+	CheckedAt      time.Time  `json:"checked_at"`
+	Error          string     `json:"error,omitempty"` // per-container failure, never fatal
 }
 
 // HasUpdate reports whether this status represents an actionable update.

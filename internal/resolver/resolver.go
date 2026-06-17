@@ -41,20 +41,31 @@ func New() *Resolver {
 	}
 }
 
-// Resolve returns the newest semver tag in the repo and the digest currently
-// behind tag. If tag is itself non-semver (e.g. "latest"), newestTag == tag so
-// callers can still report digest drift for it. curDigest is accepted for API
-// symmetry with the engine but is not needed to compute the result here.
-func (r *Resolver) Resolve(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest string, err error) {
+// Resolve inspects an image's upstream registry and reports:
+//
+//   - newestTag: the highest semver tag, or the requested tag echoed back when
+//     that tag isn't semver (e.g. "latest") so the caller still gets digest-drift
+//     detection for it;
+//   - sameTagDigest: the digest currently behind the requested tag;
+//   - newestVerTag: the highest semver tag in the repo regardless of the
+//     requested tag ("" when the repo has no semver tags);
+//   - newestVerDigest: the digest of newestVerTag, used to PROVE that a rolling
+//     (":latest") container is actually running the newest version ("" when not
+//     resolved). It's only fetched for non-semver requested tags, since a pinned
+//     semver tag is already its own version.
+//
+// curDigest is accepted for API symmetry with the engine but isn't needed here.
+func (r *Resolver) Resolve(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error) {
 	host, pathRepo := splitRepo(repo)
 	base := r.baseURL(host)
 
 	tags, err := r.fetchTags(ctx, base, host, pathRepo)
 	if err != nil {
-		return "", "", err
+		return "", "", "", "", err
 	}
 
-	newestTag = newestSemver(tags)
+	newestVerTag = newestSemver(tags)
+	newestTag = newestVerTag
 	if !isSemver(tag) || newestTag == "" {
 		// Non-semver requested tag: we can't rank it; report it as-is so the
 		// caller still gets digest-drift detection for it.
@@ -63,9 +74,18 @@ func (r *Resolver) Resolve(ctx context.Context, repo, tag, curDigest string) (ne
 
 	sameTagDigest, err = r.fetchDigest(ctx, base, host, pathRepo, tag)
 	if err != nil {
-		return "", "", err
+		return "", "", "", "", err
 	}
-	return newestTag, sameTagDigest, nil
+
+	// For a rolling tag, resolve the newest version's own digest so the engine
+	// can confirm by digest which version the running image is. Best-effort: an
+	// error just leaves it empty, which disables the proof (no wrong label).
+	if !isSemver(tag) && newestVerTag != "" {
+		if d, derr := r.fetchDigest(ctx, base, host, pathRepo, newestVerTag); derr == nil {
+			newestVerDigest = d
+		}
+	}
+	return newestTag, sameTagDigest, newestVerTag, newestVerDigest, nil
 }
 
 // splitRepo splits a normalized repo into the registry host and the path-repo.

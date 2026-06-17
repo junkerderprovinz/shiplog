@@ -169,14 +169,16 @@
     const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
     const entries = Array.isArray(cl.entries) ? cl.entries : [];
     const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
-    // Current version to show. Prefer the running tag when it's a version. For a
-    // non-version tag (":latest") that is UP TO DATE, the running image == the
-    // newest release, so show that resolved version (e.g. "1.8.0") instead of
-    // "latest". For an out-of-date :latest the running version is unknown, so
-    // fall back to the tag — never the cryptic digest hash.
-    const cur = verLike(c.tag) ? c.tag
-      : (!upd && verLike(newestRel) ? newestRel
-        : (c.tag || "latest"));
+    // Current version to show. The engine REMEMBERS the running version per
+    // container (running_version) — for a pinned tag it's the tag, for a
+    // ":latest" it's resolved when the running image is the registry's current
+    // one and then carried forward, so a later update shows a real "1.7 -> 1.8".
+    // Fall back to the running tag, then (when up to date) the newest release,
+    // then the tag — never the cryptic digest hash.
+    const cur = (verLike(st.running_version) ? st.running_version : "")
+      || (verLike(c.tag) ? c.tag : "")
+      || (!upd && verLike(newestRel) ? newestRel : "")
+      || (c.tag || "latest");
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
       || (verLike(newestRel) ? newestRel : "")
       || newestRel || st.newest_tag || "?";
