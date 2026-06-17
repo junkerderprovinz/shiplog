@@ -172,6 +172,21 @@ func TestPickDigest(t *testing.T) {
 	}
 }
 
+func TestGhcrSource(t *testing.T) {
+	cases := map[string]string{
+		"ghcr.io/open-webui/open-webui": "https://github.com/open-webui/open-webui",
+		"ghcr.io/x/y":                   "https://github.com/x/y",
+		"ghcr.io/x/y/z":                 "https://github.com/x/y", // extra path dropped
+		"docker.io/library/redis":       "",                       // not ghcr
+		"ghcr.io/onlyowner":             "",                       // no repo segment
+	}
+	for repo, want := range cases {
+		if got := ghcrSource(repo); got != want {
+			t.Errorf("ghcrSource(%q) = %q, want %q", repo, got, want)
+		}
+	}
+}
+
 func TestSplitImageRef(t *testing.T) {
 	tests := []struct {
 		ref      string
