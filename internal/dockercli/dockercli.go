@@ -89,6 +89,13 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			dig = c.imageDigest(ctx, dc.ImageID, repo)
 			digestCache[dc.ImageID] = dig
 		}
+		// Source = the OCI label if present, else derived from a ghcr.io image
+		// (ghcr.io/owner/repo IS github.com/owner/repo) so the changelog resolves
+		// even when the image sets no source label.
+		source := dc.Labels[sourceLabel]
+		if source == "" {
+			source = ghcrSource(repo)
+		}
 		out = append(out, model.Container{
 			ID:     dc.ID,
 			Name:   containerName(dc.Names),
@@ -96,11 +103,25 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			Repo:   repo,
 			Tag:    tag,
 			Digest: dig,
-			Source: dc.Labels[sourceLabel],
+			Source: source,
 			State:  dc.State,
 		})
 	}
 	return out, nil
+}
+
+// ghcrSource maps a ghcr.io image repo to its GitHub source URL (ghcr packages
+// live under github.com/<owner>/<repo>). Returns "" for non-ghcr repos.
+func ghcrSource(repo string) string {
+	const prefix = "ghcr.io/"
+	if !strings.HasPrefix(repo, prefix) {
+		return ""
+	}
+	parts := strings.Split(repo[len(prefix):], "/")
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		return ""
+	}
+	return "https://github.com/" + parts[0] + "/" + parts[1]
 }
 
 // imageDigest inspects an image and returns its registry manifest digest

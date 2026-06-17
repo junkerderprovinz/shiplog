@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.2">
+  <!ENTITY version   "1.0.3">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -26,6 +26,14 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.0.3
+- Resolve changelogs for ghcr.io images even without an OCI source label
+  (ghcr.io/owner/repo → github.com/owner/repo), so more containers get a
+  changelog + version instead of an empty "latest".
+- Installer now force-reinstalls the package (upgradepkg --reinstall), fixing
+  the "newer version already installed" skip when coming from the old
+  date-versioned test builds.
 
 ### 1.0.2
 - For an up-to-date ":latest" container, the header now shows the resolved
@@ -50,9 +58,9 @@ optional AI summaries (Ollama) and Matrix alerts.
   The package (engine binary + plugin files) is built by plugin/pkg_build.sh and
   attached to the GitHub release "v&version;". SHA256 is injected at release.
 -->
-<FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new">
+<FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>ab171630f7b95da2eddb436b326707fd849a84737a25e0b491d59115f8c52fb2</SHA256>
+  <SHA256>7802ca9240374dde927e82d0db70e2f3a9e4000249cd0e7a0cfde7f6821e1ac5</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
