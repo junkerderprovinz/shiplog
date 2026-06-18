@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!--
+  Unraid Community Applications support thread for ShipLog.
+  Structure mirrors the sister-app threads (e.g. featherdrop / Krusader):
+  title -> subtitle -> banner -> buttons -> What is this? -> Highlights ->
+  Requirements -> Install / update -> Posting a bug report -> Credits -> disclaimer.
+  Open standalone in a browser, or paste into the Unraid forum editor's source view.
+  Title: [Support] junkerderprovinz - shiplog
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[Support] junkerderprovinz - shiplog</title>
+<style>
+  body { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         line-height: 1.6; color: #1c1c1c; }
+  h1 { text-align: center; font-size: 1.7rem; margin-bottom: .2rem; }
+  .subtitle { text-align: center; color: #666; font-style: italic; margin-top: 0; }
+  h2 { margin-top: 1.9rem; font-size: 1.25rem; }
+  code { background: #f1f1f1; padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+  a { color: #2f6f8f; }
+  ul { padding-left: 1.2rem; }
+  li { margin: .25rem 0; }
+  img { border: 0; vertical-align: middle; }
+  hr { border: 0; border-top: 1px solid #ddd; margin: 2rem 0; }
+  .footnote { color: #777; font-size: .9em; font-style: italic; text-align: center; margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<h1>ShipLog – know what an update changes, before you press it</h1>
+<p class="subtitle">Read the log before you set sail.</p>
+
+<p align="center">
+  <a href="https://github.com/junkerderprovinz/shiplog">
+    <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/shiplog-banner.png" alt="ShipLog" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://unraid.net/community/apps?q=shiplog"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/support-buttons/install-on-unraid.svg" alt="Install on Unraid" width="240"></a>
+  &nbsp;
+  <a href="https://github.com/junkerderprovinz/shiplog"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/support-buttons/view-on-github.svg" alt="View on GitHub" width="240"></a>
+  &nbsp;
+  <a href="https://buymeacoffee.com/junkerderprovinz"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/support-buttons/buy-me-a-coffee.svg" alt="Buy me a coffee" width="240"></a>
+</p>
+
+<h2>What is this?</h2>
+<p>ShipLog is a <strong>read-only update advisor</strong> that lives right inside Unraid's
+native <strong>Docker tab</strong>. Unraid already tells you <em>that</em> an update is
+available and lets you apply it — ShipLog tells you <strong>what actually changes and how
+risky it is</strong> first. Next to each container it adds a small changelog bubble: the
+version jump, a deterministic risk badge, the release notes, and a <strong>DEPRECATED</strong>
+badge when the upstream project is archived.</p>
+<p>It is a <strong>plugin</strong> (not a container): a tiny daemon on the host plus the
+bubble in the Docker tab. It never pulls, recreates, or stops anything — the Docker socket
+is read-only. Updating stays Unraid's own job.</p>
+
+<h2>Highlights</h2>
+<ul>
+  <li><strong>Changelog where you need it</strong> — a per-container bubble in the native Docker tab, no separate dashboard to open</li>
+  <li><strong>What changes, not just &ldquo;an update exists&rdquo;</strong> — the release notes between your running image and the newest one</li>
+  <li><strong>Deterministic risk badge</strong> — patch / minor / major / digest, computed from the version jump (no guessing)</li>
+  <li><strong>Remembers the running version</strong> — even a rolling <code>:latest</code> image shows a real <code>1.7 &rarr; 1.8</code> jump once ShipLog has seen one update under its watch</li>
+  <li><strong>DEPRECATED badge</strong> when the upstream repository is archived (end-of-life)</li>
+  <li><strong>Read-only by construction</strong> — the Docker socket is mounted read-only; ShipLog cannot start, stop, recreate or pull anything</li>
+  <li><strong>Optional AI summaries</strong> via a local <strong>Ollama</strong> — a short, plain-language &ldquo;what changed&rdquo; per update (off by default)</li>
+  <li><strong>Optional Matrix notifications</strong> when a new update is first seen (off by default)</li>
+  <li>Follows your Unraid <strong>light/dark theme</strong> and <strong>language</strong> (English + German, English fallback)</li>
+  <li>Runs as a lightweight host daemon — <strong>no extra container</strong></li>
+</ul>
+
+<h2>Requirements</h2>
+<ul>
+  <li>Unraid 6.10+</li>
+  <li>Outbound HTTPS to image registries and GitHub (to fetch changelogs). A free <strong>GitHub token</strong> (no scopes) in the settings raises the anonymous API limit — useful if you watch many GitHub-sourced images</li>
+  <li>Optional: a reachable <strong>Ollama</strong> instance for AI summaries, and/or a <strong>Matrix</strong> account for notifications</li>
+</ul>
+
+<h2>Install / update</h2>
+<p>Install from <strong>Community Applications</strong> (search for <strong>ShipLog</strong>), or
+add the plugin by URL under <strong>Plugins &rarr; Install Plugin</strong>:</p>
+<p><code>https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin/shiplog.plg</code></p>
+<p>Open the <strong>Docker tab</strong> to see the bubble, or <strong>Settings &rarr; ShipLog</strong>
+for the options (poll interval, GitHub token, Ollama, Matrix). If you ever tested an early
+date-versioned build, remove the plugin and reinstall it once from the URL above.</p>
+
+<h2>Posting a bug report</h2>
+<p>Please post:</p>
+<ul>
+  <li>Unraid version (Settings &rarr; System Information)</li>
+  <li>ShipLog version (Plugins page) — currently <code>v1.0.4</code></li>
+  <li>Daemon state and log: <code>/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog status</code> and <code>tail -200 /var/log/shiplog.log</code></li>
+  <li>Browser + OS (the bubble is rendered in your browser)</li>
+  <li>Whether you set a GitHub token, Ollama, or Matrix — and, for a specific container, its image reference (e.g. <code>ghcr.io/owner/app:latest</code>)</li>
+</ul>
+<p>GitHub issues with the same info are equally welcome:
+<a href="https://github.com/junkerderprovinz/shiplog/issues">github.com/junkerderprovinz/shiplog/issues</a></p>
+
+<h2>Credits</h2>
+<p>Built in Go (engine) + a thin Unraid plugin for the Docker-tab bubble. Changelogs come
+from each image's <code>org.opencontainers.image.source</code> label and GitHub releases;
+optional summaries run on your own <a href="https://ollama.com">Ollama</a>. If ShipLog
+saves you from a surprise update, you can
+<a href="https://buymeacoffee.com/junkerderprovinz">buy me a coffee</a>.</p>
+
+<hr>
+
+<p class="footnote">Self-hosted, MIT-licensed, read-only by design — it advises, you decide.</p>
+
+</body>
+</html>
