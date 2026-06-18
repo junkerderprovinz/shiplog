@@ -20,7 +20,7 @@
         pluginURL="&pluginURL;"
         icon="anchor"
         min="6.10.0"
-        support="https://github.com/junkerderprovinz/shiplog/issues">
+        support="https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/">
 
 <CHANGES>
 Shows the changelog of your installed Docker containers, right in the Docker tab:
