@@ -12,6 +12,8 @@ $port   = !empty($cfg['PORT'])          ? $cfg['PORT']          : '8484';
 $ddir   = !empty($cfg['DATA_DIR'])      ? $cfg['DATA_DIR']      : '/mnt/user/appdata/shiplog';
 $poll   = !empty($cfg['POLL_INTERVAL']) ? $cfg['POLL_INTERVAL'] : '6h';
 $ghtok  = isset($cfg['GITHUB_TOKEN'])      ? $cfg['GITHUB_TOKEN']      : '';
+$dhuser = isset($cfg['DOCKERHUB_USERNAME']) ? $cfg['DOCKERHUB_USERNAME'] : '';
+$dhtok  = isset($cfg['DOCKERHUB_TOKEN'])    ? $cfg['DOCKERHUB_TOKEN']    : '';
 $ourl   = isset($cfg['OLLAMA_URL'])        ? $cfg['OLLAMA_URL']        : '';
 $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
@@ -91,9 +93,18 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
       <div class="sl-row"><label>Poll interval</label><div class="sl-in">
         <input type="text" class="sl-narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>">
         <span class="sl-hint">Go duration: 1h, 6h, 24h</span></div></div>
+    </div>
+
+    <div class="sl-card">
+      <h3>Registry access <small>Optional — both raise rate limits so ShipLog can read versions &amp; changelogs for more of your containers. Leave empty to stay anonymous.</small></h3>
       <div class="sl-row"><label>GitHub token</label><div class="sl-in">
         <input type="password" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
-        <span class="sl-hint">classic PAT, no scopes — raises the changelog rate limit</span></div></div>
+        <span class="sl-hint">Reads release notes from GitHub. Anonymous GitHub allows only ~60 requests/hour — with many containers that runs out fast and changelogs come back empty. A classic <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a> (no scopes needed) raises it to ~5000/hour.</span></div></div>
+      <div class="sl-row"><label>Docker Hub user</label><div class="sl-in">
+        <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="your Docker Hub username"></div></div>
+      <div class="sl-row"><label>Docker Hub token</label><div class="sl-in">
+        <input type="password" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
+        <span class="sl-hint">Checks the newest version + digest of <code>docker.io</code> images. Anonymous Docker Hub is rate-limited per IP — with many images that throttles, so those show an update without a version number. A free <a href="https://app.docker.com/settings/personal-access-tokens" target="_blank">Docker Hub access token</a> (read-only) lifts the limit. Username + token, both required.</span></div></div>
     </div>
 
     <div class="sl-card">
