@@ -1,6 +1,6 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-  <!ENTITY name      "ShipLog">
+  <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
   <!ENTITY version   "1.0.5">
@@ -18,7 +18,6 @@
         version="&version;"
         launch="&launch;"
         pluginURL="&pluginURL;"
-        icon="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/icon.png"
         min="6.10.0"
         support="https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/">
 
