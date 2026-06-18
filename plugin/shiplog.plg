@@ -3,7 +3,7 @@
   <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.4">
+  <!ENTITY version   "1.0.5">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -18,7 +18,7 @@
         version="&version;"
         launch="&launch;"
         pluginURL="&pluginURL;"
-        icon="anchor"
+        icon="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/icon.png"
         min="6.10.0"
         support="https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/">
 
@@ -26,6 +26,13 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.0.5
+- Optional Docker Hub credentials (Settings) raise the Docker Hub rate limit, so
+  docker.io images resolve a version + changelog instead of showing an update
+  with no version number.
+- Settings now explain what the GitHub and Docker Hub tokens are for.
+- Plugin icon is the ShipLog logo (PNG).
 
 ### 1.0.4
 - Remembers the running version per container. A rolling ":latest" image is
@@ -68,7 +75,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>d575a07df75fa6d580d8a5543cbd20494ad22143c47c4c505b34352b301c32a2</SHA256>
+  <SHA256>820b3c834ce60914f994da473b62779b1a29247740bde96575ca77a30c3bc32a</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

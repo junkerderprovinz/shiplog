@@ -13,7 +13,12 @@ type Config struct {
 	Port         string        // PORT
 	DataDir      string        // DATA_DIR (SQLite + curated-mapping override)
 	PollInterval time.Duration // POLL_INTERVAL
-	GithubToken  string        // GITHUB_TOKEN (optional; raises API limit)
+	GithubToken  string        // GITHUB_TOKEN (optional; raises GitHub API limit for changelogs)
+
+	// Docker Hub credentials (optional; raise the anonymous Docker Hub pull/manifest
+	// rate limit used when resolving versions + digests for docker.io images).
+	DockerHubUser  string // DOCKERHUB_USERNAME
+	DockerHubToken string // DOCKERHUB_TOKEN (a Docker Hub access token / password)
 
 	// P1 (parsed now, unused until the providers land):
 	OllamaURL        string // OLLAMA_URL
@@ -31,6 +36,8 @@ func Load() Config {
 		DataDir:          env("DATA_DIR", "/config"),
 		PollInterval:     dur("POLL_INTERVAL", 6*time.Hour),
 		GithubToken:      os.Getenv("GITHUB_TOKEN"),
+		DockerHubUser:    os.Getenv("DOCKERHUB_USERNAME"),
+		DockerHubToken:   os.Getenv("DOCKERHUB_TOKEN"),
 		OllamaURL:        os.Getenv("OLLAMA_URL"),
 		OllamaModel:      os.Getenv("OLLAMA_MODEL"),
 		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),

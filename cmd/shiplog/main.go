@@ -39,7 +39,7 @@ func main() {
 	// then always-succeeds with the fallback.
 	eng := engine.New(
 		dockercli.New(cfg.DockerSocket),
-		resolver.New(),
+		resolver.New().WithDockerHubAuth(cfg.DockerHubUser, cfg.DockerHubToken),
 		changelog.Chain{changelog.New(cfg.GithubToken), changelog.Fallback{}},
 		db,
 		cfg.PollInterval,

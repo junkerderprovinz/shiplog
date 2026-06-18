@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -173,6 +174,48 @@ func TestResolve_FollowsTagPagination(t *testing.T) {
 	}
 	if newest != "1.8" {
 		t.Errorf("newestTag = %q, want 1.8 (must follow pagination to page 2)", newest)
+	}
+}
+
+// When Docker Hub credentials are configured, the token request for a docker.io
+// image must carry HTTP Basic auth (so the issued token has the authenticated,
+// higher rate limit). For other registries, no credentials must leak.
+func TestResolve_DockerHubBasicAuthOnToken(t *testing.T) {
+	var gotTokenAuth string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		gotTokenAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"x"}`))
+	})
+	mux.HandleFunc("/v2/library/app/tags/list", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"tags":["1.0.0","1.2.0","latest"]}`))
+	})
+	mux.HandleFunc("/v2/library/app/manifests/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Docker-Content-Digest", "sha256:Z")
+		w.WriteHeader(http.StatusOK)
+	})
+	srv := httptest.NewServer(nil)
+	defer srv.Close()
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/v2/library/app/") && r.Header.Get("Authorization") == "" {
+			w.Header().Set("WWW-Authenticate",
+				`Bearer realm="`+srv.URL+`/token",service="registry.docker.io",scope="repository:library/app:pull"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
+	r := newResolverFor(srv).WithDockerHubAuth("alice", "dh-secret")
+	// "docker.io/library/app" → host registry-1.docker.io → Basic auth expected.
+	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/library/app", "latest", ""); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	want := "Basic " + base64.StdEncoding.EncodeToString([]byte("alice:dh-secret"))
+	if gotTokenAuth != want {
+		t.Errorf("token request Authorization = %q, want %q", gotTokenAuth, want)
 	}
 }
 

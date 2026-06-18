@@ -9,6 +9,7 @@ package resolver
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,6 +25,10 @@ const acceptManifests = "application/vnd.oci.image.index.v1+json, " +
 	"application/vnd.oci.image.manifest.v1+json, " +
 	"application/vnd.docker.distribution.manifest.v2+json"
 
+// dockerHubRegistry is the canonical Docker Hub registry host (where docker.io
+// images resolve) — the only host we ever attach Docker Hub credentials to.
+const dockerHubRegistry = "registry-1.docker.io"
+
 // Resolver talks to OCI registries to resolve newest tag + same-tag digest.
 type Resolver struct {
 	httpClient *http.Client
@@ -31,6 +36,12 @@ type Resolver struct {
 	// e.g. "registry-1.docker.io" -> "https://registry-1.docker.io". Injectable
 	// so tests can route every host to a fake registry.
 	baseURL func(host string) string
+
+	// Optional Docker Hub credentials. When set, the token request for a
+	// docker.io image carries HTTP Basic auth so the issued bearer token has the
+	// authenticated (higher) rate limit. Never sent to any other registry.
+	dhUser  string
+	dhToken string
 }
 
 // New returns a Resolver with a sane default HTTP client and an HTTPS baseURL.
@@ -39,6 +50,13 @@ func New() *Resolver {
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		baseURL:    func(host string) string { return "https://" + host },
 	}
+}
+
+// WithDockerHubAuth sets optional Docker Hub credentials (returns r for chaining).
+// Empty values leave anonymous access unchanged.
+func (r *Resolver) WithDockerHubAuth(user, token string) *Resolver {
+	r.dhUser, r.dhToken = user, token
+	return r
 }
 
 // Resolve inspects an image's upstream registry and reports:
@@ -202,7 +220,7 @@ func (r *Resolver) doAuthed(ctx context.Context, method, url, host, pathRepo str
 		return nil, fmt.Errorf("401 without bearer challenge for %s", url)
 	}
 
-	token, err := r.fetchToken(ctx, challenge, pathRepo)
+	token, err := r.fetchToken(ctx, challenge, pathRepo, host)
 	if err != nil {
 		return nil, err
 	}
@@ -226,8 +244,10 @@ func (r *Resolver) do(ctx context.Context, method, url, token string, extra ...h
 
 // fetchToken parses a Bearer WWW-Authenticate challenge, GETs the realm with
 // the advertised service and an enforced repository:<repo>:pull scope, and
-// returns the anonymous token.
-func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo string) (string, error) {
+// returns the token. For Docker Hub (host == registry-1.docker.io) it attaches
+// HTTP Basic auth from the configured credentials, so the issued token carries
+// the authenticated (higher) rate limit; credentials are never sent elsewhere.
+func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host string) (string, error) {
 	params := parseChallenge(challenge)
 	realm := params["realm"]
 	if realm == "" {
@@ -241,7 +261,13 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo string) (
 	url := realm + sep + "service=" + queryEscape(params["service"]) +
 		"&scope=" + queryEscape("repository:"+pathRepo+":pull")
 
-	resp, err := r.do(ctx, http.MethodGet, url, "")
+	var extra []header
+	if host == dockerHubRegistry && r.dhUser != "" && r.dhToken != "" {
+		cred := base64.StdEncoding.EncodeToString([]byte(r.dhUser + ":" + r.dhToken))
+		extra = append(extra, header{"Authorization", "Basic " + cred})
+	}
+
+	resp, err := r.do(ctx, http.MethodGet, url, "", extra...)
 	if err != nil {
 		return "", err
 	}
