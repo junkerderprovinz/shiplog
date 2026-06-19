@@ -55,6 +55,7 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
     padding:7px 14px;font:13px/1.2 inherit;cursor:pointer}
   .sl-btn:hover{border-color:#5a5a5a;background:#2d2d2d}
   .sl-btn.sl-primary{background:#3a3a3a;border-color:#555}
+  .sl-btn.sl-eye{padding:7px 10px;min-width:58px}
   .sl-res{font-size:12.5px}
   .sl-res.ok{color:#3fae6a}
   .sl-res.err{color:#d9534f}
@@ -98,12 +99,16 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
     <div class="sl-card">
       <h3>Registry access <small>Optional — both raise rate limits so ShipLog can read versions &amp; changelogs for more of your containers. Leave empty to stay anonymous.</small></h3>
       <div class="sl-row"><label>GitHub token</label><div class="sl-in">
-        <input type="password" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
+        <input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
+        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-GITHUB_TOKEN',this)">Show</button>
         <span class="sl-hint">Reads release notes from GitHub. Anonymous GitHub allows only ~60 requests/hour — with many containers that runs out fast and changelogs come back empty. A classic <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a> (no scopes needed) raises it to ~5000/hour.</span></div></div>
       <div class="sl-row"><label>Docker Hub user</label><div class="sl-in">
         <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="your Docker Hub username"></div></div>
       <div class="sl-row"><label>Docker Hub token</label><div class="sl-in">
-        <input type="password" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
+        <input type="password" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
+        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)">Show</button>
+        <button type="button" class="sl-btn" onclick="slCheckDockerHub()">Check</button>
+        <span id="sl-dh-result" class="sl-res"></span>
         <span class="sl-hint">Checks the newest version + digest of <code>docker.io</code> images. Anonymous Docker Hub is rate-limited per IP — with many images that throttles, so those show an update without a version number. A free <a href="https://app.docker.com/settings/personal-access-tokens" target="_blank">Docker Hub access token</a> (read-only) lifts the limit. Username + token, both required.</span></div></div>
     </div>
 
@@ -122,7 +127,8 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
       <div class="sl-row"><label>Matrix homeserver</label><div class="sl-in">
         <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
       <div class="sl-row"><label>Matrix token</label><div class="sl-in">
-        <input type="password" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>"></div></div>
+        <input type="password" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
+        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-MATRIX_TOKEN',this)">Show</button></div></div>
       <div class="sl-row"><label>Matrix room</label><div class="sl-in">
         <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server">
         <button type="button" class="sl-btn" onclick="slCheckMatrix()">Check</button>
@@ -151,6 +157,16 @@ function slCheck(elId, url) {
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
 }
 function slVal(n) { return (document.querySelector('[name=' + n + ']') || {}).value || ''; }
+function slToggle(id, btn) {
+  var i = document.getElementById(id);
+  if (!i) return;
+  if (i.type === 'password') { i.type = 'text'; btn.textContent = 'Hide'; }
+  else { i.type = 'password'; btn.textContent = 'Show'; }
+}
+function slCheckDockerHub() {
+  slCheck('sl-dh-result', '/plugins/shiplog/server/dockerhub-check.php?user=' +
+    encodeURIComponent(slVal('DOCKERHUB_USERNAME')) + '&token=' + encodeURIComponent(slVal('DOCKERHUB_TOKEN')));
+}
 function slCheckOllama() {
   slCheck('sl-ollama-result', '/plugins/shiplog/server/ollama-check.php?url=' +
     encodeURIComponent(slVal('OLLAMA_URL')) + '&model=' + encodeURIComponent(slVal('OLLAMA_MODEL')));
