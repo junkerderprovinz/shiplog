@@ -26,7 +26,7 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 
 // ---- content + styling -----------------------------------------------------
 const NAME = "ShipLog";
-const CLAIM = "Read the log before you set sail.";
+const CLAIM = "Read the changelog before you set sail.";
 const W = 1600, H = 500;
 const LH = 420, LW = 420;     // logo is square (viewBox 0 0 1000 1000)
 const nameSize = 168, claimSize = 44, gap = 56, lineGap = 20;
@@ -53,8 +53,18 @@ if (!existsSync(fontPath)) {
 }
 const font = opentype.parse(readFileSync(fontPath));
 
+// The claim is set in Lato (humanist sans paired with Bree Serif) — the shared
+// claim font across all Bree-Serif repos (BombVault, featherdrop, ShipLog).
+const claimFontPath = join(tmpdir(), "ShipLog-Lato-Regular.ttf");
+if (!existsSync(claimFontPath)) {
+  const r = await fetch("https://github.com/google/fonts/raw/main/ofl/lato/Lato-Regular.ttf");
+  if (!r.ok) throw new Error(`claim font fetch ${r.status}`);
+  writeFileSync(claimFontPath, Buffer.from(await r.arrayBuffer()));
+}
+const claimFont = opentype.parse(readFileSync(claimFontPath));
+
 const nameW = font.getAdvanceWidth(NAME, nameSize);
-const claimW = font.getAdvanceWidth(CLAIM, claimSize);
+const claimW = claimFont.getAdvanceWidth(CLAIM, claimSize);
 const groupW = LW + gap + Math.max(nameW, claimW);
 const startX = (W - groupW) / 2;
 const LX = startX, LY = (H - LH) / 2;
@@ -63,13 +73,13 @@ const textX = startX + LW + gap;
 const sc = (s) => s / font.unitsPerEm;
 const nameAsc = font.ascender * sc(nameSize);
 const nameDesc = -font.descender * sc(nameSize);
-const claimAsc = font.ascender * sc(claimSize);
+const claimAsc = claimFont.ascender * (claimSize / claimFont.unitsPerEm);
 const blockH = nameAsc + nameDesc + lineGap + claimAsc;
 const nameBaseline = H / 2 - blockH / 2 + nameAsc;
 const claimBaseline = nameBaseline + nameDesc + lineGap + claimAsc;
 
 const namePath = font.getPath(NAME, textX, nameBaseline, nameSize).toPathData(2);
-const claimPath = font.getPath(CLAIM, textX, claimBaseline, claimSize).toPathData(2);
+const claimPath = claimFont.getPath(CLAIM, textX, claimBaseline, claimSize).toPathData(2);
 
 // Embed the logo verbatim: drop the XML decl, position its root <svg>.
 const logoRaw = readFileSync(join(__dir, "logo.svg"), "utf8")

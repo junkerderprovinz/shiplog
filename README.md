@@ -14,9 +14,9 @@
 <br>
 
 <p align="center">
-⚓ <b>ShipLog</b> is a tiny, <b>read-only update advisor</b> for Docker hosts. Unraid (and the CA auto-update plugin) already tell you <i>that</i> an update is available and let you apply it — ShipLog tells you <b>what actually changes</b> and <b>how risky it is</b> first: the changelog between your running image and the newest one, a deterministic risk verdict, and an optional AI summary.<br>
+⚓ <b>ShipLog</b> reads the changelog before you update — right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major) and the real <b>version jump</b> (e.g. 1.7 → 1.8).<br>
 <br>
-It never pulls, recreates, or stops anything. The Docker socket is read-only.
+<b>Read-only</b> — it never pulls, recreates or stops anything. Optional: AI changelog summaries via a local Ollama, and Matrix notifications.
 </p>
 
 <br>
