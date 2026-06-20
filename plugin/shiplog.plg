@@ -1,9 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-  <!ENTITY name      "ShipLog">
+  <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.8">
+  <!ENTITY version   "1.0.9">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -21,8 +21,9 @@
         min="6.10.0"
         support="https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/">
 
-<!-- Plugins-tab logo via the <ICON> element + local path (name-independent, the
-     FanCtrlPlus convention) — an icon= URL would render as the generic puzzle. -->
+<!-- FanCtrlPlus convention: name is the lowercase slug so Unraid resolves the
+     logo (plugins/<slug>/images/<slug>.png) AND the Plugins-tab description
+     (plugins/<slug>/README.md). The pretty "ShipLog" name comes from README.md. -->
 <ICON>
 /usr/local/emhttp/plugins/&slug;/images/&slug;.png
 </ICON>
@@ -32,11 +33,15 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.0.9
+- Logo + name + description in the Plugins tab now all work, the FanCtrlPlus way:
+  the package ships a README.md (shows "ShipLog" + the description) and the logo
+  under images/, and the plugin slug is lowercase so Unraid resolves both. The
+  v1.0.8 capital-name version showed the puzzle piece + no description.
+
 ### 1.0.8
-- Restores the "ShipLog" name (Plugins list, Settings, CA) and keeps the logo:
-  the logo is set via the plugin ICON element (a local path), the way FanCtrlPlus
-  does it, which is name-independent. Fixes the lowercase name + missing
-  description that the v1.0.7 lowercase-name workaround caused.
+- Attempted to keep a capital name via the ICON element (didn't resolve the logo
+  — superseded by 1.0.9).
 
 ### 1.0.7
 - Show the new white-framed logo in the Plugins tab (shipped under images/ +
@@ -96,7 +101,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>7ef12d3729bf5acee457a9e0eed3b7c41de7ba4f240ec4dfbbd4dba4cf4e1ff0</SHA256>
+  <SHA256>060c179caf0b0454af7fb61a86c4d7378a9e4b9c0d3c37e004bc2059aa3e38d3</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
