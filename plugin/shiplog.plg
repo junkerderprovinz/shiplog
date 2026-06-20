@@ -1,9 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-  <!ENTITY name      "shiplog">
+  <!ENTITY name      "ShipLog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.7">
+  <!ENTITY version   "1.0.8">
   <!ENTITY launch    "Settings/ShipLog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -21,16 +21,27 @@
         min="6.10.0"
         support="https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/">
 
+<!-- Plugins-tab logo via the <ICON> element + local path (name-independent, the
+     FanCtrlPlus convention) — an icon= URL would render as the generic puzzle. -->
+<ICON>
+/usr/local/emhttp/plugins/&slug;/images/&slug;.png
+</ICON>
+
 <CHANGES>
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.0.8
+- Restores the "ShipLog" name (Plugins list, Settings, CA) and keeps the logo:
+  the logo is set via the plugin ICON element (a local path), the way FanCtrlPlus
+  does it, which is name-independent. Fixes the lowercase name + missing
+  description that the v1.0.7 lowercase-name workaround caused.
+
 ### 1.0.7
-- The new white-framed logo now shows in the Plugins tab: ship it under images/
-  + icons/ and drop the icon= URL (Unraid treats an icon= URL as a local path
-  and falls back to the generic puzzle piece). The Plugins-list entry is now
-  lowercase "shiplog" so Unraid resolves the logo; Settings + CA stay "ShipLog".
+- Show the new white-framed logo in the Plugins tab (shipped under images/ +
+  icons/). (Superseded by 1.0.8 — this version lowercased the name as a
+  workaround, which broke the name + description.)
 
 ### 1.0.6
 - Settings: a "Show" toggle to reveal each token field, and a live "Check"
@@ -85,7 +96,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>5109086d953e7e7a0f38388f44bed95758a100352292452353728d7fa931b429</SHA256>
+  <SHA256>7ef12d3729bf5acee457a9e0eed3b7c41de7ba4f240ec4dfbbd4dba4cf4e1ff0</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
