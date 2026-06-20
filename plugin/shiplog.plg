@@ -3,8 +3,8 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.9">
-  <!ENTITY launch    "Settings/ShipLog">
+  <!ENTITY version   "1.0.10">
+  <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
   <!ENTITY pkgURL    "https://github.com/junkerderprovinz/shiplog/releases/download/v&version;">
@@ -32,6 +32,12 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.0.10
+- Settings page is back. It is now plugins/shiplog/shiplog.page with
+  launch="Settings/shiplog" (lowercase, matching the slug), so Unraid lists it
+  under Settings again. v1.0.9 lowercased the plugin name but kept the page as
+  ShipLog.page + launch Settings/ShipLog, so the settings entry vanished.
 
 ### 1.0.9
 - Logo + name + description in the Plugins tab now all work, the FanCtrlPlus way:
@@ -101,7 +107,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>060c179caf0b0454af7fb61a86c4d7378a9e4b9c0d3c37e004bc2059aa3e38d3</SHA256>
+  <SHA256>1ad827799509041db29e7d84d3bca39bb05e2770e101c5a4fd7c84340c038736</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
