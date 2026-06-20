@@ -27,6 +27,14 @@ chmod +x "$PKGROOT/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog"
 chmod +x "$PKGROOT/usr/local/emhttp/plugins/shiplog/event/"* 2>/dev/null || true
 chmod +x "$PKGROOT/$BIN_REL"
 
+# Normalise text files to LF. A CRLF .page breaks Unraid's PageBuilder (it splits
+# the header on a pure-LF "\n---\n", so a CRLF page never parses and is dropped),
+# and a trailing CR breaks shell shebangs. Belt-and-suspenders next to
+# .gitattributes, so a Windows/autocrlf checkout still produces a valid package.
+echo "==> normalising text files to LF"
+find "$PKGROOT" -type f ! -path "*/bin/*" ! -name '*.png' -print0 \
+  | while IFS= read -r -d '' f; do perl -i -pe 's/\r\n/\n/g; s/\r$//' "$f"; done
+
 mkdir -p "$OUT"
 TXZ="$OUT/shiplog-$VERSION-$ARCH-1.txz"
 echo "==> packaging → $TXZ"
