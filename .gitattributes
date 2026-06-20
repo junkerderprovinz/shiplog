@@ -1,0 +1,8 @@
+# Unraid plugin files must ship with LF line endings:
+#  - PageBuilder.php splits a .page header from its body on "\n---\n" (pure LF);
+#    a CRLF .page fails parse_ini_string and is silently dropped -> no menu entry.
+#  - shell shebangs (#!/bin/bash) break on a trailing CR.
+# Force LF on every text file regardless of the build host's core.autocrlf.
+* text=auto eol=lf
+*.png binary
+*.ico binary
