@@ -32,18 +32,42 @@
 ## Table of Contents
 
 1. [What is this?](#1-what-is-this)
-2. [Features](#2-features)
-3. [Install on Unraid](#3-install-on-unraid)
-4. [Configuration](#4-configuration)
-5. [How it works](#5-how-it-works)
-6. [Security](#6-security)
-7. [License](#7-license)
+2. [Screenshots](#2-screenshots)
+3. [Features](#3-features)
+4. [Install on Unraid](#4-install-on-unraid)
+5. [Configuration](#5-configuration)
+6. [How it works](#6-how-it-works)
+7. [Security](#7-security)
+8. [License](#8-license)
 
 ## 1. What is this?
 
 A single static Go binary on a distroless image (~tens of MB, low idle RAM) that polls the read-only Docker socket, resolves which images have updates, fetches the changelog for the version span, classifies the risk, and serves it on a small status page + JSON API. The headline experience — a changelog bubble next to each container in Unraid's Docker tab — ships as a companion Unraid plugin; this engine is the brain and works on any Docker host via its status page.
 
-## 2. Features
+## 2. Screenshots
+
+<p align="center">
+  <img src=".github/assets/screenshots/changelog-bubble.png" alt="ShipLog changelog bubble in Unraid's Docker tab" width="90%">
+  <br><em>Click the Changelog chip on any container — the bubble shows the version jump, a risk badge, and the raw release notes, right in Unraid's Docker tab.</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src=".github/assets/screenshots/docker-tab.png" alt="A Changelog chip on every container in the Docker tab" width="34%">
+  <br><em>A Changelog chip sits on every container: a coloured dot when an update is waiting, grey when you're up to date.</em>
+</p>
+
+<br>
+
+<p align="center">
+  <img src=".github/assets/screenshots/settings.png" alt="ShipLog settings page" width="62%">
+  <br><em>Settings: poll interval, optional GitHub / Docker Hub tokens for more changelogs, plus optional Ollama summaries and Matrix alerts.</em>
+</p>
+
+<br>
+
+## 3. Features
 
 - **What changed, not just "update available"** — changelog between your running tag and the newest, newest-first, with a link to the full release notes.
 - **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
@@ -52,7 +76,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
 - **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
 
-## 3. Install on Unraid
+## 4. Install on Unraid
 
 The Community Applications template is published in the [unraid-apps](https://github.com/junkerderprovinz/unraid-apps) feed (search **ShipLog** in the Apps tab once it lands). The only required mount is the Docker socket, read-only:
 
@@ -64,7 +88,7 @@ The Community Applications template is published in the [unraid-apps](https://gi
 
 Open the WebUI on port **8484**.
 
-## 4. Configuration
+## 5. Configuration
 
 | Variable | Default | Notes |
 |---|---|---|
@@ -76,7 +100,7 @@ Open the WebUI on port **8484**.
 | `OLLAMA_URL` / `OLLAMA_MODEL` | — | optional AI summaries |
 | `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | — | optional enriched notifications |
 
-## 5. How it works
+## 6. How it works
 
 Every `POLL_INTERVAL`, for each container:
 
@@ -86,10 +110,10 @@ Every `POLL_INTERVAL`, for each container:
 4. **Risk** is a pure function of the version delta.
 5. **Store** in SQLite (status + a small per-container version history) and surface on the API + status page.
 
-## 6. Security
+## 7. Security
 
 ShipLog mounts the Docker socket **read-only** and never issues a write call — it cannot start, stop, recreate, or pull anything. v1 has no authentication and is intended for a trusted LAN; do not expose port 8484 to the internet. It makes outbound HTTPS calls to image registries and (for changelogs) GitHub.
 
-## 7. License
+## 8. License
 
 MIT — see [LICENSE](LICENSE). ShipLog talks to upstream registries and GitHub over their public APIs; it bundles no third-party container content.
