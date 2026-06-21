@@ -1,6 +1,6 @@
 Menu="Utilities"
 Title="ShipLog"
-Icon="anchor"
+Icon="shiplog.png"
 ---
 <?php
 /* ShipLog settings → writes /boot/config/plugins/shiplog/shiplog.cfg via Unraid's
@@ -28,7 +28,7 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
   .sl-hd{display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:16px;
     background:linear-gradient(180deg,#202020,#191919);border:1px solid #2c2c2c;
     border-left:3px solid #6e6e6e;border-radius:12px}
-  .sl-hd .sl-anchor{font-size:30px;line-height:1}
+  .sl-hd .sl-logo{width:42px;height:42px;object-fit:contain;border-radius:8px;flex:none}
   .sl-hd .sl-ttl{font-size:20px;font-weight:600;letter-spacing:.2px}
   .sl-hd .sl-ttl b{font-weight:700}
   .sl-hd .sl-sub{margin-top:2px;color:#9a9a9a;font-size:13px}
@@ -66,7 +66,7 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
 <div class="sl-cfg">
 
   <div class="sl-hd">
-    <span class="sl-anchor">⚓</span>
+    <img class="sl-logo" src="/plugins/shiplog/shiplog.png" alt="ShipLog">
     <div>
       <div class="sl-ttl"><b>Ship</b>Log</div>
       <div class="sl-sub">Read-only update advisor — it never updates anything, it shows what changed and how risky, right in the Docker tab.</div>
