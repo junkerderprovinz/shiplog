@@ -19,6 +19,22 @@ $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
 $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
+
+/* On/Off label in the active Unraid language (no function defs in a .page). */
+$lang = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
+$onoff = array(
+  'en'=>array('On','Off'),   'de'=>array('Ein','Aus'),   'nl'=>array('Aan','Uit'),
+  'fr'=>array('Activé','Désactivé'), 'es'=>array('Activado','Desactivado'),
+  'it'=>array('Attivo','Disattivo'), 'pt'=>array('Ligado','Desligado'),
+  'ru'=>array('Вкл','Выкл'), 'uk'=>array('Увімк','Вимк'), 'bg'=>array('Вкл','Изкл'),
+  'pl'=>array('Wł.','Wył.'), 'cs'=>array('Zap.','Vyp.'),
+  'sv'=>array('På','Av'),    'da'=>array('Til','Fra'),    'no'=>array('På','Av'), 'nb'=>array('På','Av'),
+  'fi'=>array('Päällä','Pois'), 'hu'=>array('Be','Ki'),   'ro'=>array('Pornit','Oprit'),
+  'tr'=>array('Açık','Kapalı'), 'el'=>array('Ενεργό','Ανενεργό'),
+  'zh'=>array('开','关'),     'ja'=>array('オン','オフ'),  'ko'=>array('켜짐','꺼짐'),
+);
+$lbl   = isset($onoff[$lang]) ? $onoff[$lang] : $onoff['en'];
+$onTxt = $lbl[0]; $offTxt = $lbl[1];
 ?>
 
 <style>
@@ -61,6 +77,17 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
   .sl-res.err{color:#d9534f}
   .sl-res.run{color:#9a9a9a}
   .sl-actions{display:flex;gap:10px;margin:4px 2px 20px}
+
+  .sl-switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+  .sl-switch > input{position:absolute;opacity:0;width:0;height:0}
+  .sl-track{position:relative;width:46px;height:24px;flex:none;border-radius:999px;
+    background:#333;border:1px solid #444;transition:background .15s,border-color .15s}
+  .sl-track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
+    border-radius:50%;background:#8a8a8a;transition:transform .15s,background .15s}
+  .sl-switch > input:checked + .sl-track{background:#6e6e6e;border-color:#7a7a7a}
+  .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#f0f0f0}
+  .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px #525252}
+  .sl-state{font-size:13px;color:#bdbdbd;min-width:26px}
 </style>
 
 <div class="sl-cfg">
@@ -81,10 +108,12 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
     <div class="sl-card">
       <h3>Engine</h3>
       <div class="sl-row"><label>Enable</label><div class="sl-in">
-        <select name="ENABLE">
-          <option value="true"  <?=$enable!=='false'?'selected':''?>>Yes</option>
-          <option value="false" <?=$enable==='false'?'selected':''?>>No</option>
-        </select></div></div>
+        <label class="sl-switch">
+          <input type="checkbox" id="sl-enable-cb" <?=$enable!=='false'?'checked':''?> onchange="slEnable(this)">
+          <span class="sl-track"></span>
+          <span class="sl-state" id="sl-enable-state"><?=htmlspecialchars($enable!=='false'?$onTxt:$offTxt)?></span>
+        </label>
+        <input type="hidden" name="ENABLE" id="sl-enable" value="<?=$enable!=='false'?'true':'false'?>"></div></div>
       <div class="sl-row"><label>Port</label><div class="sl-in">
         <input type="text" class="sl-narrow" name="PORT" value="<?=htmlspecialchars($port)?>">
         <span id="sl-statuslink" class="sl-hint"></span></div></div>
@@ -148,6 +177,11 @@ $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
   var a = document.getElementById("sl-statuslink");
   if (a) a.innerHTML = 'status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">open ↗</a>';
 })();
+var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
+function slEnable(cb) {
+  document.getElementById('sl-enable').value = cb.checked ? 'true' : 'false';
+  document.getElementById('sl-enable-state').textContent = cb.checked ? SL_ON : SL_OFF;
+}
 function slCheck(elId, url) {
   var out = document.getElementById(elId);
   out.className = 'sl-res run'; out.textContent = 'Checking…';
