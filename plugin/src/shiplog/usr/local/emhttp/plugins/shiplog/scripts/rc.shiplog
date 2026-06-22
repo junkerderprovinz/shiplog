@@ -28,6 +28,18 @@ is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/d
 start() {
   if [ "$ENABLE" = "false" ]; then echo "shiplog: disabled in settings"; return 0; fi
   if is_running; then echo "shiplog: already running (pid $(cat "$PIDFILE"))"; return 0; fi
+  # Do NOT start until DATA_DIR sits on a real, mounted filesystem. At boot the
+  # plugin installs (and the .plg runs this) BEFORE the array/pools are mounted,
+  # so DATA_DIR would resolve to the root tmpfs: the SQLite version-memory gets
+  # wiped on every reboot, and pre-creating /mnt/user/... can even stop the
+  # user-share (shfs) from mounting. Defer — event/started restarts us once the
+  # array is up and DATA_DIR is on its real (non-root) filesystem.
+  probe="$DATA_DIR"
+  while [ ! -e "$probe" ] && [ "$probe" != "/" ]; do probe=$(dirname "$probe"); done
+  if [ "$(stat -c %d "$probe" 2>/dev/null)" = "$(stat -c %d / 2>/dev/null)" ]; then
+    echo "shiplog: $DATA_DIR still on the root filesystem (array/pool not mounted yet) — deferring until array-start"
+    return 0
+  fi
   # The package may arrive without the exec bit (e.g. built on a filesystem with
   # no Unix mode bits) — enforce it here so the daemon is independent of that.
   [ -f "$BIN" ] && chmod +x "$BIN" 2>/dev/null

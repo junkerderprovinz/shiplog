@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.0.13">
+  <!ENTITY version   "1.0.14">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,16 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.0.14
+- Survive a reboot. The engine no longer starts before the array/pools are
+  mounted: rc.shiplog defers until DATA_DIR is on a real filesystem (not the root
+  tmpfs), so the SQLite version-memory persists across restarts instead of being
+  wiped every boot, and it no longer risks blocking the user share from mounting.
+  event/started brings the daemon up once the array is online.
+- Ollama: log the exact reason a summary comes back empty (HTTP status, an empty
+  model response, or output that is not the expected JSON) instead of a silent
+  "returned nothing", so AI-summary problems can be diagnosed.
 
 ### 1.0.13
 - The Engine "Enable" setting is now an on/off toggle (a switch) instead of a
@@ -126,7 +136,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>e7207df43806a50e8873ee5a9a68b8c9fc167505f9e0c00312dbef8118a873f4</SHA256>
+  <SHA256>598d9252c7a44e50619ce8b5c6536f6c19cb1cf3278b1d155ef5c7adee662120</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

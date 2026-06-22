@@ -8,6 +8,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -100,16 +102,25 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 
 	resp, err := o.client.Do(req)
 	if err != nil {
+		log.Printf("shiplog: ollama %s: request failed: %v", c.Name, err)
 		return nil, false
 	}
 	defer func() { _ = resp.Body.Close() }()
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 256<<10))
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("shiplog: ollama %s: HTTP %d: %s", c.Name, resp.StatusCode, snippet(string(body)))
 		return nil, false
 	}
 	var gen struct {
 		Response string `json:"response"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&gen); err != nil {
+	if err := json.Unmarshal(body, &gen); err != nil {
+		log.Printf("shiplog: ollama %s: cannot decode /api/generate response: %v", c.Name, err)
+		return nil, false
+	}
+	r := strings.TrimSpace(gen.Response)
+	if r == "" {
+		log.Printf("shiplog: ollama %s: empty model response (the model produced nothing)", c.Name)
 		return nil, false
 	}
 	// With format:"json" the model's answer is itself a JSON document in Response.
@@ -118,10 +129,12 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 		Breaking []string `json:"breaking"`
 		Risk     string   `json:"risk"`
 	}
-	if err := json.Unmarshal([]byte(gen.Response), &out); err != nil {
+	if err := json.Unmarshal([]byte(r), &out); err != nil {
+		log.Printf("shiplog: ollama %s: model output is not the expected JSON: %v — got: %s", c.Name, err, snippet(r))
 		return nil, false
 	}
 	if len(out.Bullets) == 0 && len(out.Breaking) == 0 && out.Risk == "" {
+		log.Printf("shiplog: ollama %s: parsed JSON but bullets/breaking/risk are all empty — got: %s", c.Name, snippet(r))
 		return nil, false
 	}
 	return &model.AISummary{
@@ -130,4 +143,16 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 		Risk:     out.Risk,
 		Model:    o.model,
 	}, true
+}
+
+// snippet collapses whitespace and caps a string for a single-line log message.
+func snippet(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > 240 {
+		s = s[:240] + "…"
+	}
+	if s == "" {
+		s = "(empty)"
+	}
+	return s
 }
