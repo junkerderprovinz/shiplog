@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    ":enableVulnerabilityAlertsWithLabel(security)"
+  ],
+  "timezone": "Europe/Vienna",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 6,
+  "postUpdateOptions": ["gomodTidy"],
+  "packageRules": [
+    {
+      "description": "Go modules: grouped, manual review (tests gate behaviour)",
+      "matchManagers": ["gomod"],
+      "groupName": "Go modules",
+      "commitMessagePrefix": "chore:",
+      "labels": ["go"]
+    },
+    {
+      "description": "Docker base images (golang build stage, distroless runtime): manual review",
+      "matchManagers": ["dockerfile"],
+      "groupName": "base images",
+      "commitMessagePrefix": "build:",
+      "labels": ["base-image"]
+    },
+    {
+      "description": "GitHub Actions: auto-merge minor/patch/digest",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true,
+      "automergeType": "branch",
+      "commitMessagePrefix": "ci:",
+      "labels": ["github-actions"]
+    },
+    {
+      "description": "GitHub Actions major: manual PRs",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "commitMessagePrefix": "ci:",
+      "labels": ["github-actions", "major-update"]
+    }
+  ]
+}
