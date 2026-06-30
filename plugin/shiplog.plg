@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.1.0">
+  <!ENTITY version   "1.2.0">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,24 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.2.0
+- Shows the changelog of the pending update itself (the target release's notes)
+  instead of assembling the whole version span — fewer registry/GitHub calls, so
+  it shows something more often.
+- Rate-limit (HTTP 429) robustness for registries like ghcr.io / lscr.io: honours
+  Retry-After with backoff, throttles per host, reuses your GitHub token to
+  authenticate those registries, and keeps the last-known result instead of
+  "unknown" on a transient 429. Set a GitHub token (Settings) to mostly avoid 429
+  and empty changelogs.
+- "Update now" button in the changelog bubble when an update is available. ShipLog
+  stays read-only: the button triggers Unraid's own apply-update for that
+  container; it never writes to the Docker socket itself.
+- Ollama Autodetect now finds an Ollama running as a container (it asks the Docker
+  socket and probes the container's address), not just host ports.
+- Buttons match Unraid's native style and hover via the theme; the bubble link is
+  now labelled "Repository" since a project may not live on GitHub.
+- The status page shows the real ShipLog logo instead of the anchor glyph.
 
 ### 1.1.0
 - Shows the INSTALLED version instead of just "latest". ShipLog now reads the
@@ -155,7 +173,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>c8383b6e048f5f65e167126c2a27b906058b2f2444dfb2b7ea02c85477cb69a3</SHA256>
+  <SHA256>6bcde8415c75fedec04e954f1232fe163e784f3dc7e98ae740d27c94e768cef0</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
