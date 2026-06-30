@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.2.2">
+  <!ENTITY version   "1.2.3">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,13 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.2.3
+- The risk dot is now a meaningful traffic light. An up-to-date container shows
+  GREEN (it was a dead grey), so a healthy box reads as a wall of green instead of
+  grey; grey now means only "could not resolve a version" (e.g. an anonymous rate
+  limit — set a GitHub token in Settings to grade it). Orange is a minor update,
+  red a major one.
 
 ### 1.2.2
 - Fixes the risk dot colour. A rolling ":latest" update is now graded by its real
@@ -185,7 +192,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>69313af234eb73f75b17c4a4b325fd801dbec3885606365cbeb4209c4c53d84e</SHA256>
+  <SHA256>81f8ef9b943fa8f014ce4bcc1dfc23a84052a840bdf9267c3f53a2feef778b9b</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

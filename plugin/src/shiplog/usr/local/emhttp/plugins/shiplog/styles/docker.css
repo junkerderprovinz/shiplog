@@ -8,11 +8,16 @@
 .sl-chip:hover{color:#3c8ac0}
 .sl-ico{width:13px;height:13px;opacity:.85;flex:none}
 .sl-amp{width:8px;height:8px;border-radius:50%;flex:none}
+/* Traffic light. green = nothing to worry about (up to date OR a low-risk/patch/
+   digest update); orange = minor; red = major; grey = could not resolve a version
+   (e.g. an anonymous rate limit) → set a GitHub token to grade it. "ok" (up to
+   date) is GREEN, not a dead grey, so a healthy box reads as a wall of green and
+   grey is reserved for a genuine unknown. */
 .sl-amp.sl-low {background:#3fae6a}
 .sl-amp.sl-mid {background:#d6a243}
 .sl-amp.sl-high{background:#d9534f}
 .sl-amp.sl-grey{background:#8a8a8a}
-.sl-amp.sl-ok  {background:#525252}
+.sl-amp.sl-ok  {background:#3fae6a}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
@@ -21,6 +26,7 @@
 .sl-pill.sl-mid {color:#d6a243;border-color:#7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
 .sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
+.sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
 
 /* The bubble adapts to Unraid's theme: defaults are dark; .sl-light is applied
    by docker.js when the page background is light (detected by luminance). */
