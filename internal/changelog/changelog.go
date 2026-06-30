@@ -43,28 +43,6 @@ func (ch Chain) Get(ctx context.Context, c model.Container, fromTag, toTag strin
 // changelog unit stays decoupled from internal/risk and internal/resolver.
 type semver struct{ major, minor, patch int }
 
-// compare returns -1 if v < o, 0 if equal, +1 if v > o.
-func (v semver) compare(o semver) int {
-	if c := cmpInt(v.major, o.major); c != 0 {
-		return c
-	}
-	if c := cmpInt(v.minor, o.minor); c != 0 {
-		return c
-	}
-	return cmpInt(v.patch, o.patch)
-}
-
-func cmpInt(a, b int) int {
-	switch {
-	case a < b:
-		return -1
-	case a > b:
-		return 1
-	default:
-		return 0
-	}
-}
-
 // parseSemver strips a leading 'v', drops any '-prerelease'/'+build' suffix,
 // and reads up to three numeric components (missing default to 0). It reports
 // false if there are zero numeric components or any present one is non-numeric.
