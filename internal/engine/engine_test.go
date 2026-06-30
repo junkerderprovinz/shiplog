@@ -129,6 +129,31 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	// The whole sweep still succeeded despite one container failing.
 }
 
+// A rolling ":latest" whose resolved version actually moved (7.1.0 -> 7.2.0) must
+// be classified by that version delta (minor/medium), not the flat tag comparison
+// (latest vs latest -> digest/low) that cannot see the jump.
+func TestSweepRollingTagUsesVersionDeltaForRisk(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "oc", Name: "opencloud", Repo: "ghcr.io/o/opencloud", Tag: "latest", Digest: "sha256:run", ImageVersion: "7.1.0"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		// rolling tag unchanged (latest==latest), but the resolved newest semver is 7.2.0
+		"ghcr.io/o/opencloud": {tag: "latest", dig: "sha256:new", verTag: "7.2.0", verDig: "sha256:v72"},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	oc := st.rows["oc"]
+	if oc.Kind != model.KindMinor || oc.Risk != model.RiskMedium {
+		t.Fatalf("rolling tag with version jump: want minor/medium, got %s/%s", oc.Kind, oc.Risk)
+	}
+	if oc.RunningVersion != "7.1.0" {
+		t.Fatalf("running version: want 7.1.0 (from image label), got %q", oc.RunningVersion)
+	}
+}
+
 func TestDecideRunningVersion(t *testing.T) {
 	const (
 		dRun = "sha256:running" // digest of the running image

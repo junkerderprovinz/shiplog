@@ -46,7 +46,7 @@ func Classify(cur, newest, curDigest, newDigest string) (model.Kind, model.RiskL
 		reason := fmt.Sprintf("major version bump %d.x → %d.x — review breaking changes", curVer.major, newVer.major)
 		return model.KindMajor, model.RiskHigh, reason
 	case newVer.minor != curVer.minor:
-		reason := fmt.Sprintf("minor version bump %d.%d → %d.%d — new features, low risk", curVer.major, curVer.minor, newVer.major, newVer.minor)
+		reason := fmt.Sprintf("minor version bump %d.%d → %d.%d — new features, review the changelog", curVer.major, curVer.minor, newVer.major, newVer.minor)
 		return model.KindMinor, model.RiskMedium, reason
 	default:
 		reason := fmt.Sprintf("patch version bump %s → %s — fixes only, low risk", curVer.String(), newVer.String())
