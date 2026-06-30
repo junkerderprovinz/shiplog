@@ -145,4 +145,5 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           repository: ${{ vars.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
+          short-description: "Changelog bubbles in the Unraid Docker tab: see what changed before you update a container."
           enable-url-completion: true

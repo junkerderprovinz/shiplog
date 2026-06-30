@@ -28,7 +28,7 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const NAME = "ShipLog";
 const CLAIM = "Read the changelog before you set sail.";
 const W = 1600, H = 500;
-const LH = 420, LW = 420;     // logo is square (viewBox 0 0 1000 1000)
+const LH = 420, LW = 420;     // logo is square (viewBox 0 0 994 994)
 const nameSize = 168, claimSize = 44, gap = 56, lineGap = 20;
 
 // Two themes so the banner adapts in GitHub (light/dark via <picture>): the logo
@@ -85,8 +85,8 @@ const claimPath = claimFont.getPath(CLAIM, textX, claimBaseline, claimSize).toPa
 const logoRaw = readFileSync(join(__dir, "logo.svg"), "utf8")
   .replace(/<\?xml[^>]*\?>\s*/, "")
   .replace(
-    /<svg\b[^>]*viewBox="0 0 1000 1000"[^>]*>/,
-    `<svg x="${LX.toFixed(1)}" y="${LY.toFixed(1)}" width="${LW}" height="${LH}" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">`,
+    /<svg\b[^>]*viewBox="0 0 994 994"[^>]*>/,
+    `<svg x="${LX.toFixed(1)}" y="${LY.toFixed(1)}" width="${LW}" height="${LH}" viewBox="0 0 994 994" xmlns="http://www.w3.org/2000/svg">`,
   );
 
 for (const t of THEMES) {
