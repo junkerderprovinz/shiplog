@@ -74,11 +74,13 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-hint{color:#7c7c7c;font-size:12px}
   .sl-cfg a{color:#8ab4f8;text-decoration:none}
 
-  .sl-btn{background:#262626;border:1px solid #3a3a3a;border-radius:7px;color:#e6e6e6;
+  /* Match Unraid's native buttons via its theme vars (--button/--button-hover,
+     --text/--border) so Apply + the helpers look native + hover like the rest of
+     the GUI; fallbacks keep the dark look on themes/older builds without them. */
+  .sl-btn{background:var(--button,#262626);border:1px solid var(--border,#3a3a3a);border-radius:4px;color:var(--text,#e6e6e6);
     padding:7px 14px;font:13px/1.2 inherit;cursor:pointer}
-  .sl-btn:hover{border-color:#5a5a5a;background:#2d2d2d}
-  .sl-btn.sl-primary{background:#2f9e54;border-color:#3fae6a;color:#fff;font-weight:600}
-  .sl-btn.sl-primary:hover{background:#34b061;border-color:#46c578}
+  .sl-btn:hover{background:var(--button-hover,#2d2d2d);border-color:var(--border,#5a5a5a)}
+  .sl-btn.sl-primary{font-weight:600}
   .sl-btn.sl-eye{padding:7px 10px;min-width:58px}
   .sl-res{font-size:12.5px}
   .sl-res.ok{color:#3fae6a}

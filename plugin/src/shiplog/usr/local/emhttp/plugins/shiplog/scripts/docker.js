@@ -40,6 +40,8 @@
       skips: "skips %n releases", newest: "newest %d",
       summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
       deprecated: "DEPRECATED",
+      updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
+      updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
       none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
     },
     de: {
@@ -47,6 +49,8 @@
       skips: "überspringt %n Releases", newest: "neuestes %d",
       summary: "Zusammenfassung", raw: "Changelog (roh)", source: "Quelle", close: "schließen", uptodate: "aktuell",
       deprecated: "VERALTET",
+      updateNow: "Jetzt aktualisieren", updateHint: "löst Unraids eigenes Update für diesen Container aus",
+      updateGone: "Unraids Update-Knopf nicht gefunden — nutze „Aktualisierung anwenden“ in der Zeile.",
       none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
     },
   };
@@ -256,7 +260,7 @@
     };
     const href = repoRoot(c.source) || repoRoot(cl.url) || ghFromImage(c.repo || c.image);
     const gh = href
-      ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">GitHub ↗</a>`
+      ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">Repository ↗</a>`
       : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
@@ -269,10 +273,31 @@
         <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${pillTxt}</span>
         ${cl.deprecated ? `<span class="sl-pill sl-high" title="upstream repository is archived">⚠ ${esc(T("deprecated"))}</span>` : ""}
         <span class="sl-jump">${esc(jump)}</span>
-        <span class="sl-bh-right">${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
+        <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${esc(T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
       ${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
+  }
+
+  // "Update now" keeps ShipLog read-only: it never touches the Docker socket — it
+  // triggers Unraid's OWN per-container update (the "apply update" control the
+  // Docker tab already shows) by finding it in the row's update cell and clicking
+  // it; Unraid runs the update. Returns false if it can't be found.
+  function triggerNativeUpdate(name) {
+    if (!name) return false;
+    for (const tr of findRows()) {
+      if (norm(rowName(tr)) !== norm(name)) continue;
+      const cell = findUpdateCell(tr);
+      if (!cell) return false;
+      const cands = Array.from(cell.querySelectorAll("a[onclick],a[href],span[onclick],[onclick]"))
+        .filter((n) => !n.closest(".sl-chip") && !n.closest(".sl-chiprow"));
+      const blob = (n) => norm(n.textContent) + " " + norm(n.getAttribute("onclick") || "");
+      const apply = cands.find((n) => /apply update|aktualisierung anwenden|rebuild ready|applyupdate|updatecontainer|installupdate|installxml/.test(blob(n)));
+      const target = apply || cands.find((n) => /update|aktualisier/.test(blob(n)));
+      if (target) { target.click(); return true; }
+      return false;
+    }
+    return false;
   }
 
   function openFor(anchor, st) {
@@ -294,6 +319,12 @@
     b.style.left = left + "px";
     b.style.top = window.scrollY + r.bottom + 8 + "px";
     b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); close(); });
+    const updBtn = b.querySelector(".sl-upd");
+    if (updBtn) updBtn.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (triggerNativeUpdate(st.container && st.container.name)) close();
+      else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
+    });
     // persist size whenever the user drags the resize handle
     try {
       const ro = new ResizeObserver(() => {

@@ -15,6 +15,12 @@ import (
 //go:embed status.html
 var statusHTML string
 
+// logoSVG is the ShipLog mark (a white-disc icon so the dark wheel reads on the
+// dark Carbon page), embedded so the standalone binary serves it self-contained.
+//
+//go:embed logo.svg
+var logoSVG []byte
+
 var statusTmpl = template.Must(template.New("status").Parse(statusHTML))
 
 // StatusSource is the read side of the store the API exposes.
@@ -43,8 +49,16 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/containers", a.listJSON)
 	mux.HandleFunc("GET /api/container/{id}", a.oneJSON)
 	mux.HandleFunc("POST /api/refresh", a.refresh)
+	mux.HandleFunc("GET /logo.svg", a.logo)
 	mux.HandleFunc("GET /", a.statusPage)
 	return mux
+}
+
+// logo serves the embedded ShipLog mark for the status page header.
+func (a *API) logo(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(logoSVG)
 }
 
 func (a *API) listJSON(w http.ResponseWriter, _ *http.Request) {

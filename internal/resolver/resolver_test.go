@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // newTestServer builds a fake OCI registry v2 backend. When requireAuth is
@@ -67,10 +69,13 @@ func newTestServer(requireAuth bool) *httptest.Server {
 }
 
 // newResolverFor returns a Resolver whose baseURL maps every host to the test
-// server, so the resolver talks only to the fake registry.
+// server, so the resolver talks only to the fake registry. Backoff sleeps and
+// the per-host gate are neutered so tests run instantly and deterministically.
 func newResolverFor(srv *httptest.Server) *Resolver {
 	r := New()
 	r.baseURL = func(host string) string { return srv.URL }
+	r.gate = newHostGate(0)                           // no inter-request spacing in tests
+	r.sleep = func(context.Context, time.Duration) {} // don't actually back off
 	return r
 }
 
@@ -233,6 +238,207 @@ func TestNewestSemver_AcceptsTwoPartTags(t *testing.T) {
 	for _, c := range cases {
 		if got := newestSemver(c.tags); got != c.want {
 			t.Errorf("newestSemver(%v) = %q, want %q", c.tags, got, c.want)
+		}
+	}
+}
+
+// A transient 429 on tags/list must be retried (honouring Retry-After) and
+// succeed once the registry stops rate-limiting.
+func TestResolve_RetriesOn429ThenSucceeds(t *testing.T) {
+	var tagsCalls int32
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v2/lib/app/tags/list", func(w http.ResponseWriter, r *http.Request) {
+		// First two attempts: 429 with a Retry-After; third: the real list.
+		if atomic.AddInt32(&tagsCalls, 1) <= 2 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"tags":["1.0.0","1.2.0","latest"]}`))
+	})
+	mux.HandleFunc("/v2/lib/app/manifests/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Docker-Content-Digest", "sha256:OK")
+		w.WriteHeader(http.StatusOK)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	r := newResolverFor(srv)
+	newest, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
+	if err != nil {
+		t.Fatalf("Resolve after retried 429: %v", err)
+	}
+	if newest != "1.2.0" {
+		t.Errorf("newestTag = %q, want 1.2.0", newest)
+	}
+	if got := atomic.LoadInt32(&tagsCalls); got != 3 {
+		t.Errorf("tags/list called %d×, want 3 (two 429s + one success)", got)
+	}
+}
+
+// A 429 that never clears (exceeds the retry budget) surfaces a clear, honest
+// rate-limit error rather than a generic "unexpected status".
+func TestResolve_429ExhaustsRetriesWithClearError(t *testing.T) {
+	var tagsCalls int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/tags/list") {
+			atomic.AddInt32(&tagsCalls, 1)
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	r := newResolverFor(srv)
+	_, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
+	if err == nil {
+		t.Fatal("expected an error when 429 persists")
+	}
+	if !strings.Contains(err.Error(), "rate limited") {
+		t.Errorf("error = %q, want a clear rate-limit message", err.Error())
+	}
+	// 1 initial + maxRetries attempts.
+	if got := atomic.LoadInt32(&tagsCalls); got != int32(maxRetries+1) {
+		t.Errorf("tags/list called %d×, want %d", got, maxRetries+1)
+	}
+}
+
+// When a GitHub token is configured, the token request for ghcr.io / lscr.io
+// must carry HTTP Basic auth (any user, token as password) so the issued bearer
+// has the authenticated rate limit. The token never leaks to other registries.
+func TestResolve_GitHubTokenBasicAuthOnGHCR(t *testing.T) {
+	const tok = "ghp_secret"
+	for _, host := range []string{"ghcr.io", "lscr.io"} {
+		t.Run(host, func(t *testing.T) {
+			var gotTokenAuth string
+			mux := http.NewServeMux()
+			mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+				gotTokenAuth = r.Header.Get("Authorization")
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"token":"x"}`))
+			})
+			mux.HandleFunc("/v2/o/app/tags/list", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"tags":["1.0.0","1.2.0","latest"]}`))
+			})
+			mux.HandleFunc("/v2/o/app/manifests/", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Docker-Content-Digest", "sha256:Z")
+				w.WriteHeader(http.StatusOK)
+			})
+			srv := httptest.NewServer(nil)
+			defer srv.Close()
+			srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasPrefix(r.URL.Path, "/v2/o/app/") && r.Header.Get("Authorization") == "" {
+					w.Header().Set("WWW-Authenticate",
+						`Bearer realm="`+srv.URL+`/token",service="`+host+`",scope="repository:o/app:pull"`)
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				mux.ServeHTTP(w, r)
+			})
+
+			r := newResolverFor(srv).WithGitHubToken(tok)
+			if _, _, _, _, err := r.Resolve(context.Background(), host+"/o/app", "latest", ""); err != nil {
+				t.Fatalf("Resolve: %v", err)
+			}
+			want := "Basic " + base64.StdEncoding.EncodeToString([]byte("x:"+tok))
+			if gotTokenAuth != want {
+				t.Errorf("token request Authorization = %q, want %q", gotTokenAuth, want)
+			}
+		})
+	}
+}
+
+// A GitHub token must NEVER be attached to a non-ghcr registry's token request.
+func TestResolve_GitHubTokenNotLeakedToOtherRegistries(t *testing.T) {
+	var gotTokenAuth string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		gotTokenAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"x"}`))
+	})
+	mux.HandleFunc("/v2/o/app/tags/list", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"tags":["1.0.0","latest"]}`))
+	})
+	mux.HandleFunc("/v2/o/app/manifests/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Docker-Content-Digest", "sha256:Z")
+		w.WriteHeader(http.StatusOK)
+	})
+	srv := httptest.NewServer(nil)
+	defer srv.Close()
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/v2/o/app/") && r.Header.Get("Authorization") == "" {
+			w.Header().Set("WWW-Authenticate",
+				`Bearer realm="`+srv.URL+`/token",service="quay.io",scope="repository:o/app:pull"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
+	r := newResolverFor(srv).WithGitHubToken("ghp_secret")
+	if _, _, _, _, err := r.Resolve(context.Background(), "quay.io/o/app", "latest", ""); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if gotTokenAuth != "" {
+		t.Errorf("token request to quay.io carried Authorization %q, want none", gotTokenAuth)
+	}
+}
+
+func TestRetryAfter(t *testing.T) {
+	const def = 2 * time.Second
+	cases := []struct {
+		name string
+		hdr  string
+		want time.Duration
+	}{
+		{"empty falls back to default", "", def},
+		{"delta-seconds", "5", 5 * time.Second},
+		{"zero seconds", "0", 0},
+		{"clamped to max", "9999", maxRetryWait},
+		{"garbage falls back to default", "soon", def},
+	}
+	for _, c := range cases {
+		if got := retryAfter(c.hdr, def); got != c.want {
+			t.Errorf("%s: retryAfter(%q) = %v, want %v", c.name, c.hdr, got, c.want)
+		}
+	}
+}
+
+func TestBackoffGrowsAndCaps(t *testing.T) {
+	// Each attempt's backoff (minus jitter) must be >= the base*2^attempt, and
+	// never exceed maxBackoff + one jitter quantum.
+	prev := time.Duration(0)
+	for attempt := 0; attempt < 8; attempt++ {
+		d := backoff(attempt)
+		if d < baseBackoff {
+			t.Errorf("attempt %d: backoff %v < base %v", attempt, d, baseBackoff)
+		}
+		if d > maxBackoff+baseBackoff {
+			t.Errorf("attempt %d: backoff %v exceeds cap %v", attempt, d, maxBackoff+baseBackoff)
+		}
+		if attempt > 0 && attempt < 5 && d < prev {
+			t.Errorf("attempt %d: backoff %v not growing (prev %v)", attempt, d, prev)
+		}
+		prev = d
+	}
+}
+
+func TestIsTransient(t *testing.T) {
+	cases := map[int]bool{
+		http.StatusTooManyRequests:    true,
+		http.StatusServiceUnavailable: true,
+		http.StatusOK:                 false,
+		http.StatusNotFound:           false,
+		http.StatusForbidden:          false,
+	}
+	for code, want := range cases {
+		if got := isTransient(code); got != want {
+			t.Errorf("isTransient(%d) = %v, want %v", code, got, want)
 		}
 	}
 }

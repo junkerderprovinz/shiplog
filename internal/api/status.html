@@ -10,7 +10,8 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--txt);font:14px/1.5 "Segoe UI",system-ui,sans-serif;padding:0 0 48px}
   header{display:flex;align-items:center;gap:16px;padding:18px 28px;border-bottom:1px solid var(--line)}
-  .brand{font-size:19px;font-weight:600}.brand b{font-weight:700}
+  .brand{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:600}.brand b{font-weight:700}
+  .brand img{width:26px;height:26px;display:block}
   .spacer{flex:1}.meta{color:var(--dim2);font-size:12.5px}
   a.btn{color:var(--dim);border:1px solid var(--line2);border-radius:7px;padding:5px 11px;font-size:12.5px;text-decoration:none}
   main{max-width:1180px;margin:22px auto 0;padding:0 28px}
@@ -35,7 +36,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">&#9875; <b>Ship</b>Log</div>
+  <div class="brand"><img src="/logo.svg" alt="" width="26" height="26"><span><b>Ship</b>Log</span></div>
   <div class="spacer"></div>
   <div class="meta">{{.Count}} containers &middot; {{.Updates}} with updates</div>
   <a class="btn" href="?{{if .Mono}}{{else}}mono=1{{end}}">{{if .Mono}}colour badges{{else}}monochrome{{end}}</a>

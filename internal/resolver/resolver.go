@@ -12,9 +12,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,6 +31,24 @@ const acceptManifests = "application/vnd.oci.image.index.v1+json, " +
 // images resolve) — the only host we ever attach Docker Hub credentials to.
 const dockerHubRegistry = "registry-1.docker.io"
 
+// ghcrHosts are the GitHub-backed registries whose anonymous token endpoint
+// honours a GITHUB_TOKEN as HTTP Basic auth, raising the (otherwise sharply
+// rate-limited) anonymous tags/list budget. lscr.io is LinuxServer's GHCR proxy
+// and shares ghcr.io's token flow.
+var ghcrHosts = map[string]bool{"ghcr.io": true, "lscr.io": true}
+
+// Retry/throttle tuning. A sweep over ~55 containers bursts tags/list at one
+// registry host (ghcr.io / lscr.io), which rate-limits anonymous reads with a
+// 429. We retry the transient statuses a couple of times with backoff that
+// honours Retry-After, and serialise per host with a tiny gap so we never burst.
+const (
+	maxRetries   = 3                      // attempts beyond the first on 429/503
+	baseBackoff  = 500 * time.Millisecond // first backoff; doubles each retry
+	maxBackoff   = 8 * time.Second        // cap so a sweep can't stall on one host
+	hostMinGap   = 150 * time.Millisecond // minimum spacing between requests per host
+	maxRetryWait = 30 * time.Second       // ignore an absurd Retry-After
+)
+
 // Resolver talks to OCI registries to resolve newest tag + same-tag digest.
 type Resolver struct {
 	httpClient *http.Client
@@ -42,6 +62,18 @@ type Resolver struct {
 	// authenticated (higher) rate limit. Never sent to any other registry.
 	dhUser  string
 	dhToken string
+
+	// Optional GitHub token. When set it is sent as HTTP Basic auth (any
+	// username, the token as password) on the token request for ghcr.io / lscr.io,
+	// which raises the anonymous tags/list rate limit those hosts enforce.
+	ghToken string
+
+	// gate serialises requests per registry host with a tiny minimum gap, so a
+	// concurrent sweep over many containers on the same host never bursts.
+	gate *hostGate
+
+	// sleep is the (injectable) wait used for backoff; tests stub it to run fast.
+	sleep func(context.Context, time.Duration)
 }
 
 // New returns a Resolver with a sane default HTTP client and an HTTPS baseURL.
@@ -49,6 +81,8 @@ func New() *Resolver {
 	return &Resolver{
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		baseURL:    func(host string) string { return "https://" + host },
+		gate:       newHostGate(hostMinGap),
+		sleep:      sleepCtx,
 	}
 }
 
@@ -57,6 +91,56 @@ func New() *Resolver {
 func (r *Resolver) WithDockerHubAuth(user, token string) *Resolver {
 	r.dhUser, r.dhToken = user, token
 	return r
+}
+
+// WithGitHubToken sets the optional GitHub token used to authenticate against
+// ghcr.io / lscr.io (returns r for chaining). An empty value leaves anonymous
+// access unchanged.
+func (r *Resolver) WithGitHubToken(token string) *Resolver {
+	r.ghToken = token
+	return r
+}
+
+// hostGate enforces a minimum gap between requests to the same registry host.
+type hostGate struct {
+	mu   sync.Mutex
+	last map[string]time.Time
+	gap  time.Duration
+}
+
+func newHostGate(gap time.Duration) *hostGate {
+	return &hostGate{last: map[string]time.Time{}, gap: gap}
+}
+
+// wait blocks until at least gap has elapsed since the previous request to host,
+// or until ctx is cancelled. It reserves the slot before sleeping so concurrent
+// callers for the same host queue rather than all firing at once.
+func (g *hostGate) wait(ctx context.Context, host string) {
+	if g == nil || g.gap <= 0 {
+		return
+	}
+	g.mu.Lock()
+	now := time.Now()
+	next := now
+	if t, ok := g.last[host]; ok && t.After(now) {
+		next = t
+	}
+	g.last[host] = next.Add(g.gap)
+	delay := next.Sub(now)
+	g.mu.Unlock()
+	if delay > 0 {
+		sleepCtx(ctx, delay)
+	}
+}
+
+// sleepCtx sleeps for d unless ctx is cancelled first.
+func sleepCtx(ctx context.Context, d time.Duration) {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+	case <-t.C:
+	}
 }
 
 // Resolve inspects an image's upstream registry and reports:
@@ -139,6 +223,12 @@ func (r *Resolver) fetchTags(ctx context.Context, base, host, pathRepo string) (
 		}
 		if resp.StatusCode != http.StatusOK {
 			_ = resp.Body.Close()
+			// A 429 that survives the retries is the registry rate-limiting our
+			// anonymous reads; say so plainly so the engine can keep the last-known
+			// result (and the user knows a token would help) instead of "unknown".
+			if resp.StatusCode == http.StatusTooManyRequests {
+				return nil, fmt.Errorf("tags/list: rate limited (429) for %s — set GITHUB_TOKEN for ghcr.io/lscr.io to raise the limit", pathRepo)
+			}
 			return nil, fmt.Errorf("tags/list: unexpected status %d for %s", resp.StatusCode, pathRepo)
 		}
 		var body struct {
@@ -204,9 +294,11 @@ func (r *Resolver) fetchDigest(ctx context.Context, base, host, pathRepo, tag st
 type header struct{ key, value string }
 
 // doAuthed performs the request and, on a 401 carrying a Bearer challenge,
-// fetches an anonymous token and retries once with Authorization set.
+// fetches an anonymous (or token-backed) bearer and retries once with
+// Authorization set. Transient rate-limit/unavailable statuses are retried with
+// backoff inside do.
 func (r *Resolver) doAuthed(ctx context.Context, method, url, host, pathRepo string, extra ...header) (*http.Response, error) {
-	resp, err := r.do(ctx, method, url, "", extra...)
+	resp, err := r.do(ctx, method, url, host, "", extra...)
 	if err != nil {
 		return nil, err
 	}
@@ -224,29 +316,96 @@ func (r *Resolver) doAuthed(ctx context.Context, method, url, host, pathRepo str
 	if err != nil {
 		return nil, err
 	}
-	return r.do(ctx, method, url, token, extra...)
+	return r.do(ctx, method, url, host, token, extra...)
 }
 
-// do issues a single request, optionally with a bearer token.
-func (r *Resolver) do(ctx context.Context, method, url, token string, extra ...header) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, url, nil)
-	if err != nil {
-		return nil, err
+// do issues a request (optionally with a bearer token), gating per host and
+// retrying transient rate-limit (429) / unavailable (503) responses with
+// bounded exponential backoff that honours Retry-After. The last response is
+// returned even when it's still a 429/503, so the caller can surface it.
+func (r *Resolver) do(ctx context.Context, method, url, host, token string, extra ...header) (*http.Response, error) {
+	var resp *http.Response
+	for attempt := 0; ; attempt++ {
+		r.gate.wait(ctx, host)
+		req, err := http.NewRequestWithContext(ctx, method, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		for _, h := range extra {
+			req.Header.Set(h.key, h.value)
+		}
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp, err = r.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if !isTransient(resp.StatusCode) || attempt >= maxRetries {
+			return resp, nil
+		}
+		// Transient and we have a retry left: honour Retry-After, else back off.
+		wait := retryAfter(resp.Header.Get("Retry-After"), backoff(attempt))
+		_ = resp.Body.Close()
+		r.sleep(ctx, wait)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 	}
-	for _, h := range extra {
-		req.Header.Set(h.key, h.value)
+}
+
+// isTransient reports whether a status is worth retrying: 429 (rate limited) or
+// 503 (temporarily unavailable).
+func isTransient(code int) bool {
+	return code == http.StatusTooManyRequests || code == http.StatusServiceUnavailable
+}
+
+// backoff returns the exponential delay for a zero-based attempt with a small
+// jitter, capped at maxBackoff.
+func backoff(attempt int) time.Duration {
+	d := baseBackoff << attempt
+	if d > maxBackoff {
+		d = maxBackoff
 	}
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	return d + time.Duration(rand.Int63n(int64(baseBackoff)))
+}
+
+// retryAfter parses a Retry-After header (delta-seconds or HTTP-date) and clamps
+// it to maxRetryWait; it falls back to def when absent or unparseable.
+func retryAfter(h string, def time.Duration) time.Duration {
+	h = strings.TrimSpace(h)
+	if h == "" {
+		return def
 	}
-	return r.httpClient.Do(req)
+	if secs, err := strconv.Atoi(h); err == nil && secs >= 0 {
+		return clampWait(time.Duration(secs) * time.Second)
+	}
+	if t, err := http.ParseTime(h); err == nil {
+		if d := time.Until(t); d > 0 {
+			return clampWait(d)
+		}
+		return 0
+	}
+	return def
+}
+
+// clampWait bounds a wait to [0, maxRetryWait].
+func clampWait(d time.Duration) time.Duration {
+	if d > maxRetryWait {
+		return maxRetryWait
+	}
+	if d < 0 {
+		return 0
+	}
+	return d
 }
 
 // fetchToken parses a Bearer WWW-Authenticate challenge, GETs the realm with
 // the advertised service and an enforced repository:<repo>:pull scope, and
-// returns the token. For Docker Hub (host == registry-1.docker.io) it attaches
-// HTTP Basic auth from the configured credentials, so the issued token carries
-// the authenticated (higher) rate limit; credentials are never sent elsewhere.
+// returns the token. It attaches HTTP Basic auth so the issued token carries the
+// authenticated (higher) rate limit, host-scoped: Docker Hub credentials only on
+// registry-1.docker.io, and a GitHub token (any user, token as password) only on
+// ghcr.io / lscr.io. Credentials are never sent to any other registry.
 func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host string) (string, error) {
 	params := parseChallenge(challenge)
 	realm := params["realm"]
@@ -262,12 +421,17 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 		"&scope=" + queryEscape("repository:"+pathRepo+":pull")
 
 	var extra []header
-	if host == dockerHubRegistry && r.dhUser != "" && r.dhToken != "" {
+	switch {
+	case host == dockerHubRegistry && r.dhUser != "" && r.dhToken != "":
 		cred := base64.StdEncoding.EncodeToString([]byte(r.dhUser + ":" + r.dhToken))
+		extra = append(extra, header{"Authorization", "Basic " + cred})
+	case ghcrHosts[host] && r.ghToken != "":
+		// ghcr.io accepts the PAT as the password with any username.
+		cred := base64.StdEncoding.EncodeToString([]byte("x:" + r.ghToken))
 		extra = append(extra, header{"Authorization", "Basic " + cred})
 	}
 
-	resp, err := r.do(ctx, http.MethodGet, url, "", extra...)
+	resp, err := r.do(ctx, http.MethodGet, url, host, "", extra...)
 	if err != nil {
 		return "", err
 	}

@@ -40,9 +40,15 @@
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
 .sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px}
 .sl-bubble .sl-bh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.sl-bubble .sl-gh{color:var(--sl-dim);border:1px solid var(--sl-line2);border-radius:7px;padding:4px 10px;
-  text-decoration:none;font-size:12px;white-space:nowrap}
-.sl-bubble .sl-gh:hover{color:var(--sl-txt);border-color:var(--sl-edge)}
+/* Match Unraid's native buttons: its theme exposes --button/--button-hover
+   (+ --text/--border), so these adapt to the active Unraid theme incl. hover.
+   Fallbacks keep the dark-bubble look on themes/older builds without the vars. */
+.sl-bubble .sl-gh,.sl-bubble .sl-upd{background:var(--button,#2b2b2b);color:var(--text,var(--sl-txt));
+  border:1px solid var(--border,var(--sl-line2));border-radius:4px;padding:5px 11px;
+  text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer}
+.sl-bubble .sl-upd{font-weight:600}
+.sl-bubble .sl-gh:hover,.sl-bubble .sl-upd:hover{background:var(--button-hover,#373737);border-color:var(--border,var(--sl-edge))}
+.sl-bubble .sl-upd.sl-upd-off{background:transparent;color:var(--sl-dim);border-color:var(--sl-line2);font-weight:400;cursor:default}
 .sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);border:1px solid var(--sl-line2);
   border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
 .sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid var(--sl-line)}
