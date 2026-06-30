@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -40,65 +39,76 @@ type ghRelease struct {
 	PublishedAt time.Time `json:"published_at"`
 }
 
-// Get mines GitHub releases for the span (fromTag, toTag]. It returns
-// (nil, false) when the container source is not a github.com repo or the API
-// call fails, so the chain can fall through. When the repo is on GitHub it
-// returns (changelog, true) even if no releases matched the span — a github
-// repo with zero matches is still a better answer than a worse source.
+// Get resolves the TARGET update's release notes — the notes for toTag (the
+// newest tag the engine resolved), or the repo's latest release when toTag is a
+// rolling tag like "latest". This is a single GitHub call (plus the optional
+// archived check), versus the old "mine the whole from→to span" which made many;
+// the smaller request volume eases GitHub's rate limit, and showing the pending
+// update's own notes is what the user asked for.
+//
+// It returns (nil, false) so the chain falls through to the version-delta
+// Fallback when: the source is not a github.com repo, the API call fails (incl.
+// rate limit), OR the repo has no usable release (404 on both the exact tag and
+// the latest release). When a release is found it returns (changelog, true) with
+// that single release as entries[0] and its body in Raw.
 func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool) {
 	owner, repo, ok := parseGitHubRepo(c.Source)
 	if !ok {
 		return nil, false
 	}
 
-	rels, ok := g.fetchReleases(ctx, owner, repo)
-	if !ok {
-		return nil, false // API failure (incl. rate limit) → fall through.
+	// The target release: the exact release for toTag, else (rolling tag, or no
+	// release named after it) the repo's latest release. nil → no usable release.
+	rel := g.fetchTargetRelease(ctx, owner, repo, toTag)
+	if rel == nil {
+		return nil, false // no release notes → let the Fallback's version-delta win
 	}
 
-	entries := selectSpan(rels, fromTag, toTag)
-
-	// Up to date (running == newest): there's no span, but we still want to show
-	// the release notes of the version actually in use — the exact release for the
-	// tag, else the latest release (e.g. when the tag is "latest").
-	if fromTag == toTag {
-		if e := releaseByTag(rels, toTag); e != nil {
-			entries = []model.ReleaseEntry{*e}
-		} else if e := latestRelease(rels); e != nil {
-			entries = []model.ReleaseEntry{*e}
-		}
-	}
-
-	skipped := 0
-	if len(entries) > 1 {
-		skipped = len(entries) - 1
-	}
-
-	bodies := make([]string, 0, len(entries))
-	for _, e := range entries {
-		bodies = append(bodies, e.Body)
-	}
-
-	// The archived ("deprecated/EOL") check is a second GitHub call per container
-	// per sweep — half the anonymous budget. Only spend it when there's a
-	// changelog worth annotating; a repo with zero releases shows no pill anyway.
-	deprecated := false
-	if len(entries) > 0 {
-		deprecated = g.repoArchived(ctx, owner, repo)
-	}
-
+	// The archived ("deprecated/EOL") check is a second GitHub call; spend it now
+	// that we have a release worth annotating.
 	cl := &model.Changelog{
 		FromTag:      fromTag,
 		ToTag:        toTag,
-		SkippedCount: skipped,
-		Entries:      entries,
-		Raw:          strings.Join(bodies, "\n\n"),
+		SkippedCount: 0, // we show only the target release now, never a span
+		Entries:      []model.ReleaseEntry{*rel},
+		Raw:          rel.Body,
 		Source:       "GitHub releases (OCI label)",
 		Provider:     "github",
-		URL:          "https://github.com/" + owner + "/" + repo + "/compare/" + fromTag + "..." + toTag,
-		Deprecated:   deprecated,
+		URL:          "https://github.com/" + owner + "/" + repo + "/releases",
+		Deprecated:   g.repoArchived(ctx, owner, repo),
 	}
 	return cl, true
+}
+
+// fetchTargetRelease returns the release to show: the exact release named after
+// toTag (v-prefix tolerant), else the repo's latest release. It returns nil when
+// the repo has no usable release (404) OR on a transport/rate-limit failure — in
+// both cases Get falls through so the version-delta Fallback handles it.
+func (g *GitHub) fetchTargetRelease(ctx context.Context, owner, repo, toTag string) *model.ReleaseEntry {
+	// A real version tag: ask for that exact release directly (one call). A 404
+	// just means the project didn't cut a GitHub release for it — fall back to
+	// the latest release below. Any other non-200 (e.g. a 429/403 rate limit) is
+	// a real failure → give up (nil) so the chain falls through.
+	if isVersionTag(toTag) {
+		rel, status, ok := g.fetchRelease(ctx, owner, repo, "/releases/tags/"+toTag)
+		switch {
+		case ok:
+			return rel
+		case status != http.StatusNotFound:
+			return nil
+		}
+	}
+	// Rolling tag, or no release for the exact tag: the repo's latest release.
+	rel, _, _ := g.fetchRelease(ctx, owner, repo, "/releases/latest")
+	return rel
+}
+
+// isVersionTag reports whether a tag looks like a real version (e.g. "1.8",
+// "v2.3.1") rather than a rolling tag like "latest" — used to decide whether to
+// request a specific release vs. the repo's latest.
+func isVersionTag(tag string) bool {
+	_, ok := parseSemver(tag)
+	return ok
 }
 
 // repoArchived reports whether the GitHub repo is archived (a good "deprecated /
@@ -129,13 +139,16 @@ func (g *GitHub) repoArchived(ctx context.Context, owner, repo string) bool {
 	return body.Archived
 }
 
-// fetchReleases pulls up to 100 releases. The bool is false on any transport or
-// non-200 error, signalling the chain to fall through.
-func (g *GitHub) fetchReleases(ctx context.Context, owner, repo string) ([]ghRelease, bool) {
-	url := g.baseURL + "/repos/" + owner + "/" + repo + "/releases?per_page=100"
+// fetchRelease GETs a single release endpoint (e.g. "/releases/latest" or
+// "/releases/tags/v1.2.3") and decodes it into a ReleaseEntry. It returns the
+// HTTP status alongside ok so the caller can distinguish a 404 (no such release,
+// keep going) from a transport/rate-limit failure (fall through). status is 0
+// when the request couldn't be issued at all.
+func (g *GitHub) fetchRelease(ctx context.Context, owner, repo, path string) (*model.ReleaseEntry, int, bool) {
+	url := g.baseURL + "/repos/" + owner + "/" + repo + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, false
+		return nil, 0, false
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	if g.token != "" {
@@ -144,7 +157,7 @@ func (g *GitHub) fetchReleases(ctx context.Context, owner, repo string) ([]ghRel
 
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		return nil, false
+		return nil, 0, false
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
@@ -155,14 +168,14 @@ func (g *GitHub) fetchReleases(ctx context.Context, owner, repo string) ([]ghRel
 		if isRateLimited(resp) {
 			g.warnRateLimit()
 		}
-		return nil, false
+		return nil, resp.StatusCode, false
 	}
 
-	var rels []ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&rels); err != nil {
-		return nil, false
+	var rel ghRelease
+	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		return nil, resp.StatusCode, false
 	}
-	return rels, true
+	return toEntry(rel), resp.StatusCode, true
 }
 
 // isRateLimited reports whether resp is GitHub's rate-limit response: a 403 or
@@ -186,91 +199,9 @@ func (g *GitHub) warnRateLimit() {
 	})
 }
 
-// selectSpan keeps releases with fromTag < tag <= toTag (semver, v-prefix
-// tolerant) and returns them mapped to ReleaseEntry, sorted newest-first.
-// Non-semver tags and tags outside the span are dropped.
-func selectSpan(rels []ghRelease, fromTag, toTag string) []model.ReleaseEntry {
-	from, fromOK := parseSemver(fromTag)
-	to, toOK := parseSemver(toTag)
-
-	kept := make([]struct {
-		v semver
-		e model.ReleaseEntry
-	}, 0, len(rels))
-
-	for _, r := range rels {
-		v, ok := parseSemver(r.TagName)
-		if !ok {
-			continue
-		}
-		if fromOK && v.compare(from) <= 0 {
-			continue // not strictly above fromTag
-		}
-		if toOK && v.compare(to) > 0 {
-			continue // above toTag
-		}
-		kept = append(kept, struct {
-			v semver
-			e model.ReleaseEntry
-		}{
-			v: v,
-			e: model.ReleaseEntry{
-				Tag:         r.TagName,
-				Body:        r.Body,
-				URL:         r.HTMLURL,
-				PublishedAt: r.PublishedAt,
-			},
-		})
-	}
-
-	sort.SliceStable(kept, func(i, j int) bool {
-		return kept[i].v.compare(kept[j].v) > 0 // newest first
-	})
-
-	entries := make([]model.ReleaseEntry, 0, len(kept))
-	for _, k := range kept {
-		entries = append(entries, k.e)
-	}
-	return entries
-}
-
 // toEntry maps a GitHub release to a ReleaseEntry.
 func toEntry(r ghRelease) *model.ReleaseEntry {
 	return &model.ReleaseEntry{Tag: r.TagName, Body: r.Body, URL: r.HTMLURL, PublishedAt: r.PublishedAt}
-}
-
-// releaseByTag returns the release whose tag equals tag (v-prefix tolerant).
-func releaseByTag(rels []ghRelease, tag string) *model.ReleaseEntry {
-	want := strings.TrimPrefix(tag, "v")
-	for i := range rels {
-		if rels[i].TagName == tag || strings.TrimPrefix(rels[i].TagName, "v") == want {
-			return toEntry(rels[i])
-		}
-	}
-	return nil
-}
-
-// latestRelease returns the highest-semver release, or the first one if none
-// parse as semver (the API returns newest-first).
-func latestRelease(rels []ghRelease) *model.ReleaseEntry {
-	best := -1
-	var bestV semver
-	for i := range rels {
-		v, ok := parseSemver(rels[i].TagName)
-		if !ok {
-			continue
-		}
-		if best < 0 || v.compare(bestV) > 0 {
-			best, bestV = i, v
-		}
-	}
-	if best < 0 {
-		if len(rels) == 0 {
-			return nil
-		}
-		best = 0
-	}
-	return toEntry(rels[best])
 }
 
 // parseGitHubRepo extracts owner/repo from a github.com URL, tolerating a

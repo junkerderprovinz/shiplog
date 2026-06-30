@@ -85,6 +85,28 @@ func TestStatusPage(t *testing.T) {
 	if !strings.Contains(rr.Body.String(), "immich") {
 		t.Fatal("status page missing container name")
 	}
+	// The header must reference the served logo, not the old anchor glyph.
+	if !strings.Contains(rr.Body.String(), `src="/logo.svg"`) {
+		t.Error("status page header does not reference /logo.svg")
+	}
+	if strings.Contains(rr.Body.String(), "&#9875;") {
+		t.Error("status page still carries the old anchor glyph")
+	}
+}
+
+func TestLogo(t *testing.T) {
+	h, _ := testAPI()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/logo.svg", nil))
+	if rr.Code != 200 {
+		t.Fatalf("logo: code %d", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); !strings.Contains(ct, "image/svg+xml") {
+		t.Errorf("logo: Content-Type = %q, want image/svg+xml", ct)
+	}
+	if !strings.Contains(rr.Body.String(), "<svg") {
+		t.Error("logo: body is not an SVG document")
+	}
 }
 
 func TestUnknownPath404(t *testing.T) {

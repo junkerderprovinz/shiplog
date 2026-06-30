@@ -78,12 +78,15 @@ func (e *Engine) WithNotifier(n Notifier) *Engine {
 	return e
 }
 
-// New builds an Engine. workers caps the per-sweep concurrency.
+// New builds an Engine. workers caps the per-sweep concurrency. It is kept low
+// on purpose: a sweep over ~55 containers mostly hits the same registry host
+// (ghcr.io / lscr.io), and a high fan-out triggers anonymous 429s. The resolver
+// also gates per host, so a small pool keeps the request rate civil.
 func New(c Collector, r Resolver, cl Changelogger, s Storer, interval time.Duration) *Engine {
 	return &Engine{
 		collector: c, resolver: r, changelog: cl, store: s,
 		interval: interval,
-		workers:  6,
+		workers:  3,
 		refresh:  make(chan struct{}, 1),
 		now:      time.Now,
 	}
@@ -130,6 +133,17 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 
 	newestTag, newestDigest, newestVerTag, newestVerDigest, err := e.resolver.Resolve(ctx, c.Repo, c.Tag, c.Digest)
 	if err != nil {
+		// A transient lookup failure (e.g. a 429 burst against the registry) must
+		// NOT blank a container we already resolved. When we have a usable prior
+		// row, carry its verdict + changelog forward unchanged and stay silent —
+		// the next sweep refreshes it. Only when there's no prior data do we fall
+		// back to a bare "unknown" with an honest error.
+		if hasPrior && prior.Kind != "" && prior.Kind != model.KindUnknown {
+			prior.Container = c // refresh metadata (rename/tag); keep the verdict
+			prior.CheckedAt = st.CheckedAt
+			prior.Error = ""
+			return prior
+		}
 		st.Error = "could not resolve upstream: " + err.Error()
 		st.Kind = model.KindUnknown
 		st.Risk = model.RiskUnknown

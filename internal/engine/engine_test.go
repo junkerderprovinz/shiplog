@@ -295,6 +295,76 @@ func TestSweepResolveErrorFallsBackToImageVersion(t *testing.T) {
 	}
 }
 
+// A transient resolve failure (e.g. a 429 burst) must NOT blank a container we
+// already resolved: the prior verdict + changelog are carried forward unchanged
+// and no error is surfaced. Only the CheckedAt timestamp advances.
+func TestSweepTransientFailureKeepsPriorVerdict(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:d"},
+	}}
+	st := &fakeStore{}
+	// Seed a good prior row (as a successful earlier sweep would have stored).
+	prior := model.UpdateStatus{
+		Container:      model.Container{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:d"},
+		RunningVersion: "1.122.0",
+		NewestTag:      "1.124.0",
+		Kind:           model.KindMinor,
+		Risk:           model.RiskMedium,
+		RiskReason:     "2 minor versions",
+		Changelog:      &model.Changelog{Provider: "github", Raw: "notes"},
+	}
+	_ = st.Upsert(prior)
+
+	// This sweep's resolve fails transiently.
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/immich": {err: errors.New("tags/list: rate limited (429)")},
+	}}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	row := st.rows["im"]
+	if row.Error != "" {
+		t.Errorf("transient failure surfaced an error %q; should stay silent with a prior row", row.Error)
+	}
+	if row.Kind != model.KindMinor || row.Risk != model.RiskMedium {
+		t.Errorf("verdict not carried forward: kind=%s risk=%s", row.Kind, row.Risk)
+	}
+	if row.NewestTag != "1.124.0" || row.RunningVersion != "1.122.0" {
+		t.Errorf("versions not carried forward: newest=%q running=%q", row.NewestTag, row.RunningVersion)
+	}
+	if row.Changelog == nil || row.Changelog.Raw != "notes" {
+		t.Errorf("changelog not carried forward: %#v", row.Changelog)
+	}
+}
+
+// A transient resolve failure with NO usable prior must fall back to the bare
+// "unknown" verdict and surface the honest error.
+func TestSweepTransientFailureNoPriorSurfacesError(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "new", Name: "fresh", Repo: "ghcr.io/x/fresh", Tag: "latest", Digest: "sha256:d", ImageVersion: "2.0.0"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/fresh": {err: errors.New("tags/list: rate limited (429)")},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	row := st.rows["new"]
+	if row.Error == "" {
+		t.Error("first-sight transient failure must surface an error")
+	}
+	if row.Risk != model.RiskUnknown {
+		t.Errorf("risk = %s, want unknown", row.Risk)
+	}
+	if row.RunningVersion != "2.0.0" {
+		t.Errorf("running version = %q, want the image-label 2.0.0", row.RunningVersion)
+	}
+}
+
 func TestSweepReturnsCollectorError(t *testing.T) {
 	e := New(errCollector{}, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour)
 	if err := e.Sweep(context.Background()); err == nil {
