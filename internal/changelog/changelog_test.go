@@ -194,6 +194,78 @@ func TestGitHub_Get_GitHubButNoMatches_StillHandled(t *testing.T) {
 	}
 }
 
+func TestGitHub_Get_RateLimited_FallsThrough(t *testing.T) {
+	// A 403 with X-RateLimit-Remaining: 0 is GitHub's anonymous rate-limit
+	// response: the provider must fall through (so the chain reaches Fallback).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-RateLimit-Remaining", "0")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"API rate limit exceeded"}`))
+	}))
+	t.Cleanup(srv.Close)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
+	if ok || cl != nil {
+		t.Fatalf("rate-limited: got (%v, %v), want (nil, false)", cl, ok)
+	}
+}
+
+func TestIsRateLimited(t *testing.T) {
+	mk := func(code int, remaining string) *http.Response {
+		h := http.Header{}
+		if remaining != "" {
+			h.Set("X-RateLimit-Remaining", remaining)
+		}
+		return &http.Response{StatusCode: code, Header: h}
+	}
+	cases := []struct {
+		name string
+		resp *http.Response
+		want bool
+	}{
+		{"403 with remaining 0 is rate limited", mk(http.StatusForbidden, "0"), true},
+		{"429 with remaining 0 is rate limited", mk(http.StatusTooManyRequests, "0"), true},
+		{"403 with remaining left is not rate limited", mk(http.StatusForbidden, "12"), false},
+		{"403 without the header is not rate limited", mk(http.StatusForbidden, ""), false},
+		{"404 is never rate limited", mk(http.StatusNotFound, "0"), false},
+	}
+	for _, c := range cases {
+		if got := isRateLimited(c.resp); got != c.want {
+			t.Errorf("%s: isRateLimited = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// A repo with zero releases must NOT spend the second (archived) GitHub call.
+func TestGitHub_Get_NoReleases_SkipsArchivedCall(t *testing.T) {
+	var archivedCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/o/r/releases":
+			_, _ = w.Write([]byte(`[]`)) // valid, but empty
+		case "/repos/o/r":
+			archivedCalls++
+			_, _ = w.Write([]byte(`{"archived":false}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
+	if !ok || cl == nil {
+		t.Fatal("github repo (even with no releases) must still be handled")
+	}
+	if archivedCalls != 0 {
+		t.Errorf("archived endpoint called %d time(s), want 0 (no releases → no second call)", archivedCalls)
+	}
+}
+
 func TestGitHub_Get_TrailingGitAndSlash(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")

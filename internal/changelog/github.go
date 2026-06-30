@@ -3,9 +3,11 @@ package changelog
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
@@ -17,6 +19,7 @@ type GitHub struct {
 	httpClient *http.Client
 	baseURL    string // GitHub REST API base, injectable for tests.
 	token      string // optional PAT; sent as a Bearer header when non-empty.
+	warnOnce   sync.Once
 }
 
 // New returns a GitHub provider with a sane HTTP client and the public API base.
@@ -50,7 +53,7 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 
 	rels, ok := g.fetchReleases(ctx, owner, repo)
 	if !ok {
-		return nil, false // API failure → fall through.
+		return nil, false // API failure (incl. rate limit) → fall through.
 	}
 
 	entries := selectSpan(rels, fromTag, toTag)
@@ -76,6 +79,14 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 		bodies = append(bodies, e.Body)
 	}
 
+	// The archived ("deprecated/EOL") check is a second GitHub call per container
+	// per sweep — half the anonymous budget. Only spend it when there's a
+	// changelog worth annotating; a repo with zero releases shows no pill anyway.
+	deprecated := false
+	if len(entries) > 0 {
+		deprecated = g.repoArchived(ctx, owner, repo)
+	}
+
 	cl := &model.Changelog{
 		FromTag:      fromTag,
 		ToTag:        toTag,
@@ -85,7 +96,7 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 		Source:       "GitHub releases (OCI label)",
 		Provider:     "github",
 		URL:          "https://github.com/" + owner + "/" + repo + "/compare/" + fromTag + "..." + toTag,
-		Deprecated:   g.repoArchived(ctx, owner, repo),
+		Deprecated:   deprecated,
 	}
 	return cl, true
 }
@@ -137,6 +148,13 @@ func (g *GitHub) fetchReleases(ctx context.Context, owner, repo string) ([]ghRel
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
+		// A rate-limited anonymous client (60 req/h, shared per source IP) is the
+		// usual reason a github-sourced container shows no changelog. It's silent
+		// otherwise — the chain just falls to the empty Fallback — so say it once,
+		// loudly, with the remedy. 403/429 + Remaining:0 is GitHub's rate-limit shape.
+		if isRateLimited(resp) {
+			g.warnRateLimit()
+		}
 		return nil, false
 	}
 
@@ -145,6 +163,27 @@ func (g *GitHub) fetchReleases(ctx context.Context, owner, repo string) ([]ghRel
 		return nil, false
 	}
 	return rels, true
+}
+
+// isRateLimited reports whether resp is GitHub's rate-limit response: a 403 or
+// 429 whose X-RateLimit-Remaining header is "0".
+func isRateLimited(resp *http.Response) bool {
+	if resp.StatusCode != http.StatusForbidden && resp.StatusCode != http.StatusTooManyRequests {
+		return false
+	}
+	return resp.Header.Get("X-RateLimit-Remaining") == "0"
+}
+
+// warnRateLimit logs the rate-limit cause and remedy exactly once per provider,
+// so a sweep over many github-sourced containers doesn't flood the log.
+func (g *GitHub) warnRateLimit() {
+	g.warnOnce.Do(func() {
+		if g.token != "" {
+			log.Print("shiplog: GitHub API rate limit hit despite GITHUB_TOKEN — changelogs will be incomplete until it resets")
+			return
+		}
+		log.Print("shiplog: GitHub API rate limit hit (anonymous, 60 req/h) — changelogs are empty until it resets; set GITHUB_TOKEN to raise the limit to 5000/h")
+	})
 }
 
 // selectSpan keeps releases with fromTag < tag <= toTag (semver, v-prefix

@@ -115,21 +115,49 @@
   }
 
   // ──────────────────────────────────────────────────────── rows
+  // A folder-header row is NOT a container — skip it. The "Folder View" plugin
+  // (v3 and the older docker.folder) groups containers into collapsible folder
+  // rows; the header carries .folder / .folder-id-* and its update cell is the
+  // folder's own .folder-update aggregate, never a real container verdict.
+  function isFolderHeader(tr) {
+    return !!(tr.classList.contains("folder") ||
+      tr.querySelector(":scope > td.folder-name, :scope > td.folder-update"));
+  }
+
   function findRows() {
+    // Canonical Unraid Docker tab: tbody#docker_list inside table#docker_containers.
+    // A plain container row is tr.sortable; under Folder View v3 an *expanded*
+    // folder's members are re-emitted as tr.folder-element siblings (collapsed
+    // members live inside the folder's .folder-storage and have no rendered
+    // update cell, so they're correctly invisible to us until expanded — the
+    // MutationObserver re-tags them when they appear). Both carry td.ct-name +
+    // td.updatecolumn, so one selector covers native AND Folder View.
     const candidates = [
-      "table#docker_list tbody tr",
+      "#docker_list tr.sortable, #docker_list tr.folder-element",
+      "#docker_list > tr",
+      "table#docker_containers tbody tr",
       "table.tablesorter tbody tr",
       "div.tabs table tbody tr",
       "table tbody tr",
     ];
     for (const sel of candidates) {
-      const rows = Array.from(document.querySelectorAll(sel))
-        .filter((tr) => tr.querySelector("img") && tr.textContent.trim().length > 1);
+      const rows = Array.from(document.querySelectorAll(sel)).filter((tr) =>
+        !isFolderHeader(tr) &&
+        // real container row: either Unraid's name/update cells, or (unknown
+        // skin fallback) an icon image with some text.
+        (tr.querySelector("td.ct-name, td.updatecolumn") ||
+          (tr.querySelector("img") && tr.textContent.trim().length > 1)));
       if (rows.length) return rows;
     }
     return [];
   }
   function rowName(tr) {
+    // Prefer Unraid's own name cell (stable across native + Folder View).
+    const appname = tr.querySelector("td.ct-name .appname");
+    if (appname && appname.textContent.trim()) return appname.textContent.trim().slice(0, 60);
+    // Unraid (and Folder View) tag each container row id="ct-<name>".
+    const id = tr.id || "";
+    if (/^ct-/.test(id)) return id.slice(3).slice(0, 60);
     const img = tr.querySelector("img");
     const cell = img ? img.closest("td") || tr : tr;
     const a = cell.querySelector("a");
@@ -139,6 +167,11 @@
     return name.slice(0, 60);
   }
   function findUpdateCell(tr) {
+    // Unraid's update-status cell carries .updatecolumn (native + Folder View
+    // container rows alike). Never a folder's .folder-update — folder headers
+    // are already filtered out of findRows().
+    const direct = tr.querySelector("td.updatecolumn:not(.folder-update)");
+    if (direct) return direct;
     const cells = Array.from(tr.querySelectorAll("td"));
     for (const td of cells) {
       if (UPDATE_PHRASES.some((p) => td.textContent.toLowerCase().includes(p))) return td;

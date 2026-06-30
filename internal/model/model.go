@@ -13,6 +13,12 @@ type Container struct {
 	Digest string `json:"digest"` // running image digest, "sha256:..."
 	Source string `json:"source"` // org.opencontainers.image.source label, may be ""
 	State  string `json:"state"`  // "running" / "exited" / ...
+	// ImageVersion is the version the running image declares about itself via the
+	// OCI label org.opencontainers.image.version (fallback .revision), read from
+	// the image config. "" when the image carries no such label. It lets a
+	// rolling (":latest") container report its version immediately, without
+	// waiting for ShipLog to first witness an update.
+	ImageVersion string `json:"image_version"`
 }
 
 // RiskLevel is the severity verdict for an available update.
