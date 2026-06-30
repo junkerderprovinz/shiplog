@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.2.1">
+  <!ENTITY version   "1.2.2">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,12 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.2.2
+- Fixes the risk dot colour. A rolling ":latest" update is now graded by its real
+  version jump, so a minor shows orange and a major shows red, instead of always a
+  flat grey/green "digest" dot. Containers ShipLog cannot resolve a version for
+  stay grey; a same-version image rebuild stays a low (green) digest update.
 
 ### 1.2.1
 - The settings Apply button no longer stays greyed out after Ollama Autodetect
@@ -179,7 +185,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>e87a94b50edb368a3b3aa5d7526cb60f01cc6189eae0efdca1c97aecc328541e</SHA256>
+  <SHA256>69313af234eb73f75b17c4a4b325fd801dbec3885606365cbeb4209c4c53d84e</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

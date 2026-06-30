@@ -166,6 +166,15 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 	st.RunningVersion = decideRunningVersion(c, newestVerTag, newestVerDigest, prior, hasPrior)
 
 	kind, level, reason := risk.Classify(c.Tag, newestTag, c.Digest, newestDigest)
+	// A rolling tag (":latest") makes the raw tag comparison blind to the real
+	// jump — latest vs latest looks like a flat "digest, low risk". When we
+	// resolved two real versions, classify by that delta instead, so an actual
+	// minor/major update shows the right risk (orange/red) rather than "digest".
+	if isVersion(st.RunningVersion) && isVersion(newestVerTag) {
+		if vk, vl, vr := risk.Classify(st.RunningVersion, newestVerTag, "", ""); vk != model.KindUnknown && vk != model.KindNone {
+			kind, level, reason = vk, vl, vr
+		}
+	}
 	st.Kind, st.Risk, st.RiskReason = kind, level, reason
 
 	// Resolve a changelog for EVERY container, so each can show one: the update
