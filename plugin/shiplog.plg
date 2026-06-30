@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.2.0">
+  <!ENTITY version   "1.2.1">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,12 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.2.1
+- The settings Apply button no longer stays greyed out after Ollama Autodetect
+  (a programmatically filled field now announces its change to Unraid).
+- The Update and Repository buttons in the changelog bubble use the Unraid accent:
+  an orange outline that fills on hover.
 
 ### 1.2.0
 - Shows the changelog of the pending update itself (the target release's notes)
@@ -173,7 +179,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>6bcde8415c75fedec04e954f1232fe163e784f3dc7e98ae740d27c94e768cef0</SHA256>
+  <SHA256>e87a94b50edb368a3b3aa5d7526cb60f01cc6189eae0efdca1c97aecc328541e</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->

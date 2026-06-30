@@ -209,6 +209,14 @@ var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
 function slEnable(cb) {
   document.getElementById('sl-enable').value = cb.checked ? 'true' : 'false';
   document.getElementById('sl-enable-state').textContent = cb.checked ? SL_ON : SL_OFF;
+  slFire(document.getElementById('sl-enable'));
+}
+// Unraid only un-greys Apply when a field fires change/input. A programmatic
+// value change (autodetect, the toggle's hidden field) must announce itself.
+function slFire(el) {
+  if (!el) return;
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 function slCheck(elId, url) {
   var out = document.getElementById(elId);
@@ -250,8 +258,8 @@ function slDetectOllama() {
       out.className = 'sl-res ' + (d.ok ? 'ok' : 'err');
       out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message;
       if (d.ok && d.url) {
-        var u = document.querySelector('[name=OLLAMA_URL]'); if (u) u.value = d.url;
-        var m = document.querySelector('[name=OLLAMA_MODEL]'); if (m && !m.value && d.models && d.models.length) m.value = d.models[0];
+        var u = document.querySelector('[name=OLLAMA_URL]'); if (u) { u.value = d.url; slFire(u); }
+        var m = document.querySelector('[name=OLLAMA_MODEL]'); if (m && !m.value && d.models && d.models.length) { m.value = d.models[0]; slFire(m); }
       }
     })
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
