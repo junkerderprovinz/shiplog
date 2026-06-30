@@ -49,7 +49,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 
 <p align="center">
   <img src=".github/assets/screenshots/changelog-bubble.png" alt="ShipLog changelog bubble in Unraid's Docker tab" width="90%">
-  <br><em>Click the Changelog chip on any container — the bubble shows the version jump, a risk badge, and the raw release notes, right in Unraid's Docker tab.</em>
+  <br><em>Click the Changelog chip on any container — the bubble shows the version jump, a risk badge, the release notes, an optional AI summary, and a read-only Update-now button, right in Unraid's Docker tab.</em>
 </p>
 
 <br>
@@ -63,7 +63,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 
 <p align="center">
   <img src=".github/assets/screenshots/settings.png" alt="ShipLog settings page" width="62%">
-  <br><em>Settings: poll interval, optional GitHub / Docker Hub tokens for more changelogs, plus optional Ollama summaries and Matrix alerts.</em>
+  <br><em>Settings: poll interval, a live engine-status line, optional GitHub / Docker Hub tokens for more changelogs, Ollama (with autodetect) for AI summaries, and Matrix alerts.</em>
 </p>
 
 <br>
