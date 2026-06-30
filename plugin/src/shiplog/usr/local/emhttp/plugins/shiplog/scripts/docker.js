@@ -198,7 +198,7 @@
     const c = st.container || {};
     const cl = st.changelog || {};
     const upd = hasUpdate(st);
-    const rc = upd ? riskClass(st) : "grey";
+    const rc = upd ? riskClass(st) : "ok"; // up to date → green pill, matching the chip dot
     // changelog from/to are the image TAGS ("latest"/"7dtd"), not versions —
     // show a real version when we have one. Newest release tag comes from the
     // resolved release entries; current is the running tag if it looks like a
