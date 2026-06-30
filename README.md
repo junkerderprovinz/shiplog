@@ -48,21 +48,21 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 ## 2. Screenshots
 
 <p align="center">
-  <img src=".github/assets/screenshots/changelog-bubble.png" alt="ShipLog changelog bubble in Unraid's Docker tab" width="90%">
+  <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/changelog-bubble.png" alt="ShipLog changelog bubble in Unraid's Docker tab" width="90%">
   <br><em>Click the Changelog chip on any container — the bubble shows the version jump, a risk badge, the release notes, an optional AI summary, and a read-only Update-now button, right in Unraid's Docker tab.</em>
 </p>
 
 <br>
 
 <p align="center">
-  <img src=".github/assets/screenshots/docker-tab.png" alt="A Changelog chip on every container in the Docker tab" width="34%">
+  <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/docker-tab.png" alt="A Changelog chip on every container in the Docker tab" width="34%">
   <br><em>A Changelog chip sits on every container: a coloured dot when an update is waiting, grey when you're up to date.</em>
 </p>
 
 <br>
 
 <p align="center">
-  <img src=".github/assets/screenshots/settings.png" alt="ShipLog settings page" width="62%">
+  <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/settings.png" alt="ShipLog settings page" width="62%">
   <br><em>Settings: poll interval, a live engine-status line, optional GitHub / Docker Hub tokens for more changelogs, Ollama (with autodetect) for AI summaries, and Matrix alerts.</em>
 </p>
 
