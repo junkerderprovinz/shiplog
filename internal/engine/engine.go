@@ -134,9 +134,16 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 		st.Kind = model.KindUnknown
 		st.Risk = model.RiskUnknown
 		st.RiskReason = "upstream lookup failed"
-		// Keep what we remembered so a transient lookup failure doesn't blank it.
-		if hasPrior {
+		// Keep what we remembered so a transient lookup failure doesn't blank it,
+		// falling back to the image's self-declared version (or a pinned tag) so a
+		// container still shows its version when the registry is unreachable.
+		switch {
+		case hasPrior && prior.RunningVersion != "":
 			st.RunningVersion = prior.RunningVersion
+		case isVersion(c.Tag):
+			st.RunningVersion = c.Tag
+		case isVersion(c.ImageVersion):
+			st.RunningVersion = c.ImageVersion
 		}
 		return st
 	}
@@ -169,14 +176,17 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 // decideRunningVersion determines the version we believe is currently running.
 //
 //   - A pinned version tag IS the running version.
-//   - For a rolling tag (":latest") the tag carries no version, so we only ever
-//     report a version we can stand behind:
+//   - For a rolling tag (":latest") the tag carries no version, so we report the
+//     best version we can stand behind, strongest evidence first:
 //     1. if the running image's digest equals the newest version's digest, the
 //     running image IS that version — proven, even if ":latest" itself lags a
 //     newer published tag;
 //     2. otherwise, if nothing changed since last sight, keep the remembered
-//     version (this is the memory that lets a later update show "1.7 -> 1.8");
-//     3. otherwise we don't know it yet (an out-of-date image we've never proven).
+//     version (the memory that lets a later update show "1.7 -> 1.8");
+//     3. otherwise, the version the image declares about itself via its OCI
+//     version label — so a labelled image shows its version immediately, before
+//     ShipLog has ever witnessed an update;
+//     4. otherwise we don't know it yet (an unlabelled, out-of-date image).
 //
 // newestVerTag/newestVerDigest are the newest SEMVER tag and its digest.
 func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest string, prior model.UpdateStatus, hasPrior bool) string {
@@ -188,6 +198,9 @@ func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest strin
 	}
 	if hasPrior && c.Digest != "" && prior.Container.Digest == c.Digest && prior.RunningVersion != "" {
 		return prior.RunningVersion // unchanged since last sight → remembered
+	}
+	if isVersion(c.ImageVersion) {
+		return c.ImageVersion // the image's self-declared version (OCI label)
 	}
 	return ""
 }

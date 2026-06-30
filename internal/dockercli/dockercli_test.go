@@ -62,11 +62,14 @@ func TestListOverUnixSocket(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(cannedContainersJSON))
 	})
-	// Image inspect supplies the registry manifest digest (RepoDigests).
+	// Image inspect supplies the registry manifest digest (RepoDigests) and the
+	// image's own OCI labels (Config.Labels) — immich declares its version, redis
+	// declares none.
 	mux.HandleFunc("/v1.43/images/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(r.URL.Path, "1111") {
-			_, _ = w.Write([]byte(`{"RepoDigests":["ghcr.io/imagegenius/immich@` + immichManifest + `"]}`))
+			_, _ = w.Write([]byte(`{"RepoDigests":["ghcr.io/imagegenius/immich@` + immichManifest + `"],` +
+				`"Config":{"Labels":{"org.opencontainers.image.version":"1.122.0"}}}`))
 		} else {
 			_, _ = w.Write([]byte(`{"RepoDigests":["redis@` + redisManifest + `"]}`))
 		}
@@ -126,6 +129,9 @@ func TestListOverUnixSocket(t *testing.T) {
 	if immich.Digest != immichManifest {
 		t.Errorf("immich Digest = %q, want the manifest digest %q", immich.Digest, immichManifest)
 	}
+	if immich.ImageVersion != "1.122.0" {
+		t.Errorf("immich ImageVersion = %q, want 1.122.0 (from the OCI version label)", immich.ImageVersion)
+	}
 
 	redis, ok := byName["redis"]
 	if !ok {
@@ -145,6 +151,43 @@ func TestListOverUnixSocket(t *testing.T) {
 	}
 	if redis.Digest != redisManifest {
 		t.Errorf("redis Digest = %q, want the manifest digest %q", redis.Digest, redisManifest)
+	}
+	if redis.ImageVersion != "" {
+		t.Errorf("redis ImageVersion = %q, want empty (image declares no version label)", redis.ImageVersion)
+	}
+}
+
+func TestImageVersion(t *testing.T) {
+	mk := func(cfg, ctr map[string]string) dockerImage {
+		var img dockerImage
+		img.Config.Labels = cfg
+		img.ContainerConfig.Labels = ctr
+		return img
+	}
+	cases := []struct {
+		name string
+		img  dockerImage
+		want string
+	}{
+		{"version label wins",
+			mk(map[string]string{
+				"org.opencontainers.image.version":  "2.7.2",
+				"org.opencontainers.image.revision": "deadbeef",
+			}, nil), "2.7.2"},
+		{"revision is the fallback when version is absent",
+			mk(map[string]string{"org.opencontainers.image.revision": "deadbeef"}, nil), "deadbeef"},
+		{"legacy ContainerConfig labels are read too",
+			mk(nil, map[string]string{"org.opencontainers.image.version": "1.0.0"}), "1.0.0"},
+		{"Config takes precedence over ContainerConfig",
+			mk(map[string]string{"org.opencontainers.image.version": "2.0.0"},
+				map[string]string{"org.opencontainers.image.version": "1.0.0"}), "2.0.0"},
+		{"no labels yields empty",
+			mk(nil, nil), ""},
+	}
+	for _, c := range cases {
+		if got := imageVersion(c.img); got != c.want {
+			t.Errorf("%s: imageVersion = %q, want %q", c.name, got, c.want)
+		}
 	}
 }
 

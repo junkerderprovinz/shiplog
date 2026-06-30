@@ -195,6 +195,44 @@ func TestDecideRunningVersion(t *testing.T) {
 			want:            "",
 		},
 		{
+			name: "image label version shows immediately for an unproven latest",
+			// First sight, digest doesn't match the newest version, no prior — but
+			// the image declares its own version via the OCI label.
+			c:               model.Container{Tag: "latest", Digest: dRun, ImageVersion: "2.7.2"},
+			newestVerTag:    "2.8.0",
+			newestVerDigest: dNew,
+			want:            "2.7.2",
+		},
+		{
+			name: "digest proof outranks the image label",
+			c:    model.Container{Tag: "latest", Digest: dNew, ImageVersion: "1.0.0"},
+			// running image IS the newest version by digest → trust the proof, not
+			// a possibly-stale self-declared label.
+			newestVerTag:    "1.8.0",
+			newestVerDigest: dNew,
+			want:            "1.8.0",
+		},
+		{
+			name: "remembered version outranks the image label",
+			c:    model.Container{Tag: "latest", Digest: dRun, ImageVersion: "9.9.9"},
+			prior: model.UpdateStatus{
+				Container: model.Container{Digest: dRun}, RunningVersion: "1.7.0",
+			},
+			hasPrior:        true,
+			newestVerTag:    "1.9.0",
+			newestVerDigest: dNew,
+			want:            "1.7.0",
+		},
+		{
+			name: "non-version image label is ignored",
+			// A revision SHA (org.opencontainers.image.revision fallback) isn't
+			// version-like, so it must not be shown as a version.
+			c:               model.Container{Tag: "latest", Digest: dRun, ImageVersion: "6e5f64bd"},
+			newestVerTag:    "2.0.0",
+			newestVerDigest: dNew,
+			want:            "",
+		},
+		{
 			name:         "empty running digest never carries forward",
 			c:            model.Container{Tag: "latest", Digest: ""},
 			prior:        model.UpdateStatus{Container: model.Container{Digest: ""}, RunningVersion: "1.7.0"},
@@ -231,6 +269,29 @@ func TestSweepRemembersLatestVersion(t *testing.T) {
 	}
 	if got := st.rows["oh"].RunningVersion; got != "1.8.0" {
 		t.Fatalf("running version not remembered for up-to-date :latest: got %q, want 1.8.0", got)
+	}
+}
+
+// When the registry lookup fails, a container with no remembered version should
+// still show its image-declared version (or pinned tag) rather than blank.
+func TestSweepResolveErrorFallsBackToImageVersion(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "bv", Name: "bombvault", Repo: "ghcr.io/x/bombvault", Tag: "latest", Digest: "sha256:d", ImageVersion: "3.0.1"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/bombvault": {err: errors.New("registry unreachable")},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	row := st.rows["bv"]
+	if row.Error == "" {
+		t.Fatal("resolver error must be captured")
+	}
+	if row.RunningVersion != "3.0.1" {
+		t.Fatalf("running version on resolve error = %q, want 3.0.1 (from image label)", row.RunningVersion)
 	}
 }
 

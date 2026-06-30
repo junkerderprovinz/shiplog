@@ -15,8 +15,14 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// sourceLabel is the OCI label that points at a project's source repository.
-const sourceLabel = "org.opencontainers.image.source"
+// OCI image labels we read. source points at the project repo; version (with
+// revision as a fallback) is what the image declares as its own version, used to
+// show a rolling container's installed version without first witnessing an update.
+const (
+	sourceLabel   = "org.opencontainers.image.source"
+	versionLabel  = "org.opencontainers.image.version"
+	revisionLabel = "org.opencontainers.image.revision"
+)
 
 // Client is a read-only Docker Engine API client over a unix socket.
 type Client struct {
@@ -51,9 +57,24 @@ type dockerContainer struct {
 
 // dockerImage mirrors the subset of /images/{id}/json we consume. RepoDigests
 // carries the registry MANIFEST digest ("repo@sha256:…") — the thing to compare
-// against the registry, unlike ImageID which is the local config digest.
+// against the registry, unlike ImageID which is the local config digest. Config
+// and ContainerConfig hold the image's own OCI labels (the version/revision the
+// image declares about itself).
 type dockerImage struct {
 	RepoDigests []string `json:"RepoDigests"`
+	Config      struct {
+		Labels map[string]string `json:"Labels"`
+	} `json:"Config"`
+	ContainerConfig struct {
+		Labels map[string]string `json:"Labels"`
+	} `json:"ContainerConfig"`
+}
+
+// imageInfo is the per-image data one inspect yields: the registry manifest
+// digest and the version the image declares about itself.
+type imageInfo struct {
+	digest  string
+	version string
 }
 
 // List fetches all containers (running and stopped) and resolves each into a
@@ -81,30 +102,32 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	}
 
 	out := make([]model.Container, 0, len(raw))
-	digestCache := map[string]string{} // ImageID → manifest digest (one inspect per image)
+	infoCache := map[string]imageInfo{} // ImageID → digest+version (one inspect per image)
 	for _, dc := range raw {
 		repo, tag := splitImageRef(dc.Image)
-		dig, ok := digestCache[dc.ImageID]
+		info, ok := infoCache[dc.ImageID]
 		if !ok {
-			dig = c.imageDigest(ctx, dc.ImageID, repo)
-			digestCache[dc.ImageID] = dig
+			info = c.inspectImage(ctx, dc.ImageID, repo)
+			infoCache[dc.ImageID] = info
 		}
 		// Source = the OCI label if present, else derived from a ghcr.io image
 		// (ghcr.io/owner/repo IS github.com/owner/repo) so the changelog resolves
-		// even when the image sets no source label.
+		// even when the image sets no source label. Prefer the container's own
+		// label set (cheap, in the list response); fall back to the image config.
 		source := dc.Labels[sourceLabel]
 		if source == "" {
 			source = ghcrSource(repo)
 		}
 		out = append(out, model.Container{
-			ID:     dc.ID,
-			Name:   containerName(dc.Names),
-			Image:  dc.Image,
-			Repo:   repo,
-			Tag:    tag,
-			Digest: dig,
-			Source: source,
-			State:  dc.State,
+			ID:           dc.ID,
+			Name:         containerName(dc.Names),
+			Image:        dc.Image,
+			Repo:         repo,
+			Tag:          tag,
+			Digest:       info.digest,
+			Source:       source,
+			State:        dc.State,
+			ImageVersion: info.version,
 		})
 	}
 	return out, nil
@@ -124,30 +147,50 @@ func ghcrSource(repo string) string {
 	return "https://github.com/" + parts[0] + "/" + parts[1]
 }
 
-// imageDigest inspects an image and returns its registry manifest digest
-// ("sha256:…"), or "" if the image has none (e.g. built locally, never pulled),
-// in which case the engine simply won't claim a digest update.
-func (c *Client) imageDigest(ctx context.Context, imageID, repo string) string {
+// inspectImage inspects an image once and returns its registry manifest digest
+// ("sha256:…") plus the version the image declares about itself. A zero imageInfo
+// is returned on any error (e.g. built locally, never pulled), in which case the
+// engine simply won't claim a digest update nor a label version.
+func (c *Client) inspectImage(ctx context.Context, imageID, repo string) imageInfo {
 	if imageID == "" {
-		return ""
+		return imageInfo{}
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/images/"+imageID+"/json", nil)
 	if err != nil {
-		return ""
+		return imageInfo{}
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return ""
+		return imageInfo{}
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return ""
+		return imageInfo{}
 	}
 	var img dockerImage
 	if err := json.NewDecoder(resp.Body).Decode(&img); err != nil {
-		return ""
+		return imageInfo{}
 	}
-	return pickDigest(img.RepoDigests, repo)
+	return imageInfo{
+		digest:  pickDigest(img.RepoDigests, repo),
+		version: imageVersion(img),
+	}
+}
+
+// imageVersion reads the version the image declares about itself: the OCI
+// version label, falling back to the revision label. Config.Labels is the modern
+// location; ContainerConfig.Labels is the legacy one. Returns "" when neither
+// label is present.
+func imageVersion(img dockerImage) string {
+	for _, labels := range []map[string]string{img.Config.Labels, img.ContainerConfig.Labels} {
+		if v := labels[versionLabel]; v != "" {
+			return v
+		}
+		if v := labels[revisionLabel]; v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // pickDigest returns the "@sha256:…" digest for repo from a RepoDigests list,

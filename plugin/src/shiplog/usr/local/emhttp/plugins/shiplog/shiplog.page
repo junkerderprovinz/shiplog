@@ -35,6 +35,13 @@ $onoff = array(
 );
 $lbl   = isset($onoff[$lang]) ? $onoff[$lang] : $onoff['en'];
 $onTxt = $lbl[0]; $offTxt = $lbl[1];
+
+/* Best-effort LAN IP for the status-page link — works even when the GUI is opened
+   via the myunraid.net hostname, where location.hostname can't reach :PORT. */
+$lanip = '';
+$net = '/var/local/emhttp/network.ini';
+if (is_file($net) && preg_match('/IPADDR(?::0)?\s*=\s*"?([0-9.]+)/', file_get_contents($net), $mip)) $lanip = $mip[1];
+if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_ADDR'];
 ?>
 
 <style>
@@ -70,7 +77,8 @@ $onTxt = $lbl[0]; $offTxt = $lbl[1];
   .sl-btn{background:#262626;border:1px solid #3a3a3a;border-radius:7px;color:#e6e6e6;
     padding:7px 14px;font:13px/1.2 inherit;cursor:pointer}
   .sl-btn:hover{border-color:#5a5a5a;background:#2d2d2d}
-  .sl-btn.sl-primary{background:#3a3a3a;border-color:#555}
+  .sl-btn.sl-primary{background:#2f9e54;border-color:#3fae6a;color:#fff;font-weight:600}
+  .sl-btn.sl-primary:hover{background:#34b061;border-color:#46c578}
   .sl-btn.sl-eye{padding:7px 10px;min-width:58px}
   .sl-res{font-size:12.5px}
   .sl-res.ok{color:#3fae6a}
@@ -84,7 +92,7 @@ $onTxt = $lbl[0]; $offTxt = $lbl[1];
     background:#333;border:1px solid #444;transition:background .15s,border-color .15s}
   .sl-track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
     border-radius:50%;background:#8a8a8a;transition:transform .15s,background .15s}
-  .sl-switch > input:checked + .sl-track{background:#6e6e6e;border-color:#7a7a7a}
+  .sl-switch > input:checked + .sl-track{background:#2f9e54;border-color:#3fae6a}
   .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#f0f0f0}
   .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px #525252}
   .sl-state{font-size:13px;color:#bdbdbd;min-width:26px}
@@ -130,6 +138,8 @@ $onTxt = $lbl[0]; $offTxt = $lbl[1];
       <div class="sl-row"><label>GitHub token</label><div class="sl-in">
         <input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
         <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-GITHUB_TOKEN',this)">Show</button>
+        <button type="button" class="sl-btn" onclick="slCheckGitHub()">Check</button>
+        <span id="sl-gh-result" class="sl-res"></span>
         <span class="sl-hint">Reads release notes from GitHub. Anonymous GitHub allows only ~60 requests/hour — with many containers that runs out fast and changelogs come back empty. A classic <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a> (no scopes needed) raises it to ~5000/hour.</span></div></div>
       <div class="sl-row"><label>Docker Hub user</label><div class="sl-in">
         <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="your Docker Hub username"></div></div>
@@ -144,7 +154,9 @@ $onTxt = $lbl[0]; $offTxt = $lbl[1];
     <div class="sl-card">
       <h3>AI summaries <small>Optional — Ollama condenses each changelog into "what changes / breaking / risk".</small></h3>
       <div class="sl-row"><label>Ollama URL</label><div class="sl-in">
-        <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434"></div></div>
+        <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434">
+        <button type="button" class="sl-btn" onclick="slDetectOllama()">Autodetect</button>
+        <span class="sl-hint">Probes common local Ollama ports and fills this in.</span></div></div>
       <div class="sl-row"><label>Ollama model</label><div class="sl-in">
         <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>" placeholder="llama3.1">
         <button type="button" class="sl-btn" onclick="slCheckOllama()">Check</button>
@@ -174,8 +186,22 @@ $onTxt = $lbl[0]; $offTxt = $lbl[1];
 <script>
 (function () {
   var port = "<?=htmlspecialchars($port)?>";
+  var host = <?=json_encode($lanip)?> || location.hostname;
   var a = document.getElementById("sl-statuslink");
-  if (a) a.innerHTML = 'status page: <a href="http://' + location.hostname + ':' + port + '/" target="_blank">open ↗</a>';
+  if (!a) return;
+  a.innerHTML = '<span class="sl-res run">checking engine…</span>';
+  fetch("/plugins/shiplog/server/status.php", { headers: { Accept: "application/json" } })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }, function () { return { ok: false, d: null }; }); })
+    .then(function (res) {
+      if (res.ok && Array.isArray(res.d)) {
+        var n = res.d.length;
+        a.innerHTML = '<span class="sl-res ok">✓ engine running · ' + n + ' container' + (n === 1 ? '' : 's') + ' tracked</span>' +
+          ' <span class="sl-hint">status page: <a href="http://' + host + ':' + port + '/" target="_blank" rel="noopener">open ↗</a></span>';
+      } else {
+        a.innerHTML = '<span class="sl-res err">✗ engine not reachable</span> <span class="sl-hint">— enable it above + Apply, then reload</span>';
+      }
+    })
+    .catch(function () { a.innerHTML = '<span class="sl-res err">✗ engine not reachable</span>'; });
 })();
 var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
 function slEnable(cb) {
@@ -209,5 +235,23 @@ function slCheckMatrix() {
   slCheck('sl-matrix-result', '/plugins/shiplog/server/matrix-check.php?hs=' +
     encodeURIComponent(slVal('MATRIX_HOMESERVER')) + '&token=' + encodeURIComponent(slVal('MATRIX_TOKEN')) +
     '&room=' + encodeURIComponent(slVal('MATRIX_ROOM')));
+}
+function slCheckGitHub() {
+  slCheck('sl-gh-result', '/plugins/shiplog/server/github-check.php?token=' + encodeURIComponent(slVal('GITHUB_TOKEN')));
+}
+function slDetectOllama() {
+  var out = document.getElementById('sl-ollama-result');
+  out.className = 'sl-res run'; out.textContent = 'Detecting…';
+  fetch('/plugins/shiplog/server/ollama-detect.php?url=' + encodeURIComponent(slVal('OLLAMA_URL')))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      out.className = 'sl-res ' + (d.ok ? 'ok' : 'err');
+      out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message;
+      if (d.ok && d.url) {
+        var u = document.querySelector('[name=OLLAMA_URL]'); if (u) u.value = d.url;
+        var m = document.querySelector('[name=OLLAMA_MODEL]'); if (m && !m.value && d.models && d.models.length) m.value = d.models[0];
+      }
+    })
+    .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
 }
 </script>
