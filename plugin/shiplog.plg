@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.2.3">
+  <!ENTITY version   "1.2.4">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,14 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.2.4
+- Reworked ShipLog logo on the engine status page, recoloured to read on the
+  dark background.
+- Packaging fix (thanks @jesposito): the plugin package now forces root:root
+  ownership on every file. Without it a Windows-built package baked in the
+  builder's uid, which upgradepkg applied to "/" on install and broke SSH key
+  auth ("bad ownership or modes for directory /").
 
 ### 1.2.3
 - The risk dot is now a meaningful traffic light. An up-to-date container shows
@@ -192,7 +200,7 @@ optional AI summaries (Ollama) and Matrix alerts.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>81f8ef9b943fa8f014ce4bcc1dfc23a84052a840bdf9267c3f53a2feef778b9b</SHA256>
+  <SHA256>6b34b93b1f32415e63cdb988c227f622a9e99ae3794d0f24043b4eb16946363e</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
