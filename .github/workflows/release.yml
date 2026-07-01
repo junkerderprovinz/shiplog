@@ -1,0 +1,127 @@
+name: Release
+
+# Cuts a ShipLog plugin release from a v* tag. CI is the single source of truth
+# for the package AND for what main advertises, so a release never depends on a
+# local (Windows) build and main never points at a version whose asset/SHA are
+# not live yet.
+#
+# Order (the important part): build -> publish the GitHub release (asset goes
+# live) -> confirm the asset is reachable -> ONLY THEN flip <!ENTITY version> +
+# <SHA256> in plugin/shiplog.plg on main. Unraid reads that .plg from raw main
+# and verifies the .txz against <SHA256>, so main must flip last. If any step
+# before the flip fails, main still advertises the previous version -> zero user
+# impact, re-running the tag heals it.
+#
+# MAINTAINER FLOW: add a "### X.Y.Z" block to plugin/shiplog.plg <CHANGES> and
+# `git tag vX.Y.Z` on main. You do NOT need to bump <!ENTITY version> by hand —
+# CI flips it (bumping it early is harmless but reopens the advertise-before-live
+# window, so prefer to leave it).
+#
+# workflow_dispatch = build-only dry run: builds the .txz and uploads it as an
+# artifact, creates no release and touches nothing on main.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shiplog-release
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Resolve version
+        id: v
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build .txz package
+        run: bash plugin/pkg_build.sh "${{ steps.v.outputs.version }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shiplog-txz
+          path: plugin/out/*
+
+      # ---- tag-only from here ----
+      - name: Extract release notes from .plg CHANGES
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ver="${{ steps.v.outputs.version }}"
+          awk -v v="### $ver" '$0==v{grab=1;next} grab&&/^### /{exit} grab{print}' \
+            plugin/shiplog.plg > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::no '### $ver' block in plugin/shiplog.plg <CHANGES> — add it before tagging"
+            exit 1
+          fi
+          echo "---- release notes ----"; cat release-notes.md
+
+      - name: Publish release (asset goes live first)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: |
+            plugin/out/shiplog-*-x86_64-1.txz
+            plugin/out/shiplog-*-x86_64-1.txz.sha256
+
+      - name: Confirm the release asset is reachable
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ver="${{ steps.v.outputs.version }}"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${ver}/shiplog-${ver}-x86_64-1.txz"
+          for i in $(seq 1 10); do
+            code=$(curl -fsSL -o /dev/null -w '%{http_code}' -I "$url" || true)
+            [ "$code" = "200" ] && { echo "asset live: $url"; exit 0; }
+            echo "waiting for asset ($code) ..."; sleep 3
+          done
+          echo "::error::release asset not reachable: $url"; exit 1
+
+      - name: Flip version + SHA256 in shiplog.plg on main (final step)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ver="${{ steps.v.outputs.version }}"
+          txz="plugin/out/shiplog-${ver}-x86_64-1.txz"
+          sha="$(sha256sum "$txz" | awk '{print $1}')"
+          echo "package sha256 = $sha"
+          sed -i -E "s#(<!ENTITY version[[:space:]]+\")[^\"]*(\">)#\1${ver}\2#" plugin/shiplog.plg
+          sed -i -E "s#<SHA256>[0-9a-fA-F]{64}</SHA256>#<SHA256>${sha}</SHA256>#" plugin/shiplog.plg
+          grep -q "<SHA256>${sha}</SHA256>" plugin/shiplog.plg \
+            || { echo "::error::SHA256 not written into shiplog.plg"; exit 1; }
+          grep -qE "<!ENTITY version[[:space:]]+\"${ver}\">" plugin/shiplog.plg \
+            || { echo "::error::version not written into shiplog.plg"; exit 1; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- plugin/shiplog.plg; then
+            echo "shiplog.plg already current — nothing to commit"
+          else
+            git add plugin/shiplog.plg
+            git commit -m "ci: release v${ver} — pin version + package SHA256 [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

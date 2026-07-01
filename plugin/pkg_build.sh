@@ -48,5 +48,7 @@ echo "==> packaging → $TXZ"
 tar --force-local --owner=0 --group=0 --numeric-owner -C "$PKGROOT" -caf "$TXZ" .
 
 echo "==> sha256"
-sha256sum "$TXZ" | tee "$TXZ.sha256"
+# cd into $OUT so the .sha256 carries a bare filename, not the build path —
+# otherwise `sha256sum -c` fails for anyone who downloads it.
+( cd "$OUT" && b="$(basename "$TXZ")" && sha256sum "$b" | tee "$b.sha256" )
 echo "done: $TXZ"
