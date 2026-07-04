@@ -74,7 +74,7 @@
 /* ── update-all button (left of the Basic/Advanced toggle) ─────────────── */
 a.sl-updall {
   display: inline-block;
-  margin-right: 12px;
+  margin-right: 6px; /* on top of .ToggleViewMode's flex gap */
   padding: 2px 10px;
   border: 1px solid rgba(128, 128, 128, 0.55);
   border-radius: 10px;

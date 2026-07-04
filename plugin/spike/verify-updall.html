@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>sl-updall verify</title></head>
+<html lang="en"><head><meta charset="utf-8"><title>sl-updall verify</title>
+<style>
+/* real Unraid rule (dynamix default-base.css) — the toggle row is a full-width
+   flex container packing right; the button must sit inside it as first child */
+.ToggleViewMode { display: flex; justify-content: flex-end; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+</style>
+</head>
 <body>
 <!-- real Unraid structure: the toggle the button must sit LEFT of -->
 <div id="host">
@@ -25,8 +31,9 @@
     const btns = document.querySelectorAll(".sl-updall");
     if (btns.length !== 1) fails.push("inject-count=" + btns.length);
     const btn = btns[0];
-    if (btn && btn.nextElementSibling !== document.querySelector("div.ToggleViewMode"))
-      fails.push("not-left-of-toggle");
+    const tv = document.querySelector("div.ToggleViewMode");
+    if (btn && (btn.parentNode !== tv || tv.firstElementChild !== btn))
+      fails.push("not-first-child-of-toggle");
     if (btn && !/Update all \(2\)/.test(btn.textContent)) fails.push("label=" + (btn && btn.textContent));
     if (btn && btn.style.display === "none") fails.push("hidden-despite-updates");
 

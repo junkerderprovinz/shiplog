@@ -381,7 +381,10 @@
           e.preventDefault(); e.stopPropagation();
           fireNativeUpdateAll();
         });
-        toggle.parentNode.insertBefore(btn, toggle);
+        // .ToggleViewMode is a full-width flex row with justify-content:flex-end —
+        // as its FIRST child the button packs to the right, directly LEFT of the
+        // toggle (inserting before the div would flow to the far left instead).
+        toggle.insertBefore(btn, toggle.firstChild);
       }
 
       const n = nativeUpdateAllAvailable() ? pendingUpdateCount() : 0;
