@@ -52,7 +52,9 @@ triggering Unraid's own bulk-update flow.
   - **Idempotent** via mark guard (`data-sl-updall` / single element with class
     `sl-updall`) — hard rule for Docker-tab injection (observer + non-idempotent DOM =
     CPU loop). Everything wrapped in try/catch; never touch or hide native elements.
-  - Insert the button element **before** `ToggleViewMode` (same parent, inline-flex),
+  - Insert the button element as the **first child of** `ToggleViewMode` (a full-width
+    flex row with `justify-content: flex-end` — first child packs directly left of the
+    toggle; inserting before the div would flow to the far left),
     styled in ShipLog's chip look, light/dark aware via the existing `isLightBg()`.
   - Every tick: recompute `N`; update label text; `display:none` when `N === 0`.
 - i18n: two new keys in the existing `T()` dict (`updateAll`: "Update all"/"Alle
