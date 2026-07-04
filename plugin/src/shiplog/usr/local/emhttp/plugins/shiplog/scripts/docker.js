@@ -42,6 +42,7 @@
       deprecated: "DEPRECATED",
       updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
       updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
+      updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
       none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
     },
     de: {
@@ -51,6 +52,7 @@
       deprecated: "VERALTET",
       updateNow: "Jetzt aktualisieren", updateHint: "löst Unraids eigenes Update für diesen Container aus",
       updateGone: "Unraids Update-Knopf nicht gefunden — nutze „Aktualisierung anwenden“ in der Zeile.",
+      updateAll: "Alle aktualisieren", updateAllHint: "löst Unraids eigenes Update für alle Container mit anstehendem Update aus",
       none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
     },
   };
@@ -336,6 +338,63 @@
     open = b;
   }
 
+  // ─────────────────────────────────────────────── update-all button
+  // A ShipLog-placed trigger for Unraid's OWN bulk update: count comes from the
+  // page-global `docker` array (exactly the set native updateAll() acts on) and
+  // the click calls native updateAll() — ShipLog stays read-only. Injected left
+  // of the Basic/Advanced toggle; visible only while at least one update is
+  // pending. Writes are change-guarded so the MutationObserver that drives this
+  // never feeds on our own DOM writes.
+  function pendingUpdateCount() {
+    try {
+      const list = window.docker;
+      if (!Array.isArray(list)) return 0;
+      return list.filter((d) => d && Number(d.update) === 1).length;
+    } catch (e) { return 0; }
+  }
+
+  function nativeUpdateAllAvailable() {
+    return typeof window.updateAll === "function" || !!document.getElementById("updateAll");
+  }
+
+  function fireNativeUpdateAll() {
+    try {
+      if (typeof window.updateAll === "function") { window.updateAll(); return true; }
+      const inp = document.getElementById("updateAll");
+      if (inp) { inp.click(); return true; }
+    } catch (e) {}
+    return false;
+  }
+
+  function injectUpdateAllButton() {
+    try {
+      const toggle = document.querySelector("div.ToggleViewMode");
+      if (!toggle || !toggle.parentNode) return;
+
+      let btn = document.querySelector(".sl-updall");
+      if (!btn) {
+        btn = el("a", "sl-updall", "");
+        btn.href = "#";
+        btn.title = T("updateAllHint");
+        if (isLightBg()) btn.classList.add("sl-light");
+        btn.addEventListener("click", (e) => {
+          e.preventDefault(); e.stopPropagation();
+          fireNativeUpdateAll();
+        });
+        toggle.parentNode.insertBefore(btn, toggle);
+      }
+
+      const n = nativeUpdateAllAvailable() ? pendingUpdateCount() : 0;
+      // change-guarded writes: identical values must not touch the DOM
+      if (btn.dataset.slN !== String(n)) {
+        btn.dataset.slN = String(n);
+        btn.textContent = `${T("updateAll")} (${n})`;
+      }
+      const want = n >= 1 ? "" : "none";
+      if (btn.style.display !== want) btn.style.display = want;
+    } catch (e) {}
+  }
+
   // ──────────────────────────────────────────────────────── inject
   function tagRows() {
     let n = 0;
@@ -366,13 +425,17 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 
   async function boot() {
+    // Native-data feature first: the update-all button works without the engine.
+    injectUpdateAllButton();
+    // Unraid re-renders the table on its auto-refresh — re-tag new rows and keep
+    // the update-all counter current. tagRows() is a no-op while byName is empty.
+    const mo = new MutationObserver(() => { tagRows(); injectUpdateAllButton(); });
+    try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+
     const ok = await load();
-    if (!ok) return; // engine unreachable → leave the Docker tab untouched
+    if (!ok) return; // engine unreachable → chips stay off, the button still works
     const n = tagRows();
     console.log(`${TAG} tagged ${n} container(s) with updates`);
-    // Unraid re-renders the table on its auto-refresh — re-tag new rows.
-    const mo = new MutationObserver(() => tagRows());
-    try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
   boot();
 
