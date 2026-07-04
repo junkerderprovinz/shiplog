@@ -74,6 +74,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
 - **Honest degradation** — when no changelog is machine-findable, ShipLog says so and shows what it does know, never pretends.
 - **Read-only by construction** — never writes to the Docker socket.
+- **Update all in one click** — a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
 - **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
 
