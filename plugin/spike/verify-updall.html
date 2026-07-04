@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>sl-updall verify</title></head>
+<body>
+<!-- real Unraid structure: the toggle the button must sit LEFT of -->
+<div id="host">
+  <div class="ToggleViewMode"><span><input type="checkbox" class="advancedview"></span></div>
+</div>
+<table><tbody id="docker_list"></tbody></table>
+<div id="result">RUNNING</div>
+<script>
+  // native stubs (what DockerContainers.page provides)
+  window.docker = [
+    { name: "a", update: 1 }, { name: "b", update: 0 }, { name: "c", update: 1 },
+  ];
+  window.__calls = 0;
+  window.updateAll = function () { window.__calls++; };
+</script>
+<script src="../src/shiplog/usr/local/emhttp/plugins/shiplog/scripts/docker.js"></script>
+<script>
+  (async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const fails = [];
+    await sleep(300); // let boot() run (its fetch to the absent engine rejects)
+
+    const btns = document.querySelectorAll(".sl-updall");
+    if (btns.length !== 1) fails.push("inject-count=" + btns.length);
+    const btn = btns[0];
+    if (btn && btn.nextElementSibling !== document.querySelector("div.ToggleViewMode"))
+      fails.push("not-left-of-toggle");
+    if (btn && !/Update all \(2\)/.test(btn.textContent)) fails.push("label=" + (btn && btn.textContent));
+    if (btn && btn.style.display === "none") fails.push("hidden-despite-updates");
+
+    if (btn) btn.click();
+    if (window.__calls !== 1) fails.push("calls=" + window.__calls);
+
+    // idempotency under mutations + hide at zero
+    window.docker.forEach((d) => (d.update = 0));
+    document.body.appendChild(document.createElement("i")); // force observer tick
+    await sleep(300);
+    if (document.querySelectorAll(".sl-updall").length !== 1) fails.push("dup-after-tick");
+    if (document.querySelector(".sl-updall").style.display !== "none") fails.push("visible-at-zero");
+
+    document.getElementById("result").textContent =
+      fails.length ? "FAIL: " + fails.join(", ") : "ALL-PASS";
+  })();
+</script>
+</body></html>
