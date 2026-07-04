@@ -33,6 +33,20 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.2.5
+- CRITICAL uninstall fix (the same bug found and fixed in CannonadeCommander). The
+  removal script was wrapped in a bare `&lt;REMOVE&gt;` tag, which Unraid's plugin
+  manager does NOT execute (it only runs `&lt;FILE Method="remove"&gt;` blocks) - so the
+  cleanup silently never ran: the engine daemon kept running and the plugin files,
+  the installed package and the cached flash .txz all stayed behind after
+  "uninstall" (Unraid still moved the flash .plg off, because a remove that runs
+  nothing trivially "succeeds"). Removal is now a proper
+  `&lt;FILE Run="/bin/bash" Method="remove"&gt;` block ending in `exit 0` (Unraid only
+  clears the flash .plg on a zero exit, else it reinstalls on boot); it stops the
+  daemon by PID, removes the exact registered package, wipes the dir + cached .txz,
+  and keeps your appdata + settings. Installs now also wipe old plugin files first
+  so nothing orphans across updates.
+
 ### 1.2.4
 - Reworked ShipLog logo on the engine status page, recoloured to read on the
   dark background.
@@ -194,6 +208,17 @@ optional AI summaries (Ollama) and Matrix alerts.
 - Card settings page; the bubble follows Unraid's light/dark theme and language.
 </CHANGES>
 
+<!-- Pre-install: stop the old daemon + wipe the plugin dir so files removed between
+     versions can't linger (installpkg overwrites same-path files but never deletes
+     orphans); drop old flash .txz. Appdata + the .cfg on the flash are untouched. -->
+<FILE Run="/bin/bash">
+<INLINE>
+&emhttp;/scripts/rc.shiplog stop 2>/dev/null
+rm -rf &emhttp;
+rm -f &plgPath;/*.txz
+</INLINE>
+</FILE>
+
 <!--
   The package (engine binary + plugin files) is built by plugin/pkg_build.sh and
   attached to the GitHub release "v&version;". SHA256 is injected at release.
@@ -213,15 +238,25 @@ echo "ShipLog &version; installed — open Settings &gt; ShipLog, or the Docker 
 </INLINE>
 </FILE>
 
-<!-- Remove: stop the daemon, drop the package + files, keep user data + cfg. -->
-<REMOVE>
+<!-- Remove. MUST be a <FILE ... Method="remove"> block: Unraid's plugin manager
+     only runs <FILE> elements, so a bare <REMOVE> tag is silently IGNORED and the
+     cleanup never runs (daemon + files linger; the flash .plg is still moved off
+     because a remove that runs no FILE trivially "succeeds"). MUST end with exit 0,
+     or Unraid leaves the .plg on the flash and it reinstalls on boot. Never
+     'pkill -f &slug;' (matches this /tmp/inlineN-&slug;.sh + the `plugin remove`
+     parent -> self-kill). Stop by PID, kill a stray only by full binary path, drop
+     the exact package + files + cached .txz; keep appdata + the .cfg settings. -->
+<FILE Run="/bin/bash" Method="remove">
 <INLINE>
 &emhttp;/scripts/rc.shiplog stop 2>/dev/null
-removepkg &slug; 2>/dev/null
+for p in $(pgrep -f '&emhttp;/bin/&slug;' 2>/dev/null); do kill -9 "$p" 2>/dev/null; done
+pkg=$(ls /var/log/packages/ 2>/dev/null | grep -E "^&slug;(-[^-]+-[^-]+-[^-]+)?$" | head -n1)
+if [ -n "$pkg" ]; then removepkg "$pkg" 2>/dev/null; fi
 rm -rf &emhttp;
-rm -f &plgPath;/*.txz
+rm -f &plgPath;/*.txz &plgPath;/*.txz.md5 /var/run/&slug;.pid /var/run/&slug;.sock
 echo "ShipLog removed (appdata + settings kept)."
+exit 0
 </INLINE>
-</REMOVE>
+</FILE>
 
 </PLUGIN>
