@@ -33,6 +33,12 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.3.0
+- NEW: "Update all (N)" button next to the Basic/Advanced view toggle. One click
+  triggers Unraid's own bulk update for every container with a pending update.
+  ShipLog stays read-only: it only relocates the native trigger. The button shows
+  the pending-update count and hides itself when nothing is pending.
+
 ### 1.2.5
 - CRITICAL uninstall fix (the same bug found and fixed in CannonadeCommander). The
   removal script was wrapped in a bare `&lt;REMOVE&gt;` tag, which Unraid's plugin
