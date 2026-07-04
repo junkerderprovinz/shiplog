@@ -70,3 +70,18 @@
 .sl-bubble .sl-raw .h{color:var(--sl-txt)}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
+
+/* ── update-all button (left of the Basic/Advanced toggle) ─────────────── */
+a.sl-updall {
+  display: inline-block;
+  margin-right: 12px;
+  padding: 2px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.55);
+  border-radius: 10px;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+a.sl-updall:hover { border-color: rgba(128, 128, 128, 0.95); }
