@@ -202,6 +202,11 @@ func (r *Resolver) noteHostOutcome(host string, status int) {
 			b = &hostBackoff{}
 			r.hostDown[host] = b
 		}
+		// In-flight workers hitting the same rate-limit burst must count as ONE
+		// trip, or three workers would jump the window straight to 4m.
+		if b.until.After(r.now()) {
+			return
+		}
 		b.fails++
 		window := breakerBase << (b.fails - 1)
 		if window > breakerMax || window <= 0 {
@@ -244,8 +249,10 @@ func (r *Resolver) Resolve(ctx context.Context, repo, tag, curDigest string) (ne
 	// A tripped breaker answers without any network: once a host hard-429s, the
 	// rest of the sweep must not pile onto it. The engine carries prior verdicts
 	// forward on errors, so badges stay put while we wait the window out.
-	if wait := r.breakerRemaining(host); wait > 0 {
-		return "", "", "", "", fmt.Errorf("%s is rate limiting us — backing off, next attempt in %s", host, wait.Round(time.Second))
+	// No countdown in the message: the row may sit unrefreshed until the next
+	// sweep, and a stored "retry in 43s" would read wrong for hours.
+	if r.breakerRemaining(host) > 0 {
+		return "", "", "", "", fmt.Errorf("%s is rate limiting us — backing off before the next attempt", host)
 	}
 
 	tags, err := r.fetchTags(ctx, base, host, pathRepo)
@@ -566,6 +573,12 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
+		// A rate-limited TOKEN realm must trip the registry's breaker too:
+		// auth.docker.io/ghcr token throttling is the most common 429 source,
+		// and without this the sweep would keep re-hammering it per container.
+		if resp.StatusCode == http.StatusTooManyRequests {
+			r.noteHostOutcome(host, resp.StatusCode)
+		}
 		return "", 0, fmt.Errorf("token: unexpected status %d from realm %s", resp.StatusCode, realm)
 	}
 	var body struct {

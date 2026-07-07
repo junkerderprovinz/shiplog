@@ -431,6 +431,9 @@ func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "l", Name: "local", Repo: "docker.io/library/myapp", Tag: "latest", IsLocal: true},
 		{ID: "p", Name: "pinned", Repo: "ghcr.io/x/y", Tag: "", PinnedDigest: "sha256:aaa"},
+		// The compose-style pin KEEPS a tag for readability; Docker still pulls
+		// the digest, so an "update available" verdict would be un-actionable.
+		{ID: "tp", Name: "tagged-pin", Repo: "ghcr.io/x/y", Tag: "1.2.3", PinnedDigest: "sha256:aaa"},
 		{ID: "i", Name: "byid", Repo: "", Tag: ""},
 	}}
 	res := &countingResolver{}
@@ -444,9 +447,10 @@ func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
 		t.Errorf("resolver was called for upstream-less containers: %v", res.calls)
 	}
 	for id, wantReason := range map[string]string{
-		"l": "locally built image — no registry counterpart",
-		"p": "pinned by digest — updates only when the pin changes",
-		"i": "referenced by image ID — no tag to compare",
+		"l":  "no registry digest (built or loaded locally) — not checked against a registry",
+		"p":  "pinned by digest — updates only when the pin changes",
+		"tp": "pinned by digest — updates only when the pin changes",
+		"i":  "referenced by image ID — no tag to compare",
 	} {
 		row := st.rows[id]
 		if row.Kind != model.KindNone || row.Risk != model.RiskNone {

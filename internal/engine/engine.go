@@ -164,12 +164,18 @@ func memoResolve(r Resolver) resolveFunc {
 // the human-readable reason shown as the risk reason.
 func noUpstreamReason(c model.Container) (string, bool) {
 	switch {
+	case c.PinnedDigest != "":
+		// Docker pulls the DIGEST whenever a ref carries one, even alongside a
+		// tag ("repo:1.25@sha256:…" keeps running the pin) — an "update
+		// available" verdict would be un-actionable until the user edits the pin.
+		return "pinned by digest — updates only when the pin changes", true
 	case c.IsLocal:
-		return "locally built image — no registry counterpart", true
+		// Also covers docker-load'ed/committed images (they carry no RepoDigests
+		// either); checking those upstream is unsafe because a locally built
+		// image may share its name with a FOREIGN registry repository.
+		return "no registry digest (built or loaded locally) — not checked against a registry", true
 	case c.Repo == "":
 		return "referenced by image ID — no tag to compare", true
-	case c.PinnedDigest != "" && c.Tag == "":
-		return "pinned by digest — updates only when the pin changes", true
 	}
 	return "", false
 }
@@ -208,7 +214,9 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// back to a bare "unknown" with an honest error.
 		if hasPrior && prior.Kind != "" && prior.Kind != model.KindUnknown {
 			prior.Container = c // refresh metadata (rename/tag); keep the verdict
-			prior.CheckedAt = st.CheckedAt
+			// Keep the ORIGINAL CheckedAt: the verdict is from that sweep, and
+			// restamping it would present up-to-an-hour-stale data (host backoff)
+			// as freshly checked — including to a manual refresh.
 			prior.Error = ""
 			return prior
 		}

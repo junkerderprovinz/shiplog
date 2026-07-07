@@ -44,6 +44,7 @@
       updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
       updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
       none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
+      pinned: "pinned", localimg: "local image",
     },
     de: {
       changelog: "Changelog", clickHint: "Changelog anzeigen",
@@ -54,6 +55,7 @@
       updateGone: "Unraids Update-Knopf nicht gefunden — nutze „Aktualisierung anwenden“ in der Zeile.",
       updateAll: "Alle aktualisieren", updateAllHint: "löst Unraids eigenes Update für alle Container mit anstehendem Update aus",
       none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
+      pinned: "gepinnt", localimg: "lokales Image",
     },
   };
   function T(k) { return ((STR[LANG] || STR.en)[k]) || STR.en[k]; }
@@ -85,6 +87,18 @@
     return k && k !== "none";
   }
   function riskClass(st) { return RISK_CLASS[st && st.risk] || "grey"; }
+
+  // Containers without an upstream to check (digest-pinned, image-ID-referenced,
+  // locally built) must not look like an affirmed "up to date": neutral grey
+  // dot + an honest label instead of the green pill.
+  function noUpstream(st) {
+    const c = (st && st.container) || {};
+    return !!(c.pinned_digest || c.is_local || !c.repo);
+  }
+  function noUpstreamLabel(st) {
+    const c = (st && st.container) || {};
+    return c.is_local ? T("localimg") : T("pinned");
+  }
 
   // Build a short human label from kind + skipped count, e.g. "MAJOR", "2× MINOR".
   function kindLabel(st) {
@@ -200,7 +214,8 @@
     const c = st.container || {};
     const cl = st.changelog || {};
     const upd = hasUpdate(st);
-    const rc = upd ? riskClass(st) : "ok"; // up to date → green pill, matching the chip dot
+    // up to date → green pill; no upstream to check → neutral grey, not green
+    const rc = upd ? riskClass(st) : (noUpstream(st) ? "grey" : "ok");
     // changelog from/to are the image TAGS ("latest"/"7dtd"), not versions —
     // show a real version when we have one. Newest release tag comes from the
     // resolved release entries; current is the running tag if it looks like a
@@ -214,10 +229,12 @@
     // one and then carried forward, so a later update shows a real "1.7 -> 1.8".
     // Fall back to the running tag, then (when up to date) the newest release,
     // then the tag — never the cryptic digest hash.
+    const shortDig = (d) => (d ? d.replace(/^sha256:/, "").slice(0, 12) : "");
     const cur = (verLike(st.running_version) ? st.running_version : "")
       || (verLike(c.tag) ? c.tag : "")
       || (!upd && verLike(newestRel) ? newestRel : "")
-      || (c.tag || "latest");
+      // A digest-pinned ref without a tag has NO tag — show the pin, not "latest".
+      || (c.tag || shortDig(c.pinned_digest) || "latest");
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
       || (verLike(newestRel) ? newestRel : "")
       || newestRel || st.newest_tag || "?";
@@ -267,7 +284,7 @@
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
     const verHdr = upd ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
-    const pillTxt = upd ? esc(kindLabel(st)) : esc(T("uptodate"));
+    const pillTxt = upd ? esc(kindLabel(st)) : esc(noUpstream(st) ? noUpstreamLabel(st) : T("uptodate"));
 
     return `
       <div class="sl-bh">
@@ -406,7 +423,7 @@
       if (!st) continue; // no engine data for this row → leave it untouched
       const cell = findUpdateCell(tr);
       if (!cell || cell.getAttribute(MARK)) continue;
-      const rc = hasUpdate(st) ? riskClass(st) : "ok";
+      const rc = hasUpdate(st) ? riskClass(st) : (noUpstream(st) ? "grey" : "ok");
       const label = hasUpdate(st) ? kindLabel(st) : T("uptodate");
       const chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
       chip.href = "#";
