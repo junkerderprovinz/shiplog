@@ -100,6 +100,10 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// One registry lookup per DISTINCT (repo, tag) per sweep: duplicate images
+	// (multi-container stacks, stopped duplicates) share a single Resolve. The
+	// memo lives exactly one sweep, so there is no staleness to manage.
+	resolve := memoResolve(e.resolver)
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
 	for _, c := range containers {
@@ -108,7 +112,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		go func(c model.Container) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := e.check(ctx, c)
+			st := e.check(ctx, c, resolve)
 			if uerr := e.store.Upsert(st); uerr != nil {
 				// Store failure for one row must not crash the sweep; the next
 				// sweep retries. (No logger dependency here on purpose.)
@@ -120,9 +124,73 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	return nil
 }
 
+// resolveFunc matches Resolver.Resolve; the sweep hands check a memoised one.
+type resolveFunc func(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error)
+
+// memoResolve wraps r.Resolve so that concurrent and repeated calls for the
+// same (repo, tag) within one sweep perform a single upstream lookup. Keying on
+// repo|tag is sound because Resolve ignores curDigest (kept for API symmetry).
+func memoResolve(r Resolver) resolveFunc {
+	type result struct {
+		newestTag, sameTagDigest, newestVerTag, newestVerDigest string
+		err                                                     error
+	}
+	type entry struct {
+		once sync.Once
+		res  result
+	}
+	var mu sync.Mutex
+	memo := map[string]*entry{}
+	return func(ctx context.Context, repo, tag, curDigest string) (string, string, string, string, error) {
+		key := repo + "|" + tag
+		mu.Lock()
+		en, ok := memo[key]
+		if !ok {
+			en = &entry{}
+			memo[key] = en
+		}
+		mu.Unlock()
+		en.once.Do(func() {
+			var r_ result
+			r_.newestTag, r_.sameTagDigest, r_.newestVerTag, r_.newestVerDigest, r_.err = r.Resolve(ctx, repo, tag, curDigest)
+			en.res = r_
+		})
+		res := en.res
+		return res.newestTag, res.sameTagDigest, res.newestVerTag, res.newestVerDigest, res.err
+	}
+}
+
+// noUpstreamReason reports whether c has no registry counterpart to check, with
+// the human-readable reason shown as the risk reason.
+func noUpstreamReason(c model.Container) (string, bool) {
+	switch {
+	case c.IsLocal:
+		return "locally built image — no registry counterpart", true
+	case c.Repo == "":
+		return "referenced by image ID — no tag to compare", true
+	case c.PinnedDigest != "" && c.Tag == "":
+		return "pinned by digest — updates only when the pin changes", true
+	}
+	return "", false
+}
+
 // check runs the per-container pipeline and returns the status to store.
-func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatus {
+func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc) model.UpdateStatus {
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
+
+	// Some containers have no upstream to ask, by construction. Say so honestly
+	// instead of burning a registry roundtrip every sweep — or worse, matching a
+	// FOREIGN repository that happens to share a locally-built image's name.
+	if reason, ok := noUpstreamReason(c); ok {
+		st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, reason
+		switch {
+		case isVersion(c.Tag):
+			st.RunningVersion = c.Tag
+		case isVersion(c.ImageVersion):
+			st.RunningVersion = c.ImageVersion
+		}
+		return st
+	}
 
 	// The prior row is the memory: it tells us the version we last believed was
 	// running and lets us dedupe notifications.
@@ -131,7 +199,7 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 		prior, hasPrior = p, true
 	}
 
-	newestTag, newestDigest, newestVerTag, newestVerDigest, err := e.resolver.Resolve(ctx, c.Repo, c.Tag, c.Digest)
+	newestTag, newestDigest, newestVerTag, newestVerDigest, err := resolve(ctx, c.Repo, c.Tag, c.Digest)
 	if err != nil {
 		// A transient lookup failure (e.g. a 429 burst against the registry) must
 		// NOT blank a container we already resolved. When we have a usable prior
@@ -165,7 +233,14 @@ func (e *Engine) check(ctx context.Context, c model.Container) model.UpdateStatu
 	st.NewestDigest = newestDigest
 	st.RunningVersion = decideRunningVersion(c, newestVerTag, newestVerDigest, prior, hasPrior)
 
-	kind, level, reason := risk.Classify(c.Tag, newestTag, c.Digest, newestDigest)
+	// An image pulled via a mirror carries one RepoDigests entry per registry;
+	// when the remote digest matches ANY of them the image is current, so feed
+	// Classify the matching digest instead of flagging a phantom drift.
+	curDigest := c.Digest
+	if c.HasDigest(newestDigest) {
+		curDigest = newestDigest
+	}
+	kind, level, reason := risk.Classify(c.Tag, newestTag, curDigest, newestDigest)
 	// A rolling tag (":latest") makes the raw tag comparison blind to the real
 	// jump — latest vs latest looks like a flat "digest, low risk". When we
 	// resolved two real versions, classify by that delta instead, so an actual
@@ -216,7 +291,7 @@ func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest strin
 	if isVersion(c.Tag) {
 		return c.Tag
 	}
-	if c.Digest != "" && newestVerDigest != "" && c.Digest == newestVerDigest {
+	if c.HasDigest(newestVerDigest) {
 		return newestVerTag // running image proven to be the newest version
 	}
 	if hasPrior && c.Digest != "" && prior.Container.Digest == c.Digest && prior.RunningVersion != "" {

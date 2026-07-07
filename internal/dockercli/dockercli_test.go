@@ -231,29 +231,55 @@ func TestGhcrSource(t *testing.T) {
 }
 
 func TestSplitImageRef(t *testing.T) {
+	const dig = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 	tests := []struct {
-		ref      string
-		wantRepo string
-		wantTag  string
+		ref        string
+		wantRepo   string
+		wantTag    string
+		wantPinned string
 	}{
-		{"redis", "docker.io/library/redis", "latest"},
-		{"ubuntu:22.04", "docker.io/library/ubuntu", "22.04"},
-		{"library/redis", "docker.io/library/redis", "latest"},
-		{"library/redis:7", "docker.io/library/redis", "7"},
-		{"myuser/myapp", "docker.io/myuser/myapp", "latest"},
-		{"myuser/myapp:v2", "docker.io/myuser/myapp", "v2"},
-		{"ghcr.io/imagegenius/immich:1.122.0", "ghcr.io/imagegenius/immich", "1.122.0"},
-		{"ghcr.io/x/y", "ghcr.io/x/y", "latest"},
-		{"registry:5000/team/app:dev", "registry:5000/team/app", "dev"},
-		{"localhost/foo", "localhost/foo", "latest"},
-		{"localhost:5000/foo:bar", "localhost:5000/foo", "bar"},
-		{"docker.io/library/redis", "docker.io/library/redis", "latest"},
+		{"redis", "docker.io/library/redis", "latest", ""},
+		{"ubuntu:22.04", "docker.io/library/ubuntu", "22.04", ""},
+		{"library/redis", "docker.io/library/redis", "latest", ""},
+		{"library/redis:7", "docker.io/library/redis", "7", ""},
+		{"myuser/myapp", "docker.io/myuser/myapp", "latest", ""},
+		{"myuser/myapp:v2", "docker.io/myuser/myapp", "v2", ""},
+		{"ghcr.io/imagegenius/immich:1.122.0", "ghcr.io/imagegenius/immich", "1.122.0", ""},
+		{"ghcr.io/x/y", "ghcr.io/x/y", "latest", ""},
+		{"registry:5000/team/app:dev", "registry:5000/team/app", "dev", ""},
+		{"localhost/foo", "localhost/foo", "latest", ""},
+		{"localhost:5000/foo:bar", "localhost:5000/foo", "bar", ""},
+		{"docker.io/library/redis", "docker.io/library/redis", "latest", ""},
+
+		// Digest-pinned refs: the digest must be split off BEFORE tag detection
+		// (the colon inside "sha256:…" is not a tag separator), and a pin without
+		// an explicit tag has NO tag, not "latest".
+		{"redis@" + dig, "docker.io/library/redis", "", dig},
+		{"ghcr.io/x/y@" + dig, "ghcr.io/x/y", "", dig},
+		{"ghcr.io/x/y:1.2.3@" + dig, "ghcr.io/x/y", "1.2.3", dig},
+		{"registry:5000/team/app@" + dig, "registry:5000/team/app", "", dig},
+
+		// Bare image-ID refs name no repo at all.
+		{dig, "", "", ""},
+		{strings.TrimPrefix(dig, "sha256:"), "", "", ""},
 	}
 	for _, tt := range tests {
-		gotRepo, gotTag := splitImageRef(tt.ref)
-		if gotRepo != tt.wantRepo || gotTag != tt.wantTag {
-			t.Errorf("splitImageRef(%q) = (%q, %q), want (%q, %q)",
-				tt.ref, gotRepo, gotTag, tt.wantRepo, tt.wantTag)
+		gotRepo, gotTag, gotPinned := splitImageRef(tt.ref)
+		if gotRepo != tt.wantRepo || gotTag != tt.wantTag || gotPinned != tt.wantPinned {
+			t.Errorf("splitImageRef(%q) = (%q, %q, %q), want (%q, %q, %q)",
+				tt.ref, gotRepo, gotTag, gotPinned, tt.wantRepo, tt.wantTag, tt.wantPinned)
 		}
+	}
+}
+
+func TestAllDigests(t *testing.T) {
+	got := allDigests([]string{
+		"ghcr.io/x/y@sha256:aaa",
+		"mirror.example.com/x/y@sha256:bbb",
+		"no-digest-entry",
+	})
+	want := []string{"sha256:aaa", "sha256:bbb"}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("allDigests = %v, want %v", got, want)
 	}
 }

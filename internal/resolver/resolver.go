@@ -22,6 +22,11 @@ import (
 
 // Accept lists the manifest media types we ask for on a HEAD, covering both
 // multi-arch indexes/lists and single-arch manifests, OCI and Docker flavors.
+// All four are load-bearing: without an explicit Accept, Docker Hub falls back
+// to the legacy schema1 manifest whose digest NEVER matches the pulled image's
+// RepoDigests — every container would show a permanent phantom "digest drift".
+// (HEADs on manifests also do not count against Docker Hub's pull rate limit,
+// which is why the whole check pipeline is HEAD-only.)
 const acceptManifests = "application/vnd.oci.image.index.v1+json, " +
 	"application/vnd.docker.distribution.manifest.list.v2+json, " +
 	"application/vnd.oci.image.manifest.v1+json, " +
@@ -72,9 +77,44 @@ type Resolver struct {
 	// concurrent sweep over many containers on the same host never bursts.
 	gate *hostGate
 
+	// tokens caches bearer tokens per host|repo (Docker Hub tokens are
+	// repo-scoped) until shortly before their advertised expiry, so a sweep
+	// doesn't pay a 401 probe + token roundtrip for every single request.
+	tokensMu sync.Mutex
+	tokens   map[string]cachedToken
+
+	// hostDown tracks a per-host circuit breaker: a 429 that survives the
+	// per-request retries silences that host for an exponentially growing
+	// window (1m..1h) instead of letting every remaining container of the
+	// sweep run into the same rate limit. Any success clears it.
+	hostDownMu sync.Mutex
+	hostDown   map[string]*hostBackoff
+
 	// sleep is the (injectable) wait used for backoff; tests stub it to run fast.
 	sleep func(context.Context, time.Duration)
+
+	// now is injectable so tests can control token expiry and breaker windows.
+	now func() time.Time
 }
+
+// cachedToken is a bearer token with its use-by time.
+type cachedToken struct {
+	token string
+	until time.Time
+}
+
+// hostBackoff is the circuit-breaker state for one registry host.
+type hostBackoff struct {
+	fails int
+	until time.Time
+}
+
+// Circuit-breaker tuning: first trip mutes a host for breakerBase, doubling per
+// consecutive trip up to breakerMax.
+const (
+	breakerBase = time.Minute
+	breakerMax  = time.Hour
+)
 
 // New returns a Resolver with a sane default HTTP client and an HTTPS baseURL.
 func New() *Resolver {
@@ -82,7 +122,10 @@ func New() *Resolver {
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		baseURL:    func(host string) string { return "https://" + host },
 		gate:       newHostGate(hostMinGap),
+		tokens:     map[string]cachedToken{},
+		hostDown:   map[string]*hostBackoff{},
 		sleep:      sleepCtx,
+		now:        time.Now,
 	}
 }
 
@@ -133,6 +176,43 @@ func (g *hostGate) wait(ctx context.Context, host string) {
 	}
 }
 
+// breakerRemaining returns how long host is still muted, or 0 when it may be
+// queried.
+func (r *Resolver) breakerRemaining(host string) time.Duration {
+	r.hostDownMu.Lock()
+	defer r.hostDownMu.Unlock()
+	if b, ok := r.hostDown[host]; ok {
+		if wait := b.until.Sub(r.now()); wait > 0 {
+			return wait
+		}
+	}
+	return 0
+}
+
+// noteHostOutcome feeds the circuit breaker: a final 429 (already past the
+// per-request retries in do) trips or extends it, any success clears it. Other
+// statuses leave it untouched.
+func (r *Resolver) noteHostOutcome(host string, status int) {
+	r.hostDownMu.Lock()
+	defer r.hostDownMu.Unlock()
+	switch {
+	case status == http.StatusTooManyRequests:
+		b := r.hostDown[host]
+		if b == nil {
+			b = &hostBackoff{}
+			r.hostDown[host] = b
+		}
+		b.fails++
+		window := breakerBase << (b.fails - 1)
+		if window > breakerMax || window <= 0 {
+			window = breakerMax
+		}
+		b.until = r.now().Add(window)
+	case status >= 200 && status < 300:
+		delete(r.hostDown, host)
+	}
+}
+
 // sleepCtx sleeps for d unless ctx is cancelled first.
 func sleepCtx(ctx context.Context, d time.Duration) {
 	t := time.NewTimer(d)
@@ -160,6 +240,13 @@ func sleepCtx(ctx context.Context, d time.Duration) {
 func (r *Resolver) Resolve(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error) {
 	host, pathRepo := splitRepo(repo)
 	base := r.baseURL(host)
+
+	// A tripped breaker answers without any network: once a host hard-429s, the
+	// rest of the sweep must not pile onto it. The engine carries prior verdicts
+	// forward on errors, so badges stay put while we wait the window out.
+	if wait := r.breakerRemaining(host); wait > 0 {
+		return "", "", "", "", fmt.Errorf("%s is rate limiting us — backing off, next attempt in %s", host, wait.Round(time.Second))
+	}
 
 	tags, err := r.fetchTags(ctx, base, host, pathRepo)
 	if err != nil {
@@ -221,6 +308,7 @@ func (r *Resolver) fetchTags(ctx context.Context, base, host, pathRepo string) (
 		if err != nil {
 			return nil, err
 		}
+		r.noteHostOutcome(host, resp.StatusCode)
 		if resp.StatusCode != http.StatusOK {
 			_ = resp.Body.Close()
 			// A 429 that survives the retries is the registry rate-limiting our
@@ -285,6 +373,7 @@ func (r *Resolver) fetchDigest(ctx context.Context, base, host, pathRepo, tag st
 		return "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
+	r.noteHostOutcome(host, resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("manifests/%s: unexpected status %d", tag, resp.StatusCode)
 	}
@@ -297,14 +386,21 @@ type header struct{ key, value string }
 // fetches an anonymous (or token-backed) bearer and retries once with
 // Authorization set. Transient rate-limit/unavailable statuses are retried with
 // backoff inside do.
+//
+// A valid cached token for host|repo is sent preemptively, so steady-state
+// sweeps skip the 401 probe + token roundtrip entirely; a 401 despite the
+// cached token (expired early, revoked) invalidates it and falls back to the
+// normal challenge flow, which re-fills the cache.
 func (r *Resolver) doAuthed(ctx context.Context, method, url, host, pathRepo string, extra ...header) (*http.Response, error) {
-	resp, err := r.do(ctx, method, url, host, "", extra...)
+	cacheKey := host + "|" + pathRepo
+	resp, err := r.do(ctx, method, url, host, r.cachedToken(cacheKey), extra...)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusUnauthorized {
 		return resp, nil
 	}
+	r.dropToken(cacheKey)
 
 	challenge := resp.Header.Get("WWW-Authenticate")
 	_ = resp.Body.Close()
@@ -312,11 +408,43 @@ func (r *Resolver) doAuthed(ctx context.Context, method, url, host, pathRepo str
 		return nil, fmt.Errorf("401 without bearer challenge for %s", url)
 	}
 
-	token, err := r.fetchToken(ctx, challenge, pathRepo, host)
+	token, ttl, err := r.fetchToken(ctx, challenge, pathRepo, host)
 	if err != nil {
 		return nil, err
 	}
+	r.storeToken(cacheKey, token, ttl)
 	return r.do(ctx, method, url, host, token, extra...)
+}
+
+// cachedToken returns the still-valid token for key, or "".
+func (r *Resolver) cachedToken(key string) string {
+	r.tokensMu.Lock()
+	defer r.tokensMu.Unlock()
+	if t, ok := r.tokens[key]; ok && r.now().Before(t.until) {
+		return t.token
+	}
+	return ""
+}
+
+// storeToken caches token for key until shortly before its advertised expiry.
+func (r *Resolver) storeToken(key, token string, ttl time.Duration) {
+	// Registries advertise expires_in only sometimes; the spec default is 60s
+	// but Docker Hub/ghcr issue 300s tokens. Use at least the spec-typical 300s
+	// floor UnraidDeck also relies on, minus a safety margin.
+	if ttl < 300*time.Second {
+		ttl = 300 * time.Second
+	}
+	ttl -= 60 * time.Second
+	r.tokensMu.Lock()
+	defer r.tokensMu.Unlock()
+	r.tokens[key] = cachedToken{token: token, until: r.now().Add(ttl)}
+}
+
+// dropToken invalidates the cached token for key.
+func (r *Resolver) dropToken(key string) {
+	r.tokensMu.Lock()
+	defer r.tokensMu.Unlock()
+	delete(r.tokens, key)
 }
 
 // do issues a request (optionally with a bearer token), gating per host and
@@ -402,15 +530,16 @@ func clampWait(d time.Duration) time.Duration {
 
 // fetchToken parses a Bearer WWW-Authenticate challenge, GETs the realm with
 // the advertised service and an enforced repository:<repo>:pull scope, and
-// returns the token. It attaches HTTP Basic auth so the issued token carries the
+// returns the token plus its advertised lifetime (0 when the realm sends no
+// expires_in). It attaches HTTP Basic auth so the issued token carries the
 // authenticated (higher) rate limit, host-scoped: Docker Hub credentials only on
 // registry-1.docker.io, and a GitHub token (any user, token as password) only on
 // ghcr.io / lscr.io. Credentials are never sent to any other registry.
-func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host string) (string, error) {
+func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host string) (string, time.Duration, error) {
 	params := parseChallenge(challenge)
 	realm := params["realm"]
 	if realm == "" {
-		return "", fmt.Errorf("bearer challenge missing realm: %q", challenge)
+		return "", 0, fmt.Errorf("bearer challenge missing realm: %q", challenge)
 	}
 
 	sep := "?"
@@ -433,26 +562,28 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 
 	resp, err := r.do(ctx, http.MethodGet, url, host, "", extra...)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("token: unexpected status %d from realm %s", resp.StatusCode, realm)
+		return "", 0, fmt.Errorf("token: unexpected status %d from realm %s", resp.StatusCode, realm)
 	}
 	var body struct {
 		Token       string `json:"token"`
 		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return "", fmt.Errorf("token: decode: %w", err)
+		return "", 0, fmt.Errorf("token: decode: %w", err)
 	}
+	ttl := time.Duration(body.ExpiresIn) * time.Second
 	if body.Token != "" {
-		return body.Token, nil
+		return body.Token, ttl, nil
 	}
 	if body.AccessToken != "" {
-		return body.AccessToken, nil
+		return body.AccessToken, ttl, nil
 	}
-	return "", fmt.Errorf("token: empty token from realm %s", realm)
+	return "", 0, fmt.Errorf("token: empty token from realm %s", realm)
 }
 
 // parseChallenge parses the key="value" pairs out of a Bearer challenge value,

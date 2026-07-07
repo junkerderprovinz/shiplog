@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
@@ -71,10 +72,16 @@ type dockerImage struct {
 }
 
 // imageInfo is the per-image data one inspect yields: the registry manifest
-// digest and the version the image declares about itself.
+// digest(s), the version the image declares about itself, and whether the
+// image only exists locally. isLocal is only ever set after a SUCCESSFUL
+// inspect (empty RepoDigests = built locally, never pushed/pulled); a failed
+// inspect leaves the zero value so a Docker hiccup can't demote a registry
+// image to "local".
 type imageInfo struct {
 	digest  string
+	digests []string
 	version string
+	isLocal bool
 }
 
 // List fetches all containers (running and stopped) and resolves each into a
@@ -104,7 +111,7 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	out := make([]model.Container, 0, len(raw))
 	infoCache := map[string]imageInfo{} // ImageID → digest+version (one inspect per image)
 	for _, dc := range raw {
-		repo, tag := splitImageRef(dc.Image)
+		repo, tag, pinnedDigest := splitImageRef(dc.Image)
 		info, ok := infoCache[dc.ImageID]
 		if !ok {
 			info = c.inspectImage(ctx, dc.ImageID, repo)
@@ -125,6 +132,9 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			Repo:         repo,
 			Tag:          tag,
 			Digest:       info.digest,
+			Digests:      info.digests,
+			PinnedDigest: pinnedDigest,
+			IsLocal:      info.isLocal,
 			Source:       source,
 			State:        dc.State,
 			ImageVersion: info.version,
@@ -173,8 +183,21 @@ func (c *Client) inspectImage(ctx context.Context, imageID, repo string) imageIn
 	}
 	return imageInfo{
 		digest:  pickDigest(img.RepoDigests, repo),
+		digests: allDigests(img.RepoDigests),
 		version: imageVersion(img),
+		isLocal: len(img.RepoDigests) == 0,
 	}
+}
+
+// allDigests extracts the digest part of every RepoDigests entry.
+func allDigests(repoDigests []string) []string {
+	var out []string
+	for _, rd := range repoDigests {
+		if at := strings.LastIndex(rd, "@"); at >= 0 {
+			out = append(out, rd[at+1:])
+		}
+	}
+	return out
 }
 
 // imageVersion reads the version the image declares about itself: the OCI
@@ -222,22 +245,45 @@ func containerName(names []string) string {
 	return strings.TrimPrefix(names[0], "/")
 }
 
-// splitImageRef splits a Docker image reference into a normalized repo and tag.
+// splitImageRef splits a Docker image reference into a normalized repo, tag and
+// pinning digest.
 //
 // Bare/short names are normalized to their canonical Docker Hub form
 // ("redis" -> "docker.io/library/redis", "user/app" -> "docker.io/user/app");
 // registry-qualified refs are kept as-is. A missing tag defaults to "latest".
-func splitImageRef(ref string) (repo, tag string) {
-	repo, tag = ref, "latest"
+//
+// A digest suffix ("repo@sha256:…", optionally "repo:tag@sha256:…") pins the
+// image; it must be split off BEFORE tag detection or the colon inside
+// "sha256:…" would be mistaken for the tag separator. A digest-pinned ref
+// without an explicit tag has no tag at all (not "latest"). A ref that is a
+// bare image ID ("sha256:…" or the plain hex) names no repo whatsoever.
+func splitImageRef(ref string) (repo, tag, pinnedDigest string) {
+	if at := strings.LastIndex(ref, "@"); at >= 0 {
+		ref, pinnedDigest = ref[:at], ref[at+1:]
+	}
+	if ref == "" || isImageID(ref) {
+		return "", "", pinnedDigest
+	}
+
+	repo = ref
 
 	// Split off the tag. A ':' only delimits a tag when it appears after the
 	// last '/', otherwise it's a registry port (e.g. "registry:5000/app").
 	if i := strings.LastIndex(ref, ":"); i >= 0 && !strings.Contains(ref[i+1:], "/") {
 		repo, tag = ref[:i], ref[i+1:]
+	} else if pinnedDigest == "" {
+		tag = "latest"
 	}
 
-	return normalizeRepo(repo), tag
+	return normalizeRepo(repo), tag, pinnedDigest
 }
+
+// imageIDRe matches a bare image ID reference: 64 hex chars, optionally with
+// the "sha256:" prefix.
+var imageIDRe = regexp.MustCompile(`^(sha256:)?[0-9a-f]{64}$`)
+
+// isImageID reports whether ref references an image by ID instead of by name.
+func isImageID(ref string) bool { return imageIDRe.MatchString(ref) }
 
 // normalizeRepo expands a Docker Hub short name to its fully-qualified form and
 // leaves any already registry-qualified reference untouched.

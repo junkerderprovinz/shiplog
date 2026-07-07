@@ -409,3 +409,104 @@ func TestRunStopsOnContextCancel(t *testing.T) {
 		t.Fatal("Run did not return after context cancel")
 	}
 }
+
+// countingResolver records how often each (repo, tag) is resolved.
+type countingResolver struct {
+	mu    sync.Mutex
+	calls map[string]int
+	res   resolveResult
+}
+
+func (c *countingResolver) Resolve(_ context.Context, repo, tag, _ string) (string, string, string, string, error) {
+	c.mu.Lock()
+	if c.calls == nil {
+		c.calls = map[string]int{}
+	}
+	c.calls[repo+"|"+tag]++
+	c.mu.Unlock()
+	return c.res.tag, c.res.dig, c.res.verTag, c.res.verDig, c.res.err
+}
+
+func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "l", Name: "local", Repo: "docker.io/library/myapp", Tag: "latest", IsLocal: true},
+		{ID: "p", Name: "pinned", Repo: "ghcr.io/x/y", Tag: "", PinnedDigest: "sha256:aaa"},
+		{ID: "i", Name: "byid", Repo: "", Tag: ""},
+	}}
+	res := &countingResolver{}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep returned: %v", err)
+	}
+	if len(res.calls) != 0 {
+		t.Errorf("resolver was called for upstream-less containers: %v", res.calls)
+	}
+	for id, wantReason := range map[string]string{
+		"l": "locally built image — no registry counterpart",
+		"p": "pinned by digest — updates only when the pin changes",
+		"i": "referenced by image ID — no tag to compare",
+	} {
+		row := st.rows[id]
+		if row.Kind != model.KindNone || row.Risk != model.RiskNone {
+			t.Errorf("%s: kind/risk = %s/%s, want none/none", id, row.Kind, row.Risk)
+		}
+		if row.RiskReason != wantReason {
+			t.Errorf("%s: reason = %q, want %q", id, row.RiskReason, wantReason)
+		}
+		if row.Error != "" {
+			t.Errorf("%s: unexpected error %q", id, row.Error)
+		}
+	}
+}
+
+func TestSweepResolvesEachRepoTagOnce(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "a", Name: "db1", Repo: "docker.io/library/postgres", Tag: "16", Digest: "sha256:p"},
+		{ID: "b", Name: "db2", Repo: "docker.io/library/postgres", Tag: "16", Digest: "sha256:p"},
+		{ID: "c", Name: "db3-stopped", Repo: "docker.io/library/postgres", Tag: "16", Digest: "sha256:p", State: "exited"},
+		{ID: "d", Name: "other", Repo: "docker.io/library/redis", Tag: "7", Digest: "sha256:r"},
+	}}
+	res := &countingResolver{res: resolveResult{tag: "16", dig: "sha256:p"}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep returned: %v", err)
+	}
+	if got := res.calls["docker.io/library/postgres|16"]; got != 1 {
+		t.Errorf("postgres:16 resolved %d times, want exactly 1 for the whole sweep", got)
+	}
+	if got := res.calls["docker.io/library/redis|7"]; got != 1 {
+		t.Errorf("redis:7 resolved %d times, want 1", got)
+	}
+	if len(st.rows) != 4 {
+		t.Errorf("stored %d rows, want 4 (every container gets its own row)", len(st.rows))
+	}
+}
+
+func TestCheckAcceptsMirrorDigestAsCurrent(t *testing.T) {
+	// The running image was pulled through a mirror: its primary digest differs
+	// from the upstream one, but RepoDigests carries the upstream digest too.
+	col := fakeCollector{list: []model.Container{
+		{
+			ID: "m", Name: "mirrored", Repo: "docker.io/library/caddy", Tag: "2.7.0",
+			Digest:  "sha256:mirror",
+			Digests: []string{"sha256:mirror", "sha256:upstream"},
+		},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"docker.io/library/caddy": {tag: "2.7.0", dig: "sha256:upstream"},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep returned: %v", err)
+	}
+	row := st.rows["m"]
+	if row.Kind != model.KindNone {
+		t.Errorf("kind = %s, want none (mirror digest matches upstream, no phantom drift)", row.Kind)
+	}
+}

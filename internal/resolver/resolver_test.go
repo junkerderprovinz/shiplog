@@ -124,6 +124,118 @@ func TestResolve_AnonymousTokenFlow(t *testing.T) {
 	}
 }
 
+func TestResolve_CachesBearerTokenAcrossRequests(t *testing.T) {
+	var tokenHits atomic.Int64
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v2/lib/app/tags/list", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"tags":["1.0.0","1.2.0"]}`))
+	})
+	mux.HandleFunc("/v2/lib/app/manifests/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Docker-Content-Digest", "sha256:NEW")
+	})
+	srv := httptest.NewServer(nil)
+	defer srv.Close()
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/token" {
+			tokenHits.Add(1)
+			_, _ = w.Write([]byte(`{"token":"x","expires_in":300}`))
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/v2/") && r.Header.Get("Authorization") != "Bearer x" {
+			w.Header().Set("WWW-Authenticate",
+				`Bearer realm="`+srv.URL+`/token",service="registry.test"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
+	r := newResolverFor(srv)
+	for i := 0; i < 2; i++ {
+		if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err != nil {
+			t.Fatalf("Resolve %d returned error: %v", i, err)
+		}
+	}
+	// One 401 fills the cache; every later request (the manifest HEAD of the
+	// first Resolve AND the entire second Resolve) rides the cached token.
+	if got := tokenHits.Load(); got != 1 {
+		t.Errorf("token endpoint hit %d times, want exactly 1 (cache must cover follow-up requests)", got)
+	}
+}
+
+func TestResolve_ExpiredCachedTokenHealsViaChallenge(t *testing.T) {
+	var tokenHits atomic.Int64
+	srv := httptest.NewServer(nil)
+	defer srv.Close()
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/token" {
+			tokenHits.Add(1)
+			_, _ = w.Write([]byte(`{"token":"x"}`))
+			return
+		}
+		if r.Header.Get("Authorization") != "Bearer x" {
+			w.Header().Set("WWW-Authenticate",
+				`Bearer realm="`+srv.URL+`/token",service="registry.test"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/tags/list"):
+			_, _ = w.Write([]byte(`{"tags":["1.0.0"]}`))
+		default:
+			w.Header().Set("Docker-Content-Digest", "sha256:NEW")
+		}
+	})
+
+	r := newResolverFor(srv)
+	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err != nil {
+		t.Fatalf("first Resolve: %v", err)
+	}
+	// Let the cached token expire; the next Resolve must transparently
+	// re-authenticate instead of failing.
+	r.now = func() time.Time { return time.Now().Add(time.Hour) }
+	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err != nil {
+		t.Fatalf("second Resolve after token expiry: %v", err)
+	}
+	if got := tokenHits.Load(); got != 2 {
+		t.Errorf("token endpoint hit %d times, want 2 (one per expiry window)", got)
+	}
+}
+
+func TestResolve_BreakerMutesHostAfterHard429(t *testing.T) {
+	var v2Hits atomic.Int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/v2/") {
+			v2Hits.Add(1)
+		}
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	r := newResolverFor(srv)
+	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err == nil {
+		t.Fatal("first Resolve must fail on a hard 429")
+	}
+	hitsAfterFirst := v2Hits.Load()
+
+	// Host is now muted: the next Resolve must answer without any network and
+	// say why.
+	_, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
+	if err == nil || !strings.Contains(err.Error(), "backing off") {
+		t.Fatalf("second Resolve error = %v, want a backing-off error", err)
+	}
+	if got := v2Hits.Load(); got != hitsAfterFirst {
+		t.Errorf("muted host still received %d extra requests", got-hitsAfterFirst)
+	}
+
+	// After the window has passed, the host is queried again.
+	r.now = func() time.Time { return time.Now().Add(2 * time.Minute) }
+	_, _, _, _, _ = r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
+	if got := v2Hits.Load(); got == hitsAfterFirst {
+		t.Error("host was not retried after the breaker window elapsed")
+	}
+}
+
 func TestResolve_NonSemverTag(t *testing.T) {
 	srv := newTestServer(false)
 	defer srv.Close()
