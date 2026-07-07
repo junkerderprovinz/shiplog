@@ -33,6 +33,23 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.4.0
+- FIX: digest-pinned containers (image@sha256:..., also with a tag) were stuck on a
+  permanent "could not resolve upstream" error or showed un-actionable updates; they
+  now show an honest neutral "pinned" state with zero registry cost.
+- FIX: locally built images could match a FOREIGN Docker Hub repository of the same
+  name and show a wrong update with a foreign changelog; they are now recognised and
+  labelled "local image" (also covers docker-load'ed images; re-pull once to re-attach
+  a side-loaded image to its registry).
+- FIX: images pulled through a mirror no longer show a phantom "digest drift".
+- NEW: registry friendliness — bearer tokens are cached until expiry, duplicate
+  images share one lookup per sweep, and a rate-limiting registry (including its
+  token endpoint) is backed off host-wide (1m..1h) instead of hammered; prior
+  verdicts carry forward with their original timestamp, so nothing flickers and
+  stale data is never presented as freshly checked.
+- The engine status page and the Docker-tab chip render the new pinned/local states
+  neutrally (grey) instead of a green "up to date".
+
 ### 1.3.1
 - FIX: the "Update all" button now really sits directly LEFT of the Basic/Advanced
   view toggle. Unraid's toggle row is a right-packing flex container, so the button
