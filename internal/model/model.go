@@ -8,11 +8,24 @@ type Container struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Image  string `json:"image"`  // image ref as referenced, e.g. "ghcr.io/x/y:1.2.3" or "redis"
-	Repo   string `json:"repo"`   // normalized, e.g. "ghcr.io/x/y" or "docker.io/library/redis"
-	Tag    string `json:"tag"`    // "1.2.3" / "latest"
+	Repo   string `json:"repo"`   // normalized, e.g. "ghcr.io/x/y" or "docker.io/library/redis"; "" for a bare image-ID ref
+	Tag    string `json:"tag"`    // "1.2.3" / "latest"; "" for digest-pinned or image-ID refs
 	Digest string `json:"digest"` // running image digest, "sha256:..."
-	Source string `json:"source"` // org.opencontainers.image.source label, may be ""
-	State  string `json:"state"`  // "running" / "exited" / ...
+	// Digests lists every manifest digest from the image's RepoDigests. An image
+	// pulled through a mirror and retagged carries one entry per registry; a
+	// remote digest matching ANY of them means "same image".
+	Digests []string `json:"digests,omitempty"`
+	// PinnedDigest is the "sha256:…" digest when the container references its
+	// image digest-pinned ("repo@sha256:…"). Such a container updates only when
+	// the pin is changed, never by a registry move.
+	PinnedDigest string `json:"pinned_digest,omitempty"`
+	// IsLocal marks an image without any registry counterpart (built locally,
+	// never pushed): RepoDigests was empty on a successful inspect. Resolving it
+	// upstream would at best waste a roundtrip and at worst match a FOREIGN
+	// repository that happens to share the name.
+	IsLocal bool   `json:"is_local,omitempty"`
+	Source  string `json:"source"` // org.opencontainers.image.source label, may be ""
+	State   string `json:"state"`  // "running" / "exited" / ...
 	// ImageVersion is the version the running image declares about itself via the
 	// OCI label org.opencontainers.image.version (fallback .revision), read from
 	// the image config. "" when the image carries no such label. It lets a
@@ -65,6 +78,23 @@ type UpdateStatus struct {
 	Changelog      *Changelog `json:"changelog,omitempty"`
 	CheckedAt      time.Time  `json:"checked_at"`
 	Error          string     `json:"error,omitempty"` // per-container failure, never fatal
+}
+
+// HasDigest reports whether d equals the container's primary digest or any of
+// its RepoDigests entries (mirror pulls carry one digest per registry).
+func (c Container) HasDigest(d string) bool {
+	if d == "" {
+		return false
+	}
+	if d == c.Digest {
+		return true
+	}
+	for _, have := range c.Digests {
+		if have == d {
+			return true
+		}
+	}
+	return false
 }
 
 // HasUpdate reports whether this status represents an actionable update.

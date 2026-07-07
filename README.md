@@ -74,6 +74,8 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
 - **Honest degradation** — when no changelog is machine-findable, ShipLog says so and shows what it does know, never pretends.
 - **Read-only by construction** — never writes to the Docker socket.
+- **Registry-friendly by construction** — manifest checks are `HEAD` requests, which do **not** count against Docker Hub's pull rate limit. Bearer tokens are cached, duplicate images share one lookup per sweep, and a rate-limiting registry is backed off host-wide instead of hammered.
+- **Knows what has no upstream** — digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
 - **Update all in one click** — a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
 - **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
@@ -106,8 +108,8 @@ Open the WebUI on port **8484**.
 
 Every `POLL_INTERVAL`, for each container:
 
-1. **Discover** via the read-only Docker socket (image ref, digest, OCI labels).
-2. **Resolve** the newest tag + same-tag digest from the registry (Docker Hub / GHCR / generic OCI v2, anonymous).
+1. **Discover** via the read-only Docker socket (image ref, digest, OCI labels). Digest-pinned (`image@sha256:…`), image-ID-referenced and locally built containers are recognised here and honestly labelled — they have no upstream to check, so no registry call is made for them.
+2. **Resolve** the newest tag + same-tag digest from the registry (Docker Hub / GHCR / generic OCI v2, anonymous). Manifest checks are `HEAD`-only and don't consume Docker Hub's pull rate limit; the `tags/list` call is subject only to generic throttling, which ShipLog meets with per-request retries (honouring `Retry-After`), a per-host request gate, bearer-token caching, one lookup per distinct image per sweep, and a host-wide backoff after a hard 429.
 3. **Changelog** via a layered provider chain — first hit wins: the image's `org.opencontainers.image.source` label → GitHub releases between the tags; otherwise a version-delta fallback with a compare link.
 4. **Risk** is a pure function of the version delta.
 5. **Store** in SQLite (status + a small per-container version history) and surface on the API + status page.
