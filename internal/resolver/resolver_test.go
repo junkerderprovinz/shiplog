@@ -202,6 +202,39 @@ func TestResolve_ExpiredCachedTokenHealsViaChallenge(t *testing.T) {
 	}
 }
 
+func TestResolve_BreakerTripsOnTokenRealm429(t *testing.T) {
+	// The most common real-world 429 source is the TOKEN endpoint
+	// (auth.docker.io / ghcr token issuance), not the /v2/ endpoints. A hard
+	// token 429 must mute the host too, or the sweep keeps re-hammering it.
+	var tokenHits atomic.Int64
+	srv := httptest.NewServer(nil)
+	defer srv.Close()
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/token" {
+			tokenHits.Add(1)
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Header().Set("WWW-Authenticate",
+			`Bearer realm="`+srv.URL+`/token",service="registry.test"`)
+		w.WriteHeader(http.StatusUnauthorized)
+	})
+
+	r := newResolverFor(srv)
+	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err == nil {
+		t.Fatal("first Resolve must fail when the token realm hard-429s")
+	}
+	hitsAfterFirst := tokenHits.Load()
+
+	_, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
+	if err == nil || !strings.Contains(err.Error(), "backing off") {
+		t.Fatalf("second Resolve error = %v, want a backing-off error", err)
+	}
+	if got := tokenHits.Load(); got != hitsAfterFirst {
+		t.Errorf("muted host's token realm still received %d extra requests", got-hitsAfterFirst)
+	}
+}
+
 func TestResolve_BreakerMutesHostAfterHard429(t *testing.T) {
 	var v2Hits atomic.Int64
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

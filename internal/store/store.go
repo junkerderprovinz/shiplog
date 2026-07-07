@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS status (
 	image           TEXT,
 	tag             TEXT,
 	digest          TEXT,
+	pinned_digest   TEXT,
+	is_local        INTEGER,
 	running_version TEXT,
 	newest_tag      TEXT,
 	newest_digest   TEXT,
@@ -76,10 +78,12 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("store: create schema: %w", err)
 	}
-	// Migrate older databases that predate the running_version column. On a fresh
-	// DB the column already exists, so the duplicate-column error is expected and
+	// Migrate older databases that predate later columns. On a fresh DB the
+	// columns already exist, so the duplicate-column error is expected and
 	// ignored.
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN running_version TEXT`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN pinned_digest TEXT`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN is_local INTEGER`)
 	return &Store{db: db}, nil
 }
 
@@ -122,16 +126,18 @@ func (s *Store) Upsert(st model.UpdateStatus) error {
 
 	_, err = s.db.Exec(`
 INSERT INTO status (
-	container_id, name, repo, image, tag, digest, running_version,
+	container_id, name, repo, image, tag, digest, pinned_digest, is_local, running_version,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(container_id) DO UPDATE SET
 	name            = excluded.name,
 	repo            = excluded.repo,
 	image           = excluded.image,
 	tag             = excluded.tag,
 	digest          = excluded.digest,
+	pinned_digest   = excluded.pinned_digest,
+	is_local        = excluded.is_local,
 	running_version = excluded.running_version,
 	newest_tag      = excluded.newest_tag,
 	newest_digest   = excluded.newest_digest,
@@ -141,7 +147,7 @@ ON CONFLICT(container_id) DO UPDATE SET
 	changelog_json  = excluded.changelog_json,
 	checked_at      = excluded.checked_at,
 	error           = excluded.error`,
-		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.RunningVersion,
+		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.Container.PinnedDigest, st.Container.IsLocal, st.RunningVersion,
 		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
 		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
 	)
@@ -163,7 +169,8 @@ ORDER BY CASE risk
 END DESC, name ASC`
 
 const selectCols = `
-SELECT container_id, name, repo, image, tag, digest, COALESCE(running_version, ''),
+SELECT container_id, name, repo, image, tag, digest,
+	COALESCE(pinned_digest, ''), COALESCE(is_local, 0), COALESCE(running_version, ''),
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error
 FROM status`
@@ -239,15 +246,18 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		kind, risk    string
 		changelogJSON string
 		checkedAt     string
+		isLocal       int64 // SQLite has no bool; scan the 0/1 integer explicitly
 	)
 	err := sc.Scan(
-		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest, &st.RunningVersion,
+		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest,
+		&st.Container.PinnedDigest, &isLocal, &st.RunningVersion,
 		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
 		&changelogJSON, &checkedAt, &st.Error,
 	)
 	if err != nil {
 		return model.UpdateStatus{}, err
 	}
+	st.Container.IsLocal = isLocal != 0
 	st.Kind = model.Kind(kind)
 	st.Risk = model.RiskLevel(risk)
 	if checkedAt != "" {

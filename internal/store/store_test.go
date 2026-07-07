@@ -43,6 +43,30 @@ func TestUpsertAndList(t *testing.T) {
 	}
 }
 
+func TestPinnedAndLocalRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{
+		Container: model.Container{
+			ID: "pin", Name: "pinned", Repo: "ghcr.io/x/y",
+			PinnedDigest: "sha256:aaa", IsLocal: true,
+		},
+		Kind: model.KindNone, Risk: model.RiskNone, CheckedAt: time.Now(),
+	}
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("pin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Container.PinnedDigest != "sha256:aaa" {
+		t.Errorf("pinned_digest did not round-trip: %q", got.Container.PinnedDigest)
+	}
+	if !got.Container.IsLocal {
+		t.Error("is_local did not round-trip")
+	}
+}
+
 func TestHistoryAppendOnVersionChange(t *testing.T) {
 	s := newTestStore(t)
 	base := model.UpdateStatus{Container: model.Container{ID: "abc", Name: "immich", Tag: "1.122.0"}, RunningVersion: "1.122.0", CheckedAt: time.Now()}

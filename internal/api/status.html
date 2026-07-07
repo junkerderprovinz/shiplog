@@ -50,8 +50,8 @@
     {{range .Statuses}}
       <tr>
         <td class="name">{{.Container.Name}}<small>{{.Container.Repo}}</small></td>
-        <td class="ver">{{.Container.Tag}}</td>
-        <td class="ver">{{if .HasUpdate}}<span class="new">&rarr; {{.NewestTag}}</span>{{else}}up to date{{end}}</td>
+        <td class="ver">{{if .Container.Tag}}{{.Container.Tag}}{{else if .Container.PinnedDigest}}pinned{{else}}&mdash;{{end}}</td>
+        <td class="ver">{{if .HasUpdate}}<span class="new">&rarr; {{.NewestTag}}</span>{{else if .Container.PinnedDigest}}pinned by digest{{else if .Container.IsLocal}}local image{{else if not .Container.Repo}}image-ID ref{{else}}up to date{{end}}</td>
         <td><span class="badge r-{{.Risk}}">{{.Risk}}</span></td>
         <td class="clog">
           {{- if .Error}}<span style="color:var(--dim2)">{{.Error}}</span>
