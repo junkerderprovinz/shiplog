@@ -29,6 +29,12 @@
 </ICON>
 
 <CHANGES>
+### 1.4.7
+- Theme-adaptive logo on the settings page + Utilities menu: the mark is now an SVG
+  whose internal @media (prefers-color-scheme) shows it white in dark mode and
+  dark-grey in light mode (follows the OS colour scheme). The Plugins-page thumbnail
+  stays a static neutral-grey PNG — a raster icon at a fixed .png path can't switch.
+
 ### 1.4.6
 - The install/uninstall ceremony prints the HOUSE ASCII banner (the shipped
   banner.txt carried the engine-log art instead).
