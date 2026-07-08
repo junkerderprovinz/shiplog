@@ -45,48 +45,52 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 ?>
 
 <style>
-  .sl-cfg{max-width:780px;margin:6px auto 0;color:#e6e6e6;
+  /* CC-aligned Carbon look: a self-contained dark sheet so the light text reads on
+     any Unraid theme, a borderless flat header (no box, no rule), and borderless
+     cards whose lighter fill — not a frame — sets them apart. */
+  .sl-cfg{--sheet:#161616;--card:#232323;--txt:#e6e6e6;--dim:#b4b4b4;--dim2:#8a8a8a;
+    --line:#2f2f2f;--line2:#3a3a3a;--inp:#181818;
+    max-width:820px;margin:14px auto 0;padding:22px 24px;color:var(--txt);
+    background:var(--sheet);border-radius:14px;
     font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
   .sl-cfg *{box-sizing:border-box}
-  .sl-hd{display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:16px;
-    background:linear-gradient(180deg,#202020,#191919);border:1px solid #2c2c2c;
-    border-left:3px solid #6e6e6e;border-radius:12px}
-  .sl-hd .sl-logo{width:42px;height:42px;object-fit:contain;border-radius:8px;flex:none}
-  .sl-hd .sl-ttl{font-size:20px;font-weight:600;letter-spacing:.2px}
+  .sl-hd{display:flex;align-items:center;gap:15px;padding:0 2px 18px;margin-bottom:20px}
+  .sl-hd .sl-logo{width:46px;height:46px;flex:none;color:var(--txt)}
+  .sl-hd .sl-ttl{font-size:21px;font-weight:600;letter-spacing:.2px}
   .sl-hd .sl-ttl b{font-weight:700}
-  .sl-hd .sl-sub{margin-top:2px;color:#9a9a9a;font-size:13px}
+  .sl-hd .sl-sub{margin-top:3px;color:var(--dim2);font-size:12.5px;max-width:660px}
 
-  .sl-card{background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;
+  .sl-card{background:var(--card);border:none;border-radius:12px;
     padding:6px 18px 16px;margin-bottom:16px}
   .sl-card > h3{display:flex;align-items:baseline;gap:10px;margin:14px 2px 14px;
     font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#cfcfcf;
-    border-bottom:1px solid #2a2a2a;padding-bottom:10px}
-  .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:#7c7c7c;font-size:12px}
+    border-bottom:1px solid var(--line);padding-bottom:10px}
+  .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px}
 
   .sl-row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center;padding:7px 2px}
-  .sl-row > label{color:#bdbdbd;font-size:13px}
+  .sl-row > label{color:var(--dim);font-size:13px}
   .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .sl-cfg input[type=text],.sl-cfg input[type=password],.sl-cfg select{
-    background:#141414;border:1px solid #343434;border-radius:7px;color:#e6e6e6;
+    background:var(--inp);border:1px solid var(--line2);border-radius:7px;color:var(--txt);
     padding:7px 10px;font:13px/1.2 inherit;min-width:240px;outline:none}
   .sl-cfg input:focus,.sl-cfg select:focus{border-color:#6e6e6e}
   .sl-cfg input.sl-narrow{min-width:120px;width:120px}
-  .sl-hint{color:#7c7c7c;font-size:12px}
+  .sl-hint{color:var(--dim2);font-size:12px}
   .sl-cfg a{color:#8ab4f8;text-decoration:none}
 
   /* Match Unraid's native buttons via its theme vars (--button/--button-hover,
      --text/--border) so Apply + the helpers look native + hover like the rest of
      the GUI; fallbacks keep the dark look on themes/older builds without them. */
-  .sl-btn{background:var(--button,#262626);border:1px solid var(--border,#3a3a3a);border-radius:4px;color:var(--text,#e6e6e6);
+  .sl-btn{background:var(--button,#2a2a2a);border:1px solid var(--border,#3a3a3a);border-radius:6px;color:var(--text,#e6e6e6);
     padding:7px 14px;font:13px/1.2 inherit;cursor:pointer}
-  .sl-btn:hover{background:var(--button-hover,#2d2d2d);border-color:var(--border,#5a5a5a)}
+  .sl-btn:hover{background:var(--button-hover,#333);border-color:var(--border,#5a5a5a)}
   .sl-btn.sl-primary{font-weight:600}
   .sl-btn.sl-eye{padding:7px 10px;min-width:58px}
   .sl-res{font-size:12.5px}
   .sl-res.ok{color:#3fae6a}
   .sl-res.err{color:#d9534f}
-  .sl-res.run{color:#9a9a9a}
-  .sl-actions{display:flex;gap:10px;margin:4px 2px 20px}
+  .sl-res.run{color:var(--dim)}
+  .sl-actions{display:flex;gap:10px;margin:4px 2px 4px}
 
   .sl-switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
   .sl-switch > input{position:absolute;opacity:0;width:0;height:0}
@@ -97,13 +101,22 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-switch > input:checked + .sl-track{background:#2f9e54;border-color:#3fae6a}
   .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#f0f0f0}
   .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px #525252}
-  .sl-state{font-size:13px;color:#bdbdbd;min-width:26px}
+  .sl-state{font-size:13px;color:var(--dim);min-width:26px}
 </style>
 
 <div class="sl-cfg">
 
   <div class="sl-hd">
-    <img class="sl-logo" src="/plugins/shiplog/shiplog.png" alt="ShipLog">
+    <!-- Frameless anchor mark (no white ring/disc): drawn in currentColor so it
+         reads on the dark sheet and stays consistent with the title-bar icon. -->
+    <svg class="sl-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+         stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="ShipLog">
+      <circle cx="12" cy="4.3" r="2.3"/>
+      <path d="M12 6.6V21"/>
+      <path d="M7.7 10h8.6"/>
+      <path d="M4.3 13.2a7.7 7.7 0 0 0 15.4 0"/>
+      <path d="M4.3 13.2 2.7 11M19.7 13.2 21.3 11"/>
+    </svg>
     <div>
       <div class="sl-ttl"><b>Ship</b>Log</div>
       <div class="sl-sub">Read-only update advisor — it never updates anything, it shows what changed and how risky, right in the Docker tab.</div>
