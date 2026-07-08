@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "Junker der Provinz">
-  <!ENTITY version   "1.4.5">
+  <!ENTITY version   "1.4.6">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -29,6 +29,10 @@
 </ICON>
 
 <CHANGES>
+### 1.4.6
+- The install/uninstall ceremony prints the HOUSE ASCII banner (the shipped
+  banner.txt carried the engine-log art instead).
+
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
@@ -286,7 +290,7 @@ rm -f &plgPath;/*.txz
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>06daa4a00d796bf82c10b5e30c9b8d48db8b139a8cfde0f7c2a17c4cfe429e3b</SHA256>
+  <SHA256>06aa939012b186afb79d47a4aa60c60f5275aba32fc92161879a19ccc5f018d4</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
