@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
-  <!ENTITY author    "junkerderprovinz">
-  <!ENTITY version   "1.4.3">
+  <!ENTITY author    "Junker der Provinz">
+  <!ENTITY version   "1.4.4">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -29,6 +29,11 @@
 </ICON>
 
 <CHANGES>
+### 1.4.4
+- The plugin author shows as "Junker der Provinz".
+- Install/uninstall ceremony: the house ASCII banner prints on both, followed
+  by "ShipLog ist ready!" after an install and "Bye!" on removal.
+
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
@@ -273,7 +278,7 @@ rm -f &plgPath;/*.txz
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>b3ec4c856658509292d494faccdca51e687b81e559a36a4807ce652927a73271</SHA256>
+  <SHA256>aef5b98268be0a0d39e56c85106d305c7e686549594e70cc9ad02b2617cc691d</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
@@ -282,7 +287,9 @@ rm -f &plgPath;/*.txz
 chmod +x &emhttp;/bin/shiplog &emhttp;/scripts/rc.shiplog &emhttp;/event/* 2>/dev/null
 &emhttp;/scripts/rc.shiplog restart
 echo ""
-echo "ShipLog &version; installed — open Settings &gt; ShipLog, or the Docker tab."
+cat &emhttp;/banner.txt 2>/dev/null
+echo ""
+echo "ShipLog ist ready!"
 </INLINE>
 </FILE>
 
@@ -296,6 +303,11 @@ echo "ShipLog &version; installed — open Settings &gt; ShipLog, or the Docker 
      the exact package + files + cached .txz; keep appdata + the .cfg settings. -->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
+# goodbye ceremony FIRST, while the files still exist
+cat &emhttp;/banner.txt 2>/dev/null
+echo ""
+echo "Bye!"
+echo ""
 &emhttp;/scripts/rc.shiplog stop 2>/dev/null
 for p in $(pgrep -f '&emhttp;/bin/&slug;' 2>/dev/null); do kill -9 "$p" 2>/dev/null; done
 pkg=$(ls /var/log/packages/ 2>/dev/null | grep -E "^&slug;(-[^-]+-[^-]+-[^-]+)?$" | head -n1)
