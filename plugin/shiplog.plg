@@ -29,6 +29,16 @@
 </ICON>
 
 <CHANGES>
+### 1.4.8
+- FIX: the settings-page logo could be invisible — the 1.4.7 SVG followed the OS
+  colour scheme, so an OS-light browser drew the dark-mode logo dark on the dark page.
+  The header logo is now an inline SVG whose colour follows UNRAID's own theme (white
+  on the black/gray themes, dark-grey on white/azure) via the Theme--* class, not the
+  OS. The header title + subtitle follow the theme too, so the header reads everywhere.
+- The Plugins-page thumbnail stays a neutral-grey PNG: Unraid renders that icon as a
+  plain &lt;img&gt; and accepts only .png, so a raster thumbnail there cannot switch with
+  the theme — an Unraid limitation, not specific to ShipLog.
+
 ### 1.4.7
 - Theme-adaptive logo on the settings page + Utilities menu: the mark is now an SVG
   whose internal @media (prefers-color-scheme) shows it white in dark mode and
