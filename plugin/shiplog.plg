@@ -33,6 +33,12 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.4.1
+- The Settings page title icon now follows Unraid's light/dark theme. It is an
+  inline SVG anchor drawn in the title's own text colour (currentColor), so it
+  shows dark on the white/azure themes and light on black/gray; the static PNG
+  icon could not adapt. Same idea FanCtrl Plus uses for its adaptive logo.
+
 ### 1.4.0
 - FIX: digest-pinned containers (image@sha256:..., also with a tag) were stuck on a
   permanent "could not resolve upstream" error or showed un-actionable updates; they

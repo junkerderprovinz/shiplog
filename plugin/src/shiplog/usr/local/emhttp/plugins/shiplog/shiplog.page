@@ -265,3 +265,39 @@ function slDetectOllama() {
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
 }
 </script>
+
+<script>
+/* Theme-adaptive title icon (the FanCtrlPlus trick). Unraid renders the page
+   title's icon from Icon="shiplog.png" as a STATIC <img>, which can't follow the
+   light/dark theme. We replace it with an INLINE SVG anchor stroked in
+   `currentColor`: it inherits the title's text colour, which Unraid themes per
+   mode (dark ink on the white/azure themes, light ink on black/gray) — so the
+   mark flips with Unraid's own toggle, no OS media query needed. One-shot + guarded
+   (no MutationObserver): the title exists at render and is never rebuilt, so this
+   can't loop. Wrapped in try/catch — a decorative icon must never break the page. */
+(function () {
+  function slAdaptTitleIcon() {
+    try {
+      var span = document.querySelector('div.title span.left')
+              || document.querySelector('.title .left')
+              || document.querySelector('.title');
+      if (!span || span.querySelector('.sl-title-ico')) return;   // idempotent
+      var svg =
+        '<svg class="sl-title-ico" viewBox="0 0 24 24" width="22" height="22"' +
+        ' fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"' +
+        ' stroke-linejoin="round" style="vertical-align:middle;margin-right:7px" aria-hidden="true">' +
+        '<circle cx="12" cy="4.3" r="2.3"/>' +
+        '<path d="M12 6.6V21"/>' +
+        '<path d="M7.7 10h8.6"/>' +
+        '<path d="M4.3 13.2a7.7 7.7 0 0 0 15.4 0"/>' +
+        '<path d="M4.3 13.2 2.7 11M19.7 13.2 21.3 11"/>' +
+        '</svg>';
+      var old = span.querySelector('img');   // Unraid's static PNG title icon
+      if (old) { old.insertAdjacentHTML('beforebegin', svg); old.remove(); }
+      else { span.insertAdjacentHTML('afterbegin', svg); }
+    } catch (e) { /* never break the page over a decorative icon */ }
+  }
+  if (document.readyState !== 'loading') slAdaptTitleIcon();
+  else document.addEventListener('DOMContentLoaded', slAdaptTitleIcon);
+})();
+</script>
