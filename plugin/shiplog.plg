@@ -29,6 +29,14 @@
 </ICON>
 
 <CHANGES>
+### 1.4.9
+- The logo is now a brand teal (the FanCtrl idea: a coloured core that reads on any
+  background). It is one fixed colour on every surface — the settings header, the
+  Plugins-page thumbnail and the Utilities-menu icon all show the same teal anchor and
+  look right on light and dark themes alike. The header title/subtitle still follow the
+  theme for readability. A static thumbnail can't truly theme-switch; a stable brand
+  colour is the honest fix.
+
 ### 1.4.8
 - FIX: the settings-page logo could be invisible — the 1.4.7 SVG followed the OS
   colour scheme, so an OS-light browser drew the dark-mode logo dark on the dark page.
