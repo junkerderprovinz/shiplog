@@ -29,14 +29,22 @@
 </ICON>
 
 <CHANGES>
+Shows the changelog of your installed Docker containers, right in the Docker tab:
+what changed from your running image to the newest, with a risk badge. Read-only —
+optional AI summaries (Ollama) and Matrix alerts.
+
+### 1.4.5
+- Uses the real ShipLog mark (the anchor-in-ring), frameless — replacing the plain
+  anchor from 1.4.2/1.4.3. The settings header draws it in the text colour
+  (currentColor); the Plugins-page + Utilities-menu PNG is the same mark in neutral
+  grey on a transparent background.
+- Settings: dropped the dark backing panel. The cards now sit on Unraid's own surface,
+  set apart by a lighter fill and a soft shadow instead of a full dark sheet.
+
 ### 1.4.4
 - The plugin author shows as "Junker der Provinz".
 - Install/uninstall ceremony: the house ASCII banner prints on both, followed
   by "ShipLog ist ready!" after an install and "Bye!" on removal.
-
-Shows the changelog of your installed Docker containers, right in the Docker tab:
-what changed from your running image to the newest, with a risk badge. Read-only —
-optional AI summaries (Ollama) and Matrix alerts.
 
 ### 1.4.3
 - The plugin's PNG icon (Plugins page + Utilities menu) drops the white disc/ring and
