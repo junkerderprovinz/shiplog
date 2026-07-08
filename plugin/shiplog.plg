@@ -33,6 +33,12 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.4.3
+- The plugin's PNG icon (Plugins page + Utilities menu) drops the white disc/ring and
+  is now a frameless neutral-grey anchor on a transparent background, so it reads on
+  light and dark themes alike without the white box. A static PNG can't follow the
+  theme; neutral grey is the theme-independent middle ground.
+
 ### 1.4.2
 - Settings redesign, aligned to CannonadeCommander's Carbon look: the page is now a
   self-contained dark sheet with a borderless, flat header and borderless cards whose
