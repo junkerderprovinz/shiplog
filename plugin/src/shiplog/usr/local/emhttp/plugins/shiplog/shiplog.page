@@ -110,9 +110,10 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 <div class="sl-cfg">
 
   <div class="sl-hd">
-    <!-- Logo v2 (user design): gold anchor + white ring. Fixed colours, reads on light and
-         dark; on the dark themes the white ring pops. Served as a file so it stays crisp. -->
-    <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog-hell.svg')?>" alt="ShipLog">
+    <!-- Logo (user design): gold anchor + double ring (dark/white/dark). Fixed colours, reads
+         on ANY Unraid theme — the white ring pops on the dark ones, the dark outer ring frames
+         it on the light ones. Served as a file so it stays crisp. -->
+    <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog-unraid.svg')?>" alt="ShipLog">
     <div>
       <div class="sl-ttl"><b>Ship</b>Log</div>
       <div class="sl-sub">Read-only update advisor — it never updates anything, it shows what changed and how risky, right in the Docker tab.</div>
