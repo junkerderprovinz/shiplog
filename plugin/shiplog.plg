@@ -29,6 +29,13 @@
 </ICON>
 
 <CHANGES>
+### 1.4.10
+- The logo flips with the theme again, monochrome: dark on the light themes, white on
+  the dark themes (the teal is gone). The settings header flips via Unraid's Theme--*
+  class. The Plugins-page tile now ships an adaptive SVG (images/shiplog.svg, a
+  self-contained @media prefers-color-scheme) right next to the PNG fallback — the same
+  two-file layout FanCtrl uses — so wherever Unraid renders the SVG, the tile flips too.
+
 ### 1.4.9
 - The logo is now a brand teal (the FanCtrl idea: a coloured core that reads on any
   background). It is one fixed colour on every surface — the settings header, the
