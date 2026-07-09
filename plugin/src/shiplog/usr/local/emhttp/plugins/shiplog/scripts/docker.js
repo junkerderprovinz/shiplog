@@ -15,6 +15,13 @@
   const TAG = "[ShipLog]";
   const DEMO = false; // true → show demo data even without the engine
 
+  // Update behaviour, set by shiplog.Docker.page from the plugin cfg:
+  //   confirmUpdate — ask before triggering the update (default on)
+  //   silentUpdate  — suppress Unraid's pop-up download-log window (default off)
+  const PREFS = (window.shiplogPrefs && typeof window.shiplogPrefs === "object") ? window.shiplogPrefs : {};
+  const confirmUpdate = PREFS.confirmUpdate !== false; // default on
+  const silentUpdate = PREFS.silentUpdate === true;    // default off
+
   const UPDATE_PHRASES = [
     "aktualisierung anwenden", "auf dem neu", "nicht verfügbar", "wird geprüft",
     "up-to-date", "up to date", "update ready", "apply update", "not available",
@@ -42,6 +49,8 @@
       deprecated: "DEPRECATED",
       updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
       updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
+      confirmOne: "Update %s now?", confirmAll: "Update all %n containers with a pending update now?",
+      updatingOne: "Updating the container", updatingAll: "Updating all Containers",
       updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
       none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
       pinned: "pinned", localimg: "local image",
@@ -53,6 +62,8 @@
       deprecated: "VERALTET",
       updateNow: "Jetzt aktualisieren", updateHint: "löst Unraids eigenes Update für diesen Container aus",
       updateGone: "Unraids Update-Knopf nicht gefunden — nutze „Aktualisierung anwenden“ in der Zeile.",
+      confirmOne: "%s jetzt aktualisieren?", confirmAll: "Alle %n Container mit anstehendem Update jetzt aktualisieren?",
+      updatingOne: "Container wird aktualisiert", updatingAll: "Alle Container werden aktualisiert",
       updateAll: "Alle aktualisieren", updateAllHint: "löst Unraids eigenes Update für alle Container mit anstehendem Update aus",
       none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
       pinned: "gepinnt", localimg: "lokales Image",
@@ -319,6 +330,38 @@
     return false;
   }
 
+  // runUpdate triggers Unraid's OWN container update through Unraid's own globals —
+  // ShipLog never touches the Docker socket. It replaces the "click the native
+  // apply-update anchor" path so ShipLog controls the two prefs:
+  //   • silent → POST the command to Unraid's StartCommand.php, which runs the
+  //     updater DETACHED server-side (nohup &). Proven safe: update_container
+  //     publishes with abort=false, so it completes with NO log window open.
+  //   • not silent → call Unraid's own openDocker(), the exact popup-log update
+  //     that updateContainer()/updateAll() use — but WITHOUT their swal "are you
+  //     sure?" (ShipLog's own "Ask before updating" pref owns the confirm).
+  // names: a container name or an array of them. Returns false if it couldn't
+  // dispatch (caller then falls back to clicking the native control).
+  function runUpdate(names, title) {
+    const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+    if (!list.length) return false;
+    const cmd = "update_container " + list.map(encodeURIComponent).join("*");
+    if (silentUpdate) {
+      try {
+        const tok = window.csrf_token || "";
+        fetch("/webGui/include/StartCommand.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "cmd=" + encodeURIComponent(cmd) + "&start=0" + (tok ? "&csrf_token=" + encodeURIComponent(tok) : ""),
+        }).then(() => { if (typeof window.loadlist === "function") setTimeout(window.loadlist, 4000); }).catch(() => {});
+        return true;
+      } catch (e) { /* fall through to the visible path */ }
+    }
+    if (typeof window.openDocker === "function") {
+      try { window.openDocker(cmd, title || "Updating", "", "loadlist"); return true; } catch (e) {}
+    }
+    return false;
+  }
+
   function openFor(anchor, st) {
     close();
     const b = el("div", "sl-bubble", bubbleHTML(st));
@@ -341,7 +384,9 @@
     const updBtn = b.querySelector(".sl-upd");
     if (updBtn) updBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation();
-      if (triggerNativeUpdate(st.container && st.container.name)) close();
+      const cname = st.container && st.container.name;
+      if (confirmUpdate && !window.confirm(T("confirmOne").replace("%s", cname || "this container"))) return;
+      if (runUpdate(cname, T("updatingOne")) || triggerNativeUpdate(cname)) close();
       else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
     });
     // persist size whenever the user drags the resize handle
@@ -370,6 +415,16 @@
     } catch (e) { return 0; }
   }
 
+  // the names native updateAll() would act on (docker[] entries flagged update==1)
+  function pendingUpdateNames() {
+    try {
+      const list = window.docker;
+      if (!Array.isArray(list)) return [];
+      return list.filter((d) => d && Number(d.update) === 1)
+        .map((d) => d.name || d.Name || d.container || "").filter(Boolean);
+    } catch (e) { return []; }
+  }
+
   function nativeUpdateAllAvailable() {
     return typeof window.updateAll === "function" || !!document.getElementById("updateAll");
   }
@@ -396,7 +451,12 @@
         if (isLightBg()) btn.classList.add("sl-light");
         btn.addEventListener("click", (e) => {
           e.preventDefault(); e.stopPropagation();
-          fireNativeUpdateAll();
+          const names = pendingUpdateNames();
+          const n = names.length;
+          if (n === 0) return;
+          if (confirmUpdate && !window.confirm(T("confirmAll").replace("%n", n))) return;
+          // ShipLog-owned trigger (silent or Unraid's popup); fall back to native updateAll()
+          if (!runUpdate(names, T("updatingAll"))) fireNativeUpdateAll();
         });
         // .ToggleViewMode is a full-width flex row with justify-content:flex-end —
         // as its FIRST child the button packs to the right, directly LEFT of the

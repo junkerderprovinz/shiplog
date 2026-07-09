@@ -106,6 +106,8 @@ Open the WebUI on port **8484**.
 | `GITHUB_TOKEN` | — | optional; raises the anonymous GitHub API limit for changelog fetching |
 | `OLLAMA_URL` / `OLLAMA_MODEL` | — | optional AI summaries |
 | `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | — | optional enriched notifications |
+| `CONFIRM_UPDATE` | `true` | ask for confirmation before "Update now" triggers Unraid's update |
+| `SILENT_UPDATE` | `false` | run the update without Unraid's pop-up download-log window (it still runs in the background) |
 
 ## 6. How it works
 

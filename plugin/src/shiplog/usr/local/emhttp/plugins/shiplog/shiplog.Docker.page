@@ -7,6 +7,10 @@ Tag="anchor"
    This page renders no visible panel; it only loads the styles + the script
    that adds the per-container "Changelog" control and bubble. Data comes from
    the same-origin proxy (server/status.php → the local engine daemon). */
+$slcfg     = parse_plugin_cfg("shiplog");
+$slConfirm = (!isset($slcfg['CONFIRM_UPDATE']) || $slcfg['CONFIRM_UPDATE'] !== 'false'); // default on
+$slSilent  = (isset($slcfg['SILENT_UPDATE'])  && $slcfg['SILENT_UPDATE']  === 'true');   // default off
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
+<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>};</script>
 <script defer src="<?autov('/plugins/shiplog/scripts/docker.js')?>"></script>
