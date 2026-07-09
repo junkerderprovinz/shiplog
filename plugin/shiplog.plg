@@ -29,6 +29,13 @@
 </ICON>
 
 <CHANGES>
+### 1.4.11
+- The Plugins-page / Utilities-menu tile is a dark (near-black) monochrome anchor now.
+  On the dark Unraid themes the list icons are inverted, so a dark PNG flips to white
+  there and stays dark on the light themes — exactly the wanted dark/light behaviour.
+  The earlier neutral-grey PNG barely changed under the invert, so it looked static.
+  (Dropped the adaptive SVG; the flip comes from the dark PNG + the theme's own invert.)
+
 ### 1.4.10
 - The logo flips with the theme again, monochrome: dark on the light themes, white on
   the dark themes (the teal is gone). The settings header flips via Unraid's Theme--*
