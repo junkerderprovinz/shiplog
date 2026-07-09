@@ -1,13 +1,25 @@
 /**
- * Generates the ShipLog README banner:
- *   shiplog-banner.svg / .png : white 1600x500; the logo (embedded verbatim from
- *   logo.svg) on the left, "ShipLog" in Bree Serif + a claim to the right. Text
- *   is converted to SVG paths (opentype.js) so the SVG needs NO font and renders
- *   identically with resvg or a browser. Same brand font as BombVault.
+ * Generates the ShipLog banners (white 1600x500), each in a light and a dark theme
+ * and each in a "with text" and a text-free variant:
  *
- * Deps (global): opentype.js, @resvg/resvg-js. The Bree Serif (OFL) font is
- * fetched at runtime to the OS temp dir — NOT committed.
+ *   shiplog-banner.svg/.png            light,  logo + "ShipLog" + claim   (README, light)
+ *   shiplog-banner-dark.svg/.png       dark,   logo + "ShipLog" + claim   (README, GitHub dark)
+ *   shiplog-banner-plain.svg/.png      light,  logo only, NO text         (support thread)
+ *   shiplog-banner-plain-dark.svg/.png dark,   logo only, NO text         (support thread, dark)
  *
+ * The text-free "-plain" pair is ALWAYS generated alongside the README banner: the
+ * Unraid support thread wants a banner completely without text (house rule).
+ *
+ * No recolour hacks: each theme embeds the matching logo variant verbatim —
+ *   light bg -> shiplog-dunkel.svg (dark ring, reads on white)
+ *   dark  bg -> shiplog-hell.svg   (white ring, reads on dark)
+ * The gold anchor is the constant core in both.
+ *
+ * Text is converted to SVG paths (opentype.js) so the SVG needs NO font and renders
+ * identically with resvg or a browser. Bree Serif (name) + Lato (claim), the shared
+ * brand fonts across the Bree-Serif repos (BombVault, featherdrop, ShipLog).
+ *
+ * Deps (global): opentype.js, @resvg/resvg-js. Fonts are fetched to the OS temp dir.
  * Run: node .github/assets/gen-banner.mjs
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -28,19 +40,13 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const NAME = "ShipLog";
 const CLAIM = "Read the changelog before you set sail.";
 const W = 1600, H = 500;
-const LH = 420, LW = 420;     // logo is square (viewBox 0 0 994 994)
+const LH = 420, LW = 420;     // logo is square (viewBox 0 0 1000 1000)
 const nameSize = 168, claimSize = 44, gap = 56, lineGap = 20;
 
-// Two themes so the banner adapts in GitHub (light/dark via <picture>): the logo
-// recolours (its two greys → light) and the text + background flip.
+// Each theme embeds the logo variant that reads on its background (no recolour).
 const THEMES = [
-  { suffix: "", bg: "#ffffff", name: "#242626", claim: "#5a5d5e", recolor: [] },
-  {
-    // Dark mode: the anchor body goes light so it reads on dark, but the shading
-    // stays dark (cls-2) for depth — not light like the body.
-    suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad",
-    recolor: [["#353738", "#e6edf3"], ["#242626", "#3a3e42"]],
-  },
+  { suffix: "", bg: "#ffffff", name: "#242626", claim: "#5a5d5e", logo: "shiplog-dunkel.svg" },
+  { suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad", logo: "shiplog-hell.svg" },
 ];
 // ---------------------------------------------------------------------------
 
@@ -53,8 +59,7 @@ if (!existsSync(fontPath)) {
 }
 const font = opentype.parse(readFileSync(fontPath));
 
-// The claim is set in Lato (humanist sans paired with Bree Serif) — the shared
-// claim font across all Bree-Serif repos (BombVault, featherdrop, ShipLog).
+// The claim is set in Lato (humanist sans paired with Bree Serif).
 const claimFontPath = join(tmpdir(), "ShipLog-Lato-Regular.ttf");
 if (!existsSync(claimFontPath)) {
   const r = await fetch("https://github.com/google/fonts/raw/main/ofl/lato/Lato-Regular.ttf");
@@ -63,6 +68,7 @@ if (!existsSync(claimFontPath)) {
 }
 const claimFont = opentype.parse(readFileSync(claimFontPath));
 
+// Text layout (logo + name + claim, group centred horizontally).
 const nameW = font.getAdvanceWidth(NAME, nameSize);
 const claimW = claimFont.getAdvanceWidth(CLAIM, claimSize);
 const groupW = LW + gap + Math.max(nameW, claimW);
@@ -81,26 +87,42 @@ const claimBaseline = nameBaseline + nameDesc + lineGap + claimAsc;
 const namePath = font.getPath(NAME, textX, nameBaseline, nameSize).toPathData(2);
 const claimPath = claimFont.getPath(CLAIM, textX, claimBaseline, claimSize).toPathData(2);
 
-// Embed the logo verbatim: drop the XML decl, position its root <svg>.
-const logoRaw = readFileSync(join(__dir, "logo.svg"), "utf8")
-  .replace(/<\?xml[^>]*\?>\s*/, "")
-  .replace(
-    /<svg\b[^>]*viewBox="0 0 994 994"[^>]*>/,
-    `<svg x="${LX.toFixed(1)}" y="${LY.toFixed(1)}" width="${LW}" height="${LH}" viewBox="0 0 994 994" xmlns="http://www.w3.org/2000/svg">`,
-  );
+// Embed a logo variant verbatim at (x,y,w,h): drop the XML decl, reposition its <svg>.
+function embedLogo(logoFile, x, y, w, h) {
+  return readFileSync(join(__dir, logoFile), "utf8")
+    .replace(/<\?xml[^>]*\?>\s*/, "")
+    .replace(
+      /<svg\b[^>]*viewBox="0 0 1000 1000"[^>]*>/,
+      `<svg x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`,
+    );
+}
+
+function emit(name, svg, bg) {
+  writeFileSync(join(__dir, `${name}.svg`), svg);
+  const png = new Resvg(svg, { background: bg, fitTo: { mode: "width", value: W } }).render().asPng();
+  writeFileSync(join(__dir, `${name}.png`), png);
+  console.log(`wrote ${name}.svg + .png`);
+}
+
+// Text-free banner: logo centred, nothing else.
+const plainLX = (W - LW) / 2, plainLY = (H - LH) / 2;
 
 for (const t of THEMES) {
-  let logo = logoRaw;
-  for (const [from, to] of t.recolor) logo = logo.split(from).join(to);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  // README banner: logo (left) + name + claim.
+  const full = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="${t.bg}"/>
-  ${logo}
+  ${embedLogo(t.logo, LX, LY, LW, LH)}
   <path d="${namePath}" fill="${t.name}"/>
   <path d="${claimPath}" fill="${t.claim}"/>
 </svg>
 `;
-  writeFileSync(join(__dir, `shiplog-banner${t.suffix}.svg`), svg);
-  const png = new Resvg(svg, { background: t.bg, fitTo: { mode: "width", value: W } }).render().asPng();
-  writeFileSync(join(__dir, `shiplog-banner${t.suffix}.png`), png);
-  console.log(`wrote shiplog-banner${t.suffix}.svg + .png`);
+  emit(`shiplog-banner${t.suffix}`, full, t.bg);
+
+  // Support-thread banner: logo only, no text (ALWAYS generated).
+  const plain = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="${t.bg}"/>
+  ${embedLogo(t.logo, plainLX, plainLY, LW, LH)}
+</svg>
+`;
+  emit(`shiplog-banner-plain${t.suffix}`, plain, t.bg);
 }
