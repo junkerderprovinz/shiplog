@@ -17,10 +17,12 @@ const { Resvg } = require(`${execSync("npm root -g").toString().trim()}/@resvg/r
 const __dir = dirname(fileURLToPath(import.meta.url));
 
 // Put a white background rect behind the logo (dark ring + gold anchor).
+// viewBox-agnostic: size the rect from the logo's own viewBox (handles 960/1000/…).
 const logo = readFileSync(join(__dir, "logo.svg"), "utf8");
+const vb = (logo.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/) || [, "1000", "1000"]);
 const iconSvg = logo.replace(
-  /(<svg\b[^>]*viewBox="0 0 1000 1000"[^>]*>)/,
-  `$1<rect width="1000" height="1000" fill="#ffffff"/>`,
+  /(<svg\b[^>]*>)/,
+  `$1<rect width="${vb[1]}" height="${vb[2]}" fill="#ffffff"/>`,
 );
 
 writeFileSync(join(__dir, "icon.svg"), iconSvg);

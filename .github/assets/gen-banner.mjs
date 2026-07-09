@@ -87,13 +87,14 @@ const namePath = font.getPath(NAME, textX, nameBaseline, nameSize).toPathData(2)
 const claimPath = claimFont.getPath(CLAIM, textX, claimBaseline, claimSize).toPathData(2);
 
 // Embed a logo variant verbatim at (x,y,w,h): drop the XML decl, reposition its <svg>.
+// viewBox-agnostic — reads the file's own viewBox and preserves it (handles 960/1000/…).
 function embedLogo(logoFile, x, y, w, h) {
-  return readFileSync(join(__dir, logoFile), "utf8")
-    .replace(/<\?xml[^>]*\?>\s*/, "")
-    .replace(
-      /<svg\b[^>]*viewBox="0 0 1000 1000"[^>]*>/,
-      `<svg x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`,
-    );
+  const raw = readFileSync(join(__dir, logoFile), "utf8").replace(/<\?xml[^>]*\?>\s*/, "");
+  const vb = (raw.match(/viewBox="([^"]+)"/) || [, "0 0 1000 1000"])[1];
+  return raw.replace(
+    /<svg\b[^>]*>/,
+    `<svg x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`,
+  );
 }
 
 function emit(name, svg, bg) {
