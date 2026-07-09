@@ -1,14 +1,13 @@
 /**
- * Generates the ShipLog banners (white 1600x500), each in a light and a dark theme
- * and each in a "with text" and a text-free variant:
+ * Generates the ShipLog banners (white 1600x500):
  *
- *   shiplog-banner.svg/.png            light,  logo + "ShipLog" + claim   (README, light)
- *   shiplog-banner-dark.svg/.png       dark,   logo + "ShipLog" + claim   (README, GitHub dark)
- *   shiplog-banner-plain.svg/.png      light,  logo only, NO text         (support thread)
- *   shiplog-banner-plain-dark.svg/.png dark,   logo only, NO text         (support thread, dark)
+ *   shiplog-banner.svg/.png       light, logo + "ShipLog" + claim   (README, light)
+ *   shiplog-banner-dark.svg/.png  dark,  logo + "ShipLog" + claim   (README, GitHub dark)
+ *   shiplog-banner-logo.svg/.png  light, logo only, NO text         (support thread)
  *
- * The text-free "-plain" pair is ALWAYS generated alongside the README banner: the
- * Unraid support thread wants a banner completely without text (house rule).
+ * The text-free "-banner-logo" variant is ALWAYS generated alongside the README
+ * banner: the Unraid support thread wants a banner completely without text (house
+ * rule). It uses the house-standard "-banner-logo" name shared across all repos.
  *
  * No recolour hacks: each theme embeds the matching logo variant verbatim —
  *   light bg -> shiplog-dunkel.svg (dark ring, reads on white)
@@ -104,11 +103,8 @@ function emit(name, svg, bg) {
   console.log(`wrote ${name}.svg + .png`);
 }
 
-// Text-free banner: logo centred, nothing else.
-const plainLX = (W - LW) / 2, plainLY = (H - LH) / 2;
-
+// README banner (both themes): logo (left) + name + claim.
 for (const t of THEMES) {
-  // README banner: logo (left) + name + claim.
   const full = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="${t.bg}"/>
   ${embedLogo(t.logo, LX, LY, LW, LH)}
@@ -117,12 +113,15 @@ for (const t of THEMES) {
 </svg>
 `;
   emit(`shiplog-banner${t.suffix}`, full, t.bg);
+}
 
-  // Support-thread banner: logo only, no text (ALWAYS generated).
-  const plain = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-  <rect width="${W}" height="${H}" fill="${t.bg}"/>
-  ${embedLogo(t.logo, plainLX, plainLY, LW, LH)}
+// Support-thread banner: logo only, NO text — ALWAYS generated (house rule).
+// Light surface (the Unraid forum) -> the dunkel logo centred on white.
+const logoLX = (W - LW) / 2, logoLY = (H - LH) / 2;
+const lt = THEMES[0];
+const logoOnly = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="${lt.bg}"/>
+  ${embedLogo(lt.logo, logoLX, logoLY, LW, LH)}
 </svg>
 `;
-  emit(`shiplog-banner-plain${t.suffix}`, plain, t.bg);
-}
+emit("shiplog-banner-logo", logoOnly, lt.bg);
