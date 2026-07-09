@@ -29,98 +29,19 @@
 </ICON>
 
 <CHANGES>
-### 1.4.13
-- New logo: a gold anchor in a ring. Two ring variants so it reads on any background —
-  the Plugins-page tile + Utilities-menu icon + settings header use the light (white)
-  ring, which pops on the dark themes while its dark outline keeps it readable on the
-  light themes; the README/store mark uses the dark ring for light backgrounds. The gold
-  anchor is the constant, always-visible core (like FanCtrl's orange fan).
-
-### 1.4.12
-- The Plugins-page / Utilities-menu tile is back to the coin: a dark anchor on an
-  opaque white disc. That is exactly how FanCtrl's icon appears to "flip" — no CSS, no
-  filter, no theme magic: on the light themes the white disc blends into the page so
-  you read the dark anchor; on the dark themes the disc stands out as a bright coin.
-  A static PNG cannot truly recolour (stock Unraid never inverts plugin PNGs), so the
-  earlier transparent grey/black tiles could not do this — the white disc is the trick.
-
-### 1.4.11
-- The Plugins-page / Utilities-menu tile is a dark (near-black) monochrome anchor now.
-  On the dark Unraid themes the list icons are inverted, so a dark PNG flips to white
-  there and stays dark on the light themes — exactly the wanted dark/light behaviour.
-  The earlier neutral-grey PNG barely changed under the invert, so it looked static.
-  (Dropped the adaptive SVG; the flip comes from the dark PNG + the theme's own invert.)
-
-### 1.4.10
-- The logo flips with the theme again, monochrome: dark on the light themes, white on
-  the dark themes (the teal is gone). The settings header flips via Unraid's Theme--*
-  class. The Plugins-page tile now ships an adaptive SVG (images/shiplog.svg, a
-  self-contained @media prefers-color-scheme) right next to the PNG fallback — the same
-  two-file layout FanCtrl uses — so wherever Unraid renders the SVG, the tile flips too.
-
-### 1.4.9
-- The logo is now a brand teal (the FanCtrl idea: a coloured core that reads on any
-  background). It is one fixed colour on every surface — the settings header, the
-  Plugins-page thumbnail and the Utilities-menu icon all show the same teal anchor and
-  look right on light and dark themes alike. The header title/subtitle still follow the
-  theme for readability. A static thumbnail can't truly theme-switch; a stable brand
-  colour is the honest fix.
-
-### 1.4.8
-- FIX: the settings-page logo could be invisible — the 1.4.7 SVG followed the OS
-  colour scheme, so an OS-light browser drew the dark-mode logo dark on the dark page.
-  The header logo is now an inline SVG whose colour follows UNRAID's own theme (white
-  on the black/gray themes, dark-grey on white/azure) via the Theme--* class, not the
-  OS. The header title + subtitle follow the theme too, so the header reads everywhere.
-- The Plugins-page thumbnail stays a neutral-grey PNG: Unraid renders that icon as a
-  plain &lt;img&gt; and accepts only .png, so a raster thumbnail there cannot switch with
-  the theme — an Unraid limitation, not specific to ShipLog.
-
-### 1.4.7
-- Theme-adaptive logo on the settings page + Utilities menu: the mark is now an SVG
-  whose internal @media (prefers-color-scheme) shows it white in dark mode and
-  dark-grey in light mode (follows the OS colour scheme). The Plugins-page thumbnail
-  stays a static neutral-grey PNG — a raster icon at a fixed .png path can't switch.
-
-### 1.4.6
-- The install/uninstall ceremony prints the HOUSE ASCII banner (the shipped
-  banner.txt carried the engine-log art instead).
-
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
-### 1.4.5
-- Uses the real ShipLog mark (the anchor-in-ring), frameless — replacing the plain
-  anchor from 1.4.2/1.4.3. The settings header draws it in the text colour
-  (currentColor); the Plugins-page + Utilities-menu PNG is the same mark in neutral
-  grey on a transparent background.
-- Settings: dropped the dark backing panel. The cards now sit on Unraid's own surface,
-  set apart by a lighter fill and a soft shadow instead of a full dark sheet.
-
-### 1.4.4
-- The plugin author shows as "Junker der Provinz".
-- Install/uninstall ceremony: the house ASCII banner prints on both, followed
-  by "ShipLog ist ready!" after an install and "Bye!" on removal.
-
-### 1.4.3
-- The plugin's PNG icon (Plugins page + Utilities menu) drops the white disc/ring and
-  is now a frameless neutral-grey anchor on a transparent background, so it reads on
-  light and dark themes alike without the white box. A static PNG can't follow the
-  theme; neutral grey is the theme-independent middle ground.
-
-### 1.4.2
-- Settings redesign, aligned to CannonadeCommander's Carbon look: the page is now a
-  self-contained dark sheet with a borderless, flat header and borderless cards whose
-  lighter fill — not a frame — sets them apart. The header logo is a frameless inline
-  anchor in the text colour; the old white ring/disc (only there for dark-background
-  visibility) is gone.
-
-### 1.4.1
-- The Settings page title icon now follows Unraid's light/dark theme. It is an
-  inline SVG anchor drawn in the title's own text colour (currentColor), so it
-  shows dark on the white/azure themes and light on black/gray; the static PNG
-  icon could not adapt. Same idea FanCtrl Plus uses for its adaptive logo.
+### 1.5.0
+- New logo: a gold anchor in a ring, in two variants — a light (white) ring for the
+  Plugins tile, menu icon and settings header (it pops on the dark themes and its dark
+  outline keeps it readable on the light ones), and a dark ring for the README / store.
+  The gold anchor is the constant, always-visible core.
+- Settings redesign to a flat, borderless Carbon look: no dark backing sheet, a clean
+  header, and borderless cards set apart by a lighter fill and a soft shadow.
+- The plugin author shows as "Junker der Provinz", and the install/uninstall ceremony
+  prints the house ASCII banner ("ShipLog ist ready!" after an install, "Bye!" on removal).
 
 ### 1.4.0
 - FIX: digest-pinned containers (image@sha256:..., also with a tag) were stuck on a
