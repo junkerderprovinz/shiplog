@@ -29,6 +29,14 @@
 </ICON>
 
 <CHANGES>
+### 1.4.12
+- The Plugins-page / Utilities-menu tile is back to the coin: a dark anchor on an
+  opaque white disc. That is exactly how FanCtrl's icon appears to "flip" — no CSS, no
+  filter, no theme magic: on the light themes the white disc blends into the page so
+  you read the dark anchor; on the dark themes the disc stands out as a bright coin.
+  A static PNG cannot truly recolour (stock Unraid never inverts plugin PNGs), so the
+  earlier transparent grey/black tiles could not do this — the white disc is the trick.
+
 ### 1.4.11
 - The Plugins-page / Utilities-menu tile is a dark (near-black) monochrome anchor now.
   On the dark Unraid themes the list icons are inverted, so a dark PNG flips to white
