@@ -47,14 +47,13 @@
 .sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px}
 .sl-bubble .sl-bh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 /* Unraid-orange action buttons: outlined in the Unraid accent, filled on hover. */
-/* CannonadeCommand-style pills; the accent/rainbow colour is applied inline by
-   slTheme() from the shared cc.* settings, this is only the shape + fallback. */
-.sl-bubble .sl-gh,.sl-bubble .sl-upd{background:#2f6feb;color:#fff;border:none;border-radius:var(--cc-b-radius,999px);
-  padding:5px 12px;text-decoration:none;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;transition:filter .12s}
-.sl-bubble .sl-gh:hover,.sl-bubble .sl-upd:hover{filter:brightness(1.13)}
+.sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
+  padding:5px 11px;text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
+.sl-bubble .sl-upd{font-weight:600}
+.sl-bubble .sl-gh:hover,.sl-bubble .sl-upd:hover{background:#ff8c2f;color:#fff}
 .sl-bubble .sl-upd.sl-upd-off{background:transparent;color:var(--sl-dim);border-color:var(--sl-line2);font-weight:400;cursor:default}
 .sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);border:1px solid var(--sl-line2);
-  border-radius:var(--cc-b-radius,7px);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
+  border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
 .sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid var(--sl-line)}
 .sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
   color:var(--sl-dim2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
@@ -76,19 +75,13 @@
 a.sl-updall {
   display: inline-block;
   margin-right: 6px; /* on top of .ToggleViewMode's flex gap */
-  padding: 5px 14px;
-  border: none;
-  border-radius: var(--cc-b-radius, 999px);
-  background: #2f6feb; /* fallback; slTheme() sets the live accent/rainbow colour */
-  color: #fff;
+  padding: 2px 10px;
+  border: 1px solid rgba(128, 128, 128, 0.55);
+  border-radius: 10px;
   font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
   text-decoration: none;
   cursor: pointer;
   vertical-align: middle;
   white-space: nowrap;
-  transition: filter .12s;
 }
-a.sl-updall:hover { filter: brightness(1.13); }
+a.sl-updall:hover { border-color: rgba(128, 128, 128, 0.95); }
