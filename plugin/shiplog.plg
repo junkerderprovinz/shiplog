@@ -33,6 +33,16 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.6.0
+- New "Updates" settings for what happens when you click "Update now" in a changelog
+  bubble (ShipLog stays read-only — it triggers Unraid's own update either way):
+  "Ask before updating" (on by default) shows a confirmation first; "Silent update"
+  (off by default) runs the update without Unraid's pop-up download-log window — the
+  update still runs to completion in the background.
+- Refreshed logo: the plugin tile, menu icon and settings header now use a flip-ready
+  double-ring mark that reads on every Unraid theme; the web-UI status page, the README
+  banner and the store icon follow the new gold-anchor design.
+
 ### 1.5.0
 - New logo: a gold anchor in a ring, in two variants — a light (white) ring for the
   Plugins tile, menu icon and settings header (it pops on the dark themes and its dark

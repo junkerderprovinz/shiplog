@@ -19,6 +19,8 @@ $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
 $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
+$confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // ask before updating (default on)
+$silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // suppress Unraid's update pop-up (default off)
 
 /* On/Off label in the active Unraid language (no function defs in a .page). */
 $lang = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
@@ -146,6 +148,26 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     </div>
 
     <div class="sl-card">
+      <h3>Updates <small>What happens when you click "Update now" in a changelog bubble. ShipLog stays read-only — it triggers Unraid's own update either way.</small></h3>
+      <div class="sl-row"><label>Ask before updating</label><div class="sl-in">
+        <label class="sl-switch">
+          <input type="checkbox" id="sl-confirm-cb" <?=$confirm!=='false'?'checked':''?> onchange="slSwitch(this,'sl-confirm','sl-confirm-state')">
+          <span class="sl-track"></span>
+          <span class="sl-state" id="sl-confirm-state"><?=htmlspecialchars($confirm!=='false'?$onTxt:$offTxt)?></span>
+        </label>
+        <input type="hidden" name="CONFIRM_UPDATE" id="sl-confirm" value="<?=$confirm!=='false'?'true':'false'?>">
+        <span class="sl-hint">Show a confirmation prompt before the update starts. Off = one click updates straight away.</span></div></div>
+      <div class="sl-row"><label>Silent update</label><div class="sl-in">
+        <label class="sl-switch">
+          <input type="checkbox" id="sl-silent-cb" <?=$silent==='true'?'checked':''?> onchange="slSwitch(this,'sl-silent','sl-silent-state')">
+          <span class="sl-track"></span>
+          <span class="sl-state" id="sl-silent-state"><?=htmlspecialchars($silent==='true'?$onTxt:$offTxt)?></span>
+        </label>
+        <input type="hidden" name="SILENT_UPDATE" id="sl-silent" value="<?=$silent==='true'?'true':'false'?>">
+        <span class="sl-hint">Run the update without Unraid's pop-up window and its download log. The update still runs in the background.</span></div></div>
+    </div>
+
+    <div class="sl-card">
       <h3>Registry access <small>Optional — both raise rate limits so ShipLog can read versions &amp; changelogs for more of your containers. Leave empty to stay anonymous.</small></h3>
       <div class="sl-row"><label>GitHub token</label><div class="sl-in">
         <input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
@@ -220,6 +242,12 @@ function slEnable(cb) {
   document.getElementById('sl-enable').value = cb.checked ? 'true' : 'false';
   document.getElementById('sl-enable-state').textContent = cb.checked ? SL_ON : SL_OFF;
   slFire(document.getElementById('sl-enable'));
+}
+// generic on/off switch: sets the hidden field + its label, then un-greys Apply
+function slSwitch(cb, hiddenId, stateId) {
+  document.getElementById(hiddenId).value = cb.checked ? 'true' : 'false';
+  document.getElementById(stateId).textContent = cb.checked ? SL_ON : SL_OFF;
+  slFire(document.getElementById(hiddenId));
 }
 // Unraid only un-greys Apply when a field fires change/input. A programmatic
 // value change (autodetect, the toggle's hidden field) must announce itself.
