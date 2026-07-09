@@ -319,11 +319,32 @@
     return false;
   }
 
+  // ── adopt CannonadeCommand's colours (same localStorage cc.* keys) so ShipLog's
+  //    action buttons match the user's Docker-tab theme: accent, rainbow, shape.
+  const CC_RB = ["#d9433f", "#f97316", "#eab308", "#1f9d55", "#0ea5a4", "#2f6feb", "#8b5cf6", "#e05299"];
+  function ccGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+  function ccIdeal(hex) { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return "#fff"; const n = parseInt(m[1], 16); const L = 0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255); return L > 150 ? "#161616" : "#fff"; }
+  function ccPal() { try { const p = JSON.parse(ccGet("cc.rbpal", "null")); if (p && p.length) return p; } catch (e) {} return CC_RB; }
+  function ccColor(i) { if (ccGet("cc.rainbow", "0") !== "1") return ccGet("cc.accent", "#2f6feb"); const p = ccPal(); return p[i % p.length]; }
+  function slTheme(root) {
+    try {
+      const shape = ({ pill: "999px", rounded: "6px", square: "0px" })[ccGet("cc.badgeshape", "pill")] || "999px";
+      document.documentElement.style.setProperty("--cc-b-radius", shape);
+      const btns = (root || document).querySelectorAll(".sl-gh, .sl-upd:not(.sl-upd-off), .sl-updall");
+      Array.prototype.forEach.call(btns, (bn, ix) => {
+        const c = ccColor(ix);
+        bn.style.setProperty("background", c, "important");
+        bn.style.setProperty("color", ccIdeal(c), "important");
+        bn.style.setProperty("border-color", c, "important");
+      });
+    } catch (e) {}
+  }
   function openFor(anchor, st) {
     close();
     const b = el("div", "sl-bubble", bubbleHTML(st));
     if (isLightBg()) b.classList.add("sl-light"); // match Unraid's light themes
     document.body.appendChild(b);
+    slTheme(b); // CC-style accent/rainbow on the bubble's action buttons
     // restore the user's saved size (the bubble is resizable, drag the corner)
     try {
       const s = JSON.parse(localStorage.getItem(SZ_KEY) || "null");
@@ -403,6 +424,7 @@
         // toggle (inserting before the div would flow to the far left instead).
         toggle.insertBefore(btn, toggle.firstChild);
       }
+      slTheme(document); // keep the update-all button on the CC accent/shape
 
       const n = nativeUpdateAllAvailable() ? pendingUpdateCount() : 0;
       // change-guarded writes: identical values must not touch the DOM
