@@ -10,7 +10,17 @@ Tag="anchor"
 $slcfg     = parse_plugin_cfg("shiplog");
 $slConfirm = (!isset($slcfg['CONFIRM_UPDATE']) || $slcfg['CONFIRM_UPDATE'] !== 'false'); // default on
 $slSilent  = (isset($slcfg['SILENT_UPDATE'])  && $slcfg['SILENT_UPDATE']  === 'true');   // default off
+$slLang    = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2)); // Unraid's configured language
+/* Bubble strings for the active language (English base + overlay; only the d_* keys). */
+$slLangDir = '/usr/local/emhttp/plugins/shiplog/lang';
+$slAll     = json_decode(@file_get_contents("$slLangDir/en.json"), true) ?: array();
+if ($slLang !== 'en' && is_file("$slLangDir/$slLang.json")) {
+  $slTr = json_decode(@file_get_contents("$slLangDir/$slLang.json"), true);
+  if (is_array($slTr)) $slAll = array_merge($slAll, $slTr);
+}
+$slI18n = array();
+foreach ($slAll as $slK => $slV) { if (substr($slK, 0, 2) === 'd_') $slI18n[$slK] = $slV; }
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
-<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>};</script>
+<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;</script>
 <script defer src="<?autov('/plugins/shiplog/scripts/docker.js')?>"></script>

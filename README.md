@@ -80,6 +80,8 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **Registry-friendly by construction** — manifest checks are `HEAD` requests, which do **not** count against Docker Hub's pull rate limit. Bearer tokens are cached, duplicate images share one lookup per sweep, and a rate-limiting registry is backed off host-wide instead of hammered.
 - **Knows what has no upstream** — digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
 - **Update all in one click** — a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
+- **Update controls** — optional confirmation before an update, and an optional silent update that skips Unraid's pop-up download-log window (Settings → Updates).
+- **Localised** — the settings page and the changelog bubble follow Unraid's configured language across 26 languages.
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
 - **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
 

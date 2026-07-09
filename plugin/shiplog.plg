@@ -33,6 +33,16 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.7.0
+- Localised: the settings page and the changelog bubble now follow Unraid's configured
+  language across 26 languages, from the plugin's own locale files, instead of English only.
+- FIX: "Silent update" (and one-click update with "Ask before updating" off) did nothing —
+  the container still showed an update after a refresh. ShipLog now fires Unraid's own update
+  through Unraid's own call, so its CSRF token rides along and the update actually runs; in
+  silent mode only the log window is hidden, and the row clears when the update finishes.
+- The two Update toggles use Unraid's orange accent and each sits on its own tidy row with
+  the description on the line beneath.
+
 ### 1.6.0
 - New "Updates" settings for what happens when you click "Update now" in a changelog
   bubble (ShipLog stays read-only — it triggers Unraid's own update either way):
