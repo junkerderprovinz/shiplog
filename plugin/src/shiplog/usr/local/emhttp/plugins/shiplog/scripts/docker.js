@@ -38,38 +38,25 @@
   const RISK_CLASS = { low: "low", medium: "mid", high: "high", unknown: "grey" };
 
   // ──────────────────────────────────────────────────────── i18n
-  // Follows Unraid's page language (full 26-locale catalogue is P1.5). The
-  // risk reason itself is engine-generated and stays English for now.
-  const LANG = (document.documentElement.lang || navigator.language || "en").slice(0, 2).toLowerCase();
-  const STR = {
-    en: {
-      changelog: "Changelog", clickHint: "click for the changelog",
-      skips: "skips %n releases", newest: "newest %d",
-      summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
-      deprecated: "DEPRECATED",
-      updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
-      updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
-      confirmOne: "Update %s now?", confirmAll: "Update all %n containers with a pending update now?",
-      updatingOne: "Updating the container", updatingAll: "Updating all Containers",
-      updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
-      none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
-      pinned: "pinned", localimg: "local image",
-    },
-    de: {
-      changelog: "Changelog", clickHint: "Changelog anzeigen",
-      skips: "überspringt %n Releases", newest: "neuestes %d",
-      summary: "Zusammenfassung", raw: "Changelog (roh)", source: "Quelle", close: "schließen", uptodate: "aktuell",
-      deprecated: "VERALTET",
-      updateNow: "Jetzt aktualisieren", updateHint: "löst Unraids eigenes Update für diesen Container aus",
-      updateGone: "Unraids Update-Knopf nicht gefunden — nutze „Aktualisierung anwenden“ in der Zeile.",
-      confirmOne: "%s jetzt aktualisieren?", confirmAll: "Alle %n Container mit anstehendem Update jetzt aktualisieren?",
-      updatingOne: "Container wird aktualisiert", updatingAll: "Alle Container werden aktualisiert",
-      updateAll: "Alle aktualisieren", updateAllHint: "löst Unraids eigenes Update für alle Container mit anstehendem Update aus",
-      none: "Kein Changelog-Text für dieses Image gefunden — öffne das Repo (oben rechts) für die Release Notes.",
-      pinned: "gepinnt", localimg: "lokales Image",
-    },
+  // The bubble text follows Unraid's CONFIGURED language: shiplog.Docker.page selects
+  // the active locale server-side and injects its strings as window.shiplogI18n (d_*
+  // keys) from the plugin's locale files, for all ~26 locales. The engine-generated
+  // risk reason stays English for now. EN below is the offline fallback (unprefixed).
+  const EN = {
+    changelog: "Changelog", clickHint: "click for the changelog",
+    skips: "skips %n releases", newest: "newest %d",
+    summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
+    deprecated: "DEPRECATED",
+    updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
+    updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
+    confirmOne: "Update %s now?", confirmAll: "Update all %n containers with a pending update now?",
+    updatingOne: "Updating the container", updatingAll: "Updating all Containers",
+    updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
+    none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
+    pinned: "pinned", localimg: "local image",
   };
-  function T(k) { return ((STR[LANG] || STR.en)[k]) || STR.en[k]; }
+  const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
+  function T(k) { return I18N["d_" + k] || EN[k] || k; }
 
   // Light vs dark: detect from the page background luminance so the bubble
   // matches whatever Unraid theme is active (white/azure → light; black/gray → dark).
@@ -330,36 +317,53 @@
     return false;
   }
 
-  // runUpdate triggers Unraid's OWN container update through Unraid's own globals —
-  // ShipLog never touches the Docker socket. It replaces the "click the native
-  // apply-update anchor" path so ShipLog controls the two prefs:
-  //   • silent → POST the command to Unraid's StartCommand.php, which runs the
-  //     updater DETACHED server-side (nohup &). Proven safe: update_container
-  //     publishes with abort=false, so it completes with NO log window open.
-  //   • not silent → call Unraid's own openDocker(), the exact popup-log update
-  //     that updateContainer()/updateAll() use — but WITHOUT their swal "are you
-  //     sure?" (ShipLog's own "Ask before updating" pref owns the confirm).
-  // names: a container name or an array of them. Returns false if it couldn't
-  // dispatch (caller then falls back to clicking the native control).
+  // When silent, hide the SweetAlert docker-update log window that openDocker opens
+  // (class .sweet-alert.nchan) instead of removing it: the native flow keeps running
+  // (websocket → openDone → its loadlist refresh), the user just never sees it. Safe —
+  // update_container runs detached server-side, so hiding the viewer can't abort it.
+  function hideNextUpdatePopup() {
+    const hide = (box) => {
+      if (!box || box.dataset.slHidden) return;
+      box.dataset.slHidden = "1";
+      const off = (n) => { if (!n) return; n.style.setProperty("opacity", "0", "important"); n.style.setProperty("visibility", "hidden", "important"); n.style.setProperty("pointer-events", "none", "important"); };
+      off(box);
+      off(document.querySelector(".sweet-overlay"));
+      document.body.classList.remove("stop-scrolling");
+      document.body.style.setProperty("overflow", "auto", "important");
+    };
+    hide(document.querySelector(".sweet-alert.nchan"));
+    let obs;
+    try {
+      // openDocker inserts .sweet-alert first, THEN adds the .nchan class, so watch
+      // both the insertion (childList) and the class change (attributes).
+      obs = new MutationObserver(() => hide(document.querySelector(".sweet-alert.nchan")));
+      obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    } catch (e) {}
+    // the popup opens after a network round-trip; watch briefly, then stop so we
+    // never touch a later, unrelated dialog.
+    setTimeout(() => { try { obs && obs.disconnect(); } catch (e) {} }, 10000);
+  }
+
+  // runUpdate triggers Unraid's OWN container update via Unraid's own openDocker() —
+  // the exact call updateContainer()/updateAll() make (so the CSRF token rides along
+  // through Unraid's jQuery ajaxSetup, and the update actually runs), but WITHOUT their
+  // swal "are you sure?" (ShipLog's "Ask before updating" pref owns the confirm). When
+  // silent, the log window openDocker opens is hidden; openDocker's own loadlist refresh
+  // still fires on completion, so the row clears. ShipLog never touches the Docker socket.
+  // names: a container name or an array of them. Returns false if openDocker is
+  // unavailable (caller then falls back to clicking the native control).
   function runUpdate(names, title) {
     const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
     if (!list.length) return false;
+    const od = (typeof window.openDocker === "function") ? window.openDocker
+      : (typeof openDocker === "function") ? openDocker : null;
+    if (!od) return false;
     const cmd = "update_container " + list.map(encodeURIComponent).join("*");
-    if (silentUpdate) {
-      try {
-        const tok = window.csrf_token || "";
-        fetch("/webGui/include/StartCommand.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "cmd=" + encodeURIComponent(cmd) + "&start=0" + (tok ? "&csrf_token=" + encodeURIComponent(tok) : ""),
-        }).then(() => { if (typeof window.loadlist === "function") setTimeout(window.loadlist, 4000); }).catch(() => {});
-        return true;
-      } catch (e) { /* fall through to the visible path */ }
-    }
-    if (typeof window.openDocker === "function") {
-      try { window.openDocker(cmd, title || "Updating", "", "loadlist"); return true; } catch (e) {}
-    }
-    return false;
+    try {
+      if (silentUpdate) hideNextUpdatePopup(); // arm the hide BEFORE the popup opens
+      od(cmd, title || "Updating", "", "loadlist");
+      return true;
+    } catch (e) { return false; }
   }
 
   function openFor(anchor, st) {

@@ -38,6 +38,15 @@ $onoff = array(
 $lbl   = isset($onoff[$lang]) ? $onoff[$lang] : $onoff['en'];
 $onTxt = $lbl[0]; $offTxt = $lbl[1];
 
+/* All other UI text follows Unraid's language too — load this plugin's locale file
+   (English base, then overlay the active language; missing keys fall back to English). */
+$langdir = '/usr/local/emhttp/plugins/shiplog/lang';
+$L = json_decode(@file_get_contents("$langdir/en.json"), true) ?: array();
+if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
+  $tr = json_decode(@file_get_contents("$langdir/$lang.json"), true);
+  if (is_array($tr)) $L = array_merge($L, $tr);
+}
+
 /* Best-effort LAN IP for the status-page link — works even when the GUI is opened
    via the myunraid.net hostname, where location.hostname can't reach :PORT. */
 $lanip = '';
@@ -72,9 +81,12 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     border-bottom:1px solid var(--line);padding-bottom:10px}
   .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px}
 
-  .sl-row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center;padding:7px 2px}
+  .sl-row{display:grid;grid-template-columns:170px 1fr;gap:6px 12px;align-items:center;padding:7px 2px}
   .sl-row > label{color:var(--dim);font-size:13px}
   .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  /* a full description under a control (e.g. the Update toggles): its own line,
+     aligned under the control column so the rows read cleanly and uniformly. */
+  .sl-row .sl-desc{grid-column:2/-1;color:var(--dim2);font-size:12px;line-height:1.45;max-width:600px}
   .sl-cfg input[type=text],.sl-cfg input[type=password],.sl-cfg select{
     background:var(--inp);border:1px solid var(--line2);border-radius:7px;color:var(--txt);
     padding:7px 10px;font:13px/1.2 inherit;min-width:240px;outline:none}
@@ -103,8 +115,9 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     background:#333;border:1px solid #444;transition:background .15s,border-color .15s}
   .sl-track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
     border-radius:50%;background:#8a8a8a;transition:transform .15s,background .15s}
-  .sl-switch > input:checked + .sl-track{background:#2f9e54;border-color:#3fae6a}
-  .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#f0f0f0}
+  /* checked = Unraid's orange accent */
+  .sl-switch > input:checked + .sl-track{background:#ff8c2f;border-color:#ff8c2f}
+  .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#fff}
   .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px #525252}
   .sl-state{font-size:13px;color:var(--dim);min-width:26px}
 </style>
@@ -118,7 +131,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog-unraid.svg')?>" alt="ShipLog">
     <div>
       <div class="sl-ttl"><b>Ship</b>Log</div>
-      <div class="sl-sub">Read-only update advisor — it never updates anything, it shows what changed and how risky, right in the Docker tab.</div>
+      <div class="sl-sub"><?=$L['s_sub']?></div>
     </div>
   </div>
 
@@ -128,116 +141,121 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     <input type="hidden" name="#arg[1]" value="restart">
 
     <div class="sl-card">
-      <h3>Engine</h3>
-      <div class="sl-row"><label>Enable</label><div class="sl-in">
+      <h3><?=$L['s_engine']?></h3>
+      <div class="sl-row"><label><?=$L['s_enable']?></label><div class="sl-in">
         <label class="sl-switch">
           <input type="checkbox" id="sl-enable-cb" <?=$enable!=='false'?'checked':''?> onchange="slEnable(this)">
           <span class="sl-track"></span>
           <span class="sl-state" id="sl-enable-state"><?=htmlspecialchars($enable!=='false'?$onTxt:$offTxt)?></span>
         </label>
         <input type="hidden" name="ENABLE" id="sl-enable" value="<?=$enable!=='false'?'true':'false'?>"></div></div>
-      <div class="sl-row"><label>Port</label><div class="sl-in">
+      <div class="sl-row"><label><?=$L['s_port']?></label><div class="sl-in">
         <input type="text" class="sl-narrow" name="PORT" value="<?=htmlspecialchars($port)?>">
         <span id="sl-statuslink" class="sl-hint"></span></div></div>
-      <div class="sl-row"><label>Data directory</label><div class="sl-in">
+      <div class="sl-row"><label><?=$L['s_datadir']?></label><div class="sl-in">
         <input type="text" name="DATA_DIR" value="<?=htmlspecialchars($ddir)?>">
-        <span class="sl-hint">SQLite cache — keep on appdata, not the flash</span></div></div>
-      <div class="sl-row"><label>Poll interval</label><div class="sl-in">
+        <span class="sl-hint"><?=$L['s_datadir_hint']?></span></div></div>
+      <div class="sl-row"><label><?=$L['s_poll']?></label><div class="sl-in">
         <input type="text" class="sl-narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>">
-        <span class="sl-hint">Go duration: 1h, 6h, 24h</span></div></div>
+        <span class="sl-hint"><?=$L['s_poll_hint']?></span></div></div>
     </div>
 
     <div class="sl-card">
-      <h3>Updates <small>What happens when you click "Update now" in a changelog bubble. ShipLog stays read-only — it triggers Unraid's own update either way.</small></h3>
-      <div class="sl-row"><label>Ask before updating</label><div class="sl-in">
-        <label class="sl-switch">
-          <input type="checkbox" id="sl-confirm-cb" <?=$confirm!=='false'?'checked':''?> onchange="slSwitch(this,'sl-confirm','sl-confirm-state')">
-          <span class="sl-track"></span>
-          <span class="sl-state" id="sl-confirm-state"><?=htmlspecialchars($confirm!=='false'?$onTxt:$offTxt)?></span>
-        </label>
-        <input type="hidden" name="CONFIRM_UPDATE" id="sl-confirm" value="<?=$confirm!=='false'?'true':'false'?>">
-        <span class="sl-hint">Show a confirmation prompt before the update starts. Off = one click updates straight away.</span></div></div>
-      <div class="sl-row"><label>Silent update</label><div class="sl-in">
-        <label class="sl-switch">
-          <input type="checkbox" id="sl-silent-cb" <?=$silent==='true'?'checked':''?> onchange="slSwitch(this,'sl-silent','sl-silent-state')">
-          <span class="sl-track"></span>
-          <span class="sl-state" id="sl-silent-state"><?=htmlspecialchars($silent==='true'?$onTxt:$offTxt)?></span>
-        </label>
-        <input type="hidden" name="SILENT_UPDATE" id="sl-silent" value="<?=$silent==='true'?'true':'false'?>">
-        <span class="sl-hint">Run the update without Unraid's pop-up window and its download log. The update still runs in the background.</span></div></div>
+      <h3><?=$L['s_updates']?> <small><?=$L['s_updates_sub']?></small></h3>
+      <div class="sl-row"><label><?=$L['s_confirm']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-confirm-cb" <?=$confirm!=='false'?'checked':''?> onchange="slSwitch(this,'sl-confirm','sl-confirm-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-confirm-state"><?=htmlspecialchars($confirm!=='false'?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="CONFIRM_UPDATE" id="sl-confirm" value="<?=$confirm!=='false'?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_confirm_desc']?></div></div>
+      <div class="sl-row"><label><?=$L['s_silent']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-silent-cb" <?=$silent==='true'?'checked':''?> onchange="slSwitch(this,'sl-silent','sl-silent-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-silent-state"><?=htmlspecialchars($silent==='true'?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="SILENT_UPDATE" id="sl-silent" value="<?=$silent==='true'?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_silent_desc']?></div></div>
     </div>
 
     <div class="sl-card">
-      <h3>Registry access <small>Optional — both raise rate limits so ShipLog can read versions &amp; changelogs for more of your containers. Leave empty to stay anonymous.</small></h3>
-      <div class="sl-row"><label>GitHub token</label><div class="sl-in">
+      <h3><?=$L['s_registry']?> <small><?=$L['s_registry_sub']?></small></h3>
+      <div class="sl-row"><label><?=$L['s_gh_token']?></label><div class="sl-in">
         <input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
-        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-GITHUB_TOKEN',this)">Show</button>
-        <button type="button" class="sl-btn" onclick="slCheckGitHub()">Check</button>
+        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-GITHUB_TOKEN',this)"><?=$L['s_show']?></button>
+        <button type="button" class="sl-btn" onclick="slCheckGitHub()"><?=$L['s_check']?></button>
         <span id="sl-gh-result" class="sl-res"></span>
-        <span class="sl-hint">Reads release notes from GitHub. Anonymous GitHub allows only ~60 requests/hour — with many containers that runs out fast and changelogs come back empty. A classic <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a> (no scopes needed) raises it to ~5000/hour.</span></div></div>
-      <div class="sl-row"><label>Docker Hub user</label><div class="sl-in">
-        <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="your Docker Hub username"></div></div>
-      <div class="sl-row"><label>Docker Hub token</label><div class="sl-in">
+        <span class="sl-hint"><?=$L['s_gh_hint']?></span></div></div>
+      <div class="sl-row"><label><?=$L['s_dh_user']?></label><div class="sl-in">
+        <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="<?=htmlspecialchars($L['s_dh_user_ph'])?>"></div></div>
+      <div class="sl-row"><label><?=$L['s_dh_token']?></label><div class="sl-in">
         <input type="password" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
-        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)">Show</button>
-        <button type="button" class="sl-btn" onclick="slCheckDockerHub()">Check</button>
+        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)"><?=$L['s_show']?></button>
+        <button type="button" class="sl-btn" onclick="slCheckDockerHub()"><?=$L['s_check']?></button>
         <span id="sl-dh-result" class="sl-res"></span>
-        <span class="sl-hint">Checks the newest version + digest of <code>docker.io</code> images. Anonymous Docker Hub is rate-limited per IP — with many images that throttles, so those show an update without a version number. A free <a href="https://app.docker.com/settings/personal-access-tokens" target="_blank">Docker Hub access token</a> (read-only) lifts the limit. Username + token, both required.</span></div></div>
+        <span class="sl-hint"><?=$L['s_dh_hint']?></span></div></div>
     </div>
 
     <div class="sl-card">
-      <h3>AI summaries <small>Optional — Ollama condenses each changelog into "what changes / breaking / risk".</small></h3>
-      <div class="sl-row"><label>Ollama URL</label><div class="sl-in">
+      <h3><?=$L['s_ai']?> <small><?=$L['s_ai_sub']?></small></h3>
+      <div class="sl-row"><label><?=$L['s_ollama_url']?></label><div class="sl-in">
         <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434">
-        <button type="button" class="sl-btn" onclick="slDetectOllama()">Autodetect</button>
-        <span class="sl-hint">Probes common local Ollama ports and fills this in.</span></div></div>
-      <div class="sl-row"><label>Ollama model</label><div class="sl-in">
+        <button type="button" class="sl-btn" onclick="slDetectOllama()"><?=$L['s_autodetect']?></button>
+        <span class="sl-hint"><?=$L['s_ollama_url_hint']?></span></div></div>
+      <div class="sl-row"><label><?=$L['s_ollama_model']?></label><div class="sl-in">
         <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>" placeholder="llama3.1">
-        <button type="button" class="sl-btn" onclick="slCheckOllama()">Check</button>
+        <button type="button" class="sl-btn" onclick="slCheckOllama()"><?=$L['s_check']?></button>
         <span id="sl-ollama-result" class="sl-res"></span></div></div>
     </div>
 
     <div class="sl-card">
-      <h3>Notifications <small>Optional — Matrix message when a new update is first seen.</small></h3>
-      <div class="sl-row"><label>Matrix homeserver</label><div class="sl-in">
+      <h3><?=$L['s_notif']?> <small><?=$L['s_notif_sub']?></small></h3>
+      <div class="sl-row"><label><?=$L['s_mx_home']?></label><div class="sl-in">
         <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
-      <div class="sl-row"><label>Matrix token</label><div class="sl-in">
+      <div class="sl-row"><label><?=$L['s_mx_token']?></label><div class="sl-in">
         <input type="password" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
-        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-MATRIX_TOKEN',this)">Show</button></div></div>
-      <div class="sl-row"><label>Matrix room</label><div class="sl-in">
+        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-MATRIX_TOKEN',this)"><?=$L['s_show']?></button></div></div>
+      <div class="sl-row"><label><?=$L['s_mx_room']?></label><div class="sl-in">
         <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server">
-        <button type="button" class="sl-btn" onclick="slCheckMatrix()">Check</button>
+        <button type="button" class="sl-btn" onclick="slCheckMatrix()"><?=$L['s_check']?></button>
         <span id="sl-matrix-result" class="sl-res"></span></div></div>
     </div>
 
     <div class="sl-actions">
-      <input type="submit" name="#apply" class="sl-btn sl-primary" value="Apply">
-      <input type="button" class="sl-btn" value="Done" onclick="done()">
+      <input type="submit" name="#apply" class="sl-btn sl-primary" value="<?=htmlspecialchars($L['s_apply'])?>">
+      <input type="button" class="sl-btn" value="<?=htmlspecialchars($L['s_done'])?>" onclick="done()">
     </div>
   </form>
 </div>
 
 <script>
+var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
+var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
 (function () {
   var port = "<?=htmlspecialchars($port)?>";
   var host = <?=json_encode($lanip)?> || location.hostname;
   var a = document.getElementById("sl-statuslink");
   if (!a) return;
-  a.innerHTML = '<span class="sl-res run">checking engine…</span>';
+  a.innerHTML = '<span class="sl-res run">' + SLT.s_checking + '</span>';
   fetch("/plugins/shiplog/server/status.php", { headers: { Accept: "application/json" } })
     .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }, function () { return { ok: false, d: null }; }); })
     .then(function (res) {
       if (res.ok && Array.isArray(res.d)) {
         var n = res.d.length;
-        a.innerHTML = '<span class="sl-res ok">✓ engine running · ' + n + ' container' + (n === 1 ? '' : 's') + ' tracked</span>' +
-          ' <span class="sl-hint">status page: <a href="http://' + host + ':' + port + '/" target="_blank" rel="noopener">open ↗</a></span>';
+        a.innerHTML = '<span class="sl-res ok">' + SLT.s_running.replace('%n', n) + '</span>' +
+          ' <span class="sl-hint">' + SLT.s_statuspage + ' <a href="http://' + host + ':' + port + '/" target="_blank" rel="noopener">' + SLT.s_open + '</a></span>';
       } else {
-        a.innerHTML = '<span class="sl-res err">✗ engine not reachable</span> <span class="sl-hint">— enable it above + Apply, then reload</span>';
+        a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span> <span class="sl-hint">' + SLT.s_unreachable_hint + '</span>';
       }
     })
-    .catch(function () { a.innerHTML = '<span class="sl-res err">✗ engine not reachable</span>'; });
+    .catch(function () { a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span>'; });
 })();
-var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
 function slEnable(cb) {
   document.getElementById('sl-enable').value = cb.checked ? 'true' : 'false';
   document.getElementById('sl-enable-state').textContent = cb.checked ? SL_ON : SL_OFF;
@@ -258,7 +276,7 @@ function slFire(el) {
 }
 function slCheck(elId, url) {
   var out = document.getElementById(elId);
-  out.className = 'sl-res run'; out.textContent = 'Checking…';
+  out.className = 'sl-res run'; out.textContent = SLT.s_check + '…';
   fetch(url)
     .then(function (r) { return r.json(); })
     .then(function (d) { out.className = 'sl-res ' + (d.ok ? 'ok' : 'err'); out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message; })
@@ -268,8 +286,8 @@ function slVal(n) { return (document.querySelector('[name=' + n + ']') || {}).va
 function slToggle(id, btn) {
   var i = document.getElementById(id);
   if (!i) return;
-  if (i.type === 'password') { i.type = 'text'; btn.textContent = 'Hide'; }
-  else { i.type = 'password'; btn.textContent = 'Show'; }
+  if (i.type === 'password') { i.type = 'text'; btn.textContent = SLT.s_hide; }
+  else { i.type = 'password'; btn.textContent = SLT.s_show; }
 }
 function slCheckDockerHub() {
   slCheck('sl-dh-result', '/plugins/shiplog/server/dockerhub-check.php?user=' +
