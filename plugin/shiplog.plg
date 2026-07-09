@@ -29,6 +29,13 @@
 </ICON>
 
 <CHANGES>
+### 1.4.13
+- New logo: a gold anchor in a ring. Two ring variants so it reads on any background —
+  the Plugins-page tile + Utilities-menu icon + settings header use the light (white)
+  ring, which pops on the dark themes while its dark outline keeps it readable on the
+  light themes; the README/store mark uses the dark ring for light backgrounds. The gold
+  anchor is the constant, always-visible core (like FanCtrl's orange fan).
+
 ### 1.4.12
 - The Plugins-page / Utilities-menu tile is back to the coin: a dark anchor on an
   opaque white disc. That is exactly how FanCtrl's icon appears to "flip" — no CSS, no
