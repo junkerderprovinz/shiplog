@@ -39,7 +39,7 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const NAME = "ShipLog";
 const CLAIM = "Read the changelog before you set sail.";
 const W = 1600, H = 500;
-const LH = 420, LW = 420;     // logo is square (viewBox 0 0 1000 1000)
+const LH = 420, LW = 420;     // logo is ~square; embedLogo reads each master's own viewBox (960 or 1000)
 const nameSize = 168, claimSize = 44, gap = 56, lineGap = 20;
 
 // Each theme embeds the logo variant that reads on its background (no recolour).

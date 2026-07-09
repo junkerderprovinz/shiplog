@@ -15,8 +15,9 @@ import (
 //go:embed status.html
 var statusHTML string
 
-// logoSVG is the ShipLog mark (a white-disc icon so the dark wheel reads on the
-// dark Carbon page), embedded so the standalone binary serves it self-contained.
+// logoSVG is the ShipLog mark — a gold anchor in a white ring (the shiplog-hell
+// variant), so it reads on the dark Carbon status page. Embedded so the standalone
+// binary serves it self-contained.
 //
 //go:embed logo.svg
 var logoSVG []byte
