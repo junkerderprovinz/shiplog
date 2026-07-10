@@ -43,7 +43,7 @@
   // keys) from the plugin's locale files, for all ~26 locales. The engine-generated
   // risk reason stays English for now. EN below is the offline fallback (unprefixed).
   const EN = {
-    changelog: "Changelog", clickHint: "click for the changelog",
+    changelog: "Changelog", clickHint: "click for the changelog", update: "Update",
     skips: "skips %n releases", newest: "newest %d",
     summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
     deprecated: "DEPRECATED",
@@ -85,6 +85,34 @@
     return k && k !== "none";
   }
   function riskClass(st) { return RISK_CLASS[st && st.risk] || "grey"; }
+
+  // Unraid's OWN update verdict for a container, read from its page-global docker[]
+  // array (d.update: 1 = update available, 0 = up to date). This is the SAME digest-
+  // based signal the Docker tab shows, and it's live — so ShipLog's verdict follows
+  // it and can never contradict what Unraid displays. ShipLog's engine (version +
+  // changelog + risk) then only enriches the detail. Returns "update"|"current"|"unknown".
+  function unraidVerdict(name) {
+    try {
+      const list = window.docker;
+      if (!Array.isArray(list) || !name) return "unknown";
+      const nn = norm(name);
+      const d = list.find((x) => x && norm(x.name) === nn);
+      if (!d || d.update == null || d.update === "") return "unknown";
+      const u = Number(d.update);
+      if (u === 1) return "update";
+      if (u === 0) return "current";
+      return "unknown"; // -1 / not-yet-checked → let ShipLog's own verdict stand
+    } catch (e) { return "unknown"; }
+  }
+
+  // Reconcile ShipLog's engine verdict with Unraid's live one: Unraid wins the
+  // update/up-to-date decision when it has an opinion, else ShipLog's own stands.
+  function isUpdate(st) {
+    const uv = unraidVerdict(st && st.container && st.container.name);
+    if (uv === "update") return true;
+    if (uv === "current") return false;
+    return hasUpdate(st);
+  }
 
   // Containers without an upstream to check (digest-pinned, image-ID-referenced,
   // locally built) must not look like an affirmed "up to date": neutral grey
@@ -211,9 +239,11 @@
   function bubbleHTML(st) {
     const c = st.container || {};
     const cl = st.changelog || {};
-    const upd = hasUpdate(st);
-    // up to date → green pill; no upstream to check → neutral grey, not green
-    const rc = upd ? riskClass(st) : (noUpstream(st) ? "grey" : "ok");
+    const upd = isUpdate(st);       // Unraid's live verdict wins the update/current call
+    const seUpd = hasUpdate(st);    // ShipLog engine's own opinion (drives the risk detail)
+    // up to date → green pill; no upstream to check → neutral grey, not green. When
+    // Unraid flags an update ShipLog didn't grade (a rebuild / stale engine data), use low.
+    const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
     // changelog from/to are the image TAGS ("latest"/"7dtd"), not versions —
     // show a real version when we have one. Newest release tag comes from the
     // resolved release entries; current is the running tag if it looks like a
@@ -241,7 +271,9 @@
       return m ? `${m[3]}.${m[2]}.${m[1]}` : ""; // DD.MM.YYYY
     };
     const relDate = entries[0] ? fmtDate(entries[0].published_at) : "";
-    let jump = cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "");
+    // Only surface ShipLog's version-jump reason when we're actually flagging an
+    // update (so an "up to date" per Unraid never carries a stray "minor bump" line).
+    let jump = upd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "")) : "";
     if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
     let summary = "";
@@ -281,8 +313,13 @@
       : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
-    const verHdr = upd ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
-    const pillTxt = upd ? esc(kindLabel(st)) : esc(noUpstream(st) ? noUpstreamLabel(st) : T("uptodate"));
+    // Only show a "cur → next" jump when there's a real, different target version;
+    // an Unraid-flagged rebuild (same version, new digest) shows just the version.
+    const haveNext = verLike(next) && next !== "?" && norm(next) !== norm(cur);
+    const verHdr = (upd && haveNext) ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
+    const pillTxt = upd
+      ? esc(seUpd ? kindLabel(st) : T("update"))
+      : esc(noUpstream(st) ? noUpstreamLabel(st) : T("uptodate"));
 
     return `
       <div class="sl-bh">
@@ -479,8 +516,9 @@
       if (!st) continue; // no engine data for this row → leave it untouched
       const cell = findUpdateCell(tr);
       if (!cell || cell.getAttribute(MARK)) continue;
-      const rc = hasUpdate(st) ? riskClass(st) : (noUpstream(st) ? "grey" : "ok");
-      const label = hasUpdate(st) ? kindLabel(st) : T("uptodate");
+      const upd = isUpdate(st), seUpd = hasUpdate(st); // Unraid's live verdict wins
+      const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
+      const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
       const chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
       chip.href = "#";
       chip.title = `ShipLog: ${label} — ${T("clickHint")}`;

@@ -53,6 +53,7 @@
   "d_close": "schließen",
   "d_uptodate": "aktuell",
   "d_deprecated": "VERALTET",
+  "d_update": "Update",
   "d_updateNow": "Jetzt aktualisieren",
   "d_updateHint": "löst Unraids eigenes Update für diesen Container aus",
   "d_updateGone": "Unraids Update-Knopf nicht gefunden — nutze „Aktualisierung anwenden“ in der Zeile.",

@@ -33,6 +33,13 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.7.2
+- FIX: ShipLog's "update available / up to date" verdict could disagree with Unraid's own
+  (e.g. a LinuxServer -lsNNN rebuild that Unraid flags but ShipLog's version compare missed,
+  or a pinned tag where a newer version exists but your tag is current). The verdict now
+  FOLLOWS Unraid's own live per-container status — so ShipLog can never contradict what the
+  Docker tab shows. ShipLog's version, changelog and risk are shown as the detail on top.
+
 ### 1.7.1
 - FIX: "Update now" in the changelog bubble did nothing when set to silent + no confirm
   (a follow-up to the 1.6.0/1.7.0 update-options work). ShipLog now triggers the update
