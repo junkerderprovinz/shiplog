@@ -317,53 +317,54 @@
     return false;
   }
 
-  // When silent, hide the SweetAlert docker-update log window that openDocker opens
-  // (class .sweet-alert.nchan) instead of removing it: the native flow keeps running
-  // (websocket → openDone → its loadlist refresh), the user just never sees it. Safe —
-  // update_container runs detached server-side, so hiding the viewer can't abort it.
-  function hideNextUpdatePopup() {
-    const hide = (box) => {
-      if (!box || box.dataset.slHidden) return;
-      box.dataset.slHidden = "1";
-      const off = (n) => { if (!n) return; n.style.setProperty("opacity", "0", "important"); n.style.setProperty("visibility", "hidden", "important"); n.style.setProperty("pointer-events", "none", "important"); };
-      off(box);
-      off(document.querySelector(".sweet-overlay"));
-      document.body.classList.remove("stop-scrolling");
-      document.body.style.setProperty("overflow", "auto", "important");
+  // BEST-EFFORT automation of Unraid's OWN update dialogs after ShipLog clicks the native
+  // control: auto-confirm the "are you sure?" swal when Ask-before-updating is OFF, and
+  // hide the progress download-log window (.sweet-alert.nchan) when Silent is ON. If
+  // Unraid's dialog markup ever differs, every branch here is a harmless no-op and the
+  // update still proceeds visibly — the core update can NEVER break because of this.
+  function armUpdateSwals() {
+    const autoConfirm = !confirmUpdate;
+    const hideLog = silentUpdate;
+    if (!autoConfirm && !hideLog) return;
+    const off = (n) => { if (!n) return; n.style.setProperty("opacity", "0", "important"); n.style.setProperty("visibility", "hidden", "important"); n.style.setProperty("pointer-events", "none", "important"); };
+    const tick = () => {
+      if (autoConfirm) {
+        // Unraid's confirm dialog = a visible .sweet-alert that is NOT the nchan progress
+        // log; click its confirm button once ("Yes, update it!").
+        const box = document.querySelector(".sweet-alert.visible:not(.nchan), .sweet-alert.showSweetAlert:not(.nchan)");
+        if (box && !box.dataset.slConfirmed) {
+          const btn = box.querySelector("button.confirm, .sa-button-container button.confirm, button.sa-confirm");
+          if (btn) { box.dataset.slConfirmed = "1"; btn.click(); }
+        }
+      }
+      if (hideLog) {
+        const prog = document.querySelector(".sweet-alert.nchan");
+        if (prog && !prog.dataset.slHidden) {
+          prog.dataset.slHidden = "1";
+          off(prog); off(document.querySelector(".sweet-overlay"));
+          document.body.classList.remove("stop-scrolling");
+          document.body.style.setProperty("overflow", "auto", "important");
+        }
+      }
     };
-    hide(document.querySelector(".sweet-alert.nchan"));
+    tick();
     let obs;
     try {
-      // openDocker inserts .sweet-alert first, THEN adds the .nchan class, so watch
-      // both the insertion (childList) and the class change (attributes).
-      obs = new MutationObserver(() => hide(document.querySelector(".sweet-alert.nchan")));
+      obs = new MutationObserver(tick);
       obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     } catch (e) {}
-    // the popup opens after a network round-trip; watch briefly, then stop so we
-    // never touch a later, unrelated dialog.
-    setTimeout(() => { try { obs && obs.disconnect(); } catch (e) {} }, 10000);
+    setTimeout(() => { try { obs && obs.disconnect(); } catch (e) {} }, 12000);
   }
 
-  // runUpdate triggers Unraid's OWN container update via Unraid's own openDocker() —
-  // the exact call updateContainer()/updateAll() make (so the CSRF token rides along
-  // through Unraid's jQuery ajaxSetup, and the update actually runs), but WITHOUT their
-  // swal "are you sure?" (ShipLog's "Ask before updating" pref owns the confirm). When
-  // silent, the log window openDocker opens is hidden; openDocker's own loadlist refresh
-  // still fires on completion, so the row clears. ShipLog never touches the Docker socket.
-  // names: a container name or an array of them. Returns false if openDocker is
-  // unavailable (caller then falls back to clicking the native control).
-  function runUpdate(names, title) {
-    const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
-    if (!list.length) return false;
-    const od = (typeof window.openDocker === "function") ? window.openDocker
-      : (typeof openDocker === "function") ? openDocker : null;
-    if (!od) return false;
-    const cmd = "update_container " + list.map(encodeURIComponent).join("*");
-    try {
-      if (silentUpdate) hideNextUpdatePopup(); // arm the hide BEFORE the popup opens
-      od(cmd, title || "Updating", "", "loadlist");
-      return true;
-    } catch (e) { return false; }
+  // runUpdate performs Unraid's OWN per-container update the PROVEN way — it clicks the
+  // native "apply update" control (triggerNativeUpdate), exactly what worked before the
+  // update options existed — and layers the two prefs on top as best-effort via
+  // armUpdateSwals (auto-confirm when Ask is off, hide the log when Silent is on). If
+  // that automation can't find Unraid's dialogs, the update STILL runs, just visibly.
+  // Returns false only if the native control itself can't be found (caller shows a hint).
+  function runUpdate(name) {
+    armUpdateSwals();
+    return triggerNativeUpdate(name);
   }
 
   function openFor(anchor, st) {
@@ -389,8 +390,9 @@
     if (updBtn) updBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation();
       const cname = st.container && st.container.name;
-      if (confirmUpdate && !window.confirm(T("confirmOne").replace("%s", cname || "this container"))) return;
-      if (runUpdate(cname, T("updatingOne")) || triggerNativeUpdate(cname)) close();
+      // runUpdate clicks Unraid's native control; its own "are you sure?" dialog serves
+      // as the confirmation (auto-confirmed when Ask-before-updating is off).
+      if (runUpdate(cname)) close();
       else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
     });
     // persist size whenever the user drags the resize handle
@@ -419,16 +421,6 @@
     } catch (e) { return 0; }
   }
 
-  // the names native updateAll() would act on (docker[] entries flagged update==1)
-  function pendingUpdateNames() {
-    try {
-      const list = window.docker;
-      if (!Array.isArray(list)) return [];
-      return list.filter((d) => d && Number(d.update) === 1)
-        .map((d) => d.name || d.Name || d.container || "").filter(Boolean);
-    } catch (e) { return []; }
-  }
-
   function nativeUpdateAllAvailable() {
     return typeof window.updateAll === "function" || !!document.getElementById("updateAll");
   }
@@ -455,12 +447,12 @@
         if (isLightBg()) btn.classList.add("sl-light");
         btn.addEventListener("click", (e) => {
           e.preventDefault(); e.stopPropagation();
-          const names = pendingUpdateNames();
-          const n = names.length;
+          const n = pendingUpdateCount();
           if (n === 0) return;
+          // native updateAll() has no confirm dialog of its own, so ShipLog owns the ask
           if (confirmUpdate && !window.confirm(T("confirmAll").replace("%n", n))) return;
-          // ShipLog-owned trigger (silent or Unraid's popup); fall back to native updateAll()
-          if (!runUpdate(names, T("updatingAll"))) fireNativeUpdateAll();
+          armUpdateSwals();           // best-effort: hide the log window when Silent is on
+          fireNativeUpdateAll();
         });
         // .ToggleViewMode is a full-width flex row with justify-content:flex-end —
         // as its FIRST child the button packs to the right, directly LEFT of the
