@@ -20,9 +20,9 @@ func TestUnraidOffBox(t *testing.T) {
 	if (Unraid{}).Supported() {
 		t.Skip("host has the Unraid template dir; off-box assertion skipped")
 	}
-	// Absent the template dir, Unraid reports unsupported and Update is the
-	// spike stub until plan Task 1 wires the real hook.
-	if !errors.Is((Unraid{}).Update(context.Background(), "x"), ErrSpikePending) {
-		t.Error("Unraid.Update must return ErrSpikePending until the on-box spike")
+	// Absent the Unraid template dir, Unraid reports unsupported and Update errors
+	// cleanly (no template) rather than doing anything.
+	if err := (Unraid{}).Update(context.Background(), "plex"); err == nil {
+		t.Error("Unraid.Update must error off-box (no template)")
 	}
 }

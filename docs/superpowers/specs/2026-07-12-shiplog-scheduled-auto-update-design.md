@@ -157,3 +157,37 @@ Dry-run sends the same as "would update …". Each action is recorded in `store`
 - The exact Unraid update hook (spike, first plan task) — the main risk.
 - Whether to piggyback the auto-update tick on the existing sweep loop or add a
   dedicated timer (implementation detail, decided in the plan).
+
+## Trigger mechanism (resolved — Task 1 spike, off-box research)
+
+The Unraid updater calls Unraid's OWN native container-update entrypoint — the
+exact code the "apply update" button and CA Auto Update run — headless as root:
+
+```
+/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container '<url-encoded name>'
+```
+
+It reads the user template `/boot/config/plugins/dockerMan/templates-user/my-<Name>.xml`,
+pulls the newest image, and recreates the container identically (env/ports/paths/
+network + the load-bearing `net.unraid.docker.*` labels — WebUI/icon/managed).
+Result is byte-identical to a manual update, and future Unraid changes come for free.
+
+Contract used by `internal/updater` (`Unraid.Update`):
+- `name` is `argv[1]`, `url.QueryEscape`'d (the script `rawurldecode`s then splits
+  on `*`, its multi-container delimiter).
+- Guard: verify `my-<Name>.xml` exists (clean "no template" error) and the script
+  exists before invoking.
+- **Success = the process exit code** (0 ok). Do NOT rely on the nchan progress
+  publish. Do NOT pre-stop the container (the script preserves running state).
+- ShipLog only calls it for a container it already classified as having an eligible
+  update, so the script's unconditional pull+recreate never touches an up-to-date one.
+- Fallback for Unraid ≤6.9 (the `CreateDocker.php` `$_GET['updateContainer']` include
+  shim) is documented but NOT implemented — ShipLog targets 6.12+/7.x; on an older
+  box `Update` returns a clear "update script not found" error.
+
+**MUST be verified on a real box** before trusting in production (the two blockers):
+1. the `update_container` path exists + is executable on the target Unraid build;
+2. exit-code semantics on failure (a failed pull / missing template returns non-zero)
+   — the script was written for a browser flow, not a caller checking `$?`.
+Also verify: running-state preservation, label/WebUI/icon fidelity, and a br0 static-IP
+container keeps its IP.
