@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -131,6 +132,16 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 	var last time.Time
+	// Rehydrate the last run time across restarts so a reboot does not re-trigger
+	// an off-schedule run for the daily/hours/days cadences. "boot" is left zero on
+	// purpose — it is meant to fire once per process start.
+	if cfg.SchedMode != "boot" {
+		if v, err := st.GetMeta(lastRunKey); err == nil && v != "" {
+			if u, perr := strconv.ParseInt(v, 10, 64); perr == nil {
+				last = time.Unix(u, 0)
+			}
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -142,6 +153,7 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 			continue
 		}
 		last = now
+		_ = st.SetMeta(lastRunKey, strconv.FormatInt(now.Unix(), 10))
 		res := exec.Run(ctx, policy, cfg.DryRun)
 		if !res.DryRun {
 			for _, o := range res.Outcomes {
@@ -155,13 +167,20 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 				})
 			}
 		}
-		if text, html := autoupdate.RenderSummary(res); text != "" && notifier != nil {
-			if nerr := notifier.SendMessage(ctx, text, html); nerr != nil {
-				log.Printf("shiplog: auto-update notify: %v", nerr)
+		// Always log the itemised run summary so the plan is visible even without
+		// Matrix (matters for dry-run — the whole point is to SEE what would update);
+		// then also push it to Matrix when configured. Empty when nothing was eligible.
+		if text, html := autoupdate.RenderSummary(res); text != "" {
+			log.Printf("shiplog: %s", text)
+			if notifier != nil {
+				if nerr := notifier.SendMessage(ctx, text, html); nerr != nil {
+					log.Printf("shiplog: auto-update notify: %v", nerr)
+				}
 			}
-		}
-		if n := len(res.Outcomes); n > 0 {
-			log.Printf("shiplog: auto-update run processed %d container(s) (dry-run=%v)", n, res.DryRun)
 		}
 	}
 }
+
+// lastRunKey is the meta store key holding the unix time of the last scheduled
+// auto-update run, so the cadence survives a daemon restart.
+const lastRunKey = "autoupdate_last_run"

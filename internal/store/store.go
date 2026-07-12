@@ -79,6 +79,10 @@ CREATE TABLE IF NOT EXISTS autoupdate_log (
 	err      TEXT,
 	at       INTEGER
 );
+CREATE TABLE IF NOT EXISTS meta (
+	key   TEXT PRIMARY KEY,
+	value TEXT
+);
 `
 
 // Open opens (creating if needed) the SQLite database at path, applies the
@@ -255,6 +259,32 @@ func (s *Store) History(id string) ([]HistoryEntry, error) {
 		return nil, fmt.Errorf("store: history iterate: %w", err)
 	}
 	return out, nil
+}
+
+// SetMeta upserts a single scalar key/value that must survive a restart (e.g.
+// the last scheduled auto-update run time, so a reboot does not re-trigger an
+// off-schedule run).
+func (s *Store) SetMeta(key, value string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO meta (key, value) VALUES (?, ?)
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value)
+	if err != nil {
+		return fmt.Errorf("store: set meta %q: %w", key, err)
+	}
+	return nil
+}
+
+// GetMeta returns the value for key, or "" (and no error) when the key is absent.
+func (s *Store) GetMeta(key string) (string, error) {
+	var v string
+	err := s.db.QueryRow(`SELECT value FROM meta WHERE key = ?`, key).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("store: get meta %q: %w", key, err)
+	}
+	return v, nil
 }
 
 // LogAutoUpdate appends one auto-update action to the audit log.

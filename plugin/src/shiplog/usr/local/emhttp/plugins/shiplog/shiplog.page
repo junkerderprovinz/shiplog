@@ -227,7 +227,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <div class="sl-desc"><?=$L['s_au_digest_desc']?></div></div>
       <div class="sl-row"><label><?=$L['s_au_sched']?></label>
         <div class="sl-in">
-          <select name="AUTOUPDATE_SCHED_MODE" id="sl-au-mode" onchange="slAuMode();slFire(this)">
+          <select name="AUTOUPDATE_SCHED_MODE" id="sl-au-mode" onchange="slAuMode()">
             <option value="off"   <?=$auMode==='off'?'selected':''?>><?=$L['s_au_sm_off']?></option>
             <option value="daily" <?=$auMode==='daily'?'selected':''?>><?=$L['s_au_sm_daily']?></option>
             <option value="boot"  <?=$auMode==='boot'?'selected':''?>><?=$L['s_au_sm_boot']?></option>

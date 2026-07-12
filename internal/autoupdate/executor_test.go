@@ -32,6 +32,19 @@ func stNamed(name string, k model.Kind) model.UpdateStatus {
 	return model.UpdateStatus{Container: model.Container{Name: name}, Kind: k, NewestTag: "new"}
 }
 
+type errLister struct{}
+
+func (errLister) List() ([]model.UpdateStatus, error) { return nil, errors.New("db down") }
+
+func TestExecutorListErrorEmptyResult(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	e := NewExecutor(errLister{}, upd)
+	res := e.Run(context.Background(), Policy{Level: LevelMajor}, false)
+	if len(upd.calls) != 0 || len(res.Outcomes) != 0 {
+		t.Fatalf("a lister error must yield an empty run with no updates, got calls=%v outcomes=%+v", upd.calls, res.Outcomes)
+	}
+}
+
 func TestExecutorSerialEligibleOnly(t *testing.T) {
 	upd := &fakeUpdater{sup: true}
 	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{

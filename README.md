@@ -81,7 +81,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **Knows what has no upstream** — digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
 - **Update all in one click** — a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
 - **Update controls** — optional confirmation before an update, and an optional silent update that skips Unraid's pop-up download-log window (Settings → Updates).
-- **Scheduled auto-update, gated by SemVer level** *(Unraid plugin only)* — optionally let ShipLog apply updates on a schedule, but only up to a level you choose: patch, minor or major. Unknown / non-versioned tags are never auto-applied, and `:latest` / digest-only moves have their own separate toggle. Runs daily, at boot, or every N hours / days, with a dry-run mode that only notifies what *would* update. It hands the work to Unraid's own container-update path, so containers come back identical to a manual update — the engine itself still never writes to the Docker socket.
+- **Scheduled auto-update, gated by SemVer level** *(Unraid plugin only)* — optionally let ShipLog apply updates on a schedule, but only up to a level you choose: patch, minor or major. Unknown / non-versioned tags are never auto-applied, and `:latest` / digest-only moves have their own separate toggle. Runs daily, at boot, or every N hours / days, with a dry-run mode that only reports what *would* update — to the ShipLog log, and to Matrix if configured. It hands the work to Unraid's own container-update path, so containers come back identical to a manual update — the engine itself still never writes to the Docker socket.
 - **Localised** — the settings page and the changelog bubble follow Unraid's configured language across 26 languages.
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
 - **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
@@ -116,7 +116,7 @@ On the Unraid plugin the settings page groups these into tabs — **General**, *
 | `AUTOUPDATE_ENABLED` | `false` | *(plugin only)* master switch for scheduled auto-update |
 | `AUTOUPDATE_LEVEL` | `off` | highest bump to auto-apply: `off` / `patch` / `minor` / `major` |
 | `AUTOUPDATE_DIGEST` | `false` | also auto-apply `:latest` / digest-only moves (they carry no SemVer level) |
-| `AUTOUPDATE_DRYRUN` | `false` | notify what *would* update, apply nothing |
+| `AUTOUPDATE_DRYRUN` | `false` | report what *would* update (ShipLog log + Matrix if set), apply nothing |
 | `AUTOUPDATE_SCHED_MODE` | `off` | `off` / `daily` / `boot` / `hours` / `days` |
 | `AUTOUPDATE_SCHED_TIME` | `04:00` | run time for `daily` |
 | `AUTOUPDATE_SCHED_EVERY` | `6` | interval for `hours` / `days` |
