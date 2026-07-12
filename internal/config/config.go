@@ -3,6 +3,8 @@ package config
 
 import (
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,6 +28,21 @@ type Config struct {
 	MatrixHomeserver string // MATRIX_HOMESERVER
 	MatrixToken      string // MATRIX_TOKEN
 	MatrixRoom       string // MATRIX_ROOM
+
+	// AutoUpdate holds the scheduled SemVer-gated auto-update settings (Unraid
+	// plugin only; default off). See internal/autoupdate.
+	AutoUpdate AutoUpdateConfig
+}
+
+// AutoUpdateConfig configures scheduled auto-updates (all AUTOUPDATE_* env vars).
+type AutoUpdateConfig struct {
+	Enabled    bool   // AUTOUPDATE_ENABLED ("yes"/"no")
+	Level      string // AUTOUPDATE_LEVEL: off|patch|minor|major
+	Digest     bool   // AUTOUPDATE_DIGEST: also auto-apply :latest/digest moves
+	DryRun     bool   // AUTOUPDATE_DRYRUN: notify only, apply nothing
+	SchedMode  string // AUTOUPDATE_SCHED_MODE: off|daily|boot|hours|days
+	SchedTime  string // AUTOUPDATE_SCHED_TIME "HH:MM" (daily)
+	SchedEvery int    // AUTOUPDATE_SCHED_EVERY (hours|days), >= 1
 }
 
 // Load reads the environment, applying the documented defaults.
@@ -43,7 +60,38 @@ func Load() Config {
 		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),
 		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
+		AutoUpdate: AutoUpdateConfig{
+			Enabled:    yes("AUTOUPDATE_ENABLED"),
+			Level:      levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
+			Digest:     yes("AUTOUPDATE_DIGEST"),
+			DryRun:     yes("AUTOUPDATE_DRYRUN"),
+			SchedMode:  env("AUTOUPDATE_SCHED_MODE", "off"),
+			SchedTime:  env("AUTOUPDATE_SCHED_TIME", "04:00"),
+			SchedEvery: atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
+		},
 	}
+}
+
+// yes reports whether the env var equals "yes" (case-insensitive).
+func yes(key string) bool { return strings.EqualFold(os.Getenv(key), "yes") }
+
+// levelOrOff validates an auto-update level, defaulting anything else to "off".
+func levelOrOff(s string) string {
+	switch s {
+	case "patch", "minor", "major":
+		return s
+	default:
+		return "off"
+	}
+}
+
+// atoiMin1 parses an int env var, clamped to >= 1, falling back to def.
+func atoiMin1(key string, def int) int {
+	n, err := strconv.Atoi(os.Getenv(key))
+	if err != nil || n < 1 {
+		return def
+	}
+	return n
 }
 
 func env(key, def string) string {
