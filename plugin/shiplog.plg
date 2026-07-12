@@ -33,6 +33,24 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.0.0
+- ShipLog grows from a read-only advisor into one that can also ACT: it can now update your
+  containers for you, on a schedule, gated by version level — so this is a major release.
+- NEW: scheduled auto-update, gated by version level (Unraid plugin only, off by default). ShipLog
+  can now apply container updates for you on a schedule — but only up to the level you choose:
+  Patch, Minor or Major. Unknown / non-versioned tags are never auto-updated, and rolling ":latest"
+  digest moves have their own separate toggle. Run it daily at a set time, once at boot, or every N
+  hours / days. A Dry-run mode only reports what WOULD update (to the ShipLog log, plus Matrix if set
+  up), so you can build trust before arming real updates. Updates are handed to Unraid's own
+  container-update path (pull plus recreate
+  from the container's template), so a container comes back identical to a manual update — the
+  engine itself still never writes to the Docker socket.
+- NEW: the settings page is organised into tabs (General, Updates, Notifications, Sources) so it
+  stays tidy as it grows.
+- NEW: a warning appears when CA Auto Update is also installed, so you do not accidentally arm both
+  and double-update your containers.
+- All new settings text is translated across the 26 supported languages.
+
 ### 1.8.2
 - FIX: with "Ask before updating" off and/or "Silent update" on, updating a container did not
   work — the confirmation could hang the page and the update never started. Root cause: the old
