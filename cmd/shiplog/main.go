@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/api"
+	"github.com/junkerderprovinz/shiplog/internal/autoupdate"
 	"github.com/junkerderprovinz/shiplog/internal/bannerlog"
 	"github.com/junkerderprovinz/shiplog/internal/changelog"
 	"github.com/junkerderprovinz/shiplog/internal/config"
@@ -23,6 +24,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 	"github.com/junkerderprovinz/shiplog/internal/summarize"
+	"github.com/junkerderprovinz/shiplog/internal/updater"
 )
 
 func main() {
@@ -62,10 +64,11 @@ func main() {
 
 	// Optional Matrix notifications. nil when unconfigured. Whoami at startup so
 	// the log says plainly whether notifications will work.
-	if n := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom); n != nil {
-		eng.WithNotifier(n)
+	notifier := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom)
+	if notifier != nil {
+		eng.WithNotifier(notifier)
 		whoCtx, cancelWho := context.WithTimeout(context.Background(), 10*time.Second)
-		if werr := n.Whoami(whoCtx); werr != nil {
+		if werr := notifier.Whoami(whoCtx); werr != nil {
 			log.Printf("shiplog: Matrix configured (%s) but NOT working: %v", cfg.MatrixHomeserver, werr)
 		} else {
 			log.Printf("shiplog: Matrix OK — notifications enabled (%s, room %s)", cfg.MatrixHomeserver, cfg.MatrixRoom)
@@ -78,6 +81,21 @@ func main() {
 	defer stop()
 
 	go eng.Run(ctx)
+
+	// Scheduled SemVer-gated auto-update (Unraid plugin only; off unless enabled).
+	// It reads the engine's already-classified statuses from the store and applies
+	// only what the policy allows, on the configured cadence.
+	if cfg.AutoUpdate.Enabled {
+		upd := updater.Unraid{}
+		if !upd.Supported() {
+			log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir) — skipping")
+		} else {
+			exec := autoupdate.NewExecutor(db, upd)
+			go runAutoUpdate(ctx, cfg.AutoUpdate, exec, db, notifier)
+			log.Printf("shiplog: auto-update ON (level=%s, digest=%v, schedule=%s, dry-run=%v)",
+				cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
+		}
+	}
 
 	srv := &http.Server{
 		Handler:           api.New(db, eng).Handler(),
@@ -100,4 +118,50 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// runAutoUpdate drives the scheduled auto-update loop: every minute it asks the
+// schedule whether a run is due, and when it is, applies the policy over the
+// store's classified statuses, records each real action, and sends a run
+// summary. It waits one tick before the first check so the initial sweep has
+// populated the store (matters for the "boot" schedule).
+func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Matrix) {
+	sched := autoupdate.Schedule{Mode: cfg.SchedMode, Time: cfg.SchedTime, Every: cfg.SchedEvery}
+	policy := autoupdate.Policy{Level: autoupdate.ParseLevel(cfg.Level), Digest: cfg.Digest}
+	tick := time.NewTicker(time.Minute)
+	defer tick.Stop()
+	var last time.Time
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+		now := time.Now()
+		if !sched.Due(last, now) {
+			continue
+		}
+		last = now
+		res := exec.Run(ctx, policy, cfg.DryRun)
+		if !res.DryRun {
+			for _, o := range res.Outcomes {
+				errStr := ""
+				if o.Err != nil {
+					errStr = o.Err.Error()
+				}
+				_ = st.LogAutoUpdate(store.AutoUpdateRecord{
+					Name: o.Name, FromVer: o.From, ToVer: o.To, Level: o.Level,
+					Success: o.Err == nil, Err: errStr, At: now.Unix(),
+				})
+			}
+		}
+		if text, html := autoupdate.RenderSummary(res); text != "" && notifier != nil {
+			if nerr := notifier.SendMessage(ctx, text, html); nerr != nil {
+				log.Printf("shiplog: auto-update notify: %v", nerr)
+			}
+		}
+		if n := len(res.Outcomes); n > 0 {
+			log.Printf("shiplog: auto-update run processed %d container(s) (dry-run=%v)", n, res.DryRun)
+		}
+	}
 }
