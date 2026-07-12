@@ -36,3 +36,29 @@ func TestAutoUpdateLog(t *testing.T) {
 		t.Fatalf("second record wrong: %+v", hist[1])
 	}
 }
+
+func TestMetaRoundTrip(t *testing.T) {
+	s, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = s.Close() }()
+
+	// an absent key returns "" and no error (so a first-ever start reads no last run).
+	if v, err := s.GetMeta("autoupdate_last_run"); err != nil || v != "" {
+		t.Fatalf("absent key: got (%q, %v), want (\"\", nil)", v, err)
+	}
+	if err := s.SetMeta("autoupdate_last_run", "1700000000"); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := s.GetMeta("autoupdate_last_run"); err != nil || v != "1700000000" {
+		t.Fatalf("after set: got (%q, %v)", v, err)
+	}
+	// upsert overwrites in place, not a second row.
+	if err := s.SetMeta("autoupdate_last_run", "1700009999"); err != nil {
+		t.Fatal(err)
+	}
+	if v, _ := s.GetMeta("autoupdate_last_run"); v != "1700009999" {
+		t.Fatalf("upsert did not overwrite: got %q", v)
+	}
+}
