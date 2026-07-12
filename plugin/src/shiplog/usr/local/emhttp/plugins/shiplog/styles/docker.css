@@ -120,15 +120,15 @@ body.sl-hide-nchan {
 .sl-spin {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.42); border-radius: 6px;
+  background: rgba(255, 255, 255, 0.75); border-radius: 6px; /* white veil over the logo — clearly visible */
   pointer-events: none; z-index: 3;
   animation: sl-spin-fade 0.12s ease both;
 }
 .sl-spin-ring {
   box-sizing: border-box;
-  width: 60%; height: 60%; min-width: 14px; min-height: 14px; max-width: 26px; max-height: 26px;
+  width: 66%; height: 66%; min-width: 16px; min-height: 16px; max-width: 30px; max-height: 30px;
   border-radius: 50%;
-  border: 2.5px solid rgba(255, 255, 255, 0.30); border-top-color: #ff8c2f; /* Unraid accent */
+  border: 3px solid rgba(0, 0, 0, 0.18); border-top-color: #ff8c2f; /* orange head over a dark track — reads on the white veil */
   animation: sl-spin-rot 0.7s linear infinite;
 }
 @keyframes sl-spin-rot { to { transform: rotate(360deg); } }
