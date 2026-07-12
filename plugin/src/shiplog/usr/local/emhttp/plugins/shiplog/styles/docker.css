@@ -109,3 +109,28 @@ body.sl-hide-nchan .sweet-overlay {
 body.sl-hide-nchan {
   overflow: auto !important; /* belt-and-suspenders: never leave the page scroll-locked */
 }
+
+/* ── silent-update spinner ──────────────────────────────────────────────
+   A SILENT update hides Unraid's progress log (body.sl-hide-nchan), so the row gives
+   no feedback. docker.js overlays this spinner on the updating container's logo
+   (td.ct-name span.hand > img) for the life of that hidden log — painted when the
+   .nchan log appears, removed when it finishes / on re-render. Decorative + inert
+   (pointer-events:none, never eats the icon's start/stop click). */
+.sl-spinhost { position: relative; }
+.sl-spin {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.42); border-radius: 6px;
+  pointer-events: none; z-index: 3;
+  animation: sl-spin-fade 0.12s ease both;
+}
+.sl-spin-ring {
+  box-sizing: border-box;
+  width: 60%; height: 60%; min-width: 14px; min-height: 14px; max-width: 26px; max-height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.30); border-top-color: #ff8c2f; /* Unraid accent */
+  animation: sl-spin-rot 0.7s linear infinite;
+}
+@keyframes sl-spin-rot { to { transform: rotate(360deg); } }
+@keyframes sl-spin-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sl-spin-ring { animation-duration: 1.8s; } }

@@ -428,14 +428,79 @@
   //   • Writes NO inline style/dataset onto the shared swal node (only a body class it removes on
   //     stop), so the 2nd/3rd update inherits a clean node. A safety cap reveals the log if the
   //     job never reports done, so the user is never left staring at a hidden, stuck modal.
+  // ─────────────────────────────────────────────── silent-update spinner
+  // A SILENT update shows no log (armSilentLogHide hides Unraid's .nchan window), so the row
+  // gives no feedback. We overlay a CSS spinner on the container's row logo/icon for the LIFE
+  // of that hidden log: painted the instant the `.nchan` progress log actually appears (so a
+  // cancelled Ask-before confirm — no log — never leaves a stuck spinner) and cleared when
+  // armSilentLogHide's stop() fires (done) or its safety cap. Purely decorative
+  // (pointer-events:none, never touches the Docker socket) and self-cleaning: the spinner lives
+  // inside the row, so Unraid's wholesale #docker_list re-render drops it — we re-apply it on
+  // every mutation for names still updating, and clear the set on stop().
+  const updatingNames = new Set(); // lower(name) → its row shows a spinner
+  let spinLive = false;            // true once the hidden log exists → painting active
+  function armSpin(names) {         // queue names; painting waits for the log to appear
+    const arr = Array.isArray(names) ? names : (names ? [names] : []);
+    for (const nm of arr) { const n = norm(nm); if (n) updatingNames.add(n); }
+    if (spinLive) refreshSpinners(); // a later arm during a live log paints at once
+  }
+  // The container logo sits in td.ct-name inside span.hand (the icon = Unraid's start/stop
+  // context-menu trigger). Overlay the img's own box; fall back to the hand span, then the cell.
+  function rowIconHost(tr) {
+    const cell = tr.querySelector("td.ct-name");
+    if (!cell) return null;
+    const img = cell.querySelector("img");
+    if (img && img.parentElement) return img.parentElement; // span.hand / .hoverable
+    return cell.querySelector("span.hand") || cell;
+  }
+  function applySpinner(host) {
+    if (!host || host.querySelector(":scope > .sl-spin")) return; // no host / already on
+    try { if (getComputedStyle(host).position === "static") host.classList.add("sl-spinhost"); }
+    catch (e) { host.classList.add("sl-spinhost"); }
+    const ov = el("span", "sl-spin", '<span class="sl-spin-ring"></span>');
+    ov.setAttribute("aria-hidden", "true");
+    host.appendChild(ov);
+  }
+  function stripSpinner(host) {
+    if (!host) return;
+    const ov = host.querySelector(":scope > .sl-spin");
+    if (ov) ov.remove();
+    host.classList.remove("sl-spinhost");
+  }
+  function refreshSpinners() { // paint updating rows, strip stray spinners; no-op until log is live
+    if (!spinLive || !updatingNames.size) return;
+    for (const tr of findRows()) {
+      const host = rowIconHost(tr);
+      if (updatingNames.has(norm(rowName(tr)))) applySpinner(host);
+      else stripSpinner(host);
+    }
+  }
+  function spinLogAppeared() { if (!spinLive) { spinLive = true; refreshSpinners(); } }
+  function clearSpinners() {
+    spinLive = false;
+    updatingNames.clear();
+    document.querySelectorAll(".sl-spin").forEach((n) => n.remove());
+    document.querySelectorAll(".sl-spinhost").forEach((n) => n.classList.remove("sl-spinhost"));
+  }
+  // Names Unraid's bulk update acts on (update===1) — the set a SILENT "Update all" must cover.
+  function pendingUpdateNames() {
+    try {
+      const list = window.docker;
+      if (!Array.isArray(list)) return [];
+      return list.filter((d) => d && Number(d.update) === 1).map((d) => d && d.name).filter(Boolean);
+    } catch (e) { return []; }
+  }
+
   let silentArm = null;
-  function armSilentLogHide() {
+  function armSilentLogHide(names) {
+    armSpin(names);        // queue the updating row(s); the spinner paints when the log appears
     if (silentArm) return; // already watching this flow
     let obs = null, poll = 0, cap = 0, armedBody = false, sawDisabled = false;
     const stop = () => {
       try { obs && obs.disconnect(); } catch (e) {}
       clearInterval(poll); clearTimeout(cap);
       document.body.classList.remove("sl-hide-nchan");
+      clearSpinners();     // update finished (or safety cap) → clear the row spinner(s)
       silentArm = null;
     };
     const tick = () => {
@@ -446,6 +511,7 @@
       const log = document.querySelector(".sweet-alert.nchan");
       if (!log || !log.querySelector("#swaltext")) return; // confirm phase / nothing yet → touch nothing
       if (!armedBody) { document.body.classList.add("sl-hide-nchan"); armedBody = true; }
+      spinLogAppeared(); // the hidden log now exists → start painting the row spinner(s)
       // idempotent: only touch the class when present, so this write can't re-feed an observer
       if (document.body.classList.contains("stop-scrolling")) document.body.classList.remove("stop-scrolling");
       const done = log.querySelector("button.confirm");
@@ -490,8 +556,8 @@
       e.preventDefault(); e.stopPropagation();
       const cname = st.container && st.container.name;
       // Arm the silent log-hider BEFORE the log appears; it is a no-op until `.nchan` exists,
-      // so it never touches the Ask-ON confirm dialog.
-      if (silentUpdate) armSilentLogHide();
+      // so it never touches the Ask-ON confirm dialog. Pass the name → spinner on this row.
+      if (silentUpdate) armSilentLogHide(cname);
       // Ask ON  → Unraid's own "Are you sure?" IS the confirmation (native, user clicks it).
       // Ask OFF → run Unraid's real update directly — no confirm dialog to race or auto-click.
       const ok = confirmUpdate ? runNativeUpdateWithConfirm(cname) : runNativeUpdateNoConfirm(cname);
@@ -554,7 +620,7 @@
           if (n === 0) return;
           // native updateAll() has no confirm dialog of its own, so ShipLog owns the ask
           if (confirmUpdate && !window.confirm(T("confirmAll").replace("%n", n))) return;
-          if (silentUpdate) armSilentLogHide(); // hide the single progress log when Silent is on
+          if (silentUpdate) armSilentLogHide(pendingUpdateNames()); // hide the log + spin every updating row
           fireNativeUpdateAll();
         });
         // .ToggleViewMode is a full-width flex row with justify-content:flex-end —
@@ -616,7 +682,7 @@
       const blob = norm(a.textContent) + " " + norm(a.getAttribute("onclick") || "");
       // strictly update controls — never delete/remove/stop/pause/etc.
       if (!/updatecontainer|apply update|aktualisierung anwenden|force update|update erzwingen|rebuild ready|installupdate/.test(blob)) return;
-      if (silentUpdate) armSilentLogHide(); // hide the progress log that follows (both Ask modes)
+      if (silentUpdate) armSilentLogHide(anchorName(a)); // hide the log + spin this row (both Ask modes)
       if (!confirmUpdate) {
         // Ask OFF → skip Unraid's confirm entirely: run the real update directly. Only prevent
         // the native handler when we can actually take over via openDocker — otherwise re-clicking
@@ -641,7 +707,7 @@
     injectUpdateAllButton();
     // Unraid re-renders the table on its auto-refresh — re-tag new rows and keep
     // the update-all counter current. tagRows() is a no-op while byName is empty.
-    const mo = new MutationObserver(() => { tagRows(); injectUpdateAllButton(); });
+    const mo = new MutationObserver(() => { tagRows(); injectUpdateAllButton(); refreshSpinners(); });
     try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
     const ok = await load();
