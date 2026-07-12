@@ -61,10 +61,10 @@ func Load() Config {
 		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
 		AutoUpdate: AutoUpdateConfig{
-			Enabled:    yes("AUTOUPDATE_ENABLED"),
+			Enabled:    truthy("AUTOUPDATE_ENABLED"),
 			Level:      levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
-			Digest:     yes("AUTOUPDATE_DIGEST"),
-			DryRun:     yes("AUTOUPDATE_DRYRUN"),
+			Digest:     truthy("AUTOUPDATE_DIGEST"),
+			DryRun:     truthy("AUTOUPDATE_DRYRUN"),
 			SchedMode:  env("AUTOUPDATE_SCHED_MODE", "off"),
 			SchedTime:  env("AUTOUPDATE_SCHED_TIME", "04:00"),
 			SchedEvery: atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
@@ -72,8 +72,16 @@ func Load() Config {
 	}
 }
 
-// yes reports whether the env var equals "yes" (case-insensitive).
-func yes(key string) bool { return strings.EqualFold(os.Getenv(key), "yes") }
+// truthy reports whether the env var is an on/true value. It accepts both the
+// settings page's "true"/"false" (like ENABLE) and "yes"/"1"/"on", so the config
+// is robust to either convention.
+func truthy(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	case "true", "yes", "1", "on":
+		return true
+	}
+	return false
+}
 
 // levelOrOff validates an auto-update level, defaulting anything else to "off".
 func levelOrOff(s string) string {
