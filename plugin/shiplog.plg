@@ -33,6 +33,16 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.8.0
+- The "Ask before updating" and "Silent update" options now also apply to Unraid's OWN
+  native update controls on the Docker rows, not just the "Update now" button in ShipLog's
+  changelog bubble. With "Ask before updating" off, clicking a native "apply update" runs
+  without the confirmation prompt; with "Silent update" on, it runs without the pop-up
+  download-log window. Scoped strictly to the per-container update controls, so other
+  confirmation dialogs (e.g. removing a container) are never auto-confirmed. ShipLog stays
+  read-only — it only automates Unraid's own dialogs on top of Unraid's own click, and if
+  those dialogs ever look different on your build the update still runs, just visibly.
+
 ### 1.7.2
 - FIX: ShipLog's "update available / up to date" verdict could disagree with Unraid's own
   (e.g. a LinuxServer -lsNNN rebuild that Unraid flags but ShipLog's version compare missed,

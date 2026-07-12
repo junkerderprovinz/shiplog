@@ -538,6 +538,24 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 
+  // Extend the "ask before updating" / "silent update" prefs to Unraid's OWN native
+  // per-container update controls (not just ShipLog's bubble button): when a native
+  // update anchor is clicked, arm the same best-effort swal automation (auto-confirm
+  // when Ask is off, hide the log when Silent is on). Capture phase so we arm BEFORE
+  // Unraid's onclick opens the dialog. Scoped strictly to update controls so unrelated
+  // confirm dialogs (e.g. remove container) are NEVER auto-confirmed. ShipLog's own
+  // bubble button already arms it in runUpdate; the swal guards make a double-arm safe.
+  document.addEventListener("click", (e) => {
+    try {
+      if (confirmUpdate && !silentUpdate) return; // neither pref active -> nothing to do
+      const a = e.target && e.target.closest ? e.target.closest("a[onclick], a.exec, [onclick]") : null;
+      if (!a || a.closest(".sl-chip") || a.closest(".sl-chiprow") || a.closest(".sl-bubble")) return;
+      const blob = norm(a.textContent) + " " + norm(a.getAttribute("onclick") || "");
+      if (!/updatecontainer|apply update|aktualisierung anwenden|force update|update erzwingen|rebuild ready/.test(blob)) return;
+      armUpdateSwals();
+    } catch (err) {}
+  }, true);
+
   async function boot() {
     // Native-data feature first: the update-all button works without the engine.
     injectUpdateAllButton();
