@@ -333,11 +333,34 @@
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
 
-  // "Update now" keeps ShipLog read-only: it never touches the Docker socket — it
-  // triggers Unraid's OWN per-container update (the "apply update" control the
-  // Docker tab already shows) by finding it in the row's update cell and clicking
-  // it; Unraid runs the update. Returns false if it can't be found.
-  function triggerNativeUpdate(name) {
+  // "Update now" keeps ShipLog read-only: it never touches the Docker socket — it runs
+  // Unraid's OWN per-container update, the same one the Docker tab exposes. Two executors,
+  // chosen by the Ask-before-updating pref, plus a proven fallback:
+  //
+  //   • runNativeUpdateNoConfirm (Ask OFF) — runs the real update with NO confirm dialog.
+  //     It calls Unraid's global openDocker() with EXACTLY the command Unraid's own
+  //     "Yes, update it!" callback runs (webgui dynamix.docker.manager/javascript/docker.js:110
+  //     -> openDocker('update_container '+encodeURIComponent(name),'Updating the container','',
+  //     'loadlist')). openDocker POSTs to /webGui/include/StartCommand.php via jQuery (so
+  //     Unraid's csrf_token is auto-appended by its global $.ajaxPrefilter — HeadInlineJS.php:
+  //     539-545), which launches the DETACHED updater (nohup ... & — StartCommand.php:46-49),
+  //     tails it in Unraid's progress log, and refreshes the row via loadlist. There is NO
+  //     confirm swal, so there is nothing to auto-click and nothing to race — this alone
+  //     removes the whole freeze/auto-confirm class of bug. If openDocker is unavailable it
+  //     falls back to clicking the row's native "apply update" anchor so the update STILL runs.
+  //
+  //   • runNativeUpdateWithConfirm (Ask ON) — runs Unraid's fully native flow, untouched:
+  //     updateContainer(name) shows "Are you sure?" (docker.js:106) and calls openDocker on
+  //     confirm. The USER clicks confirm — ShipLog never programmatically clicks it.
+  //
+  //   • clickNativeAnchor — the proven fallback: find the row's native update anchor + click.
+  //
+  // No auto-confirm exists anywhere in this design: Ask ON = the user confirms; Ask OFF =
+  // there is no confirm to click. So an unrelated dialog (delete/remove/stop/OS-update) can
+  // never be auto-accepted.
+
+  // Click the row's native "apply update"/"rebuild ready" anchor. Returns false if absent.
+  function clickNativeAnchor(name) {
     if (!name) return false;
     for (const tr of findRows()) {
       if (norm(rowName(tr)) !== norm(name)) continue;
@@ -354,70 +377,93 @@
     return false;
   }
 
-  // BEST-EFFORT automation of Unraid's OWN update dialogs after an update click: auto-confirm
-  // the "are you sure?" swal when Ask-before-updating is OFF, and hide the progress
-  // download-log window when Silent is ON.
-  //
-  // CRITICAL: Unraid bundles SweetAlert 1.x, which reuses ONE <div.sweet-alert> and ONE
-  // <div.sweet-overlay> for EVERY dialog on the page (confirm -> addClass('nchan') -> log ->
-  // the next confirm reuses the same node ...). So this must leave NO persistent state on
-  // those singletons — no inline styles, no dataset flags. The previous version wrote
-  // visibility:hidden!important + dataset flags onto the shared node and never restored them,
-  // so the SECOND update onward inherited a stuck-hidden / already-confirmed node and died
-  // (all containers, until reload). Now: silent hiding is a body class a CSS rule keys off
-  // `.sweet-alert.nchan` (can never match the confirm dialog; auto-reverts the instant the
-  // node is reused as a confirm), removed on disconnect. Auto-confirm clicks ONLY a single,
-  // wired, visible proceed button; on any unexpected markup it does NOTHING and leaves the
-  // dialog to the user — it can never hang or cancel a native update. The observer disarms
-  // right after the click (unless it must linger to keep the log hidden), so it can't
-  // auto-accept a later delete/abort/OS-update confirm.
-  function armUpdateSwals() {
-    const autoConfirm = !confirmUpdate;
-    const hideLog = silentUpdate;
-    if (!autoConfirm && !hideLog) return;
-    if (hideLog) document.body.classList.add("sl-hide-nchan");
-    let done = false; // per-arm; NEVER written onto the shared swal node
-    let obs, timer;
-    const disconnect = () => {
-      try { obs && obs.disconnect(); } catch (e) {}
-      clearTimeout(timer);
-      document.body.classList.remove("sl-hide-nchan");
-    };
-    const tick = () => {
-      if (hideLog && document.querySelector(".sweet-alert.nchan")) {
-        // the hidden log modal still locks page scroll — free it (SweetAlert re-manages it)
-        document.body.classList.remove("stop-scrolling");
-      }
-      if (!autoConfirm || done) return;
-      // confirm dialog = a VISIBLE .sweet-alert that is NOT the .nchan progress log; keying on
-      // .visible (added a tick after open) means the confirm handler is already wired.
-      const box = document.querySelector(".sweet-alert.visible:not(.nchan)");
-      if (!box) return;
-      const btns = box.querySelectorAll("button.confirm");
-      if (btns.length !== 1) return;                         // only an unambiguous proceed btn
-      const btn = btns[0];
-      if (btn.disabled || btn.offsetParent === null) return; // not laid out / disabled yet
-      done = true;
-      btn.click();
-      if (!hideLog) disconnect(); // silent: keep observing to hold the log hidden + scroll free
-    };
-    tick();
-    try {
-      obs = new MutationObserver(tick);
-      obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
-    } catch (e) {}
-    timer = setTimeout(disconnect, 12000);
+  // Read a container name from a native update anchor: its updateContainer('<name>') onclick,
+  // else its row's name. Lets the Ask-OFF path route native clicks to the no-confirm executor.
+  function anchorName(a) {
+    const oc = a.getAttribute("onclick") || "";
+    const m = /updateContainer\(\s*['"]([^'"]+)['"]/i.exec(oc);
+    if (m) return m[1];
+    const tr = a.closest ? a.closest("tr") : null;
+    return tr ? rowName(tr) : "";
   }
 
-  // runUpdate performs Unraid's OWN per-container update the PROVEN way — it clicks the
-  // native "apply update" control (triggerNativeUpdate), exactly what worked before the
-  // update options existed — and layers the two prefs on top as best-effort via
-  // armUpdateSwals (auto-confirm when Ask is off, hide the log when Silent is on). If
-  // that automation can't find Unraid's dialogs, the update STILL runs, just visibly.
-  // Returns false only if the native control itself can't be found (caller shows a hint).
-  function runUpdate(name) {
-    armUpdateSwals();
-    return triggerNativeUpdate(name);
+  // Run Unraid's real update with NO confirm. Prefer the native openDocker global (identical
+  // to Unraid's own "Yes, update it!" callback); fall back to the proven native anchor click.
+  function runNativeUpdateNoConfirm(name) {
+    if (!name) return false;
+    if (typeof window.openDocker === "function") {
+      try {
+        window.openDocker("update_container " + encodeURIComponent(name), T("updatingOne"), "", "loadlist");
+        return true;
+      } catch (e) { /* fall through to the proven native click */ }
+    }
+    return clickNativeAnchor(name);
+  }
+
+  // Run Unraid's native update WITH its own "Are you sure?" confirm (untouched). Prefer the
+  // updateContainer global; fall back to clicking the native anchor (which invokes the same).
+  function runNativeUpdateWithConfirm(name) {
+    if (!name) return false;
+    if (typeof window.updateContainer === "function") {
+      try { window.updateContainer(name); return true; } catch (e) {}
+    }
+    return clickNativeAnchor(name);
+  }
+
+  // Silent update: hide ONLY Unraid's live progress log (the reused SweetAlert node while it
+  // carries `.nchan`) and its shared backdrop, and free the page scroll-lock — then dismiss the
+  // log for the user the instant the DETACHED job finishes. This can NEVER freeze the page and
+  // can NEVER block the update:
+  //   • It touches nothing until a `.sweet-alert.nchan` actually exists, so a confirm dialog
+  //     (Ask ON) keeps its backdrop and stays fully interactive (fixes the old "confirm loses
+  //     its overlay" bug where hiding was armed before the confirm even existed).
+  //   • While the log is up it hides it + the overlay (body.sl-hide-nchan CSS) and clears
+  //     `stop-scrolling`, so the page stays usable — no dark, click-eating, scroll-locked backdrop.
+  //   • openDocker DISABLES the log's confirm button during the run; openDone RE-ENABLES it ONLY
+  //     on completion (_DONE_ — HeadInlineJS.php:324-338). We latch on that disabled->enabled
+  //     transition and click the now-"Done" button, which runs Unraid's OWN teardown (removes the
+  //     overlay, clears the scroll-lock, stops nchan, runs loadlist). Locale-proof (no text match)
+  //     and safe: only ever the finished `.nchan` log's Done button — never a confirm-to-proceed
+  //     or a delete/remove dialog.
+  //   • Writes NO inline style/dataset onto the shared swal node (only a body class it removes on
+  //     stop), so the 2nd/3rd update inherits a clean node. A safety cap reveals the log if the
+  //     job never reports done, so the user is never left staring at a hidden, stuck modal.
+  let silentArm = null;
+  function armSilentLogHide() {
+    if (silentArm) return; // already watching this flow
+    let obs = null, poll = 0, cap = 0, armedBody = false, sawDisabled = false;
+    const stop = () => {
+      try { obs && obs.disconnect(); } catch (e) {}
+      clearInterval(poll); clearTimeout(cap);
+      document.body.classList.remove("sl-hide-nchan");
+      silentArm = null;
+    };
+    const tick = () => {
+      // The progress log is the reused SweetAlert node while it carries `.nchan` AND holds the
+      // log body `#swaltext`. Gating on #swaltext distinguishes it from a confirm dialog that
+      // could momentarily reuse the same node — so we NEVER hide or auto-dismiss a confirm
+      // (this closes the only path that could resurrect an unwanted auto-confirm).
+      const log = document.querySelector(".sweet-alert.nchan");
+      if (!log || !log.querySelector("#swaltext")) return; // confirm phase / nothing yet → touch nothing
+      if (!armedBody) { document.body.classList.add("sl-hide-nchan"); armedBody = true; }
+      // idempotent: only touch the class when present, so this write can't re-feed an observer
+      if (document.body.classList.contains("stop-scrolling")) document.body.classList.remove("stop-scrolling");
+      const done = log.querySelector("button.confirm");
+      if (!done) return;
+      if (done.disabled) { sawDisabled = true; return; }  // running
+      if (sawDisabled) { done.click(); stop(); }          // finished → Unraid's own teardown + loadlist
+    };
+    silentArm = { stop };
+    try {
+      obs = new MutationObserver(tick);
+      // childList catches the `.nchan` log node appearing; the 400ms poll catches openDone
+      // flipping the Done button's `disabled` attribute. Deliberately NOT watching attributes,
+      // so writing our own body class inside tick() can never re-feed this observer.
+      obs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+    poll = setInterval(tick, 400);          // robust re-poll: openDone flips attrs, not just class
+    cap = setTimeout(stop, 15 * 60 * 1000); // reveal the log if the job never reports done
+    tick();
   }
 
   function openFor(anchor, st) {
@@ -443,9 +489,13 @@
     if (updBtn) updBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation();
       const cname = st.container && st.container.name;
-      // runUpdate clicks Unraid's native control; its own "are you sure?" dialog serves
-      // as the confirmation (auto-confirmed when Ask-before-updating is off).
-      if (runUpdate(cname)) close();
+      // Arm the silent log-hider BEFORE the log appears; it is a no-op until `.nchan` exists,
+      // so it never touches the Ask-ON confirm dialog.
+      if (silentUpdate) armSilentLogHide();
+      // Ask ON  → Unraid's own "Are you sure?" IS the confirmation (native, user clicks it).
+      // Ask OFF → run Unraid's real update directly — no confirm dialog to race or auto-click.
+      const ok = confirmUpdate ? runNativeUpdateWithConfirm(cname) : runNativeUpdateNoConfirm(cname);
+      if (ok) close();
       else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
     });
     // persist size whenever the user drags the resize handle
@@ -504,7 +554,7 @@
           if (n === 0) return;
           // native updateAll() has no confirm dialog of its own, so ShipLog owns the ask
           if (confirmUpdate && !window.confirm(T("confirmAll").replace("%n", n))) return;
-          armUpdateSwals();           // best-effort: hide the log window when Silent is on
+          if (silentUpdate) armSilentLogHide(); // hide the single progress log when Silent is on
           fireNativeUpdateAll();
         });
         // .ToggleViewMode is a full-width flex row with justify-content:flex-end —
@@ -555,20 +605,34 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 
   // Extend the "ask before updating" / "silent update" prefs to Unraid's OWN native
-  // per-container update controls (not just ShipLog's bubble button): when a native
-  // update anchor is clicked, arm the same best-effort swal automation (auto-confirm
-  // when Ask is off, hide the log when Silent is on). Capture phase so we arm BEFORE
-  // Unraid's onclick opens the dialog. Scoped strictly to update controls so unrelated
-  // confirm dialogs (e.g. remove container) are NEVER auto-confirmed. ShipLog's own
-  // bubble button already arms it in runUpdate; the swal guards make a double-arm safe.
+  // per-container update controls (not just ShipLog's bubble button). Capture phase so we
+  // act BEFORE Unraid's onclick opens the dialog. Scoped STRICTLY to update controls, so
+  // unrelated confirm dialogs (remove/stop/OS-update) are never touched — and note there is
+  // no auto-confirm here at all: Ask OFF skips the confirm by running openDocker directly.
   document.addEventListener("click", (e) => {
     try {
-      if (confirmUpdate && !silentUpdate) return; // neither pref active -> nothing to do
       const a = e.target && e.target.closest ? e.target.closest("a[onclick], a.exec, [onclick]") : null;
       if (!a || a.closest(".sl-chip") || a.closest(".sl-chiprow") || a.closest(".sl-bubble")) return;
       const blob = norm(a.textContent) + " " + norm(a.getAttribute("onclick") || "");
-      if (!/updatecontainer|apply update|aktualisierung anwenden|force update|update erzwingen|rebuild ready/.test(blob)) return;
-      armUpdateSwals();
+      // strictly update controls — never delete/remove/stop/pause/etc.
+      if (!/updatecontainer|apply update|aktualisierung anwenden|force update|update erzwingen|rebuild ready|installupdate/.test(blob)) return;
+      if (silentUpdate) armSilentLogHide(); // hide the progress log that follows (both Ask modes)
+      if (!confirmUpdate) {
+        // Ask OFF → skip Unraid's confirm entirely: run the real update directly. Only prevent
+        // the native handler when we can actually take over via openDocker — otherwise re-clicking
+        // this same anchor would loop. Without a name/openDocker, let native run (with its confirm).
+        const name = anchorName(a);
+        if (name && typeof window.openDocker === "function") {
+          e.preventDefault(); e.stopPropagation();
+          close(); // our stopPropagation suppresses the bubble-close listener — close it ourselves
+          try { window.openDocker("update_container " + encodeURIComponent(name), T("updatingOne"), "", "loadlist"); }
+          catch (err) {
+            if (typeof window.updateContainer === "function") window.updateContainer(name);
+            else clickNativeAnchor(name); // last resort: the update still runs
+          }
+        }
+      }
+      // Ask ON → do nothing else; Unraid's native confirm+update runs untouched.
     } catch (err) {}
   }, true);
 

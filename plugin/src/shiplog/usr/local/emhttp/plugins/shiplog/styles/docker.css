@@ -86,13 +86,16 @@ a.sl-updall {
 }
 a.sl-updall:hover { border-color: rgba(128, 128, 128, 0.95); }
 
-/* Silent update: hide ONLY Unraid's live download-log window. That window is the reused
-   SweetAlert node while it carries `.nchan` (openDocker adds it); the confirm dialog never
-   has `.nchan`, so this can NEVER hide the "are you sure?" prompt. Scoped to the active
-   update flow via body.sl-hide-nchan (added/removed by armUpdateSwals), and it writes no
-   inline style to Unraid's reused node — so nothing is left stuck for the next dialog. The
-   overlay is the shared dimming backdrop; hiding it just removes the dim (all buttons stay
-   live), and it un-hides the moment the flow ends. */
+/* Silent update: hide ONLY Unraid's live download-log window (the reused SweetAlert node
+   while it carries `.nchan` — openDocker adds it; the confirm dialog never has `.nchan`, so
+   this can NEVER hide the "are you sure?" prompt) AND its shared backdrop, and release the
+   page scroll-lock so the page stays fully usable during the update. docker.js adds
+   body.sl-hide-nchan ONLY once the `.nchan` log actually exists (never during the confirm
+   dialog, which keeps its backdrop) and removes it the instant the log is dismissed. Nodes
+   stay in layout (visibility, not display:none) so docker.js can detect the log's Done button
+   flipping enabled on completion and click it → Unraid's own teardown removes overlay +
+   scroll-lock + runs loadlist. No inline style is written to Unraid's reused node, so nothing
+   is left stuck for the next dialog / the 2nd, 3rd update. */
 body.sl-hide-nchan .sweet-alert.nchan {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -100,5 +103,9 @@ body.sl-hide-nchan .sweet-alert.nchan {
 }
 body.sl-hide-nchan .sweet-overlay {
   opacity: 0 !important;
+  visibility: hidden !important;
   pointer-events: none !important;
+}
+body.sl-hide-nchan {
+  overflow: auto !important; /* belt-and-suspenders: never leave the page scroll-locked */
 }
