@@ -354,43 +354,59 @@
     return false;
   }
 
-  // BEST-EFFORT automation of Unraid's OWN update dialogs after ShipLog clicks the native
-  // control: auto-confirm the "are you sure?" swal when Ask-before-updating is OFF, and
-  // hide the progress download-log window (.sweet-alert.nchan) when Silent is ON. If
-  // Unraid's dialog markup ever differs, every branch here is a harmless no-op and the
-  // update still proceeds visibly — the core update can NEVER break because of this.
+  // BEST-EFFORT automation of Unraid's OWN update dialogs after an update click: auto-confirm
+  // the "are you sure?" swal when Ask-before-updating is OFF, and hide the progress
+  // download-log window when Silent is ON.
+  //
+  // CRITICAL: Unraid bundles SweetAlert 1.x, which reuses ONE <div.sweet-alert> and ONE
+  // <div.sweet-overlay> for EVERY dialog on the page (confirm -> addClass('nchan') -> log ->
+  // the next confirm reuses the same node ...). So this must leave NO persistent state on
+  // those singletons — no inline styles, no dataset flags. The previous version wrote
+  // visibility:hidden!important + dataset flags onto the shared node and never restored them,
+  // so the SECOND update onward inherited a stuck-hidden / already-confirmed node and died
+  // (all containers, until reload). Now: silent hiding is a body class a CSS rule keys off
+  // `.sweet-alert.nchan` (can never match the confirm dialog; auto-reverts the instant the
+  // node is reused as a confirm), removed on disconnect. Auto-confirm clicks ONLY a single,
+  // wired, visible proceed button; on any unexpected markup it does NOTHING and leaves the
+  // dialog to the user — it can never hang or cancel a native update. The observer disarms
+  // right after the click (unless it must linger to keep the log hidden), so it can't
+  // auto-accept a later delete/abort/OS-update confirm.
   function armUpdateSwals() {
     const autoConfirm = !confirmUpdate;
     const hideLog = silentUpdate;
     if (!autoConfirm && !hideLog) return;
-    const off = (n) => { if (!n) return; n.style.setProperty("opacity", "0", "important"); n.style.setProperty("visibility", "hidden", "important"); n.style.setProperty("pointer-events", "none", "important"); };
+    if (hideLog) document.body.classList.add("sl-hide-nchan");
+    let done = false; // per-arm; NEVER written onto the shared swal node
+    let obs, timer;
+    const disconnect = () => {
+      try { obs && obs.disconnect(); } catch (e) {}
+      clearTimeout(timer);
+      document.body.classList.remove("sl-hide-nchan");
+    };
     const tick = () => {
-      if (autoConfirm) {
-        // Unraid's confirm dialog = a visible .sweet-alert that is NOT the nchan progress
-        // log; click its confirm button once ("Yes, update it!").
-        const box = document.querySelector(".sweet-alert.visible:not(.nchan), .sweet-alert.showSweetAlert:not(.nchan)");
-        if (box && !box.dataset.slConfirmed) {
-          const btn = box.querySelector("button.confirm, .sa-button-container button.confirm, button.sa-confirm");
-          if (btn) { box.dataset.slConfirmed = "1"; btn.click(); }
-        }
+      if (hideLog && document.querySelector(".sweet-alert.nchan")) {
+        // the hidden log modal still locks page scroll — free it (SweetAlert re-manages it)
+        document.body.classList.remove("stop-scrolling");
       }
-      if (hideLog) {
-        const prog = document.querySelector(".sweet-alert.nchan");
-        if (prog && !prog.dataset.slHidden) {
-          prog.dataset.slHidden = "1";
-          off(prog); off(document.querySelector(".sweet-overlay"));
-          document.body.classList.remove("stop-scrolling");
-          document.body.style.setProperty("overflow", "auto", "important");
-        }
-      }
+      if (!autoConfirm || done) return;
+      // confirm dialog = a VISIBLE .sweet-alert that is NOT the .nchan progress log; keying on
+      // .visible (added a tick after open) means the confirm handler is already wired.
+      const box = document.querySelector(".sweet-alert.visible:not(.nchan)");
+      if (!box) return;
+      const btns = box.querySelectorAll("button.confirm");
+      if (btns.length !== 1) return;                         // only an unambiguous proceed btn
+      const btn = btns[0];
+      if (btn.disabled || btn.offsetParent === null) return; // not laid out / disabled yet
+      done = true;
+      btn.click();
+      if (!hideLog) disconnect(); // silent: keep observing to hold the log hidden + scroll free
     };
     tick();
-    let obs;
     try {
       obs = new MutationObserver(tick);
       obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     } catch (e) {}
-    setTimeout(() => { try { obs && obs.disconnect(); } catch (e) {} }, 12000);
+    timer = setTimeout(disconnect, 12000);
   }
 
   // runUpdate performs Unraid's OWN per-container update the PROVEN way — it clicks the
