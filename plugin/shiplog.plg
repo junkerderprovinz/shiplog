@@ -33,6 +33,19 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 1.8.1
+- FIX: with "Ask before updating" off and/or "Silent update" on, container updates stopped
+  working after the first one — the native update buttons AND the changelog-bubble button did
+  nothing. Unraid's SweetAlert reuses ONE dialog node for every popup on the page; ShipLog was
+  leaving hidden/confirmed state stuck on that shared node, so every later update inherited a
+  dead, invisible dialog (all containers, until a page reload). The automation is rewritten to
+  leave NO state on Unraid's dialog node: it hides only the live download-log window (via a
+  scoped class that can never match the confirmation dialog), and auto-confirms only a single,
+  ready proceed button — on any unexpected markup it does nothing and leaves the dialog to you.
+  A native update can no longer be blocked or cancelled by ShipLog.
+- Uninstall now also removes the engine's appdata (/mnt/user/appdata/shiplog — the regenerable
+  version-memory) for a clean slate; your flash settings (.cfg) are still kept.
+
 ### 1.8.0
 - The "Ask before updating" and "Silent update" options now also apply to Unraid's OWN
   native update controls on the Docker rows, not just the "Update now" button in ShipLog's
@@ -331,7 +344,7 @@ echo "ShipLog ist ready!"
      or Unraid leaves the .plg on the flash and it reinstalls on boot. Never
      'pkill -f &slug;' (matches this /tmp/inlineN-&slug;.sh + the `plugin remove`
      parent -> self-kill). Stop by PID, kill a stray only by full binary path, drop
-     the exact package + files + cached .txz; keep appdata + the .cfg settings. -->
+     the exact package + files + cached .txz + the appdata cache; keep the flash .cfg. -->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
 # goodbye ceremony FIRST, while the files still exist
@@ -345,7 +358,11 @@ pkg=$(ls /var/log/packages/ 2>/dev/null | grep -E "^&slug;(-[^-]+-[^-]+-[^-]+)?$
 if [ -n "$pkg" ]; then removepkg "$pkg" 2>/dev/null; fi
 rm -rf &emhttp;
 rm -f &plgPath;/*.txz &plgPath;/*.txz.md5 /var/run/&slug;.pid /var/run/&slug;.sock
-echo "ShipLog removed (appdata + settings kept)."
+# Also drop the engine's appdata (the SQLite version-memory) so an uninstall is a
+# clean slate — it is a regenerable cache, not user data. Guarded to the exact
+# slug dir; a no-op if the array/pool isn't mounted at removal time.
+rm -rf /mnt/user/appdata/&slug;
+echo "ShipLog removed (appdata cleared, flash .cfg settings kept)."
 exit 0
 </INLINE>
 </FILE>

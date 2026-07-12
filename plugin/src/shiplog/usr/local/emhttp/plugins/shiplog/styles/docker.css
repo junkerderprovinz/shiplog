@@ -85,3 +85,20 @@ a.sl-updall {
   white-space: nowrap;
 }
 a.sl-updall:hover { border-color: rgba(128, 128, 128, 0.95); }
+
+/* Silent update: hide ONLY Unraid's live download-log window. That window is the reused
+   SweetAlert node while it carries `.nchan` (openDocker adds it); the confirm dialog never
+   has `.nchan`, so this can NEVER hide the "are you sure?" prompt. Scoped to the active
+   update flow via body.sl-hide-nchan (added/removed by armUpdateSwals), and it writes no
+   inline style to Unraid's reused node — so nothing is left stuck for the next dialog. The
+   overlay is the shared dimming backdrop; hiding it just removes the dim (all buttons stay
+   live), and it un-hides the moment the flow ends. */
+body.sl-hide-nchan .sweet-alert.nchan {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.sl-hide-nchan .sweet-overlay {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
