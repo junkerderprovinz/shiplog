@@ -88,8 +88,18 @@ func (m *Matrix) roomID(ctx context.Context) (string, error) {
 	return b.RoomID, nil
 }
 
-// Notify posts an update message. nil receiver → no-op (caller-friendly).
+// Notify posts a per-update message. nil receiver → no-op (caller-friendly).
 func (m *Matrix) Notify(ctx context.Context, st model.UpdateStatus) error {
+	if m == nil {
+		return nil
+	}
+	text, html := format(st)
+	return m.SendMessage(ctx, text, html)
+}
+
+// SendMessage posts a plain + HTML message to the room. nil receiver → no-op.
+// Used for the per-update Notify and the auto-update run summary.
+func (m *Matrix) SendMessage(ctx context.Context, text, html string) error {
 	if m == nil {
 		return nil
 	}
@@ -97,14 +107,13 @@ func (m *Matrix) Notify(ctx context.Context, st model.UpdateStatus) error {
 	if err != nil {
 		return err
 	}
-	text, html := format(st)
 	body, _ := json.Marshal(map[string]any{
 		"msgtype":        "m.text",
 		"body":           text,
 		"format":         "org.matrix.custom.html",
 		"formatted_body": html,
 	})
-	txn := fmt.Sprintf("shiplog-%s-%d", safeTxn(st.Container.ID), time.Now().UnixNano())
+	txn := fmt.Sprintf("shiplog-%d", time.Now().UnixNano())
 	u := m.hs + "/_matrix/client/v3/rooms/" + url.PathEscape(rid) + "/send/m.room.message/" + txn
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u, bytes.NewReader(body))
 	if err != nil {
@@ -121,16 +130,6 @@ func (m *Matrix) Notify(ctx context.Context, st model.UpdateStatus) error {
 		return fmt.Errorf("send status %d", resp.StatusCode)
 	}
 	return nil
-}
-
-func safeTxn(s string) string {
-	if len(s) > 12 {
-		s = s[:12]
-	}
-	if s == "" {
-		s = "x"
-	}
-	return s
 }
 
 // format builds the plain + HTML message bodies for an update.
