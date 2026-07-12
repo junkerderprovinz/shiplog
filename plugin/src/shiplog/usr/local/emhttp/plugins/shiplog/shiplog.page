@@ -21,6 +21,16 @@ $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // ask before updating (default on)
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // suppress Unraid's update pop-up (default off)
+/* Scheduled SemVer-gated auto-update (all default off/safe). */
+$auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
+$auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';
+$auDigest= (isset($cfg['AUTOUPDATE_DIGEST'])  && $cfg['AUTOUPDATE_DIGEST']==='true');
+$auDry   = (isset($cfg['AUTOUPDATE_DRYRUN'])  && $cfg['AUTOUPDATE_DRYRUN']==='true');
+$auMode  = !empty($cfg['AUTOUPDATE_SCHED_MODE'])  ? $cfg['AUTOUPDATE_SCHED_MODE']  : 'off';
+$auTime  = !empty($cfg['AUTOUPDATE_SCHED_TIME'])  ? $cfg['AUTOUPDATE_SCHED_TIME']  : '04:00';
+$auEvery = !empty($cfg['AUTOUPDATE_SCHED_EVERY']) ? $cfg['AUTOUPDATE_SCHED_EVERY'] : '6';
+/* CA Auto Update coexistence: warn so the user doesn't run both. */
+$caPresent = is_dir('/usr/local/emhttp/plugins/ca.update.applications') || is_dir('/boot/config/plugins/ca.update.applications');
 
 /* On/Off label in the active Unraid language (no function defs in a .page). */
 $lang = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
@@ -120,6 +130,19 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#fff}
   .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px #525252}
   .sl-state{font-size:13px;color:var(--dim);min-width:26px}
+
+  /* Tabs (CC-style): a flat row of buttons; the active one carries Unraid's orange
+     underline. Cards tagged data-tab are shown only under their tab. */
+  .sl-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0 2px 16px;border-bottom:1px solid var(--line)}
+  .sl-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);
+    padding:8px 15px;font:13px/1.2 inherit;cursor:pointer;border-radius:7px 7px 0 0;margin-bottom:-1px}
+  .sl-tab:hover{color:var(--txt)}
+  .sl-tab.active{color:#ff8c2f;border-bottom-color:#ff8c2f;font-weight:600}
+  .Theme--white .sl-tab,.Theme--azure .sl-tab{color:#666}
+  .Theme--white .sl-tab.active,.Theme--azure .sl-tab.active{color:#c25a00;border-bottom-color:#c25a00}
+  .sl-card[data-hidden="1"]{display:none}
+  .sl-warn{background:#3a2a12;border:1px solid #6a4a1a;border-radius:8px;color:#f1c21b;
+    padding:10px 12px;margin:2px 0 12px;font-size:12.5px;line-height:1.45}
 </style>
 
 <div class="sl-cfg">
@@ -140,7 +163,14 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     <input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
     <input type="hidden" name="#arg[1]" value="restart">
 
-    <div class="sl-card">
+    <div class="sl-tabs" id="sl-tabs">
+      <button type="button" class="sl-tab" data-go="general"><?=$L['t_general']?></button>
+      <button type="button" class="sl-tab" data-go="updates"><?=$L['t_updates']?></button>
+      <button type="button" class="sl-tab" data-go="notify"><?=$L['t_notify']?></button>
+      <button type="button" class="sl-tab" data-go="sources"><?=$L['t_sources']?></button>
+    </div>
+
+    <div class="sl-card" data-tab="general">
       <h3><?=$L['s_engine']?></h3>
       <div class="sl-row"><label><?=$L['s_enable']?></label><div class="sl-in">
         <label class="sl-switch">
@@ -160,7 +190,68 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <span class="sl-hint"><?=$L['s_poll_hint']?></span></div></div>
     </div>
 
-    <div class="sl-card">
+    <div class="sl-card" data-tab="updates">
+      <h3><?=$L['s_autoupd']?> <small><?=$L['s_autoupd_sub']?></small></h3>
+      <?php if ($caPresent): ?>
+      <div class="sl-warn"><?=$L['s_ca_warn']?></div>
+      <?php endif; ?>
+      <div class="sl-row"><label><?=$L['s_au_enable']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-au-en-cb" <?=$auEn?'checked':''?> onchange="slSwitch(this,'sl-au-en','sl-au-en-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-au-en-state"><?=htmlspecialchars($auEn?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="AUTOUPDATE_ENABLED" id="sl-au-en" value="<?=$auEn?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_au_enable_desc']?></div></div>
+      <div class="sl-row"><label><?=$L['s_au_level']?></label>
+        <div class="sl-in">
+          <select name="AUTOUPDATE_LEVEL">
+            <option value="off"   <?=$auLevel==='off'?'selected':''?>><?=$L['s_au_lvl_off']?></option>
+            <option value="patch" <?=$auLevel==='patch'?'selected':''?>><?=$L['s_au_lvl_patch']?></option>
+            <option value="minor" <?=$auLevel==='minor'?'selected':''?>><?=$L['s_au_lvl_minor']?></option>
+            <option value="major" <?=$auLevel==='major'?'selected':''?>><?=$L['s_au_lvl_major']?></option>
+          </select>
+        </div>
+        <div class="sl-desc"><?=$L['s_au_level_desc']?></div></div>
+      <div class="sl-row"><label><?=$L['s_au_digest']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-au-dg-cb" <?=$auDigest?'checked':''?> onchange="slSwitch(this,'sl-au-dg','sl-au-dg-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-au-dg-state"><?=htmlspecialchars($auDigest?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="AUTOUPDATE_DIGEST" id="sl-au-dg" value="<?=$auDigest?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_au_digest_desc']?></div></div>
+      <div class="sl-row"><label><?=$L['s_au_sched']?></label>
+        <div class="sl-in">
+          <select name="AUTOUPDATE_SCHED_MODE" id="sl-au-mode" onchange="slAuMode();slFire(this)">
+            <option value="off"   <?=$auMode==='off'?'selected':''?>><?=$L['s_au_sm_off']?></option>
+            <option value="daily" <?=$auMode==='daily'?'selected':''?>><?=$L['s_au_sm_daily']?></option>
+            <option value="boot"  <?=$auMode==='boot'?'selected':''?>><?=$L['s_au_sm_boot']?></option>
+            <option value="hours" <?=$auMode==='hours'?'selected':''?>><?=$L['s_au_sm_hours']?></option>
+            <option value="days"  <?=$auMode==='days'?'selected':''?>><?=$L['s_au_sm_days']?></option>
+          </select>
+          <input type="text" class="sl-narrow" name="AUTOUPDATE_SCHED_TIME" id="sl-au-time" value="<?=htmlspecialchars($auTime)?>" placeholder="04:00">
+          <input type="text" class="sl-narrow" name="AUTOUPDATE_SCHED_EVERY" id="sl-au-every" value="<?=htmlspecialchars($auEvery)?>" placeholder="6">
+          <span class="sl-hint" id="sl-au-every-unit"></span>
+        </div>
+        <div class="sl-desc"><?=$L['s_au_sched_desc']?></div></div>
+      <div class="sl-row"><label><?=$L['s_au_dryrun']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-au-dr-cb" <?=$auDry?'checked':''?> onchange="slSwitch(this,'sl-au-dr','sl-au-dr-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-au-dr-state"><?=htmlspecialchars($auDry?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="AUTOUPDATE_DRYRUN" id="sl-au-dr" value="<?=$auDry?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_au_dryrun_desc']?></div></div>
+    </div>
+
+    <div class="sl-card" data-tab="updates">
       <h3><?=$L['s_updates']?> <small><?=$L['s_updates_sub']?></small></h3>
       <div class="sl-row"><label><?=$L['s_confirm']?></label>
         <div class="sl-in">
@@ -184,7 +275,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <div class="sl-desc"><?=$L['s_silent_desc']?></div></div>
     </div>
 
-    <div class="sl-card">
+    <div class="sl-card" data-tab="sources">
       <h3><?=$L['s_registry']?> <small><?=$L['s_registry_sub']?></small></h3>
       <div class="sl-row"><label><?=$L['s_gh_token']?></label><div class="sl-in">
         <input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
@@ -202,7 +293,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <span class="sl-hint"><?=$L['s_dh_hint']?></span></div></div>
     </div>
 
-    <div class="sl-card">
+    <div class="sl-card" data-tab="sources">
       <h3><?=$L['s_ai']?> <small><?=$L['s_ai_sub']?></small></h3>
       <div class="sl-row"><label><?=$L['s_ollama_url']?></label><div class="sl-in">
         <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434">
@@ -214,7 +305,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <span id="sl-ollama-result" class="sl-res"></span></div></div>
     </div>
 
-    <div class="sl-card">
+    <div class="sl-card" data-tab="notify">
       <h3><?=$L['s_notif']?> <small><?=$L['s_notif_sub']?></small></h3>
       <div class="sl-row"><label><?=$L['s_mx_home']?></label><div class="sl-in">
         <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
@@ -320,4 +411,24 @@ function slDetectOllama() {
     })
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
 }
+// Settings tabs (CC-style): show only the active tab's cards.
+(function () {
+  var tabs = document.querySelectorAll('#sl-tabs .sl-tab');
+  var cards = document.querySelectorAll('.sl-card[data-tab]');
+  function show(name) {
+    tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-go') === name); });
+    cards.forEach(function (c) { c.setAttribute('data-hidden', c.getAttribute('data-tab') === name ? '0' : '1'); });
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-go')); }); });
+  show('general');
+})();
+// Auto-update schedule: show the time input for "daily", the interval for hours/days.
+function slAuMode() {
+  var m = (document.getElementById('sl-au-mode') || {}).value;
+  var t = document.getElementById('sl-au-time'), e = document.getElementById('sl-au-every'), u = document.getElementById('sl-au-every-unit');
+  if (t) t.style.display = (m === 'daily') ? '' : 'none';
+  if (e) e.style.display = (m === 'hours' || m === 'days') ? '' : 'none';
+  if (u) u.textContent = m === 'hours' ? (SLT.s_au_unit_hours || '') : (m === 'days' ? (SLT.s_au_unit_days || '') : '');
+}
+slAuMode();
 </script>
