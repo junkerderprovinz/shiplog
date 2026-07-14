@@ -99,7 +99,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Handler:           api.New(db, eng).Handler(),
+		Handler:           api.New(db, db, eng).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

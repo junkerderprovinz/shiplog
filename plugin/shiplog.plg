@@ -33,6 +33,16 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.1.0
+- Override the changelog source per image, right on the status page (IP:8484).
+  When an image's OCI source label points at the packaging wrapper (LinuxServer's
+  docker-app repo), is wrong (inherited from a base image), or is missing, click
+  "source" on that row and point it at the correct GitHub repo. The engine then
+  mines the changelog and the link from there for every container of that image.
+- Common LinuxServer apps now resolve to their upstream project out of the box
+  (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) instead of the
+  wrapper's dependency-bump log. A manual override always wins.
+
 ### 2.0.2
 - The silent-update spinner is now much more visible — a translucent WHITE veil over the
   container's logo (with a higher-contrast ring) instead of the earlier faint dark tint.

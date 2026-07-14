@@ -7,8 +7,10 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
+	"github.com/junkerderprovinz/shiplog/internal/sources"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 )
 
@@ -35,14 +37,24 @@ type Refresher interface {
 	Refresh()
 }
 
+// OverrideStore reads and writes the user's changelog-source overrides.
+type OverrideStore interface {
+	SourceOverrides() (map[string]string, error)
+	SetSourceOverride(repo, source string) error
+	DeleteSourceOverride(repo string) error
+}
+
 // API bundles the HTTP handlers.
 type API struct {
 	src StatusSource
+	ovr OverrideStore
 	ref Refresher
 }
 
-// New builds the API over a status source and a refresher.
-func New(src StatusSource, ref Refresher) *API { return &API{src: src, ref: ref} }
+// New builds the API over a status source, an override store and a refresher.
+func New(src StatusSource, ovr OverrideStore, ref Refresher) *API {
+	return &API{src: src, ovr: ovr, ref: ref}
+}
 
 // Handler returns the routed http.Handler.
 func (a *API) Handler() http.Handler {
@@ -50,6 +62,9 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/containers", a.listJSON)
 	mux.HandleFunc("GET /api/container/{id}", a.oneJSON)
 	mux.HandleFunc("POST /api/refresh", a.refresh)
+	mux.HandleFunc("GET /api/overrides", a.listOverrides)
+	mux.HandleFunc("PUT /api/override", a.setOverride)
+	mux.HandleFunc("DELETE /api/override", a.deleteOverride)
 	mux.HandleFunc("GET /logo.svg", a.logo)
 	mux.HandleFunc("GET /", a.statusPage)
 	return mux
@@ -88,6 +103,74 @@ func (a *API) refresh(w http.ResponseWriter, _ *http.Request) {
 	a.ref.Refresh()
 	w.WriteHeader(http.StatusAccepted)
 	_, _ = w.Write([]byte(`{"status":"sweep triggered"}`))
+}
+
+// listOverrides returns the repo→source override map.
+func (a *API) listOverrides(w http.ResponseWriter, _ *http.Request) {
+	m, err := a.ovr.SourceOverrides()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if m == nil {
+		m = map[string]string{}
+	}
+	writeJSON(w, http.StatusOK, m)
+}
+
+type overrideReq struct {
+	Repo   string `json:"repo"`
+	Source string `json:"source"`
+}
+
+// setOverride records a manual changelog source for an image repo. The source
+// is normalised to a canonical github.com/owner/repo URL; a non-GitHub or
+// malformed value is rejected. A successful change triggers a refresh so the
+// corrected changelog appears without waiting for the poll interval.
+func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
+	var req overrideReq
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	repo := strings.TrimSpace(req.Repo)
+	if repo == "" {
+		http.Error(w, "repo is required", http.StatusBadRequest)
+		return
+	}
+	source, ok := sources.NormalizeGitHubSource(req.Source)
+	if !ok {
+		http.Error(w, "source must be a GitHub repo, e.g. owner/repo or https://github.com/owner/repo", http.StatusBadRequest)
+		return
+	}
+	if err := a.ovr.SetSourceOverride(repo, source); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.ref.Refresh()
+	writeJSON(w, http.StatusOK, map[string]string{"repo": repo, "source": source})
+}
+
+// deleteOverride removes the override for a repo (given as ?repo= or a JSON
+// body) and triggers a refresh so the default source resolves again.
+func (a *API) deleteOverride(w http.ResponseWriter, r *http.Request) {
+	repo := strings.TrimSpace(r.URL.Query().Get("repo"))
+	if repo == "" {
+		var req overrideReq
+		_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req)
+		repo = strings.TrimSpace(req.Repo)
+	}
+	if repo == "" {
+		http.Error(w, "repo is required", http.StatusBadRequest)
+		return
+	}
+	if err := a.ovr.DeleteSourceOverride(repo); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.ref.Refresh()
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"override cleared"}`))
 }
 
 type pageData struct {

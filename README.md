@@ -76,6 +76,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **What changed, not just "update available"** — changelog between your running tag and the newest, newest-first, with a link to the full release notes.
 - **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
 - **Honest degradation** — when no changelog is machine-findable, ShipLog says so and shows what it does know, never pretends.
+- **Fix a wrong changelog source** — an image's OCI source label often points at the packaging wrapper (LinuxServer's `docker-<app>`), is wrong (inherited from a base image), or is missing. Click **source** on any row of the status page and point it at the correct GitHub repo; the override sticks to the image and survives container recreation. Common LinuxServer apps (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) resolve to their upstream project out of the box.
 - **Read-only by construction** — never writes to the Docker socket.
 - **Registry-friendly by construction** — manifest checks are `HEAD` requests, which do **not** count against Docker Hub's pull rate limit. Bearer tokens are cached, duplicate images share one lookup per sweep, and a rate-limiting registry is backed off host-wide instead of hammered.
 - **Knows what has no upstream** — digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
