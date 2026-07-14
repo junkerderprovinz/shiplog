@@ -92,7 +92,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px}
 
   .sl-row{display:grid;grid-template-columns:170px 1fr;gap:6px 12px;align-items:center;padding:7px 2px}
-  .sl-row > label{color:var(--dim);font-size:13px}
+  .sl-row > label{color:var(--dim);font-size:13px;display:inline-flex;align-items:center;gap:6px}
   .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   /* a full description under a control (e.g. the Update toggles): its own line,
      aligned under the control column so the rows read cleanly and uniformly. */
@@ -104,6 +104,21 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-cfg input.sl-narrow{min-width:120px;width:120px}
   .sl-hint{color:var(--dim2);font-size:12px}
   .sl-cfg a{color:#8ab4f8;text-decoration:none}
+
+  /* Info icon (CC convention): each field's help text is hidden behind a small
+     ⓘ next to its label; the script at the end moves the help HTML into a hover/focus
+     bubble that renders links + <code>. Neutral colour, never accent. If JS is
+     off the original .sl-help/.sl-desc text stays visible (graceful degradation). */
+  .sl-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+    color:var(--dim2);opacity:.7;cursor:help;flex:none;padding:0;background:none;border:none}
+  .sl-info:hover,.sl-info:focus{opacity:1;outline:none;color:var(--dim)}
+  .sl-info svg{width:15px;height:15px;display:block}
+  .Theme--white .sl-info,.Theme--azure .sl-info{color:#8a8a8a}
+  .sl-info-pop{position:absolute;z-index:9999;max-width:300px;background:#1c1c1c;color:#eaeaea;
+    border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:9px 11px;
+    font:12px/1.5 "Segoe UI",system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+  .sl-info-pop a{color:#8ab4f8}
+  .sl-info-pop code{background:rgba(255,255,255,.08);padding:1px 4px;border-radius:4px;font-size:11.5px}
 
   /* Match Unraid's native buttons via its theme vars (--button/--button-hover,
      --text/--border) so Apply + the helpers look native + hover like the rest of
@@ -184,10 +199,10 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <span id="sl-statuslink" class="sl-hint"></span></div></div>
       <div class="sl-row"><label><?=$L['s_datadir']?></label><div class="sl-in">
         <input type="text" name="DATA_DIR" value="<?=htmlspecialchars($ddir)?>">
-        <span class="sl-hint"><?=$L['s_datadir_hint']?></span></div></div>
+        <span class="sl-hint sl-help"><?=$L['s_datadir_hint']?></span></div></div>
       <div class="sl-row"><label><?=$L['s_poll']?></label><div class="sl-in">
         <input type="text" class="sl-narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>">
-        <span class="sl-hint"><?=$L['s_poll_hint']?></span></div></div>
+        <span class="sl-hint sl-help"><?=$L['s_poll_hint']?></span></div></div>
     </div>
 
     <div class="sl-card" data-tab="updates">
@@ -282,7 +297,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-GITHUB_TOKEN',this)"><?=$L['s_show']?></button>
         <button type="button" class="sl-btn" onclick="slCheckGitHub()"><?=$L['s_check']?></button>
         <span id="sl-gh-result" class="sl-res"></span>
-        <span class="sl-hint"><?=$L['s_gh_hint']?></span></div></div>
+        <span class="sl-hint sl-help"><?=$L['s_gh_hint']?></span></div></div>
       <div class="sl-row"><label><?=$L['s_dh_user']?></label><div class="sl-in">
         <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="<?=htmlspecialchars($L['s_dh_user_ph'])?>"></div></div>
       <div class="sl-row"><label><?=$L['s_dh_token']?></label><div class="sl-in">
@@ -290,7 +305,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)"><?=$L['s_show']?></button>
         <button type="button" class="sl-btn" onclick="slCheckDockerHub()"><?=$L['s_check']?></button>
         <span id="sl-dh-result" class="sl-res"></span>
-        <span class="sl-hint"><?=$L['s_dh_hint']?></span></div></div>
+        <span class="sl-hint sl-help"><?=$L['s_dh_hint']?></span></div></div>
     </div>
 
     <div class="sl-card" data-tab="sources">
@@ -298,7 +313,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
       <div class="sl-row"><label><?=$L['s_ollama_url']?></label><div class="sl-in">
         <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434">
         <button type="button" class="sl-btn" onclick="slDetectOllama()"><?=$L['s_autodetect']?></button>
-        <span class="sl-hint"><?=$L['s_ollama_url_hint']?></span></div></div>
+        <span class="sl-hint sl-help"><?=$L['s_ollama_url_hint']?></span></div></div>
       <div class="sl-row"><label><?=$L['s_ollama_model']?></label><div class="sl-in">
         <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>" placeholder="llama3.1">
         <button type="button" class="sl-btn" onclick="slCheckOllama()"><?=$L['s_check']?></button>
@@ -431,4 +446,52 @@ function slAuMode() {
   if (u) u.textContent = m === 'hours' ? (SLT.s_au_unit_hours || '') : (m === 'days' ? (SLT.s_au_unit_days || '') : '');
 }
 slAuMode();
+// Info icons (CC convention): move each field's help text (.sl-help inline hints
+// + .sl-desc toggle descriptions) into a small ⓘ next to its label. The bubble
+// renders the original HTML, so the GitHub/Docker-Hub token links stay clickable;
+// it stays open while the pointer is over it. Graceful: if this never runs, the
+// original help text remains visible.
+(function () {
+  var ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.1" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="4.7" r="1.05" fill="currentColor"/><rect x="7.05" y="6.8" width="1.9" height="5" rx=".95" fill="currentColor"/></svg>';
+  var pop = null, hideT = null;
+  function bubble() {
+    if (pop) return pop;
+    pop = document.createElement('div'); pop.className = 'sl-info-pop'; pop.style.display = 'none';
+    pop.addEventListener('mouseenter', function () { clearTimeout(hideT); });
+    pop.addEventListener('mouseleave', hideSoon);
+    document.body.appendChild(pop);
+    return pop;
+  }
+  function hideSoon() { clearTimeout(hideT); hideT = setTimeout(function () { if (pop) pop.style.display = 'none'; }, 150); }
+  function show(icon) {
+    clearTimeout(hideT);
+    var p = bubble(); p.innerHTML = icon.getAttribute('data-html') || '';
+    p.style.display = 'block'; p.style.visibility = 'hidden'; p.style.left = '0'; p.style.top = '0';
+    var r = icon.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
+    var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+    var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + vw - pw - 8));
+    var top = (r.bottom + ph + 14 > vh) ? (r.top + window.scrollY - ph - 7) : (r.bottom + window.scrollY + 7);
+    p.style.left = left + 'px'; p.style.top = top + 'px'; p.style.visibility = 'visible';
+  }
+  try {
+    document.querySelectorAll('.sl-help, .sl-desc').forEach(function (h) {
+      var html = (h.innerHTML || '').trim(); if (!html) return;
+      var row = h.closest('.sl-row'); if (!row) return;
+      var label = row.querySelector('label'); if (!label) return;
+      var icon = document.createElement('span');
+      icon.className = 'sl-info'; icon.setAttribute('tabindex', '0'); icon.setAttribute('role', 'img');
+      icon.setAttribute('aria-label', (h.textContent || '').trim());
+      icon.setAttribute('data-html', html);
+      icon.innerHTML = ICON;
+      icon.addEventListener('mouseenter', function () { show(icon); });
+      icon.addEventListener('mouseleave', hideSoon);
+      icon.addEventListener('focus', function () { show(icon); });
+      icon.addEventListener('blur', hideSoon);
+      icon.addEventListener('click', function (e) { e.preventDefault(); show(icon); });
+      icon.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pop) { pop.style.display = 'none'; icon.blur(); } });
+      label.appendChild(icon);
+      if (h.parentNode) h.parentNode.removeChild(h);
+    });
+  } catch (e) { /* leave the help text visible on any failure */ }
+})();
 </script>

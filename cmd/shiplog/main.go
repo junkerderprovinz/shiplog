@@ -99,7 +99,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Handler:           api.New(db, db, eng).Handler(),
+		Handler:           api.New(db, db, eng, cfg.GithubToken).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
