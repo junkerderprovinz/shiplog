@@ -52,8 +52,15 @@ func (f *fakeChangelog) Get(_ context.Context, _ model.Container, from, to strin
 }
 
 type fakeStore struct {
-	mu   sync.Mutex
-	rows map[string]model.UpdateStatus
+	mu        sync.Mutex
+	rows      map[string]model.UpdateStatus
+	overrides map[string]string
+}
+
+func (f *fakeStore) SourceOverrides() (map[string]string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.overrides, nil
 }
 
 func (f *fakeStore) Upsert(s model.UpdateStatus) error {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/risk"
+	"github.com/junkerderprovinz/shiplog/internal/sources"
 )
 
 // versionLike matches a tag that starts like a version number ("1.8", "v2.3.1"),
@@ -35,10 +36,12 @@ type (
 	Changelogger interface {
 		Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool)
 	}
-	// Storer persists one status row and reads the prior one (for notify dedupe).
+	// Storer persists one status row and reads the prior one (for notify dedupe),
+	// and reads the user's changelog-source overrides (repo → github source).
 	Storer interface {
 		Upsert(model.UpdateStatus) error
 		Get(id string) (model.UpdateStatus, error)
+		SourceOverrides() (map[string]string, error)
 	}
 	// Summarizer optionally condenses a raw changelog into an AI summary.
 	Summarizer interface {
@@ -100,6 +103,12 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// User changelog-source overrides, read once per sweep. Best-effort: a read
+	// failure must never abort a sweep, so fall back to no overrides.
+	overrides, oerr := e.store.SourceOverrides()
+	if oerr != nil {
+		overrides = nil
+	}
 	// One registry lookup per DISTINCT (repo, tag) per sweep: duplicate images
 	// (multi-container stacks, stopped duplicates) share a single Resolve. The
 	// memo lives exactly one sweep, so there is no staleness to manage.
@@ -112,7 +121,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		go func(c model.Container) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := e.check(ctx, c, resolve)
+			st := e.check(ctx, c, resolve, overrides)
 			if uerr := e.store.Upsert(st); uerr != nil {
 				// Store failure for one row must not crash the sweep; the next
 				// sweep retries. (No logger dependency here on purpose.)
@@ -181,7 +190,14 @@ func noUpstreamReason(c model.Container) (string, bool) {
 }
 
 // check runs the per-container pipeline and returns the status to store.
-func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc) model.UpdateStatus {
+func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string) model.UpdateStatus {
+	// Redirect the changelog source before anything else: a user override or a
+	// curated LSIO default wins over the image's OCI source label (which is often
+	// the packaging wrapper, plain wrong, or missing). srcKind labels the origin
+	// for the UI.
+	src, srcKind := sources.Resolve(c.Repo, c.Source, overrides)
+	c.Source = src
+
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
 
 	// Some containers have no upstream to ask, by construction. Say so honestly
@@ -265,6 +281,16 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	// is up to date. Summaries and notifications stay update-only.
 	if cl, ok := e.changelog.Get(ctx, c, c.Tag, newestTag); ok {
 		st.Changelog = cl
+		// Reflect where the source came from when it wasn't the image's own label,
+		// so the status page can say "manual" / "curated" instead of "OCI label".
+		if cl.Provider == "github" {
+			switch srcKind {
+			case sources.KindOverride:
+				cl.Source = "GitHub releases (manual source)"
+			case sources.KindCurated:
+				cl.Source = "GitHub releases (curated source)"
+			}
+		}
 		if st.HasUpdate() {
 			if e.summarizer != nil && cl.Raw != "" {
 				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, cl.Raw); ok {

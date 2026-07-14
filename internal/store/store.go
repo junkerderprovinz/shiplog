@@ -83,6 +83,11 @@ CREATE TABLE IF NOT EXISTS meta (
 	key   TEXT PRIMARY KEY,
 	value TEXT
 );
+CREATE TABLE IF NOT EXISTS source_overrides (
+	repo       TEXT PRIMARY KEY,
+	source     TEXT NOT NULL,
+	updated_at INTEGER
+);
 `
 
 // Open opens (creating if needed) the SQLite database at path, applies the
@@ -285,6 +290,47 @@ func (s *Store) GetMeta(key string) (string, error) {
 		return "", fmt.Errorf("store: get meta %q: %w", key, err)
 	}
 	return v, nil
+}
+
+// SetSourceOverride records a user-chosen changelog source (a github.com repo
+// URL) for an image repo, so the engine uses it instead of the image's OCI
+// source label. repo is the normalised image repo (e.g. "lscr.io/linuxserver/radarr").
+func (s *Store) SetSourceOverride(repo, source string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO source_overrides (repo, source, updated_at) VALUES (?, ?, ?)
+		 ON CONFLICT(repo) DO UPDATE SET source = excluded.source, updated_at = excluded.updated_at`,
+		repo, source, time.Now().Unix())
+	if err != nil {
+		return fmt.Errorf("store: set source override %q: %w", repo, err)
+	}
+	return nil
+}
+
+// DeleteSourceOverride removes any override for repo (no error if absent).
+func (s *Store) DeleteSourceOverride(repo string) error {
+	if _, err := s.db.Exec(`DELETE FROM source_overrides WHERE repo = ?`, repo); err != nil {
+		return fmt.Errorf("store: delete source override %q: %w", repo, err)
+	}
+	return nil
+}
+
+// SourceOverrides returns all user overrides as a repo→source map (empty, not
+// nil-erroring, when there are none).
+func (s *Store) SourceOverrides() (map[string]string, error) {
+	rows, err := s.db.Query(`SELECT repo, source FROM source_overrides`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list source overrides: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	m := map[string]string{}
+	for rows.Next() {
+		var repo, source string
+		if err := rows.Scan(&repo, &source); err != nil {
+			return nil, fmt.Errorf("store: scan source override: %w", err)
+		}
+		m[repo] = source
+	}
+	return m, rows.Err()
 }
 
 // LogAutoUpdate appends one auto-update action to the audit log.

@@ -225,3 +225,38 @@ func TestListOrdersByRiskThenName(t *testing.T) {
 		}
 	}
 }
+
+func TestSourceOverridesRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	if m, err := s.SourceOverrides(); err != nil || len(m) != 0 {
+		t.Fatalf("empty: got %v, %v", m, err)
+	}
+	if err := s.SetSourceOverride("lscr.io/linuxserver/radarr", "https://github.com/Radarr/Radarr"); err != nil {
+		t.Fatal(err)
+	}
+	// Upsert: a second set for the same repo replaces, not duplicates.
+	if err := s.SetSourceOverride("lscr.io/linuxserver/radarr", "https://github.com/me/fork"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetSourceOverride("ghcr.io/x/media-preview-generator", "https://github.com/owner/mpg"); err != nil {
+		t.Fatal(err)
+	}
+	m, err := s.SourceOverrides()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m) != 2 || m["lscr.io/linuxserver/radarr"] != "https://github.com/me/fork" || m["ghcr.io/x/media-preview-generator"] != "https://github.com/owner/mpg" {
+		t.Fatalf("overrides = %v", m)
+	}
+	if err := s.DeleteSourceOverride("lscr.io/linuxserver/radarr"); err != nil {
+		t.Fatal(err)
+	}
+	// Deleting an absent repo is a no-op, not an error.
+	if err := s.DeleteSourceOverride("does/not-exist"); err != nil {
+		t.Fatalf("delete absent: %v", err)
+	}
+	m, _ = s.SourceOverrides()
+	if len(m) != 1 || m["ghcr.io/x/media-preview-generator"] == "" {
+		t.Fatalf("after delete = %v", m)
+	}
+}
