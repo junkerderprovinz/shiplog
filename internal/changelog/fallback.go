@@ -12,8 +12,11 @@ import (
 // update. It carries no release entries and an empty Raw body.
 type Fallback struct{}
 
-// Get always returns (changelog, true). The URL is a best-effort compare link
-// when the container source is a github.com or gitlab.com repo, otherwise empty.
+// Get always returns (changelog, true). When the container source is a
+// github.com or gitlab.com repo, the URL links to that repo's RELEASES page, so
+// even a bare version-delta row is a clickable jump to the real source. (A
+// version-to-version compare link often 404s because the version tags aren't
+// git refs.) Empty for an absent/unrecognized source.
 func (Fallback) Get(_ context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool) {
 	return &model.Changelog{
 		FromTag:  fromTag,
@@ -21,18 +24,18 @@ func (Fallback) Get(_ context.Context, c model.Container, fromTag, toTag string)
 		Raw:      "",
 		Provider: "fallback",
 		Source:   "version delta only",
-		URL:      compareURL(c.Source, fromTag, toTag),
+		URL:      sourceReleasesURL(c.Source),
 	}, true
 }
 
-// compareURL builds a host-appropriate compare link from a github/gitlab source
-// URL. It returns "" when the source is empty or an unrecognized host.
-func compareURL(source, fromTag, toTag string) string {
+// sourceReleasesURL builds a host-appropriate releases link from a github/gitlab
+// source URL. It returns "" when the source is empty or an unrecognized host.
+func sourceReleasesURL(source string) string {
 	if owner, repo, ok := parseGitHubRepo(source); ok {
-		return "https://github.com/" + owner + "/" + repo + "/compare/" + fromTag + "..." + toTag
+		return "https://github.com/" + owner + "/" + repo + "/releases"
 	}
 	if owner, repo, ok := parseGitLabRepo(source); ok {
-		return "https://gitlab.com/" + owner + "/" + repo + "/-/compare/" + fromTag + "..." + toTag
+		return "https://gitlab.com/" + owner + "/" + repo + "/-/releases"
 	}
 	return ""
 }

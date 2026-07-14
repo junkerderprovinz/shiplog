@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,9 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 )
+
+// okVerify stubs source verification so tests never hit the network.
+func okVerify(context.Context, string) (bool, bool) { return true, true }
 
 type fakeSource struct{ rows []model.UpdateStatus }
 
@@ -45,13 +49,17 @@ func testAPI() (http.Handler, *fakeRefresher) {
 			NewestTag: "1.4.0", Kind: model.KindMinor, Risk: model.RiskMedium},
 	}}
 	ref := &fakeRefresher{}
-	return New(src, &fakeOverrides{}, ref).Handler(), ref
+	a := New(src, &fakeOverrides{}, ref, "")
+	a.verify = okVerify
+	return a.Handler(), ref
 }
 
 func TestOverrideEndpoints(t *testing.T) {
 	ovr := &fakeOverrides{}
 	ref := &fakeRefresher{}
-	h := New(fakeSource{}, ovr, ref).Handler()
+	a := New(fakeSource{}, ovr, ref, "")
+	a.verify = okVerify
+	h := a.Handler()
 
 	// PUT a valid override: bare owner/repo is normalised to a github URL.
 	body := strings.NewReader(`{"repo":"lscr.io/linuxserver/radarr","source":"Radarr/Radarr"}`)
@@ -93,6 +101,24 @@ func TestOverrideEndpoints(t *testing.T) {
 	}
 	if _, ok := ovr.m["lscr.io/linuxserver/radarr"]; ok {
 		t.Fatalf("override not deleted: %v", ovr.m)
+	}
+
+	// A conclusively-nonexistent repo (verify says checked && !exists) is rejected.
+	a.verify = func(context.Context, string) (bool, bool) { return false, true }
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/override", strings.NewReader(`{"repo":"x/y","source":"owner/does-not-exist"}`)))
+	if rr.Code != 400 {
+		t.Fatalf("nonexistent repo: want 400, got %d (%s)", rr.Code, rr.Body.String())
+	}
+	if _, ok := ovr.m["x/y"]; ok {
+		t.Fatalf("nonexistent repo should not be stored")
+	}
+	// An inconclusive check (checked=false) must NOT block the save.
+	a.verify = func(context.Context, string) (bool, bool) { return false, false }
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/override", strings.NewReader(`{"repo":"x/y","source":"owner/maybe"}`)))
+	if rr.Code != 200 {
+		t.Fatalf("inconclusive verify should still save: got %d", rr.Code)
 	}
 }
 

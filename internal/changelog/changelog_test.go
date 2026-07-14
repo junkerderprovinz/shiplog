@@ -315,8 +315,8 @@ func TestFallback_AlwaysHandled(t *testing.T) {
 	if len(cl.Entries) != 0 {
 		t.Errorf("len(Entries) = %d, want 0", len(cl.Entries))
 	}
-	if !contains(cl.URL, "compare/v1.0.0...v2.0.0") {
-		t.Errorf("URL = %q, want github compare link", cl.URL)
+	if cl.URL != "https://github.com/o/r/releases" {
+		t.Errorf("URL = %q, want github releases link", cl.URL)
 	}
 	if cl.FromTag != "v1.0.0" || cl.ToTag != "v2.0.0" {
 		t.Errorf("From/To = %q/%q", cl.FromTag, cl.ToTag)

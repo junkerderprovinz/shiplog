@@ -2,12 +2,14 @@
 package api
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
@@ -49,11 +51,56 @@ type API struct {
 	src StatusSource
 	ovr OverrideStore
 	ref Refresher
+	// verify reports whether a normalised github source repo exists (exists) and
+	// whether the check was conclusive (checked). Injectable so tests don't hit
+	// the network; the default calls the GitHub API.
+	verify func(ctx context.Context, source string) (exists, checked bool)
 }
 
 // New builds the API over a status source, an override store and a refresher.
-func New(src StatusSource, ovr OverrideStore, ref Refresher) *API {
-	return &API{src: src, ovr: ovr, ref: ref}
+// ghToken (optional) is used to verify a manual source repo against the GitHub
+// API when the user saves an override.
+func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *API {
+	a := &API{src: src, ovr: ovr, ref: ref}
+	a.verify = func(ctx context.Context, source string) (bool, bool) {
+		return verifyGitHubRepo(ctx, ghToken, source)
+	}
+	return a
+}
+
+// verifyGitHubRepo GETs api.github.com/repos/owner/repo to check a source exists.
+// Returns (exists, checked): checked is false on a transport error or a
+// rate-limit/other non-200/404 status, so an inconclusive check never blocks a
+// save. source must be the normalised "https://github.com/owner/repo" form.
+func verifyGitHubRepo(ctx context.Context, token, source string) (exists, checked bool) {
+	path := strings.TrimPrefix(source, "https://github.com/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		return false, false
+	}
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/"+parts[0]+"/"+parts[1], nil)
+	if err != nil {
+		return false, false
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, false
+	}
+	defer func() { _ = resp.Body.Close() }()
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return true, true
+	case http.StatusNotFound:
+		return false, true
+	default:
+		return false, false // rate limit / transient → don't block the save
+	}
 }
 
 // Handler returns the routed http.Handler.
@@ -142,6 +189,14 @@ func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(w, "source must be a GitHub repo, e.g. owner/repo or https://github.com/owner/repo", http.StatusBadRequest)
 		return
+	}
+	// Verify the repo exists (best-effort): reject a clear 404 so a typo is caught
+	// at save time, but never block on an inconclusive check (rate limit, offline).
+	if a.verify != nil {
+		if exists, checked := a.verify(r.Context(), source); checked && !exists {
+			http.Error(w, "that GitHub repo was not found — check the owner/repo", http.StatusBadRequest)
+			return
+		}
 	}
 	if err := a.ovr.SetSourceOverride(repo, source); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

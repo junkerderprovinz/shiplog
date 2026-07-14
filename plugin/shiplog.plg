@@ -33,6 +33,18 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.2.0
+- Cleaner settings: every field's help text now hides behind a small info icon
+  next to its label (hover or focus to read it), the same convention as the
+  other plugins. The GitHub / Docker Hub token help keeps its links, and if
+  scripting is off the text stays visible.
+- The changelog-source override now verifies the repo when you save it: a typo
+  or a non-existent owner/repo is caught right away (a rate-limited check never
+  blocks the save).
+- A "version delta only" row is now a clickable jump to the source repo's
+  releases page (it used to build a version compare link that often 404s), so a
+  manual source override is one click from the real release notes.
+
 ### 2.1.0
 - Override the changelog source per image, right on the status page (IP:8484).
   When an image's OCI source label points at the packaging wrapper (LinuxServer's
