@@ -6,12 +6,14 @@ import (
 	"context"
 	"log"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/risk"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
+	"github.com/junkerderprovinz/shiplog/internal/templates"
 )
 
 // versionLike matches a tag that starts like a version number ("1.8", "v2.3.1"),
@@ -65,6 +67,10 @@ type Engine struct {
 	workers    int
 	refresh    chan struct{}
 	now        func() time.Time // injectable clock for tests
+	// projectPages loads container-name → template <Project> URL per sweep
+	// (sources precedence: override > curated > project > OCI). Injectable so
+	// tests run without an Unraid flash mount; nil-safe.
+	projectPages func() map[string]string
 }
 
 // WithSummarizer enables AI changelog summaries (returns e for chaining). Pass a
@@ -92,6 +98,9 @@ func New(c Collector, r Resolver, cl Changelogger, s Storer, interval time.Durat
 		workers:  3,
 		refresh:  make(chan struct{}, 1),
 		now:      time.Now,
+		projectPages: func() map[string]string {
+			return templates.ProjectPages(templates.Dir)
+		},
 	}
 }
 
@@ -109,6 +118,12 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if oerr != nil {
 		overrides = nil
 	}
+	// Container-template project pages, read once per sweep (best-effort: a
+	// missing/unreadable template dir simply yields no project candidates).
+	var projects map[string]string
+	if e.projectPages != nil {
+		projects = e.projectPages()
+	}
 	// One registry lookup per DISTINCT (repo, tag) per sweep: duplicate images
 	// (multi-container stacks, stopped duplicates) share a single Resolve. The
 	// memo lives exactly one sweep, so there is no staleness to manage.
@@ -121,7 +136,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		go func(c model.Container) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := e.check(ctx, c, resolve, overrides)
+			st := e.check(ctx, c, resolve, overrides, projects)
 			if uerr := e.store.Upsert(st); uerr != nil {
 				// Store failure for one row must not crash the sweep; the next
 				// sweep retries. (No logger dependency here on purpose.)
@@ -190,12 +205,12 @@ func noUpstreamReason(c model.Container) (string, bool) {
 }
 
 // check runs the per-container pipeline and returns the status to store.
-func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string) model.UpdateStatus {
+func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, projects map[string]string) model.UpdateStatus {
 	// Redirect the changelog source before anything else: a user override or a
 	// curated LSIO default wins over the image's OCI source label (which is often
 	// the packaging wrapper, plain wrong, or missing). srcKind labels the origin
 	// for the UI.
-	src, srcKind := sources.Resolve(c.Repo, c.Source, overrides)
+	src, srcKind := sources.Resolve(c.Repo, c.Source, overrides, projects[strings.ToLower(c.Name)])
 	c.Source = src
 
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
@@ -289,6 +304,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 				cl.Source = "GitHub releases (manual source)"
 			case sources.KindCurated:
 				cl.Source = "GitHub releases (curated source)"
+			case sources.KindProject:
+				cl.Source = "GitHub releases (template project page)"
 			}
 		}
 		if st.HasUpdate() {

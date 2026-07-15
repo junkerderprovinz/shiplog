@@ -33,6 +33,20 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.3.0
+- Changelogs render as formatted text now (headings, bold, code, links, lists),
+  and stray HTML entities from upstream release notes no longer show literally.
+  Everything is escaped before rendering, so no upstream HTML runs in the page.
+- The container template's Project page joins the changelog-source chain
+  (community suggestion): manual override, then the curated default, then the
+  template's GitHub Project link, then the image's OCI source label. This fixes
+  images whose label points at a base image (e.g. an ffmpeg wrapper) and fills
+  in sources for images that carry no label at all.
+- Uninstalling keeps the version history (/mnt/user/appdata/shiplog) instead of
+  deleting it: a read-only advisor shouldn't remove a user-visible folder, and a
+  reinstall now resumes with full history. The removal message says where it
+  lives if you want it gone.
+
 ### 2.2.0
 - Cleaner settings: every field's help text now hides behind a small info icon
   next to its label (hover or focus to read it), the same convention as the
@@ -417,11 +431,14 @@ pkg=$(ls /var/log/packages/ 2>/dev/null | grep -E "^&slug;(-[^-]+-[^-]+-[^-]+)?$
 if [ -n "$pkg" ]; then removepkg "$pkg" 2>/dev/null; fi
 rm -rf &emhttp;
 rm -f &plgPath;/*.txz &plgPath;/*.txz.md5 /var/run/&slug;.pid /var/run/&slug;.sock
-# Also drop the engine's appdata (the SQLite version-memory) so an uninstall is a
-# clean slate — it is a regenerable cache, not user data. Guarded to the exact
-# slug dir; a no-op if the array/pool isn't mounted at removal time.
-rm -rf /mnt/user/appdata/&slug;
-echo "ShipLog removed (appdata cleared, flash .cfg settings kept)."
+# The engine's appdata (the SQLite version-memory) is deliberately LEFT IN
+# PLACE: a read-only advisor should never delete a user-visible folder on its
+# own (community feedback), and keeping it means a reinstall resumes with the
+# full version history instead of a cold start. It is small; the message below
+# tells the user where it lives if they want it gone.
+echo "ShipLog removed. Settings (flash .cfg) and the version history at"
+echo "/mnt/user/appdata/&slug; were kept — delete that folder manually if you"
+echo "don't plan to reinstall."
 exit 0
 </INLINE>
 </FILE>

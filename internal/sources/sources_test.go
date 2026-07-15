@@ -19,7 +19,7 @@ func TestResolvePrecedence(t *testing.T) {
 	// add a blank override to prove it's skipped (falls to curated)
 	ov["lscr.io/linuxserver/bazarr"] = "  "
 	for _, tt := range tests {
-		src, kind := Resolve(tt.repo, tt.oci, ov)
+		src, kind := Resolve(tt.repo, tt.oci, ov, "")
 		if src != tt.wantSrc || kind != tt.wantKind {
 			t.Errorf("%s: Resolve(%q,%q) = (%q,%q); want (%q,%q)", tt.name, tt.repo, tt.oci, src, kind, tt.wantSrc, tt.wantKind)
 		}
@@ -47,5 +47,57 @@ func TestNormalizeGitHubSource(t *testing.T) {
 		if got, valid := NormalizeGitHubSource(in); valid {
 			t.Errorf("NormalizeGitHubSource(%q) = (%q,true); want invalid", in, got)
 		}
+	}
+}
+
+// Project-page precedence (btTeddy): override > curated > project > OCI.
+func TestResolve_ProjectPage(t *testing.T) {
+	cases := []struct {
+		name, repo, oci, project string
+		overrides                map[string]string
+		wantSrc, wantKind        string
+	}{
+		{
+			name: "project page fills a missing OCI label",
+			repo: "hotio/seerr", oci: "", project: "https://github.com/Fallenbagel/jellyseerr",
+			wantSrc: "https://github.com/Fallenbagel/jellyseerr", wantKind: KindProject,
+		},
+		{
+			name: "project page beats a base-image OCI leak",
+			repo: "example/media-preview-generator", oci: "https://github.com/linuxserver/docker-ffmpeg",
+			project: "https://github.com/example/media-preview-generator",
+			wantSrc: "https://github.com/example/media-preview-generator", wantKind: KindProject,
+		},
+		{
+			name: "non-GitHub project page falls through to OCI",
+			repo: "linuxserver/plex", oci: "https://github.com/linuxserver/docker-plex",
+			project: "https://www.plex.tv/",
+			wantSrc: "https://github.com/linuxserver/docker-plex", wantKind: KindOCI,
+		},
+		{
+			name: "curated still beats the project page",
+			repo: "lscr.io/linuxserver/radarr", oci: "https://github.com/linuxserver/docker-radarr",
+			project: "https://github.com/linuxserver/docker-radarr",
+			wantSrc: "https://github.com/Radarr/Radarr", wantKind: KindCurated,
+		},
+		{
+			name: "override still beats everything",
+			repo: "hotio/seerr", oci: "", project: "https://github.com/Fallenbagel/jellyseerr",
+			overrides: map[string]string{"hotio/seerr": "https://github.com/custom/repo"},
+			wantSrc:   "https://github.com/custom/repo", wantKind: KindOverride,
+		},
+		{
+			name: "bare image-ID ref can still use the project page",
+			repo: "", oci: "", project: "https://github.com/owner/localbuild",
+			wantSrc: "https://github.com/owner/localbuild", wantKind: KindProject,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			src, kind := Resolve(c.repo, c.oci, c.overrides, c.project)
+			if src != c.wantSrc || kind != c.wantKind {
+				t.Fatalf("Resolve() = (%q, %q), want (%q, %q)", src, kind, c.wantSrc, c.wantKind)
+			}
+		})
 	}
 }
