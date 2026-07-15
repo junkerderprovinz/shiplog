@@ -67,7 +67,10 @@
   border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}
 .sl-bubble .sl-raw a{color:var(--sl-link)}
-.sl-bubble .sl-raw .h{color:var(--sl-txt)}
+.sl-bubble .sl-raw .h{color:var(--sl-txt);font-weight:600;margin:6px 0 2px}
+.sl-bubble .sl-raw ul{margin:4px 0;padding-left:14px}
+.sl-bubble .sl-raw .sp{height:6px}
+.sl-bubble .sl-raw code{background:var(--sl-bg);border:1px solid var(--sl-line);border-radius:4px;padding:0 4px}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
 

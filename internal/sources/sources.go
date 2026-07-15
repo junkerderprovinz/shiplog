@@ -5,10 +5,14 @@
 // image), or missing. This package layers two corrections on top:
 //
 //   - a small CURATED map of common LinuxServer wrappers to their upstream repo
-//     (only apps that publish real GitHub Releases), and
+//     (only apps that publish real GitHub Releases),
+//   - the container template's PROJECT PAGE (<Project> in the dockerMan
+//     template) when it points at a GitHub repo — most templates do, which
+//     covers images whose OCI label is missing or inherited from a base image
+//     (community suggestion by btTeddy), and
 //   - USER OVERRIDES that always win.
 //
-// Precedence: override > curated > the image's own OCI source label.
+// Precedence: override > curated > project page > the image's OCI source label.
 package sources
 
 import "strings"
@@ -33,14 +37,18 @@ const (
 	KindOCI      = "oci"
 	KindCurated  = "curated"
 	KindOverride = "override"
+	KindProject  = "project"
 )
 
 // Resolve returns the effective changelog source for an image repo, given the
-// source derived from the image (the OCI label / ghcr fallback) and the set of
-// user overrides (repo → source). It also reports which layer decided, so the
-// UI can label it. An empty repo (bare image-ID ref) can't be keyed, so only
-// the OCI source applies.
-func Resolve(repo, ociSource string, overrides map[string]string) (source, kind string) {
+// source derived from the image (the OCI label / ghcr fallback), the set of
+// user overrides (repo → source) and the container template's project page.
+// It also reports which layer decided, so the UI can label it. An empty repo
+// (bare image-ID ref) can't be keyed for overrides/curated, but the project
+// page is keyed by container and still applies. The project page only counts
+// when it actually points at a GitHub repo — templates often link a homepage
+// (radarr.video etc.), which can't be mined for releases.
+func Resolve(repo, ociSource string, overrides map[string]string, projectPage string) (source, kind string) {
 	if repo != "" {
 		if ov, ok := overrides[repo]; ok && strings.TrimSpace(ov) != "" {
 			return ov, KindOverride
@@ -48,6 +56,9 @@ func Resolve(repo, ociSource string, overrides map[string]string) (source, kind 
 		if up, ok := curatedUpstream(repo); ok {
 			return up, KindCurated
 		}
+	}
+	if gh, ok := NormalizeGitHubSource(projectPage); ok {
+		return gh, KindProject
 	}
 	return ociSource, KindOCI
 }

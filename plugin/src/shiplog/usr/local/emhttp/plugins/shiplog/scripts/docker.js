@@ -45,7 +45,7 @@
   const EN = {
     changelog: "Changelog", clickHint: "click for the changelog", update: "Update",
     skips: "skips %n releases", newest: "newest %d",
-    summary: "Summary", raw: "Changelog (raw)", source: "Source", close: "close", uptodate: "up to date",
+    summary: "Summary", raw: "Changelog", source: "Source", close: "close", uptodate: "up to date",
     deprecated: "DEPRECATED",
     updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
     updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
@@ -77,6 +77,45 @@
   }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  }
+
+  // Minimal, SAFE markdown for release bodies (btTeddy: raw markdown with
+  // literal &nbsp; entities was barely readable). The input is first DECODED
+  // (bodies often carry literal "&nbsp;" and <samp> tags), then FULLY escaped,
+  // then a small pattern set is rebuilt as HTML — no upstream HTML ever
+  // reaches innerHTML, and URLs exclude quote characters so they can't break
+  // out of the href attribute.
+  function renderMd(md) {
+    const decoded = String(md)
+      .replace(/&nbsp;/gi, " ")
+      .replace(/<\/?samp>/gi, "`") // [<samp>(5cd63)</samp>](url) reads as code
+      .replace(/\r\n/g, "\n");
+    const inline = (s) => s
+      .replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>")
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)"']+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/(^|[^"'>=])(https?:\/\/[^\s<"']+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    let html = "";
+    let inList = false;
+    for (const line of esc(decoded).split("\n")) {
+      const l = line.trim();
+      const li = /^[-*]\s+(.*)$/.exec(l);
+      if (li) {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += `<li>${inline(li[1])}</li>`;
+        continue;
+      }
+      if (inList) { html += "</ul>"; inList = false; }
+      const h = /^#{1,6}\s*(.*)$/.exec(l);
+      if (h) {
+        if (h[1]) html += `<div class="h">${inline(h[1])}</div>`;
+        continue;
+      }
+      if (l === "") { html += '<div class="sp"></div>'; continue; }
+      html += `<div>${inline(l)}</div>`;
+    }
+    if (inList) html += "</ul>";
+    return html;
   }
   function norm(s) { return String(s || "").trim().toLowerCase(); }
 
@@ -287,10 +326,7 @@
 
     let raw = "";
     if (cl.raw) {
-      const body = esc(cl.raw)
-        .replace(/^(#{1,3}.*)$/gm, '<span class="h">$1</span>')
-        .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-      raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${body}</div></div>`;
+      raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${renderMd(cl.raw)}</div></div>`;
     } else if (!summary) {
       raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("none"))}</div></div>`;
     }
