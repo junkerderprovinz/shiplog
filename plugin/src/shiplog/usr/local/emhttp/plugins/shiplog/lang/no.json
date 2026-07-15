@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Aldri hvis endringsloggen nevner",
+  "s_au_exclude_desc": "Kommaseparerte ord. Blokkerer en ellers kvalifisert oppdatering hvis endringslogg inneholder ett av dem (uavhengig av store/små bokstaver) — f.eks. fanger «breaking» opp en utgivelse som selv nevner en brytende endring, selv ved et minor- eller patch-hopp. Blokkerte oppdateringer rapporteres, men brukes aldri. Tomt = av.",
   "s_au_digest": "Også :latest-oppdateringer",
   "s_au_digest_desc": "Containere på en rullerende tag som :latest har ikke noe versjonsnivå. Slå på dette for å bruke digest-oppdateringene deres automatisk også.",
   "s_au_sched": "Tidsplan",

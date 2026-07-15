@@ -128,7 +128,11 @@ func main() {
 // populated the store (matters for the "boot" schedule).
 func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Matrix) {
 	sched := autoupdate.Schedule{Mode: cfg.SchedMode, Time: cfg.SchedTime, Every: cfg.SchedEvery}
-	policy := autoupdate.Policy{Level: autoupdate.ParseLevel(cfg.Level), Digest: cfg.Digest}
+	policy := autoupdate.Policy{
+		Level:        autoupdate.ParseLevel(cfg.Level),
+		Digest:       cfg.Digest,
+		ExcludeWords: autoupdate.ParseExcludeWords(cfg.ExcludeWords),
+	}
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 	var last time.Time
@@ -157,6 +161,9 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 		res := exec.Run(ctx, policy, cfg.DryRun)
 		if !res.DryRun {
 			for _, o := range res.Outcomes {
+				if o.Blocked {
+					continue // never applied — not an action, so not part of the audit log
+				}
 				errStr := ""
 				if o.Err != nil {
 					errStr = o.Err.Error()

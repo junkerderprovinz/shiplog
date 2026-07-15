@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Soha, ha a changelog említi",
+  "s_au_exclude_desc": "Vesszővel elválasztott szavak. Blokkolja az egyébként jogosult frissítést, ha a changelog tartalmazza bármelyiket (kis- és nagybetűre nem érzékeny) — pl. a „breaking” elkap egy olyan kiadást, amely maga is kompatibilitást megtörő változást említ, akár minor vagy patch szintű emelésnél is. A blokkolt frissítések jelentésre kerülnek, de soha nem kerülnek alkalmazásra. Üres = kikapcsolva.",
   "s_au_digest": ":latest frissítések is",
   "s_au_digest_desc": "A gördülő címkét (pl. :latest) használó konténereknek nincs verziószintjük. Kapcsold be, hogy a digest-frissítéseik is automatikusan települjenek.",
   "s_au_sched": "Ütemezés",

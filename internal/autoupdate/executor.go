@@ -20,6 +20,13 @@ type Outcome struct {
 	Level   string
 	Updated bool
 	Err     error
+	// Blocked is set when the update was level-eligible but the changelog matched
+	// a configured exclude word (BlockedWord). Updated is false and Err is nil in
+	// that case — it is a deliberate skip, not a failure. Set in both real and
+	// dry-run mode, so the safety switch is visible ("would have been blocked")
+	// before anyone has to trust it in production.
+	Blocked     bool
+	BlockedWord string
 }
 
 // Result aggregates one auto-update run.
@@ -59,6 +66,12 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 			From:  st.RunningVersion,
 			To:    st.NewestTag,
 			Level: string(st.Kind),
+		}
+		if word := MatchedExcludeWord(st.Changelog, p.ExcludeWords); word != "" {
+			o.Blocked = true
+			o.BlockedWord = word
+			res.Outcomes = append(res.Outcomes, o)
+			continue // never applied, in dry-run OR real mode — no Updater call either way
 		}
 		if dryRun {
 			o.Updated = true // "would update"

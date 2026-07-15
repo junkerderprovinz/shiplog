@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Aldrig om ändringsloggen nämner",
+  "s_au_exclude_desc": "Kommaseparerade ord. Blockerar en annars berättigad uppdatering vars ändringslogg innehåller något av dem (skiftlägesokänsligt) — t.ex. fångar \"breaking\" en version som själv nämner en bakåtinkompatibel ändring, även vid en minor- eller patch-höjning. Blockerade uppdateringar rapporteras, men tillämpas aldrig. Tomt = av.",
   "s_au_digest": "Även :latest-uppdateringar",
   "s_au_digest_desc": "Containrar med en rullande tagg som :latest har ingen versionsnivå. Slå på detta för att tillämpa även deras digest-uppdateringar automatiskt.",
   "s_au_sched": "Schema",

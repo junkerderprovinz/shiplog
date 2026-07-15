@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Nunca se o changelog mencionar",
+  "s_au_exclude_desc": "Palavras separadas por vírgulas. Bloqueia uma atualização elegível cujo changelog contenha alguma delas (sem diferenciar maiúsculas/minúsculas) — por ex., \"breaking\" detecta uma versão que anuncia uma alteração incompatível mesmo numa subida minor ou patch. Atualizações bloqueadas são reportadas, nunca aplicadas. Vazio = desativado.",
   "s_au_digest": "Também atualizações :latest",
   "s_au_digest_desc": "Contêineres com uma tag contínua como :latest não têm nível de versão. Ative isto para aplicar também as atualizações de digest deles.",
   "s_au_sched": "Agendamento",

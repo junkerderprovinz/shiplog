@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Ei koskaan, jos muutosloki mainitsee",
+  "s_au_exclude_desc": "Pilkuilla erotetut sanat. Estää muutoin kelpoisen päivityksen, jonka muutosloki sisältää jonkin näistä (kirjainkoolla ei väliä) — esim. \"breaking\" havaitsee julkaisun, joka itse mainitsee rikkovan muutoksen, vaikka kyseessä olisi vain minor- tai patch-versio. Estetyt päivitykset raportoidaan, mutta niitä ei koskaan asenneta. Tyhjä = pois päältä.",
   "s_au_digest": "Myös :latest-päivitykset",
   "s_au_digest_desc": "Konteilla, joilla on liukuva tagi kuten :latest, ei ole versiotasoa. Ota tämä käyttöön asentaaksesi myös niiden digest-päivitykset automaattisesti.",
   "s_au_sched": "Aikataulu",

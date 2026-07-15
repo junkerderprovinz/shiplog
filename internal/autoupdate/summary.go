@@ -16,11 +16,14 @@ func RenderSummary(res Result) (text, html string) {
 	if res.DryRun {
 		verb = "Would auto-update"
 	}
-	var updated, failed []Outcome
+	var updated, failed, blocked []Outcome
 	for _, o := range res.Outcomes {
-		if o.Err != nil {
+		switch {
+		case o.Blocked:
+			blocked = append(blocked, o)
+		case o.Err != nil:
 			failed = append(failed, o)
-		} else {
+		default:
 			updated = append(updated, o)
 		}
 	}
@@ -48,6 +51,15 @@ func RenderSummary(res Result) (text, html string) {
 		}
 		fmt.Fprintf(&t, ". %d failed: %s", len(failed), strings.Join(tp, ", "))
 		fmt.Fprintf(&h, ". %d failed: %s", len(failed), strings.Join(hp, ", "))
+	}
+	if len(blocked) > 0 {
+		var tp, hp []string
+		for _, o := range blocked {
+			tp = append(tp, fmt.Sprintf("%s (changelog mentions '%s')", o.Name, o.BlockedWord))
+			hp = append(hp, fmt.Sprintf("%s (changelog mentions '%s')", esc(o.Name), esc(o.BlockedWord)))
+		}
+		fmt.Fprintf(&t, ". %d blocked: %s", len(blocked), strings.Join(tp, ", "))
+		fmt.Fprintf(&h, ". %d blocked: %s", len(blocked), strings.Join(hp, ", "))
 	}
 	return t.String(), h.String()
 }

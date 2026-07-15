@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Jamais si le journal mentionne",
+  "s_au_exclude_desc": "Mots séparés par des virgules. Bloque une mise à jour par ailleurs éligible dont le journal des modifications contient l'un d'eux (insensible à la casse) — p. ex. « breaking » détecte une version qui signale elle-même un changement incompatible, même pour une hausse mineure ou de correctif. Les mises à jour bloquées sont signalées, jamais appliquées. Vide = désactivé.",
   "s_au_digest": "Aussi les mises à jour :latest",
   "s_au_digest_desc": "Les containers sur un tag glissant comme :latest n'ont pas de niveau de version. Activez cette option pour appliquer aussi automatiquement leurs mises à jour de digest.",
   "s_au_sched": "Planification",

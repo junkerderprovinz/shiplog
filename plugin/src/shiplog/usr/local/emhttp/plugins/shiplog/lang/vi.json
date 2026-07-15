@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Không bao giờ nếu nhật ký thay đổi đề cập đến",
+  "s_au_exclude_desc": "Các từ cách nhau bằng dấu phẩy. Chặn một bản cập nhật vốn đủ điều kiện nếu nhật ký thay đổi của nó chứa một trong các từ này (không phân biệt hoa thường) — ví dụ \"breaking\" sẽ phát hiện một bản phát hành tự đề cập đến một thay đổi không tương thích, ngay cả ở mức nâng cấp minor hoặc patch. Các bản cập nhật bị chặn sẽ được báo cáo nhưng không bao giờ được áp dụng. Để trống = tắt.",
   "s_au_digest": "Cả cập nhật :latest",
   "s_au_digest_desc": "Các container dùng tag luân chuyển như :latest không có cấp phiên bản. Bật tùy chọn này để tự động áp dụng cả các bản cập nhật digest của chúng.",
   "s_au_sched": "Lịch",

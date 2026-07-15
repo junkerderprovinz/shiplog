@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "变更日志中若提及以下内容则永不更新",
+  "s_au_exclude_desc": "以逗号分隔的词语。如果更新日志中包含其中任意一个词（不区分大小写），将阻止原本符合条件的更新——例如「breaking」可以拦截即便是次要版本或补丁级别更新、但自身说明中提到破坏性变更的发行版本。被阻止的更新会被记录报告，但绝不会被应用。留空 = 关闭。",
   "s_au_digest": "同时更新 :latest",
   "s_au_digest_desc": "使用 :latest 等滚动标签的容器没有版本级别。开启此项也会自动应用它们的 digest 更新。",
   "s_au_sched": "计划",

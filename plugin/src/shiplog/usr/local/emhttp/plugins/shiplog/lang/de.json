@@ -81,6 +81,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Nie bei Erwähnung von",
+  "s_au_exclude_desc": "Kommagetrennte Wörter. Blockiert ein sonst zulässiges Update, dessen Changelog eines davon enthält (Groß-/Kleinschreibung egal) — z. B. fängt „breaking“ ein Release ab, das selbst einen Breaking Change nennt, auch bei einem Minor- oder Patch-Sprung. Blockierte Updates werden gemeldet, nie angewendet. Leer = aus.",
   "s_au_digest": "Auch :latest-Updates",
   "s_au_digest_desc": "Container mit rollendem Tag wie :latest haben keine Versionsstufe. Aktiviere dies, um auch deren Digest-Updates automatisch anzuwenden.",
   "s_au_sched": "Zeitplan",
