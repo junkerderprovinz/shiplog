@@ -29,6 +29,7 @@ $auDry   = (isset($cfg['AUTOUPDATE_DRYRUN'])  && $cfg['AUTOUPDATE_DRYRUN']==='tr
 $auMode  = !empty($cfg['AUTOUPDATE_SCHED_MODE'])  ? $cfg['AUTOUPDATE_SCHED_MODE']  : 'off';
 $auTime  = !empty($cfg['AUTOUPDATE_SCHED_TIME'])  ? $cfg['AUTOUPDATE_SCHED_TIME']  : '04:00';
 $auEvery = !empty($cfg['AUTOUPDATE_SCHED_EVERY']) ? $cfg['AUTOUPDATE_SCHED_EVERY'] : '6';
+$auExclude = isset($cfg['AUTOUPDATE_EXCLUDE_WORDS']) ? $cfg['AUTOUPDATE_EXCLUDE_WORDS'] : '';
 /* CA Auto Update coexistence: warn so the user doesn't run both. */
 $caPresent = is_dir('/usr/local/emhttp/plugins/ca.update.applications') || is_dir('/boot/config/plugins/ca.update.applications');
 
@@ -230,6 +231,11 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
           </select>
         </div>
         <div class="sl-desc"><?=$L['s_au_level_desc']?></div></div>
+      <div class="sl-row"><label><?=$L['s_au_exclude']?></label>
+        <div class="sl-in">
+          <input type="text" name="AUTOUPDATE_EXCLUDE_WORDS" value="<?=htmlspecialchars($auExclude)?>" placeholder="breaking, migration required">
+        </div>
+        <div class="sl-desc"><?=$L['s_au_exclude_desc']?></div></div>
       <div class="sl-row"><label><?=$L['s_au_digest']?></label>
         <div class="sl-in">
           <label class="sl-switch">

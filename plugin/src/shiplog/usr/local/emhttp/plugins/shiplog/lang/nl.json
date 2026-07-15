@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Nooit bij vermelding van",
+  "s_au_exclude_desc": "Kommagescheiden woorden. Blokkeert een verder geschikte update wiens changelog een van deze woorden bevat (hoofdlettergevoeligheid negeren) — bijv. \"breaking\" vangt een release op die zelf een breaking change noemt, zelfs bij een minor- of patchsprong. Geblokkeerde updates worden gemeld, nooit toegepast. Leeg = uit.",
   "s_au_digest": "Ook :latest-updates",
   "s_au_digest_desc": "Containers met een rollende tag zoals :latest hebben geen versieniveau. Zet dit aan om ook hun digest-updates automatisch toe te passen.",
   "s_au_sched": "Schema",

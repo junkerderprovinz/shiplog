@@ -121,6 +121,7 @@ On the Unraid plugin the settings page groups these into tabs — **General**, *
 | `AUTOUPDATE_SCHED_MODE` | `off` | `off` / `daily` / `boot` / `hours` / `days` |
 | `AUTOUPDATE_SCHED_TIME` | `04:00` | run time for `daily` |
 | `AUTOUPDATE_SCHED_EVERY` | `6` | interval for `hours` / `days` |
+| `AUTOUPDATE_EXCLUDE_WORDS` | *(empty)* | comma-separated words; block an otherwise-eligible update whose changelog text contains any of them, case-insensitive (e.g. `breaking, migration required`) — catches a release that names its own danger even at a minor/patch bump |
 
 ## 6. How it works
 

@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Nikdy, pokud changelog zmiňuje",
+  "s_au_exclude_desc": "Slova oddělená čárkou. Zablokuje jinak způsobilou aktualizaci, jejíž changelog obsahuje některé z nich (bez rozlišení velkých/malých písmen) — např. „breaking“ zachytí verzi, která sama zmiňuje nekompatibilní změnu, i při zvýšení minor nebo patch. Zablokované aktualizace se hlásí, ale nikdy se neaplikují. Prázdné = vypnuto.",
   "s_au_digest": "Také aktualizace :latest",
   "s_au_digest_desc": "Kontejnery s průběžným tagem jako :latest nemají úroveň verze. Zapněte to, aby se automaticky používaly i jejich aktualizace digestu.",
   "s_au_sched": "Plán",

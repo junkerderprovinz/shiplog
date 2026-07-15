@@ -81,6 +81,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Never if changelog mentions",
+  "s_au_exclude_desc": "Comma-separated words. Blocks an otherwise-eligible update whose changelog text contains any of them (case-insensitive) — e.g. \"breaking\" catches a release that calls out a breaking change even at a minor or patch bump. Blocked updates are reported, never applied. Empty = off.",
   "s_au_digest": "Also :latest updates",
   "s_au_digest_desc": "Containers on a rolling tag like :latest carry no version level. Turn this on to auto-apply their digest updates too.",
   "s_au_sched": "Schedule",

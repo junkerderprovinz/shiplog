@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Mai se il changelog menziona",
+  "s_au_exclude_desc": "Parole separate da virgole. Blocca un aggiornamento altrimenti idoneo il cui changelog ne contenga una (senza distinzione tra maiuscole/minuscole) — ad es. \"breaking\" intercetta una release che segnala essa stessa una modifica incompatibile, anche con un salto minor o patch. Gli aggiornamenti bloccati vengono segnalati, mai applicati. Vuoto = disattivato.",
   "s_au_digest": "Anche aggiornamenti :latest",
   "s_au_digest_desc": "I container su un tag mobile come :latest non hanno un livello di versione. Attiva questa opzione per applicare automaticamente anche i loro aggiornamenti del digest.",
   "s_au_sched": "Pianificazione",

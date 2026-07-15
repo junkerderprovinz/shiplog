@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Değişiklik günlüğünde şunlar geçiyorsa asla",
+  "s_au_exclude_desc": "Virgülle ayrılmış kelimeler. Değişiklik günlüğü bunlardan birini içeren, aksi halde uygun bir güncellemeyi engeller (büyük/küçük harf duyarsız) — örn. \"breaking\" ifadesi, minor veya patch seviyesinde bile olsa, kendi notlarında uyumsuz bir değişiklikten bahseden bir sürümü yakalar. Engellenen güncellemeler bildirilir, asla uygulanmaz. Boş = kapalı.",
   "s_au_digest": ":latest güncellemeleri de",
   "s_au_digest_desc": ":latest gibi sürekli güncellenen bir etiketteki konteynerlerin sürüm düzeyi yoktur. Onların digest güncellemelerini de otomatik uygulamak için bunu aç.",
   "s_au_sched": "Zamanlama",

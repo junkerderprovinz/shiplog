@@ -3,7 +3,11 @@
 // unit-tested; the schedule and executor build on top of it.
 package autoupdate
 
-import "github.com/junkerderprovinz/shiplog/internal/model"
+import (
+	"strings"
+
+	"github.com/junkerderprovinz/shiplog/internal/model"
+)
 
 // Level is the SemVer threshold: auto-apply updates at or below it.
 type Level int
@@ -31,8 +35,45 @@ func ParseLevel(s string) Level {
 
 // Policy is the global auto-update decision input.
 type Policy struct {
-	Level  Level // SemVer threshold
-	Digest bool  // also auto-apply :latest / digest-only moves (level-less)
+	Level        Level    // SemVer threshold
+	Digest       bool     // also auto-apply :latest / digest-only moves (level-less)
+	ExcludeWords []string // block an otherwise-eligible update whose changelog text contains any of these (case-insensitive)
+}
+
+// ParseExcludeWords splits the AUTOUPDATE_EXCLUDE_WORDS setting (comma-separated)
+// into a clean word list: trimmed, empties dropped. Original casing is kept (only
+// the MATCH is case-insensitive) so a blocked-update message can quote the word
+// back to the admin exactly as they typed it.
+func ParseExcludeWords(s string) []string {
+	var words []string
+	for _, w := range strings.Split(s, ",") {
+		w = strings.TrimSpace(w)
+		if w != "" {
+			words = append(words, w)
+		}
+	}
+	return words
+}
+
+// MatchedExcludeWord reports the FIRST configured word found in the pending
+// update's changelog text (case-insensitive substring match against cl.Raw —
+// the body of the target release), or "" when nothing matches. Nil-safe: no
+// changelog, an empty body, or no configured words all report no match, so this
+// is a pure opt-in safety net that never blocks when there is nothing to check
+// against. A container without release notes (e.g. the version-delta Fallback,
+// which carries an empty Raw) is therefore never blocked by this check — only a
+// changelog whose own text names the danger word is.
+func MatchedExcludeWord(cl *model.Changelog, words []string) string {
+	if cl == nil || cl.Raw == "" || len(words) == 0 {
+		return ""
+	}
+	raw := strings.ToLower(cl.Raw)
+	for _, w := range words {
+		if strings.Contains(raw, strings.ToLower(w)) {
+			return w
+		}
+	}
+	return ""
 }
 
 // Eligible reports whether the container's available update should be applied

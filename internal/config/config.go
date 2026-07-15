@@ -43,6 +43,13 @@ type AutoUpdateConfig struct {
 	SchedMode  string // AUTOUPDATE_SCHED_MODE: off|daily|boot|hours|days
 	SchedTime  string // AUTOUPDATE_SCHED_TIME "HH:MM" (daily)
 	SchedEvery int    // AUTOUPDATE_SCHED_EVERY (hours|days), >= 1
+	// ExcludeWords: AUTOUPDATE_EXCLUDE_WORDS, comma-separated. An otherwise-eligible
+	// update is skipped (and reported as "blocked", not applied) when the pending
+	// version's changelog text contains any of these words, case-insensitive — e.g.
+	// "breaking" catches a release whose own notes call out a breaking change even
+	// at a minor/patch bump. Empty by default: off, matching every other auto-update
+	// safety toggle here.
+	ExcludeWords string
 }
 
 // Load reads the environment, applying the documented defaults.
@@ -61,13 +68,14 @@ func Load() Config {
 		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
 		AutoUpdate: AutoUpdateConfig{
-			Enabled:    truthy("AUTOUPDATE_ENABLED"),
-			Level:      levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
-			Digest:     truthy("AUTOUPDATE_DIGEST"),
-			DryRun:     truthy("AUTOUPDATE_DRYRUN"),
-			SchedMode:  env("AUTOUPDATE_SCHED_MODE", "off"),
-			SchedTime:  env("AUTOUPDATE_SCHED_TIME", "04:00"),
-			SchedEvery: atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
+			Enabled:      truthy("AUTOUPDATE_ENABLED"),
+			Level:        levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
+			Digest:       truthy("AUTOUPDATE_DIGEST"),
+			DryRun:       truthy("AUTOUPDATE_DRYRUN"),
+			SchedMode:    env("AUTOUPDATE_SCHED_MODE", "off"),
+			SchedTime:    env("AUTOUPDATE_SCHED_TIME", "04:00"),
+			SchedEvery:   atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
+			ExcludeWords: os.Getenv("AUTOUPDATE_EXCLUDE_WORDS"),
 		},
 	}
 }

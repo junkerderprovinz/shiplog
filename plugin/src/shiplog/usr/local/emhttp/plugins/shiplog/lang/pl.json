@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Nigdy, jeśli dziennik zmian wspomina",
+  "s_au_exclude_desc": "Słowa oddzielone przecinkami. Blokuje aktualizację spełniającą inne warunki, jeśli jej dziennik zmian zawiera któreś z nich (bez rozróżniania wielkości liter) — np. „breaking” wychwytuje wydanie, które samo wspomina o niekompatybilnej zmianie, nawet przy podniesieniu minor lub patch. Zablokowane aktualizacje są zgłaszane, ale nigdy nie są stosowane. Puste = wyłączone.",
   "s_au_digest": "Także aktualizacje :latest",
   "s_au_digest_desc": "Kontenery z tagiem kroczącym, jak :latest, nie mają poziomu wersji. Włącz tę opcję, aby automatycznie stosować także ich aktualizacje digest.",
   "s_au_sched": "Harmonogram",

@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Niciodată dacă jurnalul de modificări menționează",
+  "s_au_exclude_desc": "Cuvinte separate prin virgulă. Blochează o actualizare altfel eligibilă al cărei jurnal de modificări conține oricare dintre acestea (fără a ține cont de majuscule) — de ex. „breaking” detectează o versiune care menționează ea însăși o modificare incompatibilă, chiar și la o creștere minoră sau de tip patch. Actualizările blocate sunt raportate, dar niciodată aplicate. Gol = dezactivat.",
   "s_au_digest": "Și actualizările :latest",
   "s_au_digest_desc": "Containerele cu o etichetă continuă precum :latest nu au un nivel de versiune. Activează pentru a aplica automat și actualizările lor de digest.",
   "s_au_sched": "Program",

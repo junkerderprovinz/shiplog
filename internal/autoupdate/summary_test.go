@@ -28,3 +28,33 @@ func TestRenderSummary(t *testing.T) {
 		t.Errorf("dry-run wording missing: %s", dt)
 	}
 }
+
+func TestRenderSummary_Blocked(t *testing.T) {
+	res := Result{Outcomes: []Outcome{
+		{Name: "dozzle", Blocked: true, BlockedWord: "breaking"},
+	}}
+	text, html := RenderSummary(res)
+	for _, want := range []string{"1 blocked", "dozzle", "breaking"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text missing %q: %s", want, text)
+		}
+	}
+	if !strings.Contains(html, "dozzle") {
+		t.Errorf("html missing name: %s", html)
+	}
+	// Blocked must never be conflated with a failure count.
+	if strings.Contains(text, "failed") {
+		t.Errorf("a blocked outcome must not be reported as failed: %s", text)
+	}
+
+	// A blocked-only run must still be visible in DRY RUN — that is the whole
+	// point of being able to verify the safety switch before trusting it live.
+	dryText, _ := RenderSummary(Result{DryRun: true, Outcomes: []Outcome{
+		{Name: "immich", Blocked: true, BlockedWord: "BREAKING CHANGE"},
+	}})
+	for _, want := range []string{"1 blocked", "immich", "BREAKING CHANGE"} {
+		if !strings.Contains(dryText, want) {
+			t.Errorf("dry-run blocked text missing %q: %s", want, dryText)
+		}
+	}
+}

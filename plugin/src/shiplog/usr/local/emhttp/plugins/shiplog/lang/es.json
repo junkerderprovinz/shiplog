@@ -80,6 +80,8 @@
   "s_au_lvl_patch": "Patch",
   "s_au_lvl_minor": "Minor",
   "s_au_lvl_major": "Major",
+  "s_au_exclude": "Nunca si el registro menciona",
+  "s_au_exclude_desc": "Palabras separadas por comas. Bloquea una actualización elegible cuyo registro de cambios contenga alguna de ellas (sin distinguir mayúsculas/minúsculas); por ejemplo, «breaking» detecta una versión que anuncia un cambio incompatible incluso en un salto menor o de parche. Las actualizaciones bloqueadas se notifican, nunca se aplican. Vacío = desactivado.",
   "s_au_digest": "También actualizaciones :latest",
   "s_au_digest_desc": "Los contenedores con una etiqueta móvil como :latest no tienen nivel de versión. Actívalo para aplicar automáticamente también sus actualizaciones de digest.",
   "s_au_sched": "Programación",
