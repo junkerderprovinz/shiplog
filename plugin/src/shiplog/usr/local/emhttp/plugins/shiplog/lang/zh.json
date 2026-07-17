@@ -63,6 +63,8 @@
   "d_updateAll": "全部更新",
   "d_updateAllHint": "为每个有待处理更新的容器触发 Unraid 自己的更新",
   "d_none": "未找到此镜像的更新日志文本 — 请打开仓库（右上角）查看发行说明。",
+  "d_rateLimited": "已达到 GitHub 每小时的请求速率限制，因此无法加载发行说明。请在 ShipLog 设置（来源）中添加 GitHub 令牌以提高限制。",
+  "d_recent": "最近的发布",
   "d_pinned": "已固定",
   "d_localimg": "本地镜像",
   "t_general": "常规",

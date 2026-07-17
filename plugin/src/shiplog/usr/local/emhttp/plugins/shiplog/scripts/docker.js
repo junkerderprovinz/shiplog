@@ -53,6 +53,8 @@
     updatingOne: "Updating the container", updatingAll: "Updating all Containers",
     updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
     none: "No changelog text found for this image — open the repo (top-right) for the release notes.",
+    rateLimited: "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
+    recent: "Recent releases",
     pinned: "pinned", localimg: "local image",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
@@ -325,7 +327,22 @@
     }
 
     let raw = "";
-    if (cl.raw) {
+    if (cl.rate_limited) {
+      // Honest empty state: the anonymous GitHub API limit (60/h, shared per IP)
+      // was hit — the usual reason a github-sourced container shows no changelog.
+      // The token field already lives in ShipLog's settings, so point the user at it.
+      raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("rateLimited"))}</div></div>`;
+    } else if (cl.recent && entries.length) {
+      // Rolling / digest update (e.g. ":latest"): no single target release, so show
+      // the repo's most recent releases, newest first, each with its tag + date.
+      const secs = entries.map((e) => {
+        const d = fmtDate(e.published_at);
+        const meta = d ? ` <span class="sl-reld">${esc(d)}</span>` : "";
+        const link = e.url ? ` <a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener">↗</a>` : "";
+        return `<div class="sl-rel"><h5>${esc(e.tag || "")}${meta}${link}</h5><div class="sl-raw">${renderMd(e.body || "")}</div></div>`;
+      }).join("");
+      raw = `<div class="sl-sec"><h4>${esc(T("recent"))}</h4>${secs}</div>`;
+    } else if (cl.raw) {
       raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${renderMd(cl.raw)}</div></div>`;
     } else if (!summary) {
       raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("none"))}</div></div>`;

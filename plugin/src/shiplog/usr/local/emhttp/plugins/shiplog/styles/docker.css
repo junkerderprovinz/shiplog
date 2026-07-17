@@ -71,6 +71,10 @@
 .sl-bubble .sl-raw ul{margin:4px 0;padding-left:14px}
 .sl-bubble .sl-raw .sp{height:6px}
 .sl-bubble .sl-raw code{background:var(--sl-bg);border:1px solid var(--sl-line);border-radius:4px;padding:0 4px}
+.sl-bubble .sl-rel + .sl-rel{margin-top:12px}
+.sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
+.sl-bubble .sl-reld{font:400 10px/1 "Segoe UI",sans-serif;color:var(--sl-dim2);letter-spacing:.3px}
+.sl-bubble .sl-relx{color:var(--sl-link);text-decoration:none;font-size:12px;margin-left:auto}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
 

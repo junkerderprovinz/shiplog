@@ -63,6 +63,8 @@
   "d_updateAll": "Actualizează toate",
   "d_updateAllHint": "declanșează propria actualizare a Unraid pentru fiecare container cu o actualizare în așteptare",
   "d_none": "Nu s-a găsit text de changelog pentru această imagine — deschide repo-ul (dreapta sus) pentru notele de lansare.",
+  "d_rateLimited": "Limita orară de solicitări a GitHub a fost atinsă, așa că notele de lansare nu au putut fi încărcate. Adaugă un token GitHub în setările ShipLog (Surse) pentru a o crește.",
+  "d_recent": "Lansări recente",
   "d_pinned": "fixat",
   "d_localimg": "imagine locală",
   "t_general": "General",

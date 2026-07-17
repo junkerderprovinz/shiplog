@@ -63,6 +63,8 @@
   "d_updateAll": "Oppdater alle",
   "d_updateAllHint": "utløser Unraids egen oppdatering for hver container med en ventende oppdatering",
   "d_none": "Ingen changelog-tekst funnet for dette imaget — åpne repoet (øverst til høyre) for versjonsmerknadene.",
+  "d_rateLimited": "GitHubs timegrense for forespørsler ble nådd, så versjonsmerknadene kunne ikke lastes inn. Legg til et GitHub-token i ShipLogs innstillinger (Kilder) for å øke den.",
+  "d_recent": "Nyeste utgivelser",
   "d_pinned": "festet",
   "d_localimg": "lokalt image",
   "t_general": "Generelt",

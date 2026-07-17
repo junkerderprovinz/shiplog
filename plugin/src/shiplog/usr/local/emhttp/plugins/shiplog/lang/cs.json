@@ -63,6 +63,8 @@
   "d_updateAll": "Aktualizovat vše",
   "d_updateAllHint": "spustí vlastní aktualizaci Unraidu pro každý kontejner s čekající aktualizací",
   "d_none": "Pro tento obraz nebyl nalezen žádný text changelogu — otevřete repo (vpravo nahoře) pro poznámky k vydání.",
+  "d_rateLimited": "Byl dosažen hodinový limit požadavků GitHubu, takže se poznámky k vydání nepodařilo načíst. Přidejte v nastavení ShipLog (Zdroje) token GitHubu, abyste jej zvýšili.",
+  "d_recent": "Nejnovější vydání",
   "d_pinned": "připnuto",
   "d_localimg": "místní obraz",
   "t_general": "Obecné",

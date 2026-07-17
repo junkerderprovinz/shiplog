@@ -63,6 +63,8 @@
   "d_updateAll": "Aktualizuj wszystko",
   "d_updateAllHint": "wyzwala własną aktualizację Unraid dla każdego kontenera z oczekującą aktualizacją",
   "d_none": "Nie znaleziono tekstu changeloga dla tego obrazu — otwórz repo (prawy górny róg), aby zobaczyć informacje o wydaniu.",
+  "d_rateLimited": "Osiągnięto godzinny limit żądań GitHuba, więc nie udało się załadować informacji o wydaniu. Dodaj token GitHub w ustawieniach ShipLog (Źródła), aby go zwiększyć.",
+  "d_recent": "Najnowsze wydania",
   "d_pinned": "przypięte",
   "d_localimg": "obraz lokalny",
   "t_general": "Ogólne",

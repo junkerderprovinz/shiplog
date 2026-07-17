@@ -63,6 +63,8 @@
   "d_updateAll": "모두 업데이트",
   "d_updateAllHint": "대기 중인 업데이트가 있는 모든 컨테이너에 대해 Unraid 자체 업데이트를 실행합니다",
   "d_none": "이 이미지의 변경 로그 텍스트를 찾을 수 없습니다 — 릴리스 노트는 오른쪽 위의 저장소를 여세요.",
+  "d_rateLimited": "GitHub의 시간당 요청 한도에 도달하여 릴리스 노트를 불러올 수 없습니다. 한도를 높이려면 ShipLog 설정(소스)에서 GitHub 토큰을 추가하세요.",
+  "d_recent": "최근 릴리스",
   "d_pinned": "고정됨",
   "d_localimg": "로컬 이미지",
   "t_general": "일반",
