@@ -64,6 +64,8 @@
   "d_updateAll": "Update all",
   "d_updateAllHint": "triggers Unraid's own update for every container with a pending update",
   "d_none": "No changelog text found for this image — open the repo (top-right) for the release notes.",
+  "d_rateLimited": "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
+  "d_recent": "Recent releases",
   "d_pinned": "pinned",
   "d_localimg": "local image",
   "t_general": "General",

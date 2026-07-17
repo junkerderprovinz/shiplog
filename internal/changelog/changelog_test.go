@@ -9,25 +9,27 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// latestJSON / tagJSON are canned GitHub single-release responses. The new
-// provider fetches the TARGET release (one call): /releases/tags/<tag> for a
-// pinned version, else /releases/latest for a rolling tag.
-const (
-	latestJSON = `{"tag_name":"v1.3.0","body":"third feature","html_url":"https://github.com/o/r/releases/tag/v1.3.0","published_at":"2026-03-01T00:00:00Z"}`
-	tagJSON    = `{"tag_name":"v1.2.0","body":"second feature","html_url":"https://github.com/o/r/releases/tag/v1.2.0","published_at":"2026-02-01T00:00:00Z"}`
-)
+// releasesJSON is a canned GitHub /repos/o/r/releases response: a JSON ARRAY of
+// releases, newest first, as the real API returns. Six entries so the "recent N"
+// path (min(5, …)) is exercised as a real cap.
+const releasesJSON = `[
+{"tag_name":"v2.0.0","body":"sixth feature","html_url":"https://github.com/o/r/releases/tag/v2.0.0","published_at":"2026-06-01T00:00:00Z"},
+{"tag_name":"v1.5.0","body":"fifth feature","html_url":"https://github.com/o/r/releases/tag/v1.5.0","published_at":"2026-05-01T00:00:00Z"},
+{"tag_name":"v1.4.0","body":"fourth feature","html_url":"https://github.com/o/r/releases/tag/v1.4.0","published_at":"2026-04-01T00:00:00Z"},
+{"tag_name":"v1.3.0","body":"third feature","html_url":"https://github.com/o/r/releases/tag/v1.3.0","published_at":"2026-03-01T00:00:00Z"},
+{"tag_name":"v1.2.0","body":"second feature","html_url":"https://github.com/o/r/releases/tag/v1.2.0","published_at":"2026-02-01T00:00:00Z"},
+{"tag_name":"v1.1.0","body":"first feature","html_url":"https://github.com/o/r/releases/tag/v1.1.0","published_at":"2026-01-01T00:00:00Z"}
+]`
 
-// fakeGitHub serves /releases/latest, /releases/tags/v1.2.0 and the repo object;
-// everything else (incl. unknown tags) 404s like the real API.
+// fakeGitHub serves the releases LIST at /repos/o/r/releases and the repo object
+// at /repos/o/r (archived:false); everything else 404s like the real API.
 func fakeGitHub(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/repos/o/r/releases/latest":
-			_, _ = w.Write([]byte(latestJSON))
-		case "/repos/o/r/releases/tags/v1.2.0":
-			_, _ = w.Write([]byte(tagJSON))
+		case "/repos/o/r/releases":
+			_, _ = w.Write([]byte(releasesJSON))
 		case "/repos/o/r":
 			_, _ = w.Write([]byte(`{"archived":false}`))
 		default:
@@ -38,8 +40,9 @@ func fakeGitHub(t *testing.T) *httptest.Server {
 	return srv
 }
 
-// An update to a pinned target tag shows THAT release's notes in a single call.
-func TestGitHub_Get_ShowsTargetReleaseNotes(t *testing.T) {
+// A pinned version bump whose exact release exists shows THAT single release,
+// Recent=false.
+func TestGitHub_Get_ExactVersionMatch(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
 	gh.baseURL = srv.URL
@@ -53,13 +56,13 @@ func TestGitHub_Get_ShowsTargetReleaseNotes(t *testing.T) {
 		t.Errorf("Provider = %q, want github", cl.Provider)
 	}
 	if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.2.0" {
-		t.Fatalf("expected 1 entry v1.2.0 (the target), got %#v", cl.Entries)
+		t.Fatalf("expected 1 entry v1.2.0 (the exact match), got %#v", cl.Entries)
 	}
-	if cl.SkippedCount != 0 {
-		t.Errorf("SkippedCount = %d, want 0 (only the target release is shown)", cl.SkippedCount)
+	if cl.Recent {
+		t.Error("Recent = true, want false for an exact version match")
 	}
 	if cl.Entries[0].Body != "second feature" || cl.Raw != "second feature" {
-		t.Errorf("body/raw not mapped to the target release: body=%q raw=%q", cl.Entries[0].Body, cl.Raw)
+		t.Errorf("body/raw not mapped to the matched release: body=%q raw=%q", cl.Entries[0].Body, cl.Raw)
 	}
 	if cl.Entries[0].URL != "https://github.com/o/r/releases/tag/v1.2.0" {
 		t.Errorf("html_url not mapped: %q", cl.Entries[0].URL)
@@ -67,42 +70,138 @@ func TestGitHub_Get_ShowsTargetReleaseNotes(t *testing.T) {
 	if cl.Entries[0].PublishedAt.IsZero() {
 		t.Error("PublishedAt not parsed")
 	}
+	if cl.URL != "https://github.com/o/r/releases" {
+		t.Errorf("URL = %q, want repo releases link", cl.URL)
+	}
 	if cl.FromTag != "v1.1.0" || cl.ToTag != "v1.2.0" {
 		t.Errorf("From/To = %q/%q", cl.FromTag, cl.ToTag)
 	}
 }
 
-// A pinned target with no release of its own falls back to the latest release
-// (still a single successful fetch after the 404 on the exact tag).
-func TestGitHub_Get_PinnedTagWithoutOwnRelease_UsesLatest(t *testing.T) {
+// The v-prefix is tolerated on both sides: a bare "1.2.0" toTag still matches a
+// "v1.2.0" release exactly (Recent=false), not the recent-N path.
+func TestGitHub_Get_ExactVersionMatch_VPrefixTolerant(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
 	gh.baseURL = srv.URL
-	c := model.Container{Source: "https://github.com/o/r"}
 
-	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v1.9.9") // no release v1.9.9
+	c := model.Container{Source: "https://github.com/o/r"}
+	cl, ok := gh.Get(context.Background(), c, "1.1.0", "1.2.0") // no leading v
 	if !ok || cl == nil {
 		t.Fatalf("expected a handled changelog, got (%v, %v)", cl, ok)
 	}
-	if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.3.0" {
-		t.Fatalf("expected fallback to latest v1.3.0, got %#v", cl.Entries)
+	if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.2.0" || cl.Recent {
+		t.Fatalf("expected exact match v1.2.0 with Recent=false, got %#v Recent=%v", cl.Entries, cl.Recent)
 	}
 }
 
-func TestGitHub_Get_RollingTag_UsesLatestRelease(t *testing.T) {
+// A rolling tag (":latest") has no version to match, so the recent N releases
+// are shown (capped at 5), Recent=true, Raw = the newest release's body.
+func TestGitHub_Get_RollingTag_ShowsRecent(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
 	gh.baseURL = srv.URL
 	c := model.Container{Source: "https://github.com/o/r"}
 
-	// A ":latest" container: the target tag is non-version, so go straight to the
-	// repo's latest release (one call).
 	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
 	if !ok || cl == nil {
 		t.Fatal("expected a handled changelog")
 	}
-	if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.3.0" {
-		t.Fatalf("expected the latest release v1.3.0, got %#v", cl.Entries)
+	if !cl.Recent {
+		t.Error("Recent = false, want true for a rolling tag")
+	}
+	if len(cl.Entries) != 5 {
+		t.Fatalf("expected 5 recent entries (cap of 6 available), got %d: %#v", len(cl.Entries), cl.Entries)
+	}
+	if cl.Entries[0].Tag != "v2.0.0" {
+		t.Errorf("newest-first ordering broken: entries[0] = %q, want v2.0.0", cl.Entries[0].Tag)
+	}
+	if cl.Raw != "sixth feature" {
+		t.Errorf("Raw = %q, want the newest release body", cl.Raw)
+	}
+}
+
+// A pinned version tag with no matching release falls to the recent N (not a
+// single "latest"), Recent=true.
+func TestGitHub_Get_NoMatchingRelease_ShowsRecent(t *testing.T) {
+	srv := fakeGitHub(t)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+
+	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v9.9.9") // no release v9.9.9
+	if !ok || cl == nil {
+		t.Fatalf("expected a handled changelog, got (%v, %v)", cl, ok)
+	}
+	if !cl.Recent {
+		t.Error("Recent = false, want true when no release matches toTag")
+	}
+	if len(cl.Entries) != 5 || cl.Entries[0].Tag != "v2.0.0" {
+		t.Fatalf("expected recent N starting at v2.0.0, got %#v", cl.Entries)
+	}
+}
+
+// The releases LIST is cached: a second Get within the TTL makes NO new HTTP
+// call, and after the TTL an ETag conditional GET → 304 keeps the cached data.
+func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {
+	const etag = `"v1-list-etag"`
+	var releasesCalls, archivedCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/o/r/releases":
+			releasesCalls++
+			if r.Header.Get("If-None-Match") == etag {
+				w.WriteHeader(http.StatusNotModified) // unchanged: does not count against the rate limit
+				return
+			}
+			w.Header().Set("ETag", etag)
+			_, _ = w.Write([]byte(releasesJSON))
+		case "/repos/o/r":
+			archivedCalls++
+			_, _ = w.Write([]byte(`{"archived":false}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+
+	// First fetch: one releases call + one archived call, list cached with ETag.
+	if _, ok := gh.Get(context.Background(), c, "latest", "latest"); !ok {
+		t.Fatal("first Get: expected handled")
+	}
+	if releasesCalls != 1 || archivedCalls != 1 {
+		t.Fatalf("after first Get: releasesCalls=%d archivedCalls=%d, want 1/1", releasesCalls, archivedCalls)
+	}
+
+	// Second Get within the TTL: served entirely from cache, no new HTTP calls.
+	if _, ok := gh.Get(context.Background(), c, "latest", "latest"); !ok {
+		t.Fatal("second Get: expected handled")
+	}
+	if releasesCalls != 1 || archivedCalls != 1 {
+		t.Fatalf("within TTL a second Get must not touch the API: releasesCalls=%d archivedCalls=%d, want 1/1", releasesCalls, archivedCalls)
+	}
+
+	// Force the cache stale: the next Get revalidates with If-None-Match and gets
+	// a 304, so the releases endpoint is hit again but the archived one is not,
+	// and the cached data is still served.
+	gh.ttl = 0
+	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
+	if !ok || cl == nil {
+		t.Fatal("third Get: expected handled")
+	}
+	if releasesCalls != 2 {
+		t.Errorf("after TTL expiry the list must be revalidated: releasesCalls=%d, want 2", releasesCalls)
+	}
+	if archivedCalls != 1 {
+		t.Errorf("a 304 must not rebuild the cache (no new archived call): archivedCalls=%d, want 1", archivedCalls)
+	}
+	if len(cl.Entries) != 5 || cl.Entries[0].Tag != "v2.0.0" {
+		t.Errorf("304 must keep the cached data, got %#v", cl.Entries)
 	}
 }
 
@@ -110,8 +209,8 @@ func TestGitHub_Get_DeprecatedWhenArchived(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/repos/o/r/releases/latest":
-			_, _ = w.Write([]byte(latestJSON))
+		case "/repos/o/r/releases":
+			_, _ = w.Write([]byte(releasesJSON))
 		case "/repos/o/r":
 			_, _ = w.Write([]byte(`{"archived":true}`))
 		default:
@@ -150,7 +249,7 @@ func TestGitHub_Get_EmptySource_NotHandled(t *testing.T) {
 }
 
 func TestGitHub_Get_APIError_FallsThrough(t *testing.T) {
-	// Server that 404s everything → non-200 → (nil, false).
+	// Server that 404s everything → non-200, not rate-limited, no cache → (nil, false).
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
@@ -164,12 +263,20 @@ func TestGitHub_Get_APIError_FallsThrough(t *testing.T) {
 	}
 }
 
-// A github repo whose target/latest both 404 (no releases at all) must fall
-// through so the version-delta Fallback handles it, rather than returning an
-// empty github changelog that would shadow the Fallback.
-func TestGitHub_Get_NoUsableRelease_FallsThrough(t *testing.T) {
+// A github repo whose releases list is empty ([]) must fall through so the
+// version-delta Fallback handles it, rather than returning an empty github
+// changelog that would shadow the Fallback.
+func TestGitHub_Get_EmptyReleases_FallsThrough(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r) // no /releases/latest, no /releases/tags/*
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/o/r/releases":
+			_, _ = w.Write([]byte(`[]`)) // repo exists but has cut no releases
+		case "/repos/o/r":
+			_, _ = w.Write([]byte(`{"archived":false}`))
+		default:
+			http.NotFound(w, r)
+		}
 	}))
 	t.Cleanup(srv.Close)
 	gh := New("")
@@ -177,13 +284,13 @@ func TestGitHub_Get_NoUsableRelease_FallsThrough(t *testing.T) {
 	c := model.Container{Source: "https://github.com/o/r"}
 	cl, ok := gh.Get(context.Background(), c, "v9.0.0", "v9.9.9")
 	if ok || cl != nil {
-		t.Fatalf("no usable release: got (%v, %v), want (nil, false)", cl, ok)
+		t.Fatalf("empty releases: got (%v, %v), want (nil, false)", cl, ok)
 	}
 }
 
-func TestGitHub_Get_RateLimited_FallsThrough(t *testing.T) {
-	// A 403 with X-RateLimit-Remaining: 0 is GitHub's anonymous rate-limit
-	// response: the provider must fall through (so the chain reaches Fallback).
+// A 403 with X-RateLimit-Remaining: 0 and NO prior cache surfaces an honest
+// RateLimited changelog (handled=true) so the UI shows a note instead of a blank.
+func TestGitHub_Get_RateLimited_NoCache_Handled(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-RateLimit-Remaining", "0")
 		w.WriteHeader(http.StatusForbidden)
@@ -194,36 +301,20 @@ func TestGitHub_Get_RateLimited_FallsThrough(t *testing.T) {
 	gh.baseURL = srv.URL
 	c := model.Container{Source: "https://github.com/o/r"}
 	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
-	if ok || cl != nil {
-		t.Fatalf("rate-limited: got (%v, %v), want (nil, false)", cl, ok)
+	if !ok || cl == nil {
+		t.Fatalf("rate-limited with no cache: got (%v, %v), want a handled changelog", cl, ok)
 	}
-}
-
-// A pinned target whose exact-release fetch returns a 429 (rate limit, not a
-// 404) is a real failure: it must NOT silently fall back to the latest release,
-// it must fall through so the Fallback's version-delta wins.
-func TestGitHub_Get_TargetTag429_FallsThrough(t *testing.T) {
-	var latestCalls int
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/repos/o/r/releases/latest":
-			latestCalls++
-			http.NotFound(w, r)
-		default: // the exact-tag endpoint is rate limited
-			w.Header().Set("X-RateLimit-Remaining", "0")
-			w.WriteHeader(http.StatusTooManyRequests)
-		}
-	}))
-	t.Cleanup(srv.Close)
-	gh := New("")
-	gh.baseURL = srv.URL
-	c := model.Container{Source: "https://github.com/o/r"}
-	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v1.2.0")
-	if ok || cl != nil {
-		t.Fatalf("target 429: got (%v, %v), want (nil, false)", cl, ok)
+	if !cl.RateLimited {
+		t.Error("RateLimited = false, want true")
 	}
-	if latestCalls != 0 {
-		t.Errorf("a 429 on the exact tag must not fall back to /releases/latest (called %d×)", latestCalls)
+	if cl.Provider != "github" {
+		t.Errorf("Provider = %q, want github", cl.Provider)
+	}
+	if cl.URL != "https://github.com/o/r/releases" {
+		t.Errorf("URL = %q, want repo releases link", cl.URL)
+	}
+	if len(cl.Entries) != 0 {
+		t.Errorf("expected no entries in a rate-limit note, got %#v", cl.Entries)
 	}
 }
 
@@ -253,33 +344,6 @@ func TestIsRateLimited(t *testing.T) {
 	}
 }
 
-// A repo with no releases must NOT spend the second (archived) GitHub call: it
-// falls through to the Fallback before the archived check is ever reached.
-func TestGitHub_Get_NoReleases_SkipsArchivedCall(t *testing.T) {
-	var archivedCalls int
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/repos/o/r":
-			archivedCalls++
-			_, _ = w.Write([]byte(`{"archived":false}`))
-		default:
-			http.NotFound(w, r) // no release endpoints
-		}
-	}))
-	t.Cleanup(srv.Close)
-	gh := New("")
-	gh.baseURL = srv.URL
-	c := model.Container{Source: "https://github.com/o/r"}
-	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
-	if ok || cl != nil {
-		t.Fatalf("no releases: got (%v, %v), want (nil, false)", cl, ok)
-	}
-	if archivedCalls != 0 {
-		t.Errorf("archived endpoint called %d time(s), want 0 (no release → no second call)", archivedCalls)
-	}
-}
-
 func TestGitHub_Get_TrailingGitAndSlash(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
@@ -293,8 +357,8 @@ func TestGitHub_Get_TrailingGitAndSlash(t *testing.T) {
 		if !ok || cl == nil {
 			t.Fatalf("source %q: expected handled changelog", src)
 		}
-		if len(cl.Entries) != 1 || cl.Entries[0].Tag != "v1.3.0" {
-			t.Errorf("source %q: entries = %#v, want [v1.3.0]", src, cl.Entries)
+		if len(cl.Entries) == 0 || cl.Entries[0].Tag != "v2.0.0" {
+			t.Errorf("source %q: entries = %#v, want newest-first starting at v2.0.0", src, cl.Entries)
 		}
 	}
 }

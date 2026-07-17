@@ -63,6 +63,8 @@
   "d_updateAll": "Alles bijwerken",
   "d_updateAllHint": "activeert Unraids eigen update voor elke container met een openstaande update",
   "d_none": "Geen changelog-tekst gevonden voor deze image — open de repo (rechtsboven) voor de release notes.",
+  "d_rateLimited": "GitHubs uurlimiet voor verzoeken is bereikt, dus de release notes konden niet worden geladen. Voeg een GitHub-token toe in de instellingen van ShipLog (Bronnen) om het te verhogen.",
+  "d_recent": "Recente releases",
   "d_pinned": "vastgezet",
   "d_localimg": "lokale image",
   "t_general": "Algemeen",

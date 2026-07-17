@@ -19,6 +19,23 @@ type GitHub struct {
 	baseURL    string // GitHub REST API base, injectable for tests.
 	token      string // optional PAT; sent as a Bearer header when non-empty.
 	warnOnce   sync.Once
+
+	// mu guards cache. A sweep over many containers hits the same repos and runs
+	// concurrently; the cache is the whole point (see repoReleases), so its access
+	// must be serialized.
+	mu    sync.Mutex
+	cache map[string]*repoCache // key "owner/repo"
+	ttl   time.Duration         // how long a cached releases list is served without revalidation
+}
+
+// repoCache is one repo's releases list plus the metadata needed to revalidate
+// it cheaply (an ETag conditional GET → 304 does NOT count against the API rate
+// limit) and to annotate the changelog (archived = EOL).
+type repoCache struct {
+	etag      string
+	releases  []model.ReleaseEntry // newest first, as GitHub returns
+	archived  bool
+	fetchedAt time.Time
 }
 
 // New returns a GitHub provider with a sane HTTP client and the public API base.
@@ -28,6 +45,8 @@ func New(token string) *GitHub {
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		baseURL:    "https://api.github.com",
 		token:      token,
+		cache:      make(map[string]*repoCache),
+		ttl:        10 * time.Minute,
 	}
 }
 
@@ -39,73 +58,161 @@ type ghRelease struct {
 	PublishedAt time.Time `json:"published_at"`
 }
 
-// Get resolves the TARGET update's release notes — the notes for toTag (the
-// newest tag the engine resolved), or the repo's latest release when toTag is a
-// rolling tag like "latest". This is a single GitHub call (plus the optional
-// archived check), versus the old "mine the whole from→to span" which made many;
-// the smaller request volume eases GitHub's rate limit, and showing the pending
-// update's own notes is what the user asked for.
+// Get resolves the changelog for a container update from the repo named by its
+// OCI source label. It shows the repo's own release notes: the single release
+// matching toTag for a pinned version bump, or the recent N releases for a
+// digest/rolling/no-exact-match update (Recent=true) so a ":latest" container
+// still gets a meaningful "what changed" list.
 //
-// It returns (nil, false) so the chain falls through to the version-delta
-// Fallback when: the source is not a github.com repo, the API call fails (incl.
-// rate limit), OR the repo has no usable release (404 on both the exact tag and
-// the latest release). When a release is found it returns (changelog, true) with
-// that single release as entries[0] and its body in Raw.
+// The repo's releases LIST is cached with an ETag and a short TTL (see
+// repoReleases), so a sweep over many containers barely touches the GitHub API —
+// the #1 real-world cause of an empty changelog is the anonymous rate limit (60
+// req/h shared per IP), and caching is the root fix.
+//
+// It returns (nil, false) — falling through to the version-delta Fallback — when
+// the source is not a github.com repo, the repo has no releases, or a first-time
+// fetch fails for a non-rate-limit reason. When the rate limit is hit with no
+// cached data it returns a RateLimited changelog with handled=true, so the UI
+// shows an honest note rather than letting the Fallback blank it out.
 func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool) {
 	owner, repo, ok := parseGitHubRepo(c.Source)
 	if !ok {
 		return nil, false
 	}
+	releasesURL := "https://github.com/" + owner + "/" + repo + "/releases"
 
-	// The target release: the exact release for toTag, else (rolling tag, or no
-	// release named after it) the repo's latest release. nil → no usable release.
-	rel := g.fetchTargetRelease(ctx, owner, repo, toTag)
-	if rel == nil {
-		return nil, false // no release notes → let the Fallback's version-delta win
+	rc, rateLimited := g.repoReleases(ctx, owner, repo)
+	if rc == nil {
+		if rateLimited {
+			// No data and rate limited: hand back an honest note instead of a blank.
+			// handled=true so the Fallback does NOT overwrite it with a bare delta.
+			return &model.Changelog{
+				FromTag:     fromTag,
+				ToTag:       toTag,
+				Source:      "GitHub releases (OCI label)",
+				Provider:    "github",
+				URL:         releasesURL,
+				RateLimited: true,
+			}, true
+		}
+		return nil, false // no data, not rate limited → let the Fallback win
+	}
+	if len(rc.releases) == 0 {
+		return nil, false // repo has no releases → version-delta Fallback
 	}
 
-	// The archived ("deprecated/EOL") check is a second GitHub call; spend it now
-	// that we have a release worth annotating.
-	cl := &model.Changelog{
-		FromTag:      fromTag,
-		ToTag:        toTag,
-		SkippedCount: 0, // we show only the target release now, never a span
-		Entries:      []model.ReleaseEntry{*rel},
-		Raw:          rel.Body,
-		Source:       "GitHub releases (OCI label)",
-		Provider:     "github",
-		URL:          "https://github.com/" + owner + "/" + repo + "/releases",
-		Deprecated:   g.repoArchived(ctx, owner, repo),
-	}
-	return cl, true
-}
-
-// fetchTargetRelease returns the release to show: the exact release named after
-// toTag (v-prefix tolerant), else the repo's latest release. It returns nil when
-// the repo has no usable release (404) OR on a transport/rate-limit failure — in
-// both cases Get falls through so the version-delta Fallback handles it.
-func (g *GitHub) fetchTargetRelease(ctx context.Context, owner, repo, toTag string) *model.ReleaseEntry {
-	// A real version tag: ask for that exact release directly (one call). A 404
-	// just means the project didn't cut a GitHub release for it — fall back to
-	// the latest release below. Any other non-200 (e.g. a 429/403 rate limit) is
-	// a real failure → give up (nil) so the chain falls through.
+	// A real version bump with a release of its own: show exactly that release.
+	// Otherwise (rolling/digest tag, or no release named after toTag): show the
+	// repo's recent releases so the user still sees what changed.
+	var entries []model.ReleaseEntry
+	recent := false
 	if isVersionTag(toTag) {
-		rel, status, ok := g.fetchRelease(ctx, owner, repo, "/releases/tags/"+toTag)
-		switch {
-		case ok:
-			return rel
-		case status != http.StatusNotFound:
-			return nil
+		want := strings.TrimPrefix(toTag, "v")
+		for i := range rc.releases {
+			if strings.TrimPrefix(rc.releases[i].Tag, "v") == want {
+				entries = rc.releases[i : i+1]
+				break
+			}
 		}
 	}
-	// Rolling tag, or no release for the exact tag: the repo's latest release.
-	rel, _, _ := g.fetchRelease(ctx, owner, repo, "/releases/latest")
-	return rel
+	if entries == nil {
+		entries = rc.releases[:min(5, len(rc.releases))]
+		recent = true
+	}
+
+	return &model.Changelog{
+		FromTag:    fromTag,
+		ToTag:      toTag,
+		Entries:    entries,
+		Raw:        entries[0].Body,
+		Source:     "GitHub releases (OCI label)",
+		Provider:   "github",
+		URL:        releasesURL,
+		Deprecated: rc.archived,
+		Recent:     recent,
+	}, true
+}
+
+// repoReleases returns the cached (or freshly fetched) releases list for a repo,
+// plus a rateLimited flag. A cached entry younger than ttl is served with no
+// network at all; otherwise a conditional GET (If-None-Match: <etag>) revalidates
+// it — a 304 Not-Modified refreshes the cache without counting against the rate
+// limit, and is the mechanism that keeps a sweep under the anonymous 60 req/h.
+//
+// Return contract:
+//   - fresh cache hit → (cache, false), no network
+//   - 304            → (cache, false), fetchedAt refreshed
+//   - 200            → (new cache, false), stored
+//   - rate limited   → (stale cache, false) if one exists, else (nil, true)
+//   - other failure  → (stale cache, false) if one exists, else (nil, false)
+func (g *GitHub) repoReleases(ctx context.Context, owner, repo string) (*repoCache, bool) {
+	key := owner + "/" + repo
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	cached := g.cache[key]
+	if cached != nil && time.Since(cached.fetchedAt) < g.ttl {
+		return cached, false // fresh: no network
+	}
+
+	url := g.baseURL + "/repos/" + owner + "/" + repo + "/releases?per_page=20"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return cached, false
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if g.token != "" {
+		req.Header.Set("Authorization", "Bearer "+g.token)
+	}
+	if cached != nil && cached.etag != "" {
+		req.Header.Set("If-None-Match", cached.etag)
+	}
+
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return cached, false // transport failure → serve stale cache if any
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	switch {
+	case resp.StatusCode == http.StatusNotModified && cached != nil:
+		cached.fetchedAt = time.Now() // 304: unchanged, extend the TTL for free
+		return cached, false
+	case resp.StatusCode == http.StatusOK:
+		var rels []ghRelease
+		if err := json.NewDecoder(resp.Body).Decode(&rels); err != nil {
+			return cached, false
+		}
+		entries := make([]model.ReleaseEntry, 0, len(rels))
+		for _, r := range rels {
+			entries = append(entries, *toEntry(r))
+		}
+		rc := &repoCache{
+			etag:      resp.Header.Get("ETag"),
+			releases:  entries,
+			archived:  g.repoArchived(ctx, owner, repo),
+			fetchedAt: time.Now(),
+		}
+		g.cache[key] = rc
+		return rc, false
+	case isRateLimited(resp):
+		// A rate-limited anonymous client (60 req/h, shared per source IP) is the
+		// usual reason a github-sourced container shows no changelog. Serve stale
+		// data if we have it; otherwise say it once, loudly, and signal upward.
+		if cached != nil {
+			return cached, false
+		}
+		g.warnRateLimit()
+		return nil, true
+	default:
+		return cached, false // any other non-200 → serve stale cache if any
+	}
 }
 
 // isVersionTag reports whether a tag looks like a real version (e.g. "1.8",
 // "v2.3.1") rather than a rolling tag like "latest" — used to decide whether to
-// request a specific release vs. the repo's latest.
+// look for a specific release vs. show the repo's recent ones.
 func isVersionTag(tag string) bool {
 	_, ok := parseSemver(tag)
 	return ok
@@ -137,45 +244,6 @@ func (g *GitHub) repoArchived(ctx context.Context, owner, repo string) bool {
 		return false
 	}
 	return body.Archived
-}
-
-// fetchRelease GETs a single release endpoint (e.g. "/releases/latest" or
-// "/releases/tags/v1.2.3") and decodes it into a ReleaseEntry. It returns the
-// HTTP status alongside ok so the caller can distinguish a 404 (no such release,
-// keep going) from a transport/rate-limit failure (fall through). status is 0
-// when the request couldn't be issued at all.
-func (g *GitHub) fetchRelease(ctx context.Context, owner, repo, path string) (*model.ReleaseEntry, int, bool) {
-	url := g.baseURL + "/repos/" + owner + "/" + repo + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, 0, false
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	if g.token != "" {
-		req.Header.Set("Authorization", "Bearer "+g.token)
-	}
-
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return nil, 0, false
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		// A rate-limited anonymous client (60 req/h, shared per source IP) is the
-		// usual reason a github-sourced container shows no changelog. It's silent
-		// otherwise — the chain just falls to the empty Fallback — so say it once,
-		// loudly, with the remedy. 403/429 + Remaining:0 is GitHub's rate-limit shape.
-		if isRateLimited(resp) {
-			g.warnRateLimit()
-		}
-		return nil, resp.StatusCode, false
-	}
-
-	var rel ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return nil, resp.StatusCode, false
-	}
-	return toEntry(rel), resp.StatusCode, true
 }
 
 // isRateLimited reports whether resp is GitHub's rate-limit response: a 403 or

@@ -112,6 +112,13 @@ type Changelog struct {
 	URL          string         `json:"url"`               // releases/compare link
 	Provider     string         `json:"provider"`          // "github" / "fallback" / ...
 	Deprecated   bool           `json:"deprecated"`        // upstream repo is archived (EOL)
+	// RateLimited is set when the changelog could not be resolved because the
+	// upstream API (GitHub's anonymous 60 req/h, shared per IP) was exhausted.
+	// The UI shows an honest "rate limited, try later" note instead of a blank.
+	RateLimited bool `json:"rate_limited"`
+	// Recent marks that Entries are the repo's latest releases (a digest/rolling
+	// update, or no release matched toTag exactly), not an exact match for toTag.
+	Recent bool `json:"recent"`
 }
 
 // ReleaseEntry is a single upstream release in a changelog span.

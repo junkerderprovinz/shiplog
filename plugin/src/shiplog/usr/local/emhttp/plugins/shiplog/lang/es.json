@@ -63,6 +63,8 @@
   "d_updateAll": "Actualizar todo",
   "d_updateAllHint": "dispara la propia actualización de Unraid para cada contenedor con una actualización pendiente",
   "d_none": "No se encontró texto de changelog para esta imagen — abre el repo (arriba a la derecha) para ver las notas de la versión.",
+  "d_rateLimited": "Se alcanzó el límite de solicitudes por hora de GitHub, así que no se pudieron cargar las notas de la versión. Añade un token de GitHub en los ajustes de ShipLog (Fuentes) para aumentarlo.",
+  "d_recent": "Versiones recientes",
   "d_pinned": "fijado",
   "d_localimg": "imagen local",
   "t_general": "General",

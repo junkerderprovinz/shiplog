@@ -63,6 +63,8 @@
   "d_updateAll": "Cập nhật tất cả",
   "d_updateAllHint": "kích hoạt bản cập nhật riêng của Unraid cho mọi container có bản cập nhật đang chờ",
   "d_none": "Không tìm thấy văn bản changelog cho image này — mở repo (góc trên bên phải) để xem ghi chú phát hành.",
+  "d_rateLimited": "Đã đạt đến giới hạn yêu cầu mỗi giờ của GitHub, nên không thể tải ghi chú phát hành. Thêm token GitHub trong cài đặt của ShipLog (Nguồn) để nâng giới hạn.",
+  "d_recent": "Bản phát hành gần đây",
   "d_pinned": "đã ghim",
   "d_localimg": "image cục bộ",
   "t_general": "Chung",

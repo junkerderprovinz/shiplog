@@ -63,6 +63,8 @@
   "d_updateAll": "Päivitä kaikki",
   "d_updateAllHint": "laukaisee Unraidin oman päivityksen jokaiselle kontille, jolla on odottava päivitys",
   "d_none": "Tälle vedokselle ei löytynyt changelog-tekstiä — avaa repo (oikea yläkulma) nähdäksesi julkaisutiedot.",
+  "d_rateLimited": "GitHubin tuntikohtainen pyyntöraja täyttyi, joten julkaisutietoja ei voitu ladata. Nosta rajaa lisäämällä GitHub-token ShipLogin asetuksiin (Lähteet).",
+  "d_recent": "Uusimmat julkaisut",
   "d_pinned": "kiinnitetty",
   "d_localimg": "paikallinen vedos",
   "t_general": "Yleiset",

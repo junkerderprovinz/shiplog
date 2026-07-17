@@ -63,6 +63,8 @@
   "d_updateAll": "Tümünü güncelle",
   "d_updateAllHint": "bekleyen güncellemesi olan her konteyner için Unraid'in kendi güncellemesini tetikler",
   "d_none": "Bu imaj için changelog metni bulunamadı — sürüm notları için depoyu (sağ üst) aç.",
+  "d_rateLimited": "GitHub'ın saatlik istek sınırına ulaşıldı, bu yüzden sürüm notları yüklenemedi. Sınırı yükseltmek için ShipLog ayarlarında (Kaynaklar) bir GitHub token'ı ekle.",
+  "d_recent": "Son sürümler",
   "d_pinned": "sabitlendi",
   "d_localimg": "yerel imaj",
   "t_general": "Genel",
