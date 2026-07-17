@@ -33,6 +33,20 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.5.0
+- Changelogs now load far more reliably. ShipLog fetches each repo's release
+  list once and caches it with an ETag, so a scan over many containers barely
+  touches GitHub's API. The usual reason a changelog came back empty was
+  GitHub's anonymous limit of 60 requests per hour (shared per IP) running out
+  partway through a scan.
+- Rolling images (the "latest" tag) and digest-only updates now show the repo's
+  five most recent releases, each with its tag and date, instead of a single
+  entry.
+- When GitHub's rate limit really is reached, the bubble now says so and points
+  you to the GitHub token field in ShipLog's settings. A personal access token
+  (no scopes needed) raises the limit to about 5000 requests per hour.
+- Translated the two new messages into all 26 supported languages.
+
 ### 2.4.0
 - New auto-update safety switch (community suggestion): "Never if changelog
   mentions" — a comma-separated word list (e.g. "breaking, migration
