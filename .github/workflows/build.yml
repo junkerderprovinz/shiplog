@@ -17,6 +17,7 @@ on:
 permissions:
   contents: read
   packages: write
+  security-events: write # Trivy uploads its CVE report (SARIF) to the Security tab
 
 env:
   IMAGE_NAME: ghcr.io/junkerderprovinz/shiplog
@@ -113,6 +114,26 @@ jobs:
           smoke shiplog:smoke-amd64 linux/amd64 30
           smoke shiplog:smoke-arm64 linux/arm64 90
 
+      # Report known CVEs (HIGH/CRITICAL) in the locally-loaded amd64 image to the
+      # Security tab (SARIF). Deliberately does NOT fail the build (exit-code 0):
+      # most findings live in the distroless base and can't be fixed here, so this
+      # is visibility, not a release gate.
+      - name: Scan image for CVEs (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: shiplog:smoke-amd64
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+      - name: Upload Trivy results to the Security tab
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
       - name: Build & push
         uses: docker/build-push-action@v6
         with:
@@ -123,6 +144,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Supply-chain attestations: SLSA build provenance + an SBOM, attached
+          # to the pushed image index. This is a straightforward multi-arch
+          # build-push (not push-by-digest + manifest merge), so it's safe here.
+          provenance: true
+          sbom: true
 
       # Mirror the GitHub README to the Docker Hub repo's full description (same
       # text as on GitHub; relative image/link paths completed to absolute so they
