@@ -10,7 +10,7 @@
 # footprint for a 24/7 daemon. The build image must satisfy go.mod's directive
 # (>= 1.25, pulled in by modernc.org/sqlite).
 # =============================================================================
-FROM golang:1.25-bookworm AS build
+FROM golang:1.26-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
