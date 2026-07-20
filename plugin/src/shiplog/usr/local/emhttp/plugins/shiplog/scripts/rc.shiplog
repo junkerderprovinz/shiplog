@@ -60,7 +60,10 @@ start() {
          AUTOUPDATE_EXCLUDE_WORDS
   setsid "$BIN" >>"$LOG" 2>&1 &
   echo $! >"$PIDFILE"
-  echo "shiplog: started (pid $(cat "$PIDFILE"), port $PORT)"
+  # log the start line to the daemon log only, NOT stdout: Unraid mirrors an rc script's stdout
+  # during the array-start event into the native footer status bar, where "shiplog: started …"
+  # cluttered the strip (user call — remove it at the source). Errors above still surface.
+  echo "shiplog: started (pid $(cat "$PIDFILE"), port $PORT)" >>"$LOG"
 }
 
 stop() {
