@@ -590,7 +590,11 @@
     const b = el("div", "sl-bubble", bubbleHTML(st));
     if (isLightBg()) b.classList.add("sl-light"); // match Unraid's light themes
     document.body.appendChild(b);
-    // restore the user's saved size (the bubble is resizable, drag the corner)
+    // restore the user's saved size (the bubble is resizable, drag the corner).
+    // The stored w/h are offsetWidth/offsetHeight (border-box); .sl-bubble is
+    // box-sizing:border-box so writing them back to style.width/height is a fixed
+    // point. Do NOT drop that box-sizing — under content-box this round-trip would
+    // re-add the border every open and grow the popup a few px per click.
     try {
       const s = JSON.parse(localStorage.getItem(SZ_KEY) || "null");
       if (s && s.w) b.style.width = s.w + "px";
