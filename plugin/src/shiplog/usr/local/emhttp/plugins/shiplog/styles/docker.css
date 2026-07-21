@@ -30,7 +30,7 @@
 
 /* The bubble adapts to Unraid's theme: defaults are dark; .sl-light is applied
    by docker.js when the page background is light (detected by luminance). */
-.sl-bubble{position:absolute;z-index:99999;width:640px;max-width:95vw;
+.sl-bubble{position:absolute;z-index:99999;box-sizing:border-box;width:640px;max-width:95vw;
   min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
   --sl-bg:#1d1d1d; --sl-bg2:#161616; --sl-txt:#e6e6e6; --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
   --sl-line:#2a2a2a; --sl-line2:#333; --sl-edge:#525252; --sl-link:#8ab4f8;
