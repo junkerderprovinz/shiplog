@@ -33,6 +33,11 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.5.2
+#1 The changelog popup no longer grew by a couple of pixels every time you
+   opened it. Its remembered size is now applied exactly, so the window stays
+   the size you left it at instead of creeping larger with each click.
+
 ### 2.5.1
 #1 The daemon no longer prints "shiplog: started (pid, port)" into Unraid's
    footer status bar on array start. The start line now goes to the ShipLog
