@@ -50,6 +50,10 @@ func main() {
 		cfg.PollInterval,
 	)
 
+	// Drop third-party (non-Unraid-template) containers from the sweep when the
+	// user turns on "ignore third-party containers" (default off = track all).
+	eng.WithIgnoreUnmanaged(cfg.IgnoreUnmanaged)
+
 	// Optional AI summaries (Ollama). nil when unconfigured → silently skipped.
 	// Ping once at startup so the log says plainly whether summaries will work.
 	if sum := summarize.New(cfg.OllamaURL, cfg.OllamaModel); sum != nil {

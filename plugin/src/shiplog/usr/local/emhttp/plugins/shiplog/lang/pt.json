@@ -7,6 +7,8 @@
   "s_datadir_hint": "Cache SQLite — mantenha no appdata, não no flash",
   "s_poll": "Intervalo de sondagem",
   "s_poll_hint": "Duração Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Ignorar contentores de terceiros",
+  "s_ignore_unmanaged_desc": "Ignora os contentores que não foram criados a partir de um modelo do Unraid (Docker Compose, Dockhand, docker run simples). Apenas os contentores geridos pelo Unraid permanecem no ShipLog.",
   "s_updates": "Atualizações",
   "s_updates_sub": "O que acontece quando você clica em «Atualizar agora» num balão de changelog. O ShipLog permanece somente leitura — de qualquer forma aciona a própria atualização do Unraid.",
   "s_confirm": "Perguntar antes de atualizar",

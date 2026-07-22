@@ -7,6 +7,8 @@
   "s_datadir_hint": "แคช SQLite — เก็บไว้บน appdata ไม่ใช่บน flash",
   "s_poll": "ช่วงเวลาสำรวจ",
   "s_poll_hint": "ระยะเวลา Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "ละเว้นคอนเทนเนอร์ของบุคคลที่สาม",
+  "s_ignore_unmanaged_desc": "ข้ามคอนเทนเนอร์ที่ไม่ได้สร้างจากเทมเพลตของ Unraid (Docker Compose, Dockhand, docker run ธรรมดา) เฉพาะคอนเทนเนอร์ที่จัดการโดย Unraid เท่านั้นที่ยังอยู่ใน ShipLog",
   "s_updates": "การอัปเดต",
   "s_updates_sub": "สิ่งที่เกิดขึ้นเมื่อคุณคลิก “อัปเดตทันที” ในบับเบิล Changelog ShipLog ยังคงอ่านอย่างเดียว — ไม่ว่าอย่างไรก็ตามมันจะเรียกใช้การอัปเดตของ Unraid เอง",
   "s_confirm": "ถามก่อนอัปเดต",

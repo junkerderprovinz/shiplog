@@ -17,6 +17,12 @@ type Config struct {
 	PollInterval time.Duration // POLL_INTERVAL
 	GithubToken  string        // GITHUB_TOKEN (optional; raises GitHub API limit for changelogs)
 
+	// IgnoreUnmanaged skips containers WITHOUT Unraid's net.unraid.docker.managed
+	// label — third-party containers (Docker Compose / Dockhand / plain
+	// `docker run`) — so the advisor tracks only Unraid-template containers.
+	// IGNORE_UNMANAGED, default off.
+	IgnoreUnmanaged bool
+
 	// Docker Hub credentials (optional; raise the anonymous Docker Hub pull/manifest
 	// rate limit used when resolving versions + digests for docker.io images).
 	DockerHubUser  string // DOCKERHUB_USERNAME
@@ -60,6 +66,7 @@ func Load() Config {
 		DataDir:          env("DATA_DIR", "/config"),
 		PollInterval:     dur("POLL_INTERVAL", 6*time.Hour),
 		GithubToken:      os.Getenv("GITHUB_TOKEN"),
+		IgnoreUnmanaged:  truthy("IGNORE_UNMANAGED"),
 		DockerHubUser:    os.Getenv("DOCKERHUB_USERNAME"),
 		DockerHubToken:   os.Getenv("DOCKERHUB_TOKEN"),
 		OllamaURL:        os.Getenv("OLLAMA_URL"),

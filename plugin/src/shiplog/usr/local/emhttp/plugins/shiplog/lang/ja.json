@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLiteキャッシュ — flashではなくappdataに置いてください",
   "s_poll": "ポーリング間隔",
   "s_poll_hint": "Goの期間: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "サードパーティ製コンテナを無視",
+  "s_ignore_unmanaged_desc": "Unraid テンプレートから作成されていないコンテナ（Docker Compose、Dockhand、通常の docker run）をスキップします。ShipLog には Unraid が管理するコンテナのみが残ります。",
   "s_updates": "アップデート",
   "s_updates_sub": "変更履歴の吹き出しで「今すぐ更新」をクリックしたときの動作です。ShipLogは読み取り専用のままで、いずれにせよUnraid自身の更新を実行します。",
   "s_confirm": "更新前に確認する",

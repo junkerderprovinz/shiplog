@@ -109,6 +109,7 @@ On the Unraid plugin the settings page groups these into tabs — **General**, *
 | `DOCKER_SOCKET` | `/var/run/docker.sock` | mounted read-only |
 | `DATA_DIR` | `/config` | SQLite database + curated-mapping override |
 | `POLL_INTERVAL` | `6h` | how often to re-check (e.g. `1h`, `12h`, `24h`) |
+| `IGNORE_UNMANAGED` | `false` | skip third-party containers not created from an Unraid template (Docker Compose, Dockhand, plain `docker run`); only Unraid-managed containers are tracked |
 | `GITHUB_TOKEN` | — | optional; raises the anonymous GitHub API limit for changelog fetching |
 | `OLLAMA_URL` / `OLLAMA_MODEL` | — | optional AI summaries |
 | `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | — | optional enriched notifications |

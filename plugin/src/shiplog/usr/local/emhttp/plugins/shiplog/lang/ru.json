@@ -7,6 +7,8 @@
   "s_datadir_hint": "Кэш SQLite — держите на appdata, не на flash",
   "s_poll": "Интервал опроса",
   "s_poll_hint": "Длительность Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Игнорировать сторонние контейнеры",
+  "s_ignore_unmanaged_desc": "Пропускать контейнеры, созданные не из шаблона Unraid (Docker Compose, Dockhand, обычный docker run). В ShipLog остаются только контейнеры, управляемые Unraid.",
   "s_updates": "Обновления",
   "s_updates_sub": "Что происходит, когда вы нажимаете «Обновить сейчас» в окне changelog. ShipLog остаётся только для чтения — в любом случае он запускает собственное обновление Unraid.",
   "s_confirm": "Спрашивать перед обновлением",

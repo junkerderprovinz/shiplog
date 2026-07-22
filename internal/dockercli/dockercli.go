@@ -25,6 +25,12 @@ const (
 	revisionLabel = "org.opencontainers.image.revision"
 )
 
+// managedLabel is the label Unraid's Docker Manager stamps on every container it
+// creates from a template. Third-party containers (Docker Compose / Dockhand /
+// plain `docker run`) lack it — that absence is how "ignore third-party
+// containers" tells them apart.
+const managedLabel = "net.unraid.docker.managed"
+
 // Client is a read-only Docker Engine API client over a unix socket.
 type Client struct {
 	http    *http.Client
@@ -138,6 +144,7 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			Source:       source,
 			State:        dc.State,
 			ImageVersion: info.version,
+			Managed:      dc.Labels[managedLabel] != "",
 		})
 	}
 	return out, nil

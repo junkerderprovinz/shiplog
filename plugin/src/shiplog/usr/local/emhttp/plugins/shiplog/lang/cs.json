@@ -7,6 +7,8 @@
   "s_datadir_hint": "Cache SQLite — držte na appdata, ne na flashi",
   "s_poll": "Interval dotazování",
   "s_poll_hint": "Doba Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Ignorovat kontejnery třetích stran",
+  "s_ignore_unmanaged_desc": "Přeskočí kontejnery, které nebyly vytvořeny ze šablony Unraid (Docker Compose, Dockhand, prosté docker run). V ShipLogu zůstanou jen kontejnery spravované Unraidem.",
   "s_updates": "Aktualizace",
   "s_updates_sub": "Co se stane, když kliknete na „Aktualizovat nyní“ v bublině changelogu. ShipLog zůstává pouze pro čtení — tak jako tak spustí vlastní aktualizaci Unraidu.",
   "s_confirm": "Zeptat se před aktualizací",

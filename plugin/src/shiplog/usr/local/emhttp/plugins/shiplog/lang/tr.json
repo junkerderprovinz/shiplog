@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLite önbelleği — flash'ta değil appdata'da tut",
   "s_poll": "Sorgulama aralığı",
   "s_poll_hint": "Go süresi: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Üçüncü taraf kapsayıcıları yoksay",
+  "s_ignore_unmanaged_desc": "Unraid şablonundan oluşturulmayan kapsayıcıları atla (Docker Compose, Dockhand, düz docker run). ShipLog'da yalnızca Unraid tarafından yönetilen kapsayıcılar kalır.",
   "s_updates": "Güncellemeler",
   "s_updates_sub": "Bir changelog balonunda “Şimdi güncelle”ye tıkladığında ne olur. ShipLog salt okunur kalır — her durumda Unraid'in kendi güncellemesini tetikler.",
   "s_confirm": "Güncellemeden önce sor",

@@ -7,6 +7,8 @@
   "s_datadir_hint": "Bộ nhớ đệm SQLite — giữ trên appdata, không phải trên flash",
   "s_poll": "Khoảng thời gian thăm dò",
   "s_poll_hint": "Thời lượng Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Bỏ qua vùng chứa của bên thứ ba",
+  "s_ignore_unmanaged_desc": "Bỏ qua các vùng chứa không được tạo từ mẫu Unraid (Docker Compose, Dockhand, docker run thông thường). Chỉ các vùng chứa do Unraid quản lý mới còn lại trong ShipLog.",
   "s_updates": "Cập nhật",
   "s_updates_sub": "Điều gì xảy ra khi bạn nhấp “Cập nhật ngay” trong bong bóng changelog. ShipLog vẫn chỉ đọc — dù sao nó cũng kích hoạt bản cập nhật riêng của Unraid.",
   "s_confirm": "Hỏi trước khi cập nhật",
