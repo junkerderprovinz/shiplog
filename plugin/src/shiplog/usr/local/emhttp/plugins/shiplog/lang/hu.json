@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLite-gyorsítótár — az appdata-n tartsd, ne a flashen",
   "s_poll": "Lekérdezési időköz",
   "s_poll_hint": "Go időtartam: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Harmadik féltől származó konténerek mellőzése",
+  "s_ignore_unmanaged_desc": "Kihagyja a nem Unraid-sablonból létrehozott konténereket (Docker Compose, Dockhand, egyszerű docker run). A ShipLogban csak az Unraid által kezelt konténerek maradnak.",
   "s_updates": "Frissítések",
   "s_updates_sub": "Mi történik, amikor egy changelog-buborékban a „Frissítés most” gombra kattintasz. A ShipLog csak olvasható marad — így is, úgy is az Unraid saját frissítését indítja el.",
   "s_confirm": "Kérdezzen frissítés előtt",

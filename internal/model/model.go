@@ -26,6 +26,11 @@ type Container struct {
 	IsLocal bool   `json:"is_local,omitempty"`
 	Source  string `json:"source"` // org.opencontainers.image.source label, may be ""
 	State   string `json:"state"`  // "running" / "exited" / ...
+	// Managed is true when the container carries Unraid's net.unraid.docker.managed
+	// label (created from an Unraid template). It is false for third-party
+	// containers (Docker Compose / Dockhand / plain `docker run`); the "ignore
+	// third-party containers" setting filters the sweep on it.
+	Managed bool `json:"managed"`
 	// ImageVersion is the version the running image declares about itself via the
 	// OCI label org.opencontainers.image.version (fallback .revision), read from
 	// the image config. "" when the image carries no such label. It lets a

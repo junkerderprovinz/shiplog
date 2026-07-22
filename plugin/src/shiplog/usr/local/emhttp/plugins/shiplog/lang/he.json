@@ -7,6 +7,8 @@
   "s_datadir_hint": "מטמון SQLite — שמור על appdata, לא על flash",
   "s_poll": "מרווח בדיקה",
   "s_poll_hint": "משך Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "התעלם ממכולות של צד שלישי",
+  "s_ignore_unmanaged_desc": "דלג על מכולות שלא נוצרו מתבנית Unraid (Docker Compose, Dockhand, docker run רגיל). רק מכולות המנוהלות על ידי Unraid נשארות ב-ShipLog.",
   "s_updates": "עדכונים",
   "s_updates_sub": "מה קורה כשלוחצים על “עדכן עכשיו” בבועת Changelog. ShipLog נשאר לקריאה בלבד — כך או כך הוא מפעיל את העדכון של Unraid עצמו.",
   "s_confirm": "שאל לפני עדכון",

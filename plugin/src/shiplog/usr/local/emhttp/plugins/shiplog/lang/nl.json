@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLite-cache — houd op appdata, niet op de flash",
   "s_poll": "Pollinterval",
   "s_poll_hint": "Go-duur: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Externe containers negeren",
+  "s_ignore_unmanaged_desc": "Sla containers over die niet vanuit een Unraid-sjabloon zijn gemaakt (Docker Compose, Dockhand, gewone docker run). Alleen door Unraid beheerde containers blijven in ShipLog.",
   "s_updates": "Updates",
   "s_updates_sub": "Wat er gebeurt als je op “Nu bijwerken” klikt in een changelog-ballon. ShipLog blijft alleen-lezen — het activeert hoe dan ook Unraids eigen update.",
   "s_confirm": "Vragen voor het bijwerken",

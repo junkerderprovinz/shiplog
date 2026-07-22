@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLite 缓存 — 放在 appdata 上，而不是 flash 上",
   "s_poll": "轮询间隔",
   "s_poll_hint": "Go 时长：1h、6h、24h",
+  "s_ignore_unmanaged": "忽略第三方容器",
+  "s_ignore_unmanaged_desc": "跳过并非由 Unraid 模板创建的容器（Docker Compose、Dockhand、普通 docker run）。ShipLog 中仅保留由 Unraid 管理的容器。",
   "s_updates": "更新",
   "s_updates_sub": "在更新日志气泡中点击“立即更新”时会发生什么。ShipLog 保持只读 — 无论如何它都会触发 Unraid 自己的更新。",
   "s_confirm": "更新前询问",

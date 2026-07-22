@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLite-buffer — hold på appdata, ikke på flash",
   "s_poll": "Spørreintervall",
   "s_poll_hint": "Go-varighet: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Ignorer tredjepartscontainere",
+  "s_ignore_unmanaged_desc": "Hopp over containere som ikke er opprettet fra en Unraid-mal (Docker Compose, Dockhand, vanlig docker run). Bare Unraid-styrte containere blir værende i ShipLog.",
   "s_updates": "Oppdateringer",
   "s_updates_sub": "Hva som skjer når du klikker «Oppdater nå» i en changelog-boble. ShipLog forblir skrivebeskyttet — den utløser uansett Unraids egen oppdatering.",
   "s_confirm": "Spør før oppdatering",

@@ -7,6 +7,8 @@
   "s_datadir_hint": "ذاكرة SQLite المؤقتة — احتفظ بها على appdata، وليس على flash",
   "s_poll": "فترة الاستعلام",
   "s_poll_hint": "مدة Go: 1h، 6h، 24h",
+  "s_ignore_unmanaged": "تجاهل حاويات الطرف الثالث",
+  "s_ignore_unmanaged_desc": "تخطَّ الحاويات التي لم تُنشأ من قالب Unraid (Docker Compose وDockhand وdocker run العادي). تبقى في ShipLog حاويات Unraid المُدارة فقط.",
   "s_updates": "التحديثات",
   "s_updates_sub": "ما يحدث عند النقر على «تحديث الآن» في فقاعة Changelog. يبقى ShipLog للقراءة فقط — فهو يشغّل تحديث Unraid الخاص على أي حال.",
   "s_confirm": "السؤال قبل التحديث",

@@ -7,6 +7,8 @@
   "s_datadir_hint": "Cache SQLite — ține-l pe appdata, nu pe flash",
   "s_poll": "Interval de interogare",
   "s_poll_hint": "Durată Go: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Ignoră containerele terțe",
+  "s_ignore_unmanaged_desc": "Omite containerele care nu au fost create dintr-un șablon Unraid (Docker Compose, Dockhand, docker run simplu). În ShipLog rămân doar containerele gestionate de Unraid.",
   "s_updates": "Actualizări",
   "s_updates_sub": "Ce se întâmplă când dai clic pe „Actualizează acum” într-o bulă de changelog. ShipLog rămâne doar pentru citire — oricum declanșează propria actualizare a Unraid.",
   "s_confirm": "Întreabă înainte de actualizare",

@@ -21,6 +21,7 @@ $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // ask before updating (default on)
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // suppress Unraid's update pop-up (default off)
+$ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // skip 3rd-party (non-Unraid) containers (default off)
 /* Scheduled SemVer-gated auto-update (all default off/safe). */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
 $auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';
@@ -204,6 +205,16 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
       <div class="sl-row"><label><?=$L['s_poll']?></label><div class="sl-in">
         <input type="text" class="sl-narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>">
         <span class="sl-hint sl-help"><?=$L['s_poll_hint']?></span></div></div>
+      <div class="sl-row"><label><?=$L['s_ignore_unmanaged']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-ignore-unmanaged-cb" <?=$ignoreUnmanaged?'checked':''?> onchange="slSwitch(this,'sl-ignore-unmanaged','sl-ignore-unmanaged-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-ignore-unmanaged-state"><?=htmlspecialchars($ignoreUnmanaged?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="IGNORE_UNMANAGED" id="sl-ignore-unmanaged" value="<?=$ignoreUnmanaged?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_ignore_unmanaged_desc']?></div></div>
     </div>
 
     <div class="sl-card" data-tab="updates">

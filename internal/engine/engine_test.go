@@ -73,6 +73,13 @@ func (f *fakeStore) Upsert(s model.UpdateStatus) error {
 	return nil
 }
 
+func (f *fakeStore) Delete(id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	delete(f.rows, id)
+	return nil
+}
+
 func (f *fakeStore) Get(id string) (model.UpdateStatus, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -134,6 +141,50 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 		t.Fatalf("redis: failed lookup should be unknown risk, got %s", redis.Risk)
 	}
 	// The whole sweep still succeeded despite one container failing.
+}
+
+// The "ignore third-party containers" filter drops containers that lack Unraid's
+// net.unraid.docker.managed label (Compose/Dockhand/docker run) from the sweep,
+// and forgets any row they already had, while leaving Unraid-managed containers
+// fully tracked. Off by default → every container is tracked.
+func TestSweepIgnoreUnmanagedFiltersThirdParty(t *testing.T) {
+	mk := func() fakeCollector {
+		return fakeCollector{list: []model.Container{
+			{ID: "u", Name: "krusader", Repo: "ghcr.io/x/krusader", Tag: "1.0.0", Digest: "sha256:k", Managed: true},
+			{ID: "t", Name: "compose-app", Repo: "docker.io/library/nginx", Tag: "1.27.0", Digest: "sha256:n", Managed: false},
+		}}
+	}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/krusader":      {tag: "1.1.0", dig: "sha256:kn"},
+		"docker.io/library/nginx": {tag: "1.28.0", dig: "sha256:nn"},
+	}}
+
+	// Default (off): both the managed and the third-party container are tracked.
+	stOff := &fakeStore{}
+	if err := New(mk(), res, &fakeChangelog{}, stOff, time.Hour).Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep (off) returned: %v", err)
+	}
+	if _, ok := stOff.rows["u"]; !ok {
+		t.Error("off: managed container must be tracked")
+	}
+	if _, ok := stOff.rows["t"]; !ok {
+		t.Error("off: third-party container must be tracked when the filter is off")
+	}
+
+	// On: the third-party container is skipped AND its pre-existing row is deleted.
+	stOn := &fakeStore{rows: map[string]model.UpdateStatus{
+		"t": {Container: model.Container{ID: "t", Name: "compose-app"}},
+	}}
+	e := New(mk(), res, &fakeChangelog{}, stOn, time.Hour).WithIgnoreUnmanaged(true)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep (on) returned: %v", err)
+	}
+	if _, ok := stOn.rows["u"]; !ok {
+		t.Error("on: managed container must still be tracked")
+	}
+	if _, ok := stOn.rows["t"]; ok {
+		t.Error("on: third-party container must be dropped and its prior row deleted")
+	}
 }
 
 // A rolling ":latest" whose resolved version actually moved (7.1.0 -> 7.2.0) must

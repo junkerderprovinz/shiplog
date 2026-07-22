@@ -39,11 +39,13 @@ type (
 		Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool)
 	}
 	// Storer persists one status row and reads the prior one (for notify dedupe),
-	// and reads the user's changelog-source overrides (repo → github source).
+	// reads the user's changelog-source overrides (repo → github source), and
+	// deletes a row (used when "ignore third-party containers" drops one).
 	Storer interface {
 		Upsert(model.UpdateStatus) error
 		Get(id string) (model.UpdateStatus, error)
 		SourceOverrides() (map[string]string, error)
+		Delete(id string) error
 	}
 	// Summarizer optionally condenses a raw changelog into an AI summary.
 	Summarizer interface {
@@ -67,6 +69,10 @@ type Engine struct {
 	workers    int
 	refresh    chan struct{}
 	now        func() time.Time // injectable clock for tests
+	// ignoreUnmanaged, when true, drops containers without Unraid's
+	// net.unraid.docker.managed label (third-party: Compose/Dockhand/docker run)
+	// from the sweep. Off by default. Set via WithIgnoreUnmanaged.
+	ignoreUnmanaged bool
 	// projectPages loads container-name → template <Project> URL per sweep
 	// (sources precedence: override > curated > project > OCI). Injectable so
 	// tests run without an Unraid flash mount; nil-safe.
@@ -84,6 +90,15 @@ func (e *Engine) WithSummarizer(s Summarizer) *Engine {
 // non-nil notifier only when Matrix is configured.
 func (e *Engine) WithNotifier(n Notifier) *Engine {
 	e.notifier = n
+	return e
+}
+
+// WithIgnoreUnmanaged makes the sweep skip (and forget) containers that lack
+// Unraid's net.unraid.docker.managed label — third-party containers created by
+// Docker Compose / Dockhand / plain `docker run`. Returns e for chaining. Off by
+// default: every container is tracked.
+func (e *Engine) WithIgnoreUnmanaged(v bool) *Engine {
+	e.ignoreUnmanaged = v
 	return e
 }
 
@@ -131,6 +146,12 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
 	for _, c := range containers {
+		if e.ignoreUnmanaged && !c.Managed {
+			// Third-party container (no Unraid template): forget any prior row so it
+			// drops out of the advisor, and skip the registry lookup entirely.
+			_ = e.store.Delete(c.ID)
+			continue
+		}
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(c model.Container) {

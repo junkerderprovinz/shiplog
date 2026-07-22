@@ -33,6 +33,15 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.6.0
+#1 New "Ignore third-party containers" setting (community request, off by
+   default), under Settings -> General. Turn it on and ShipLog tracks only
+   containers created from an Unraid template, skipping anything started by
+   Docker Compose, Dockhand or a plain docker run (containers without Unraid's
+   net.unraid.docker.managed label) — the same third-party distinction CA Auto
+   Update uses. They drop out of the list and are no longer checked against the
+   registry. Translated across the 26 supported languages.
+
 ### 2.5.2
 #1 The changelog popup no longer grew by a couple of pixels every time you
    opened it. Its remembered size is now applied exactly, so the window stays

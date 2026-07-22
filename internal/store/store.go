@@ -306,6 +306,16 @@ func (s *Store) SetSourceOverride(repo, source string) error {
 	return nil
 }
 
+// Delete removes the status row for a container id (no error if absent). Used
+// when "ignore third-party containers" drops a previously-tracked container so
+// it disappears from the advisor.
+func (s *Store) Delete(id string) error {
+	if _, err := s.db.Exec(`DELETE FROM status WHERE container_id = ?`, id); err != nil {
+		return fmt.Errorf("store: delete status %q: %w", id, err)
+	}
+	return nil
+}
+
 // DeleteSourceOverride removes any override for repo (no error if absent).
 func (s *Store) DeleteSourceOverride(repo string) error {
 	if _, err := s.db.Exec(`DELETE FROM source_overrides WHERE repo = ?`, repo); err != nil {

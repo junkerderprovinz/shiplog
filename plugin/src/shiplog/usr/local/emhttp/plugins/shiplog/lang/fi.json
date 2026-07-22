@@ -7,6 +7,8 @@
   "s_datadir_hint": "SQLite-välimuisti — pidä appdatassa, ei flashissa",
   "s_poll": "Kyselyväli",
   "s_poll_hint": "Go-kesto: 1h, 6h, 24h",
+  "s_ignore_unmanaged": "Ohita kolmannen osapuolen kontit",
+  "s_ignore_unmanaged_desc": "Ohita kontit, joita ei ole luotu Unraid-mallista (Docker Compose, Dockhand, tavallinen docker run). Vain Unraidin hallitsemat kontit pysyvät ShipLogissa.",
   "s_updates": "Päivitykset",
   "s_updates_sub": "Mitä tapahtuu, kun napsautat ”Päivitä nyt” changelog-kuplassa. ShipLog pysyy vain luku -tilassa — se laukaisee joka tapauksessa Unraidin oman päivityksen.",
   "s_confirm": "Kysy ennen päivitystä",
