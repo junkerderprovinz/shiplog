@@ -30,6 +30,8 @@
   "s_ollama_model": "โมเดล Ollama",
   "s_notif": "การแจ้งเตือน",
   "s_notif_sub": "ไม่บังคับ — ข้อความ Matrix เมื่อพบการอัปเดตใหม่เป็นครั้งแรก",
+  "s_unraid_notify": "การแจ้งเตือน Unraid ในตัว",
+  "s_unraid_notify_desc": "ส่งการแจ้งเตือนอัปเดตผ่านระบบแจ้งเตือนของ Unraid เอง (ศูนย์การแจ้งเตือนและทุกเอเจนต์ที่คุณตั้งค่าไว้ เช่น อีเมล Discord Telegram) เพิ่มเติมจากการแจ้งเตือน Matrix ปิดโดยค่าเริ่มต้น",
   "s_mx_home": "โฮมเซิร์ฟเวอร์ Matrix",
   "s_mx_token": "โทเคน Matrix",
   "s_mx_room": "ห้อง Matrix",

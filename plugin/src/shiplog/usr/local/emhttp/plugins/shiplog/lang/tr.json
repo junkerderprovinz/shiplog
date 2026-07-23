@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama modeli",
   "s_notif": "Bildirimler",
   "s_notif_sub": "İsteğe bağlı — yeni bir güncelleme ilk kez görüldüğünde Matrix mesajı.",
+  "s_unraid_notify": "Yerel Unraid bildirimleri",
+  "s_unraid_notify_desc": "Güncelleme uyarılarını Unraid'in kendi bildirim sistemi üzerinden de gönderir (bildirim merkezi ve yapılandırdığınız her aracı, ör. e-posta, Discord, Telegram), Matrix uyarılarına ek olarak. Varsayılan olarak kapalı.",
   "s_mx_home": "Matrix ana sunucusu",
   "s_mx_token": "Matrix token",
   "s_mx_room": "Matrix odası",

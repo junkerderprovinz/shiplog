@@ -35,6 +35,12 @@ type Config struct {
 	MatrixToken      string // MATRIX_TOKEN
 	MatrixRoom       string // MATRIX_ROOM
 
+	// UnraidNotify sends native Unraid notifications (they show in Unraid's
+	// notification centre and fan out to every agent the user configured) in
+	// addition to any Matrix alerts. Unraid plugin/host only. UNRAID_NOTIFY,
+	// default off.
+	UnraidNotify bool
+
 	// AutoUpdate holds the scheduled SemVer-gated auto-update settings (Unraid
 	// plugin only; default off). See internal/autoupdate.
 	AutoUpdate AutoUpdateConfig
@@ -74,6 +80,7 @@ func Load() Config {
 		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),
 		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
+		UnraidNotify:     truthy("UNRAID_NOTIFY"),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:      truthy("AUTOUPDATE_ENABLED"),
 			Level:        levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),

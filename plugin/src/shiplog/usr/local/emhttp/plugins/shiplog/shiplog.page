@@ -19,6 +19,7 @@ $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
 $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
+$unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true'); // native Unraid notifications (default off)
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // ask before updating (default on)
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // suppress Unraid's update pop-up (default off)
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // skip 3rd-party (non-Unraid) containers (default off)
@@ -339,6 +340,16 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 
     <div class="sl-card" data-tab="notify">
       <h3><?=$L['s_notif']?> <small><?=$L['s_notif_sub']?></small></h3>
+      <div class="sl-row"><label><?=$L['s_unraid_notify']?></label>
+        <div class="sl-in">
+          <label class="sl-switch">
+            <input type="checkbox" id="sl-unraid-notify-cb" <?=$unraidNotify?'checked':''?> onchange="slSwitch(this,'sl-unraid-notify','sl-unraid-notify-state')">
+            <span class="sl-track"></span>
+            <span class="sl-state" id="sl-unraid-notify-state"><?=htmlspecialchars($unraidNotify?$onTxt:$offTxt)?></span>
+          </label>
+          <input type="hidden" name="UNRAID_NOTIFY" id="sl-unraid-notify" value="<?=$unraidNotify?'true':'false'?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_unraid_notify_desc']?></div></div>
       <div class="sl-row"><label><?=$L['s_mx_home']?></label><div class="sl-in">
         <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
       <div class="sl-row"><label><?=$L['s_mx_token']?></label><div class="sl-in">

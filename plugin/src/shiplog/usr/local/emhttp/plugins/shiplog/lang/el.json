@@ -30,6 +30,8 @@
   "s_ollama_model": "Μοντέλο Ollama",
   "s_notif": "Ειδοποιήσεις",
   "s_notif_sub": "Προαιρετικό — μήνυμα Matrix όταν μια νέα ενημέρωση εντοπίζεται για πρώτη φορά.",
+  "s_unraid_notify": "Εγγενείς ειδοποιήσεις Unraid",
+  "s_unraid_notify_desc": "Αποστολή ειδοποιήσεων ενημέρωσης μέσω του συστήματος ειδοποιήσεων του ίδιου του Unraid (το κέντρο ειδοποιήσεων και κάθε πράκτορα που έχετε ρυθμίσει, π.χ. email, Discord, Telegram), επιπλέον των ειδοποιήσεων Matrix. Απενεργοποιημένο από προεπιλογή.",
   "s_mx_home": "Homeserver Matrix",
   "s_mx_token": "Token Matrix",
   "s_mx_room": "Δωμάτιο Matrix",

@@ -30,6 +30,8 @@
   "s_ollama_model": "מודל Ollama",
   "s_notif": "התראות",
   "s_notif_sub": "אופציונלי — הודעת Matrix כשעדכון חדש נראה בפעם הראשונה.",
+  "s_unraid_notify": "התראות מקוריות של Unraid",
+  "s_unraid_notify_desc": "שליחת התראות עדכון גם דרך מערכת ההתראות של Unraid (מרכז ההתראות וכל סוכן שהגדרת, למשל אימייל, Discord, Telegram), בנוסף להתראות Matrix. כבוי כברירת מחדל.",
   "s_mx_home": "שרת בית Matrix",
   "s_mx_token": "טוקן Matrix",
   "s_mx_room": "חדר Matrix",

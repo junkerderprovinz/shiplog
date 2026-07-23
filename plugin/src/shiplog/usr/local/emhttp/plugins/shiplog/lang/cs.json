@@ -30,6 +30,8 @@
   "s_ollama_model": "Model Ollama",
   "s_notif": "Oznámení",
   "s_notif_sub": "Volitelné — zpráva na Matrix, když je nová aktualizace poprvé zjištěna.",
+  "s_unraid_notify": "Nativní oznámení Unraidu",
+  "s_unraid_notify_desc": "Posílat upozornění na aktualizace i přes vlastní systém oznámení Unraidu (centrum oznámení a každý nastavený agent, např. e-mail, Discord, Telegram), vedle případných upozornění Matrix. Ve výchozím stavu vypnuto.",
   "s_mx_home": "Domovský server Matrix",
   "s_mx_token": "Token Matrix",
   "s_mx_room": "Místnost Matrix",

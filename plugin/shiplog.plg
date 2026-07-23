@@ -33,6 +33,15 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.7.0
+#1 New "Native Unraid notifications" setting (community request, off by
+   default), under Settings -> Notifications. Turn it on and ShipLog also sends
+   its update alerts through Unraid's own notification system: they show in the
+   notification centre and fan out to every agent you configured (email,
+   Discord, Telegram, ...), alongside any Matrix alerts. A major update comes
+   through as a "warning", the rest as "normal". Translated across the 26
+   supported languages.
+
 ### 2.6.0
 #1 New "Ignore third-party containers" setting (community request, off by
    default), under Settings -> General. Turn it on and ShipLog tracks only

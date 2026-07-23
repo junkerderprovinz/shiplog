@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama 模型",
   "s_notif": "通知",
   "s_notif_sub": "可选 — 首次发现新更新时发送 Matrix 消息。",
+  "s_unraid_notify": "原生 Unraid 通知",
+  "s_unraid_notify_desc": "同时通过 Unraid 自带的通知系统（通知中心以及你配置的每个代理，如邮件、Discord、Telegram）发送更新提醒，作为 Matrix 提醒之外的补充。默认关闭。",
   "s_mx_home": "Matrix 主服务器",
   "s_mx_token": "Matrix 令牌",
   "s_mx_room": "Matrix 房间",

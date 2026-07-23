@@ -67,18 +67,30 @@ func main() {
 		cancelPing()
 	}
 
-	// Optional Matrix notifications. nil when unconfigured. Whoami at startup so
-	// the log says plainly whether notifications will work.
-	notifier := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom)
-	if notifier != nil {
-		eng.WithNotifier(notifier)
+	// Notification channels: optional Matrix + optional native Unraid
+	// notifications, fanned out through one Fanout so a new update reaches every
+	// configured channel. Each channel logs at startup so the log says plainly
+	// which ones will work.
+	var sinks []notify.Sink
+	if m := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom); m != nil {
+		sinks = append(sinks, m)
 		whoCtx, cancelWho := context.WithTimeout(context.Background(), 10*time.Second)
-		if werr := notifier.Whoami(whoCtx); werr != nil {
+		if werr := m.Whoami(whoCtx); werr != nil {
 			log.Printf("shiplog: Matrix configured (%s) but NOT working: %v", cfg.MatrixHomeserver, werr)
 		} else {
 			log.Printf("shiplog: Matrix OK — notifications enabled (%s, room %s)", cfg.MatrixHomeserver, cfg.MatrixRoom)
 		}
 		cancelWho()
+	}
+	if u := notify.NewUnraid(cfg.UnraidNotify); u != nil {
+		sinks = append(sinks, u)
+		log.Printf("shiplog: native Unraid notifications enabled")
+	} else if cfg.UnraidNotify {
+		log.Printf("shiplog: Unraid notifications requested but the notify tool (%s) was not found — skipping (Unraid host only)", notify.UnraidScriptPath)
+	}
+	notifier := notify.NewFanout(sinks...)
+	if notifier != nil {
+		eng.WithNotifier(notifier)
 	}
 
 	// Cancel everything on SIGTERM/SIGINT (the binary is PID 1 in the container).
@@ -130,7 +142,7 @@ func main() {
 // store's classified statuses, records each real action, and sends a run
 // summary. It waits one tick before the first check so the initial sweep has
 // populated the store (matters for the "boot" schedule).
-func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Matrix) {
+func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Fanout) {
 	sched := autoupdate.Schedule{Mode: cfg.SchedMode, Time: cfg.SchedTime, Every: cfg.SchedEvery}
 	policy := autoupdate.Policy{
 		Level:        autoupdate.ParseLevel(cfg.Level),

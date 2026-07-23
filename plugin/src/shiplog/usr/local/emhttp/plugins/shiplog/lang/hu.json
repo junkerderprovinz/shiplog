@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama modell",
   "s_notif": "Értesítések",
   "s_notif_sub": "Opcionális — Matrix-üzenet, amikor egy új frissítést először észlel.",
+  "s_unraid_notify": "Natív Unraid-értesítések",
+  "s_unraid_notify_desc": "Frissítési értesítések küldése az Unraid saját értesítési rendszerén keresztül is (az értesítési központ és minden beállított ügynök, pl. e-mail, Discord, Telegram), a Matrix-értesítések mellett. Alapértelmezetten kikapcsolva.",
   "s_mx_home": "Matrix honszerver",
   "s_mx_token": "Matrix token",
   "s_mx_room": "Matrix szoba",

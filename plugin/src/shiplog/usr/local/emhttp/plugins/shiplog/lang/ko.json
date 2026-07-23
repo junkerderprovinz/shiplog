@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama 모델",
   "s_notif": "알림",
   "s_notif_sub": "선택 사항 — 새 업데이트가 처음 감지될 때 Matrix 메시지.",
+  "s_unraid_notify": "네이티브 Unraid 알림",
+  "s_unraid_notify_desc": "업데이트 알림을 Unraid 자체 알림 시스템(알림 센터 및 설정한 모든 에이전트: 이메일, Discord, Telegram 등)으로도 보냅니다(Matrix 알림에 더해). 기본값은 꺼짐입니다.",
   "s_mx_home": "Matrix 홈서버",
   "s_mx_token": "Matrix 토큰",
   "s_mx_room": "Matrix 방",

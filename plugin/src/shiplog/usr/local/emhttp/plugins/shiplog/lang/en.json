@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama model",
   "s_notif": "Notifications",
   "s_notif_sub": "Optional — Matrix message when a new update is first seen.",
+  "s_unraid_notify": "Native Unraid notifications",
+  "s_unraid_notify_desc": "Send update alerts through Unraid's own notification system (the notification centre and every agent you configured, e.g. email, Discord, Telegram), alongside any Matrix alerts. Off by default.",
   "s_mx_home": "Matrix homeserver",
   "s_mx_token": "Matrix token",
   "s_mx_room": "Matrix room",

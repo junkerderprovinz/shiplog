@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama-modell",
   "s_notif": "Aviseringar",
   "s_notif_sub": "Valfritt — Matrix-meddelande när en ny uppdatering upptäcks första gången.",
+  "s_unraid_notify": "Inbyggda Unraid-aviseringar",
+  "s_unraid_notify_desc": "Skicka uppdateringsaviseringar även via Unraids eget aviseringssystem (aviseringscentret och varje agent du konfigurerat, t.ex. e-post, Discord, Telegram), utöver eventuella Matrix-aviseringar. Av som standard.",
   "s_mx_home": "Matrix-hemserver",
   "s_mx_token": "Matrix-token",
   "s_mx_room": "Matrix-rum",

@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama-model",
   "s_notif": "Notifikationer",
   "s_notif_sub": "Valgfrit — Matrix-besked, når en ny opdatering ses første gang.",
+  "s_unraid_notify": "Native Unraid-notifikationer",
+  "s_unraid_notify_desc": "Send opdateringsbeskeder gennem Unraids eget notifikationssystem (notifikationscenteret og hver agent, du har konfigureret, f.eks. e-mail, Discord, Telegram), ud over eventuelle Matrix-beskeder. Slået fra som standard.",
   "s_mx_home": "Matrix-hjemmeserver",
   "s_mx_token": "Matrix-token",
   "s_mx_room": "Matrix-rum",
