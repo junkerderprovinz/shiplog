@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama-malli",
   "s_notif": "Ilmoitukset",
   "s_notif_sub": "Valinnainen — Matrix-viesti, kun uusi päivitys havaitaan ensimmäisen kerran.",
+  "s_unraid_notify": "Unraidin natiivi-ilmoitukset",
+  "s_unraid_notify_desc": "Lähetä päivitysilmoitukset myös Unraidin omalla ilmoitusjärjestelmällä (ilmoituskeskus ja jokainen määrittämäsi agentti, esim. sähköposti, Discord, Telegram), Matrix-ilmoitusten lisäksi. Oletuksena pois päältä.",
   "s_mx_home": "Matrix-kotipalvelin",
   "s_mx_token": "Matrix-token",
   "s_mx_room": "Matrix-huone",

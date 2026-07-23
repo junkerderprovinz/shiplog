@@ -142,13 +142,7 @@ func format(st model.UpdateStatus) (text, html string) {
 	}
 	risk := strings.ToUpper(string(st.Risk))
 
-	link := ""
-	if st.Changelog != nil {
-		link = repoRoot(st.Changelog.URL)
-	}
-	if link == "" {
-		link = repoRoot(st.Container.Source)
-	}
+	link := updateLink(st)
 
 	text = fmt.Sprintf("🚢 ShipLog · %s: update %s → %s (risk: %s)", name, from, to, risk)
 	html = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: update <code>%s</code> → <code>%s</code> (risk: %s)",

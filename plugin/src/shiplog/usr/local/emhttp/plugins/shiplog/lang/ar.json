@@ -30,6 +30,8 @@
   "s_ollama_model": "نموذج Ollama",
   "s_notif": "الإشعارات",
   "s_notif_sub": "اختياري — رسالة Matrix عند رؤية تحديث جديد لأول مرة.",
+  "s_unraid_notify": "إشعارات Unraid الأصلية",
+  "s_unraid_notify_desc": "أرسل تنبيهات التحديث عبر نظام إشعارات Unraid نفسه (مركز الإشعارات وكل وكيل قمت بإعداده، مثل البريد الإلكتروني وDiscord وTelegram)، إلى جانب تنبيهات Matrix. مُعطَّل افتراضيًا.",
   "s_mx_home": "خادم Matrix الرئيسي",
   "s_mx_token": "رمز Matrix",
   "s_mx_room": "غرفة Matrix",

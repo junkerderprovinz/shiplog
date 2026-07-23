@@ -30,6 +30,8 @@
   "s_ollama_model": "Mô hình Ollama",
   "s_notif": "Thông báo",
   "s_notif_sub": "Tùy chọn — tin nhắn Matrix khi một bản cập nhật mới được thấy lần đầu.",
+  "s_unraid_notify": "Thông báo Unraid gốc",
+  "s_unraid_notify_desc": "Gửi cảnh báo cập nhật qua hệ thống thông báo của chính Unraid (trung tâm thông báo và mọi tác nhân bạn đã cấu hình, ví dụ email, Discord, Telegram), bên cạnh các cảnh báo Matrix. Mặc định tắt.",
   "s_mx_home": "Máy chủ nhà Matrix",
   "s_mx_token": "Token Matrix",
   "s_mx_room": "Phòng Matrix",

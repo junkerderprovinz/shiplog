@@ -113,6 +113,7 @@ On the Unraid plugin the settings page groups these into tabs — **General**, *
 | `GITHUB_TOKEN` | — | optional; raises the anonymous GitHub API limit for changelog fetching |
 | `OLLAMA_URL` / `OLLAMA_MODEL` | — | optional AI summaries |
 | `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | — | optional enriched notifications |
+| `UNRAID_NOTIFY` | `false` | *(plugin only)* also send update alerts through Unraid's own notification system (the notification centre + every agent you configured: email, Discord, Telegram, ...) |
 | `CONFIRM_UPDATE` | `true` | ask for confirmation before "Update now" triggers Unraid's update |
 | `SILENT_UPDATE` | `false` | run the update without Unraid's pop-up download-log window (it still runs in the background) |
 | `AUTOUPDATE_ENABLED` | `false` | *(plugin only)* master switch for scheduled auto-update |

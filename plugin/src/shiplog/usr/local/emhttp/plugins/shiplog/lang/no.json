@@ -30,6 +30,8 @@
   "s_ollama_model": "Ollama-modell",
   "s_notif": "Varsler",
   "s_notif_sub": "Valgfritt — Matrix-melding når en ny oppdatering ses for første gang.",
+  "s_unraid_notify": "Native Unraid-varsler",
+  "s_unraid_notify_desc": "Send oppdateringsvarsler også via Unraids eget varslingssystem (varslingssenteret og hver agent du har satt opp, f.eks. e-post, Discord, Telegram), i tillegg til eventuelle Matrix-varsler. Av som standard.",
   "s_mx_home": "Matrix-hjemmeserver",
   "s_mx_token": "Matrix-token",
   "s_mx_room": "Matrix-rom",
