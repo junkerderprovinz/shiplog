@@ -43,6 +43,7 @@
 6. [How it works](#6-how-it-works)
 7. [Security](#7-security)
 8. [License](#8-license)
+9. [Support this project](#9-support-this-project)
 
 ## 1. What is this?
 
@@ -73,6 +74,9 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 
 ## 3. Features
 
+<details>
+<summary><b>Feature list</b></summary>
+
 - **What changed, not just "update available"** — changelog between your running tag and the newest, newest-first, with a link to the full release notes.
 - **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
 - **Honest degradation** — when no changelog is machine-findable, ShipLog says so and shows what it does know, never pretends.
@@ -86,6 +90,8 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 - **Localised** — the settings page and the changelog bubble follow Unraid's configured language across 26 languages.
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
 - **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
+
+</details>
 
 ## 4. Install on Unraid
 
@@ -146,3 +152,13 @@ ShipLog mounts the Docker socket **read-only** and never issues a write call ove
 ShipLog is free software under the **GNU Affero General Public License v3.0** (AGPL-3.0); see [LICENSE](LICENSE). You may run, study, share and modify it. If you distribute it, or run a modified version as a network service, you must release your source under the same AGPL-3.0 terms and keep the existing copyright and attribution notices intact.
 
 **Name and branding are not licensed.** The AGPL covers the source code only. "ShipLog", its logo and its branding remain reserved: a fork or derivative must use its own distinct name and branding, and may not present itself as ShipLog. This keeps it unambiguous which project is the original.
+
+## 9. Support this project
+
+Questions, bugs, ideas? **[Unraid support thread →](https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/)** (or open a [GitHub issue](https://github.com/junkerderprovinz/shiplog/issues)).
+
+<p align="center">
+  <a href="https://buymeacoffee.com/junkerderprovinz">
+    <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/button-buy-me-a-coffee.svg" alt="Buy me a coffee" width="220">
+  </a>
+</p>
