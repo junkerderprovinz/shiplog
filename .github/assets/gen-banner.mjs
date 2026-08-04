@@ -39,7 +39,7 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const NAME = "ShipLog";
 const CLAIM = "Read the changelog before you set sail.";
 const W = 1600, H = 500;
-const LH = 300, LW = 300;     // logo is ~square; embedLogo reads each master's own viewBox (960 or 1000)
+const LH = 400, LW = 400;     // logo is ~square; embedLogo reads each master's own viewBox (960 or 1000)
 // House banner standard: name 132 / claim 44, logo-to-text gap 70, name-to-claim gap 8.
 const nameSize = 132, claimSize = 44, gap = 70, lineGap = 8;
 
