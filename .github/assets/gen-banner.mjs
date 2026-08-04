@@ -39,12 +39,13 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const NAME = "ShipLog";
 const CLAIM = "Read the changelog before you set sail.";
 const W = 1600, H = 500;
-const LH = 420, LW = 420;     // logo is ~square; embedLogo reads each master's own viewBox (960 or 1000)
-const nameSize = 168, claimSize = 44, gap = 56, lineGap = 20;
+const LH = 300, LW = 300;     // logo is ~square; embedLogo reads each master's own viewBox (960 or 1000)
+// House banner standard: name 132 / claim 44, logo-to-text gap 70, name-to-claim gap 8.
+const nameSize = 132, claimSize = 44, gap = 70, lineGap = 8;
 
 // Each theme embeds the logo variant that reads on its background (no recolour).
 const THEMES = [
-  { suffix: "", bg: "#ffffff", name: "#242626", claim: "#5a5d5e", logo: "shiplog-dunkel.svg" },
+  { suffix: "", bg: "#ffffff", name: "#1f2328", claim: "#5a5d5e", logo: "shiplog-dunkel.svg" },
   { suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad", logo: "shiplog-hell.svg" },
 ];
 // ---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ const claimFont = opentype.parse(readFileSync(claimFontPath));
 const nameW = font.getAdvanceWidth(NAME, nameSize);
 const claimW = claimFont.getAdvanceWidth(CLAIM, claimSize);
 const groupW = LW + gap + Math.max(nameW, claimW);
-const startX = (W - groupW) / 2;
+const startX = 165; // left-anchored (house banner standard)
 const LX = startX, LY = (H - LH) / 2;
 const textX = startX + LW + gap;
 
