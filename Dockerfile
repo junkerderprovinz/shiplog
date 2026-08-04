@@ -4,7 +4,7 @@
 #
 # GitHub: https://github.com/junkerderprovinz/shiplog
 # Image:  ghcr.io/junkerderprovinz/shiplog
-# License: MIT
+# License: AGPL-3.0-only
 #
 # Pure-Go (cgo-free) → a single static binary on distroless: tiny always-on
 # footprint for a 24/7 daemon. The build image must satisfy go.mod's directive
@@ -31,7 +31,7 @@ FROM gcr.io/distroless/static-debian12:latest@sha256:a9fcaedd4c9b59e12dd65d954f0
 LABEL org.opencontainers.image.title="ShipLog" \
       org.opencontainers.image.description="Read-only update advisor — what changes between your running image and the newest one, and how risky." \
       org.opencontainers.image.source="https://github.com/junkerderprovinz/shiplog" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="AGPL-3.0-only"
 COPY --from=build /out/shiplog /usr/local/bin/shiplog
 ENV PORT=8484 \
     DOCKER_SOCKET=/var/run/docker.sock \
