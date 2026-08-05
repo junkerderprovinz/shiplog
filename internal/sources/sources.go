@@ -17,19 +17,33 @@ package sources
 
 import "strings"
 
-// lsioUpstream maps a LinuxServer.io app (the part after "linuxserver/" in the
-// image repo) to its upstream GitHub source. Kept deliberately small and to
-// apps with real GitHub Releases — a wrong default is worse than none, and a
-// manual override always beats this. Registry host is ignored, so lscr.io,
-// ghcr.io and docker.io forms all match.
-var lsioUpstream = map[string]string{
-	"radarr":   "https://github.com/Radarr/Radarr",
-	"sonarr":   "https://github.com/Sonarr/Sonarr",
-	"lidarr":   "https://github.com/Lidarr/Lidarr",
-	"prowlarr": "https://github.com/Prowlarr/Prowlarr",
-	"readarr":  "https://github.com/Readarr/Readarr",
-	"whisparr": "https://github.com/Whisparr/Whisparr",
-	"bazarr":   "https://github.com/morpheus65535/bazarr",
+// curated maps a well-known image repo (registry host stripped) to its upstream
+// GitHub source, for images whose OCI source label is a packaging wrapper, wrong,
+// or missing, but which DO publish real GitHub Releases. Kept deliberately small
+// and verified — a wrong default is worse than none, and a manual override always
+// beats this. The registry host is stripped before lookup, so lscr.io/, ghcr.io/
+// and docker.io/ forms all match; docker.io "library/" official images included.
+var curated = map[string]string{
+	// LinuxServer.io wrappers with real upstream Releases.
+	"linuxserver/radarr":   "https://github.com/Radarr/Radarr",
+	"linuxserver/sonarr":   "https://github.com/Sonarr/Sonarr",
+	"linuxserver/lidarr":   "https://github.com/Lidarr/Lidarr",
+	"linuxserver/prowlarr": "https://github.com/Prowlarr/Prowlarr",
+	"linuxserver/readarr":  "https://github.com/Readarr/Readarr",
+	"linuxserver/whisparr": "https://github.com/Whisparr/Whisparr",
+	"linuxserver/bazarr":   "https://github.com/morpheus65535/bazarr",
+
+	// Common third-party / official images with real GitHub Releases (verified).
+	"library/redis":            "https://github.com/redis/redis",
+	"library/mariadb":          "https://github.com/MariaDB/server",
+	"clamav/clamav":            "https://github.com/Cisco-Talos/clamav",
+	"ollama/ollama":            "https://github.com/ollama/ollama",
+	"minio/minio":              "https://github.com/minio/minio",
+	"jlesage/filebot":          "https://github.com/jlesage/docker-filebot",
+	"jlesage/handbrake":        "https://github.com/jlesage/docker-handbrake",
+	"storjlabs/storagenode":    "https://github.com/storj/storj",
+	"jc21/nginx-proxy-manager": "https://github.com/NginxProxyManager/nginx-proxy-manager",
+	"germannewsmaker/myspeed":  "https://github.com/gnmyt/MySpeed",
 }
 
 // Kinds reported by Resolve, for the human "where did this come from" label.
@@ -63,9 +77,10 @@ func Resolve(repo, ociSource string, overrides map[string]string, projectPage st
 	return ociSource, KindOCI
 }
 
-// curatedUpstream maps a LinuxServer image repo to its upstream GitHub source.
-// It strips the registry host so "lscr.io/linuxserver/radarr",
-// "ghcr.io/linuxserver/radarr" and "docker.io/linuxserver/radarr" all resolve.
+// curatedUpstream maps a well-known image repo to its upstream GitHub source via
+// the curated table. It strips the registry host so "lscr.io/linuxserver/radarr",
+// "ghcr.io/linuxserver/radarr" and "docker.io/linuxserver/radarr" (and the
+// docker.io "library/" official-image form) all resolve to the same key.
 func curatedUpstream(repo string) (string, bool) {
 	path := repo
 	// Drop a leading registry host ("lscr.io/", "ghcr.io/", "docker.io/"): the
@@ -76,13 +91,8 @@ func curatedUpstream(repo string) (string, bool) {
 			path = repo[i+1:]
 		}
 	}
-	const nsPrefix = "linuxserver/"
-	if strings.HasPrefix(path, nsPrefix) {
-		if up, ok := lsioUpstream[strings.TrimPrefix(path, nsPrefix)]; ok {
-			return up, true
-		}
-	}
-	return "", false
+	up, ok := curated[path]
+	return up, ok
 }
 
 // NormalizeGitHubSource turns user input into the canonical

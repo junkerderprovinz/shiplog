@@ -50,6 +50,32 @@ func TestNormalizeGitHubSource(t *testing.T) {
 	}
 }
 
+// Curated third-party / official images (not just LinuxServer) resolve to their
+// upstream GitHub source, across registry-host and docker.io "library/" forms.
+func TestResolve_CuratedThirdParty(t *testing.T) {
+	cases := []struct {
+		name, repo, wantSrc string
+	}{
+		{"official library image", "docker.io/library/redis", "https://github.com/redis/redis"},
+		{"official mariadb", "docker.io/library/mariadb", "https://github.com/MariaDB/server"},
+		{"ollama", "docker.io/ollama/ollama", "https://github.com/ollama/ollama"},
+		{"minio", "docker.io/minio/minio", "https://github.com/minio/minio"},
+		{"jlesage wrapper -> docker-<app> repo", "docker.io/jlesage/filebot", "https://github.com/jlesage/docker-filebot"},
+		{"storjlabs storagenode -> storj/storj", "docker.io/storjlabs/storagenode", "https://github.com/storj/storj"},
+		{"nginx proxy manager", "docker.io/jc21/nginx-proxy-manager", "https://github.com/NginxProxyManager/nginx-proxy-manager"},
+		{"clamav via ghcr host", "ghcr.io/clamav/clamav", "https://github.com/Cisco-Talos/clamav"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// A non-GitHub project page (the app homepage) must NOT override curated.
+			src, kind := Resolve(c.repo, "", nil, "https://example.com/")
+			if src != c.wantSrc || kind != KindCurated {
+				t.Fatalf("Resolve(%q) = (%q,%q); want (%q,%q)", c.repo, src, kind, c.wantSrc, KindCurated)
+			}
+		})
+	}
+}
+
 // Project-page precedence (btTeddy): override > curated > project > OCI.
 func TestResolve_ProjectPage(t *testing.T) {
 	cases := []struct {
