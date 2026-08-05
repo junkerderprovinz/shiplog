@@ -521,6 +521,13 @@ func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
 			t.Errorf("%s: unexpected error %q", id, row.Error)
 		}
 	}
+	// Fix A: no upstream to diff against still resolves a changelog from the
+	// image's source label, so the container shows its running-version notes.
+	for _, id := range []string{"l", "p", "tp", "i"} {
+		if st.rows[id].Changelog == nil {
+			t.Errorf("%s: expected a changelog resolved without an upstream, got none", id)
+		}
+	}
 }
 
 func TestSweepResolvesEachRepoTagOnce(t *testing.T) {

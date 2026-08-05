@@ -247,6 +247,14 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		case isVersion(c.ImageVersion):
 			st.RunningVersion = c.ImageVersion
 		}
+		// No upstream to diff against does NOT mean no changelog: the image still
+		// names its source via the OCI label (which survives even when the running
+		// image is a bare ID / locally built / digest-pinned), so show the running
+		// version's release notes. There's no update span here, so no summary and
+		// no notification — those stay update-only.
+		if cl, ok := e.changelog.Get(ctx, c, st.RunningVersion, st.RunningVersion); ok {
+			st.Changelog = cl
+		}
 		return st
 	}
 
