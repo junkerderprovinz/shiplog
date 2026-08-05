@@ -90,6 +90,16 @@ func (f *fakeStore) Get(id string) (model.UpdateStatus, error) {
 	return s, nil
 }
 
+func (f *fakeStore) List() ([]model.UpdateStatus, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]model.UpdateStatus, 0, len(f.rows))
+	for _, s := range f.rows {
+		out = append(out, s)
+	}
+	return out, nil
+}
+
 // --- tests ---
 
 func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
@@ -577,5 +587,30 @@ func TestCheckAcceptsMirrorDigestAsCurrent(t *testing.T) {
 	row := st.rows["m"]
 	if row.Kind != model.KindNone {
 		t.Errorf("kind = %s, want none (mirror digest matches upstream, no phantom drift)", row.Kind)
+	}
+}
+
+// TestSweepPrunesOrphanedRows: a stored row whose container is no longer in the
+// current list (recreated with a new ID, or removed) is deleted after the sweep.
+func TestSweepPrunesOrphanedRows(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "live", Name: "live", Repo: "docker.io/library/app", Tag: "1.0", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"docker.io/library/app": {tag: "1.0", dig: "sha256:a", verTag: "1.0", verDig: "sha256:a"},
+	}}
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"live":   {Container: model.Container{ID: "live", Name: "live"}, Kind: model.KindNone},
+		"orphan": {Container: model.Container{ID: "orphan", Name: "gone"}, Kind: model.KindNone},
+	}}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if _, ok := st.rows["orphan"]; ok {
+		t.Error("orphaned row (container no longer present) was not pruned")
+	}
+	if _, ok := st.rows["live"]; !ok {
+		t.Error("live container row was wrongly pruned")
 	}
 }

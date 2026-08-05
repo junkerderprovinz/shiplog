@@ -46,6 +46,9 @@ type (
 		Get(id string) (model.UpdateStatus, error)
 		SourceOverrides() (map[string]string, error)
 		Delete(id string) error
+		// List returns every stored row, used after a sweep to prune rows whose
+		// container no longer exists (recreated with a new ID, or removed).
+		List() ([]model.UpdateStatus, error)
 	}
 	// Summarizer optionally condenses a raw changelog into an AI summary.
 	Summarizer interface {
@@ -166,6 +169,24 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		}(c)
 	}
 	wg.Wait()
+
+	// Prune orphaned rows: a container recreated with a new ID (a local rebuild,
+	// an "update" that replaces the container) or removed entirely leaves its old
+	// row behind, which would otherwise linger forever as a stale duplicate. Drop
+	// every stored row whose ID is no longer in the current container list. Runs
+	// after the barrier, so the store already holds this sweep's rows. Best-effort:
+	// a List failure never aborts the sweep.
+	live := make(map[string]struct{}, len(containers))
+	for _, c := range containers {
+		live[c.ID] = struct{}{}
+	}
+	if rows, lerr := e.store.List(); lerr == nil {
+		for _, r := range rows {
+			if _, ok := live[r.Container.ID]; !ok {
+				_ = e.store.Delete(r.Container.ID)
+			}
+		}
+	}
 	return nil
 }
 
