@@ -33,6 +33,17 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.8.0
+#1 More containers now show a real changelog. A container running a bare
+   image-ID, a locally built image, or a digest-pinned image used to show no
+   release notes even when the image names its source repo; ShipLog now reads
+   that source label and shows the running version's notes anyway. Fixes the
+   common case of your own locally rebuilt containers showing nothing.
+#2 Curated more common images to their GitHub source, so they show real
+   release notes instead of a bare version delta: Redis, MariaDB, Ollama,
+   MinIO, jlesage FileBot and HandBrake, Storj, Nginx Proxy Manager, MySpeed
+   and ClamAV.
+
 ### 2.7.0
 #1 New "Native Unraid notifications" setting (community request, off by
    default), under Settings -> Notifications. Turn it on and ShipLog also sends
