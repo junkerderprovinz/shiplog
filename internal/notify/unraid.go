@@ -77,10 +77,14 @@ func updateArgs(st model.UpdateStatus) []string {
 	}
 	risk := strings.ToUpper(string(st.Risk))
 
-	// Unraid importance: a major (high-risk) update is a "warning", the rest are
-	// "normal". "alert" is reserved for genuine failures, not update news.
+	// Unraid importance: a changelog-flagged breaking update ("critical") is an
+	// "alert" — it needs a hands-on migration before the pull. A major (high-risk)
+	// update is a "warning", the rest are "normal".
 	importance := "normal"
-	if st.Risk == model.RiskHigh {
+	switch st.Risk {
+	case model.RiskCritical:
+		importance = "alert"
+	case model.RiskHigh:
 		importance = "warning"
 	}
 

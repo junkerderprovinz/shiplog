@@ -35,7 +35,7 @@
     '<line x1="5.4" y1="10.5" x2="9" y2="10.5"/></svg>';
 
   // risk → css suffix used by both the chip dot and the bubble pill
-  const RISK_CLASS = { low: "low", medium: "mid", high: "high", unknown: "grey" };
+  const RISK_CLASS = { low: "low", medium: "mid", high: "high", critical: "crit", unknown: "grey" };
 
   // ──────────────────────────────────────────────────────── i18n
   // The bubble text follows Unraid's CONFIGURED language: shiplog.Docker.page selects
@@ -377,7 +377,7 @@
     return `
       <div class="sl-bh">
         <span class="sl-ver">${verHdr}</span>
-        <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${pillTxt}</span>
+        <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${rc === "crit" ? "⚠ " : ""}${pillTxt}</span>
         ${cl.deprecated ? `<span class="sl-pill sl-high" title="upstream repository is archived">⚠ ${esc(T("deprecated"))}</span>` : ""}
         <span class="sl-jump">${esc(jump)}</span>
         <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${esc(T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>

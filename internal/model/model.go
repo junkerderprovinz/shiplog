@@ -43,14 +43,15 @@ type Container struct {
 type RiskLevel string
 
 const (
-	RiskNone    RiskLevel = "none"
-	RiskLow     RiskLevel = "low"
-	RiskMedium  RiskLevel = "medium"
-	RiskHigh    RiskLevel = "high"
-	RiskUnknown RiskLevel = "unknown"
+	RiskNone     RiskLevel = "none"
+	RiskLow      RiskLevel = "low"
+	RiskMedium   RiskLevel = "medium"
+	RiskHigh     RiskLevel = "high"
+	RiskCritical RiskLevel = "critical" // release notes flag a breaking change / required migration
+	RiskUnknown  RiskLevel = "unknown"
 )
 
-var riskRank = map[RiskLevel]int{RiskNone: 0, RiskUnknown: 1, RiskLow: 2, RiskMedium: 3, RiskHigh: 4}
+var riskRank = map[RiskLevel]int{RiskNone: 0, RiskUnknown: 1, RiskLow: 2, RiskMedium: 3, RiskHigh: 4, RiskCritical: 5}
 
 // MoreSevere reports whether r outranks o (unknown never outranks a real level).
 func (r RiskLevel) MoreSevere(o RiskLevel) bool { return riskRank[r] > riskRank[o] }

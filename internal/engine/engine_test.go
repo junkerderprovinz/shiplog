@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -40,15 +41,17 @@ func (f fakeResolver) Resolve(_ context.Context, repo, _, _ string) (string, str
 // The fakes are written from the engine's concurrent workers, so they guard
 // their state with a mutex (the real store/changelog are concurrency-safe).
 type fakeChangelog struct {
-	mu     sync.Mutex
-	called int
+	mu      sync.Mutex
+	called  int
+	raw     string               // optional canned raw body every Get returns
+	entries []model.ReleaseEntry // optional canned release entries every Get returns
 }
 
 func (f *fakeChangelog) Get(_ context.Context, _ model.Container, from, to string) (*model.Changelog, bool) {
 	f.mu.Lock()
 	f.called++
 	f.mu.Unlock()
-	return &model.Changelog{FromTag: from, ToTag: to, Provider: "fake"}, true
+	return &model.Changelog{FromTag: from, ToTag: to, Provider: "fake", Raw: f.raw, Entries: f.entries}, true
 }
 
 type fakeStore struct {
@@ -151,6 +154,60 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 		t.Fatalf("redis: failed lookup should be unknown risk, got %s", redis.Risk)
 	}
 	// The whole sweep still succeeded despite one container failing.
+}
+
+// A changelog whose release notes flag a breaking change escalates the verdict
+// to critical even when the version delta alone reads as a benign digest move —
+// the trap that let an Immich pgvecto.rs -> VectorChord swap ship as "low".
+func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:old", Source: "https://github.com/x/immich"},
+	}}
+	// A rolling ":latest" digest move — Classify alone rates this KindDigest/low.
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/immich": {tag: "latest", dig: "sha256:new"},
+	}}
+	cl := &fakeChangelog{entries: []model.ReleaseEntry{
+		{Tag: "v2.0.0", Body: "## Breaking change\nWe removed support for pgvecto.rs. You must migrate to VectorChord before updating."},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, cl, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	row := st.rows["im"]
+	if row.Risk != model.RiskCritical {
+		t.Fatalf("breaking changelog must escalate to critical, got risk=%s reason=%q", row.Risk, row.RiskReason)
+	}
+	if !strings.Contains(row.RiskReason, "breaking change") {
+		t.Errorf("reason should explain the escalation, got %q", row.RiskReason)
+	}
+	// The update kind is untouched — only the risk is escalated.
+	if row.Kind != model.KindDigest {
+		t.Errorf("kind = %s, want digest (escalation must not rewrite the kind)", row.Kind)
+	}
+}
+
+// A benign changelog must NOT escalate: the version-delta verdict stands, so a
+// critical badge stays rare enough to be trusted.
+func TestSweepBenignChangelogKeepsVersionRisk(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "1.2.0", Digest: "sha256:o", Source: "https://github.com/x/immich"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/immich": {tag: "1.3.0", dig: "sha256:n"},
+	}}
+	cl := &fakeChangelog{entries: []model.ReleaseEntry{
+		{Tag: "v1.3.0", Body: "Quality of life improvements and another round of bug fixes."},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, cl, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if row := st.rows["a"]; row.Risk != model.RiskMedium {
+		t.Fatalf("benign minor bump must stay medium, got %s (%q)", row.Risk, row.RiskReason)
+	}
 }
 
 // The "ignore third-party containers" filter drops containers that lack Unraid's

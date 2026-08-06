@@ -101,23 +101,43 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 		return nil, false // repo has no releases → version-delta Fallback
 	}
 
-	// A real version bump with a release of its own: show exactly that release.
-	// Otherwise (rolling/digest tag, or no release named after toTag): show the
-	// repo's recent releases so the user still sees what changed.
+	// Pick which releases to show, strongest evidence first:
+	//   1. a known version span (fromV, toV] → EVERY release across the jump,
+	//      newest first, so a multi-version update surfaces the intermediate
+	//      releases (where a breaking note usually hides), not just the newest;
+	//   2. else an exact toTag release → that single release;
+	//   3. else (rolling/digest, or no match) → the repo's recent N.
 	var entries []model.ReleaseEntry
 	recent := false
-	if isVersionTag(toTag) {
-		want := strings.TrimPrefix(toTag, "v")
+	fromV, fromOK := parseSemver(fromTag)
+	toV, toOK := parseSemver(toTag)
+	if fromOK && toOK && toV.compare(fromV) > 0 {
 		for i := range rc.releases {
-			if strings.TrimPrefix(rc.releases[i].Tag, "v") == want {
-				entries = rc.releases[i : i+1]
-				break
+			rv, ok := parseSemver(rc.releases[i].Tag)
+			if ok && rv.compare(fromV) > 0 && rv.compare(toV) <= 0 {
+				entries = append(entries, rc.releases[i])
 			}
+		}
+		// Two or more releases in the span → list them all (newest first); a lone
+		// release stays a plain single-release changelog (Raw only), as before.
+		if len(entries) > 1 {
+			recent = true
 		}
 	}
 	if entries == nil {
-		entries = rc.releases[:min(5, len(rc.releases))]
-		recent = true
+		if isVersionTag(toTag) {
+			want := strings.TrimPrefix(toTag, "v")
+			for i := range rc.releases {
+				if strings.TrimPrefix(rc.releases[i].Tag, "v") == want {
+					entries = rc.releases[i : i+1]
+					break
+				}
+			}
+		}
+		if entries == nil {
+			entries = rc.releases[:min(5, len(rc.releases))]
+			recent = true
+		}
 	}
 
 	return &model.Changelog{
