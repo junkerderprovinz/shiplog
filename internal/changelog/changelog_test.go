@@ -141,6 +141,34 @@ func TestGitHub_Get_NoMatchingRelease_ShowsRecent(t *testing.T) {
 	}
 }
 
+// A known version span shows EVERY release in (from, to], newest first, so a
+// multi-version jump surfaces the intermediate releases (where a breaking note
+// usually hides), not just the newest. Recent=true so the UI lists them all.
+func TestGitHub_Get_VersionSpan_ListsIntermediate(t *testing.T) {
+	srv := fakeGitHub(t)
+	gh := New("")
+	gh.baseURL = srv.URL
+	c := model.Container{Source: "https://github.com/o/r"}
+
+	// span (1.1.0, 1.4.0] over {2.0,1.5,1.4,1.3,1.2,1.1} = {1.4.0, 1.3.0, 1.2.0}
+	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v1.4.0")
+	if !ok || cl == nil {
+		t.Fatal("expected a handled changelog")
+	}
+	if len(cl.Entries) != 3 {
+		t.Fatalf("expected 3 span entries, got %d: %#v", len(cl.Entries), cl.Entries)
+	}
+	if cl.Entries[0].Tag != "v1.4.0" || cl.Entries[2].Tag != "v1.2.0" {
+		t.Errorf("span order wrong (want newest-first v1.4.0..v1.2.0): %#v", cl.Entries)
+	}
+	if !cl.Recent {
+		t.Error("Recent = false, want true for a multi-release span")
+	}
+	if cl.Raw != "fourth feature" {
+		t.Errorf("Raw = %q, want the newest span release body", cl.Raw)
+	}
+}
+
 // The releases LIST is cached: a second Get within the TTL makes NO new HTTP
 // call, and after the TTL an ETag conditional GET → 304 keeps the cached data.
 func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {

@@ -344,7 +344,19 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	// Resolve a changelog for EVERY container, so each can show one: the update
 	// span when there's an update, or the running version's release notes when it
 	// is up to date. Summaries and notifications stay update-only.
-	if cl, ok := e.changelog.Get(ctx, c, c.Tag, newestTag); ok {
+	//
+	// Ask across the real version span when we know both ends: a rolling
+	// (":latest") jump carries no version in its tag, so pass the RESOLVED running
+	// and newest versions instead. That yields every intermediate release — where
+	// a breaking note usually hides — not just the single newest one.
+	clFrom, clTo := c.Tag, newestTag
+	if isVersion(st.RunningVersion) {
+		clFrom = st.RunningVersion
+	}
+	if isVersion(newestVerTag) {
+		clTo = newestVerTag
+	}
+	if cl, ok := e.changelog.Get(ctx, c, clFrom, clTo); ok {
 		st.Changelog = cl
 		// Reflect where the source came from when it wasn't the image's own label,
 		// so the status page can say "manual" / "curated" instead of "OCI label".
@@ -356,6 +368,16 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 				cl.Source = "GitHub releases (curated source)"
 			case sources.KindProject:
 				cl.Source = "GitHub releases (template project page)"
+			}
+		}
+		// A version delta can look benign while the release notes say otherwise: a
+		// removed database extension, a required migration, a dropped API. Scan the
+		// resolved notes (across the whole update span) and escalate a real update
+		// to critical so the operator reads them BEFORE pulling. Escalate only —
+		// never downgrade a verdict the version delta already rated higher.
+		if st.HasUpdate() {
+			if reason, breaking := risk.ScanBreaking(cl); breaking && model.RiskCritical.MoreSevere(st.Risk) {
+				st.Risk, st.RiskReason = model.RiskCritical, reason
 			}
 		}
 		if st.HasUpdate() {

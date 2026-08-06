@@ -16,8 +16,14 @@
 .sl-amp.sl-low {background:#3fae6a}
 .sl-amp.sl-mid {background:#d6a243}
 .sl-amp.sl-high{background:#d9534f}
+/* crit = the release notes flag a breaking change (a required migration, a
+   removed extension); a brighter, pulsing red so it stands apart from a plain
+   major bump. Pulse is dropped for reduced-motion users. */
+.sl-amp.sl-crit{background:#ff3b30;animation:sl-pulse 1.6s ease-in-out infinite}
 .sl-amp.sl-grey{background:#8a8a8a}
 .sl-amp.sl-ok  {background:#3fae6a}
+@keyframes sl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.55)}50%{box-shadow:0 0 0 4px rgba(255,59,48,0)}}
+@media (prefers-reduced-motion:reduce){.sl-amp.sl-crit{animation:none}}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
@@ -25,6 +31,9 @@
 .sl-pill.sl-low {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-low  .sl-dot{background:#3fae6a}
 .sl-pill.sl-mid {color:#d6a243;border-color:#7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
 .sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
+/* crit pill is FILLED (not outlined) so a breaking-change verdict pops out from
+   the outlined low/mid/high pills at a glance. */
+.sl-pill.sl-crit{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-crit .sl-dot{background:#fff}
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 .sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
 

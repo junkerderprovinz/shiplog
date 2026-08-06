@@ -79,6 +79,7 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 
 - **What changed, not just "update available"** — changelog between your running tag and the newest, newest-first, with a link to the full release notes.
 - **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
+- **Breaking-change escalation** — when a release note in the update span flags a breaking change (a required database migration, a removed extension, a dropped API), the badge is bumped to **critical** and raises an Unraid alert, so a rolling `:latest` digest move that would otherwise read as a harmless "low" no longer slips past.
 - **Honest degradation** — when no changelog is machine-findable, ShipLog says so and shows what it does know, never pretends.
 - **Fix a wrong changelog source** — an image's OCI source label often points at the packaging wrapper (LinuxServer's `docker-<app>`), is wrong (inherited from a base image), or is missing. Click **source** on any row of the status page and point it at the correct GitHub repo; the override sticks to the image and survives container recreation. Common LinuxServer apps (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) resolve to their upstream project out of the box.
 - **Read-only by construction** — never writes to the Docker socket.
@@ -138,7 +139,7 @@ Every `POLL_INTERVAL`, for each container:
 1. **Discover** via the read-only Docker socket (image ref, digest, OCI labels). Digest-pinned (`image@sha256:…`), image-ID-referenced and locally built containers are recognised here and honestly labelled — they have no upstream to check, so no registry call is made for them.
 2. **Resolve** the newest tag + same-tag digest from the registry (Docker Hub / GHCR / generic OCI v2, anonymous). Manifest checks are `HEAD`-only and don't consume Docker Hub's pull rate limit; the `tags/list` call is subject only to generic throttling, which ShipLog meets with per-request retries (honouring `Retry-After`), a per-host request gate, bearer-token caching, one lookup per distinct image per sweep, and a host-wide backoff after a hard 429.
 3. **Changelog** via a layered provider chain — first hit wins: the image's `org.opencontainers.image.source` label → GitHub releases between the tags; otherwise a version-delta fallback with a compare link.
-4. **Risk** is a pure function of the version delta.
+4. **Risk** is a deterministic function of the version delta, then escalated to **critical** if a release note in the update span flags a breaking change (required migration, removed extension, dropped API).
 5. **Store** in SQLite (status + a small per-container version history) and surface on the API + status page.
 
 ## 7. Security

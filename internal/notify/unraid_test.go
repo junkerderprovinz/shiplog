@@ -70,6 +70,17 @@ func TestUpdateArgs_HighRiskIsWarning(t *testing.T) {
 	}
 }
 
+func TestUpdateArgs_CriticalRiskIsAlert(t *testing.T) {
+	st := model.UpdateStatus{Container: model.Container{Name: "app", Tag: "1"}, NewestTag: "2", Risk: model.RiskCritical}
+	args := updateArgs(st)
+	if got := argValue(args, "-i"); got != "alert" {
+		t.Errorf("critical risk → alert importance, got %q", got)
+	}
+	if got := argValue(args, "-d"); !strings.Contains(got, "CRITICAL") {
+		t.Errorf("description should carry the risk word: %q", got)
+	}
+}
+
 func TestUnraid_NilSafe(t *testing.T) {
 	var u *Unraid
 	if err := u.Notify(context.Background(), model.UpdateStatus{}); err != nil {
