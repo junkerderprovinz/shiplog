@@ -33,7 +33,7 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
-### 2.10.0
+### 3.0.0
 - The settings page now looks native to Unraid by default and only becomes the
   GlimStone look when CannonadeCommand is installed. Without CannonadeCommand you
   get Unraid's own form styling (native font, inputs, buttons, checkboxes and
