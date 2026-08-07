@@ -56,7 +56,7 @@
   --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
   --sl-line:var(--cc-shade-line,rgba(128,128,128,.14)); --sl-line2:rgba(128,128,128,.28); --sl-edge:#525252;
   --sl-link:#8ab4f8;
-  background:var(--sl-bg);color:var(--sl-txt);border:none;border-radius:var(--cc-b-radius,14px);
+  background:var(--sl-bg);color:var(--sl-txt);border:none;border-radius:min(var(--cc-b-radius,14px),14px);
   box-shadow:0 18px 50px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
 .sl-bubble.sl-light{ --sl-bg:var(--cc-surface-window,#ffffff); --sl-bg2:var(--cc-surface-4,#f3f3f3);
   --sl-txt:var(--cc-text,#1c1c1c); --sl-dim:#565656; --sl-dim2:#777;
