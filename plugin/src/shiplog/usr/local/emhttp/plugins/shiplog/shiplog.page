@@ -69,98 +69,119 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 ?>
 
 <style>
-  /* CC look: no dark backing sheet — the content sits on Unraid's own surface. A
-     borderless, flat header (no box, no rule) and borderless cards that a lighter
-     fill + a soft shadow — not a frame — set apart. */
-  .sl-cfg{--card:#242424;--txt:#e6e6e6;--dim:#b4b4b4;--dim2:#8a8a8a;
-    --line:#333;--line2:#3a3a3a;--inp:#1b1b1b;
-    max-width:820px;margin:6px auto 0;color:var(--txt);
-    font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
+  /* ShipLog settings — ONE markup, TWO looks:
+     BASE = native Unraid (no CC). We add only layout and lean on Unraid's own form
+     CSS (bottom-border inputs, orange buttons, native checkboxes, bold section
+     titles). GLIMSTONE = only when CannonadeCommand is installed (html.cc-header-on):
+     cards, wells, eyebrows, pill tabs + toggles, filled buttons, all from the --cc-*
+     tokens. GlimStone is progressive enhancement, not the default.
+     See the GlimStone style guide + [[never-border-lines]]. */
+
+  /* tokens — CC values when present, dark fallbacks otherwise (used by GlimStone layer) */
+  .sl-cfg{
+    --card:      var(--cc-card-bg,   #242424);
+    --well:      var(--cc-field-bg,  #171717);
+    --chip:      var(--cc-surface-chip, #2f2f2f);
+    --chip-h:    var(--cc-chip-hover, #3a3a3a);
+    --track:     var(--cc-toggle-track-off, #3a3a3a);
+    --accent:    var(--cc-accent,    #ff8c2f);
+    --accent-fg: var(--cc-accent-fg, #ffffff);
+    --txt:  var(--cc-text,      #e6e6e6);
+    --dim:  var(--cc-text-dim,  #b4b4b4);
+    --dim2: var(--cc-text-dim2, #8a8a8a);
+    --rad:  var(--cc-b-radius, 8px);
+    --pill: 999px;
+    max-width:820px;margin:6px auto 0;font-size:14px;line-height:1.5}
   .sl-cfg *{box-sizing:border-box}
-  .sl-hd{display:flex;align-items:center;gap:15px;padding:0 2px 18px;margin-bottom:20px}
+
+  /* ---------- shared LAYOUT (both looks) ---------- */
+  .sl-hd{display:flex;align-items:center;gap:15px;padding:0 2px 16px;margin-bottom:12px}
   .sl-hd .sl-logo{width:46px;height:46px;flex:none}
   .sl-hd .sl-ttl{font-size:21px;font-weight:600;letter-spacing:.2px}
   .sl-hd .sl-ttl b{font-weight:700}
   .sl-hd .sl-sub{margin-top:3px;color:var(--dim2);font-size:12.5px;max-width:660px}
-  /* Header text follows Unraid's theme for readability (the logo is a fixed-colour image). */
-  .Theme--white .sl-hd .sl-ttl,.Theme--azure .sl-hd .sl-ttl{color:#1c1c1c}
-  .Theme--white .sl-hd .sl-sub,.Theme--azure .sl-hd .sl-sub{color:#666}
-
-  .sl-card{background:var(--card);border:none;border-radius:12px;
-    box-shadow:0 1px 3px rgba(0,0,0,.3);
-    padding:6px 18px 16px;margin-bottom:16px}
-  .sl-card > h3{display:flex;align-items:baseline;gap:10px;margin:14px 2px 14px;
-    font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#cfcfcf;
-    border-bottom:1px solid var(--line);padding-bottom:10px}
-  .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px}
-
-  .sl-row{display:grid;grid-template-columns:170px 1fr;gap:6px 12px;align-items:center;padding:7px 2px}
-  .sl-row > label{color:var(--dim);font-size:13px;display:inline-flex;align-items:center;gap:6px}
-  .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  /* a full description under a control (e.g. the Update toggles): its own line,
-     aligned under the control column so the rows read cleanly and uniformly. */
+  .sl-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 2px 16px}
+  .sl-cfg .sl-tab{margin:0}
+  .sl-card{margin-bottom:14px}
+  .sl-card[data-hidden="1"]{display:none}
+  .sl-row{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 14px;align-items:center;padding:6px 2px}
+  .sl-row > label{font-size:13px;display:inline-flex;align-items:center;gap:6px;min-height:32px}
+  .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:32px}
+  .sl-in.sl-stack{flex-direction:column;align-items:flex-start;gap:8px}
   .sl-row .sl-desc{grid-column:2/-1;color:var(--dim2);font-size:12px;line-height:1.45;max-width:600px}
-  .sl-cfg input[type=text],.sl-cfg input[type=password],.sl-cfg select{
-    background:var(--inp);border:1px solid var(--line2);border-radius:7px;color:var(--txt);
-    padding:7px 10px;font:13px/1.2 inherit;min-width:240px;outline:none}
-  .sl-cfg input:focus,.sl-cfg select:focus{border-color:#6e6e6e}
-  .sl-cfg input.sl-narrow{min-width:120px;width:120px}
+  .sl-cfg input.sl-narrow{width:120px;min-width:120px}
+  .sl-field{position:relative;display:block;width:100%}
+  .sl-field > input{width:100%;padding-right:34px}
+  .sl-eyebtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    display:inline-flex;cursor:pointer;color:var(--dim2);line-height:0;background:none;border:none;padding:0}
+  .sl-eyebtn:hover{color:var(--txt)}
+  .sl-eyebtn svg{width:17px;height:17px;display:block}
+  input[type=password]::-ms-reveal,input[type=password]::-ms-clear{display:none}
+  .sl-switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;position:relative}
+  .sl-state{font-size:13px;min-width:26px}
   .sl-hint{color:var(--dim2);font-size:12px}
+  .sl-cfg .sl-btn{margin:0}
+  .sl-res{font-size:12.5px}
+  .sl-res.ok{color:var(--status-ok-text,#3fae6a)}
+  .sl-res.err{color:var(--status-fail-text,#d9534f)}
+  .sl-res.run{color:var(--dim)}
+  .sl-actions{display:flex;gap:10px;margin:6px 2px 4px}
   .sl-cfg a{color:#8ab4f8;text-decoration:none}
 
-  /* Info icon (CC convention): each field's help text is hidden behind a small
-     ⓘ next to its label; the script at the end moves the help HTML into a hover/focus
-     bubble that renders links + <code>. Neutral colour, never accent. If JS is
-     off the original .sl-help/.sl-desc text stays visible (graceful degradation). */
+  /* info bubble (both looks — neutral, never accent) */
   .sl-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
     color:var(--dim2);opacity:.7;cursor:help;flex:none;padding:0;background:none;border:none}
   .sl-info:hover,.sl-info:focus{opacity:1;outline:none;color:var(--dim)}
   .sl-info svg{width:15px;height:15px;display:block}
-  .Theme--white .sl-info,.Theme--azure .sl-info{color:#8a8a8a}
-  .sl-info-pop{position:absolute;z-index:9999;max-width:300px;background:#1c1c1c;color:#eaeaea;
-    border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:9px 11px;
-    font:12px/1.5 "Segoe UI",system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+  .sl-info-pop{position:absolute;z-index:9999;max-width:300px;background:var(--cc-surface-window,#1c1c1c);color:var(--txt);
+    border:none;border-radius:var(--rad);padding:9px 11px;font-size:12px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.5)}
   .sl-info-pop a{color:#8ab4f8}
   .sl-info-pop code{background:rgba(255,255,255,.08);padding:1px 4px;border-radius:4px;font-size:11.5px}
 
-  /* Match Unraid's native buttons via its theme vars (--button/--button-hover,
-     --text/--border) so Apply + the helpers look native + hover like the rest of
-     the GUI; fallbacks keep the dark look on themes/older builds without them. */
-  .sl-btn{background:var(--button,#2a2a2a);border:1px solid var(--border,#3a3a3a);border-radius:6px;color:var(--text,#e6e6e6);
-    padding:7px 14px;font:13px/1.2 inherit;cursor:pointer}
-  .sl-btn:hover{background:var(--button-hover,#333);border-color:var(--border,#5a5a5a)}
-  .sl-btn.sl-primary{font-weight:600}
-  .sl-btn.sl-eye{padding:7px 10px;min-width:58px}
-  .sl-res{font-size:12.5px}
-  .sl-res.ok{color:#3fae6a}
-  .sl-res.err{color:#d9534f}
-  .sl-res.run{color:var(--dim)}
-  .sl-actions{display:flex;gap:10px;margin:4px 2px 4px}
+  /* ---------- BASE look = native Unraid (no CC): lean on Unraid's form CSS ---------- */
+  .sl-card > h3{margin:14px 2px 10px;font-size:16px;font-weight:700}
+  .sl-card > h3 small{font-weight:400;color:var(--dim2);font-size:12.5px;margin-left:8px}
+  .sl-track{display:none}
+  .sl-state{color:inherit}
+  .sl-cfg .sl-tab.active{background:var(--accent)!important;background-image:none!important;color:#fff!important}
+  .sl-warn{background:rgba(241,194,27,.12);border-radius:4px;color:#f1c21b;padding:10px 12px;margin:2px 0 12px;font-size:12.5px;line-height:1.45}
+  /* inputs, selects, buttons: intentionally NOT styled here -> Unraid's native look */
 
-  .sl-switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
-  .sl-switch > input{position:absolute;opacity:0;width:0;height:0}
-  .sl-track{position:relative;width:46px;height:24px;flex:none;border-radius:999px;
-    background:#333;border:1px solid #444;transition:background .15s,border-color .15s}
-  .sl-track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
-    border-radius:50%;background:#8a8a8a;transition:transform .15s,background .15s}
-  /* checked = Unraid's orange accent */
-  .sl-switch > input:checked + .sl-track{background:#ff8c2f;border-color:#ff8c2f}
-  .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:#fff}
-  .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px #525252}
-  .sl-state{font-size:13px;color:var(--dim);min-width:26px}
-
-  /* Tabs (CC-style): a flat row of buttons; the active one carries Unraid's orange
-     underline. Cards tagged data-tab are shown only under their tab. */
-  .sl-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0 2px 16px;border-bottom:1px solid var(--line)}
-  .sl-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);
-    padding:8px 15px;font:13px/1.2 inherit;cursor:pointer;border-radius:7px 7px 0 0;margin-bottom:-1px}
-  .sl-tab:hover{color:var(--txt)}
-  .sl-tab.active{color:#ff8c2f;border-bottom-color:#ff8c2f;font-weight:600}
-  .Theme--white .sl-tab,.Theme--azure .sl-tab{color:#666}
-  .Theme--white .sl-tab.active,.Theme--azure .sl-tab.active{color:#c25a00;border-bottom-color:#c25a00}
-  .sl-card[data-hidden="1"]{display:none}
-  .sl-warn{background:#3a2a12;border:1px solid #6a4a1a;border-radius:8px;color:#f1c21b;
-    padding:10px 12px;margin:2px 0 12px;font-size:12.5px;line-height:1.45}
+  /* ---------- GLIMSTONE look = only when CannonadeCommand is installed ---------- */
+  html.cc-header-on .sl-cfg{color:var(--txt)}
+  html.cc-header-on .sl-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 3px rgba(0,0,0,.3);padding:6px 18px 18px}
+  html.cc-header-on .sl-card > h3{display:flex;align-items:baseline;gap:10px;margin:16px 2px 16px;
+    font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--txt)}
+  html.cc-header-on .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px;margin-left:0}
+  html.cc-header-on .sl-row > label{color:var(--txt)}
+  html.cc-header-on .sl-cfg input[type=text],
+  html.cc-header-on .sl-cfg input[type=password],
+  html.cc-header-on .sl-cfg select{background:var(--well);border:none;border-radius:var(--rad);color:var(--txt);
+    height:34px;padding:0 11px;font-size:13px;line-height:34px;min-width:240px;outline:none;-webkit-appearance:none;appearance:none}
+  html.cc-header-on .sl-cfg select{padding-right:30px;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 15px,calc(100% - 10px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  html.cc-header-on .sl-cfg input:focus,html.cc-header-on .sl-cfg select:focus{box-shadow:0 0 0 2px var(--accent)}
+  html.cc-header-on .sl-cfg input::placeholder{color:var(--dim2)}
+  html.cc-header-on .sl-cfg .sl-btn{background:var(--chip);border:none;border-radius:var(--rad);color:var(--txt);
+    height:32px;min-width:0;padding:0 14px;font-size:13px;line-height:1.2;font-weight:500;letter-spacing:normal;
+    text-transform:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  html.cc-header-on .sl-cfg .sl-btn:hover{background:var(--chip-h);color:var(--txt)}
+  html.cc-header-on .sl-cfg .sl-btn.sl-primary{background:var(--accent);color:var(--accent-fg);font-weight:600}
+  html.cc-header-on .sl-cfg .sl-btn.sl-primary:hover{filter:brightness(1.06)}
+  html.cc-header-on .sl-cfg .sl-switch > input[type=checkbox]{position:absolute!important;left:0;top:0;
+    width:1px!important;height:1px!important;opacity:0!important;margin:0!important;padding:0!important;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
+  html.cc-header-on .sl-track{display:block;position:relative;width:46px;height:24px;flex:none;border-radius:var(--pill);background:var(--track);transition:background .15s}
+  html.cc-header-on .sl-track::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#e6e6e6;transition:transform .15s,background .15s}
+  html.cc-header-on .sl-switch > input:checked + .sl-track{background:var(--accent)}
+  html.cc-header-on .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:var(--accent-fg)}
+  html.cc-header-on .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px var(--accent)}
+  html.cc-header-on .sl-state{color:var(--txt)}
+  html.cc-header-on .sl-cfg .sl-tab{background:none;border:none;color:var(--dim);min-width:0;
+    padding:7px 14px;font-size:13px;line-height:1.2;font-weight:500;letter-spacing:normal;text-transform:none;cursor:pointer;border-radius:var(--rad)}
+  html.cc-header-on .sl-cfg .sl-tab:hover{color:var(--txt);background:var(--chip)}
+  html.cc-header-on .sl-cfg .sl-tab.active{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)!important;font-weight:600}
+  html.cc-header-on .sl-warn{background:var(--cc-badge-bg,#3a2a12);color:#f1c21b}
 </style>
 
 <div class="sl-cfg">
@@ -310,17 +331,17 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 
     <div class="sl-card" data-tab="sources">
       <h3><?=$L['s_registry']?> <small><?=$L['s_registry_sub']?></small></h3>
-      <div class="sl-row"><label><?=$L['s_gh_token']?></label><div class="sl-in">
-        <input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
-        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-GITHUB_TOKEN',this)"><?=$L['s_show']?></button>
+      <div class="sl-row"><label><?=$L['s_gh_token']?></label><div class="sl-in sl-stack">
+        <span class="sl-field"><input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
+          <span class="sl-eyebtn" data-eye role="button" tabindex="0" onclick="slToggle('sl-GITHUB_TOKEN',this)" aria-label="<?=htmlspecialchars($L['s_show'])?>"></span></span>
         <button type="button" class="sl-btn" onclick="slCheckGitHub()"><?=$L['s_check']?></button>
         <span id="sl-gh-result" class="sl-res"></span>
         <span class="sl-hint sl-help"><?=$L['s_gh_hint']?></span></div></div>
       <div class="sl-row"><label><?=$L['s_dh_user']?></label><div class="sl-in">
         <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="<?=htmlspecialchars($L['s_dh_user_ph'])?>"></div></div>
-      <div class="sl-row"><label><?=$L['s_dh_token']?></label><div class="sl-in">
-        <input type="password" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
-        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)"><?=$L['s_show']?></button>
+      <div class="sl-row"><label><?=$L['s_dh_token']?></label><div class="sl-in sl-stack">
+        <span class="sl-field"><input type="password" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
+          <span class="sl-eyebtn" data-eye role="button" tabindex="0" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)" aria-label="<?=htmlspecialchars($L['s_show'])?>"></span></span>
         <button type="button" class="sl-btn" onclick="slCheckDockerHub()"><?=$L['s_check']?></button>
         <span id="sl-dh-result" class="sl-res"></span>
         <span class="sl-hint sl-help"><?=$L['s_dh_hint']?></span></div></div>
@@ -353,8 +374,8 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
       <div class="sl-row"><label><?=$L['s_mx_home']?></label><div class="sl-in">
         <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
       <div class="sl-row"><label><?=$L['s_mx_token']?></label><div class="sl-in">
-        <input type="password" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
-        <button type="button" class="sl-btn sl-eye" onclick="slToggle('sl-MATRIX_TOKEN',this)"><?=$L['s_show']?></button></div></div>
+        <span class="sl-field"><input type="password" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
+          <span class="sl-eyebtn" data-eye role="button" tabindex="0" onclick="slToggle('sl-MATRIX_TOKEN',this)" aria-label="<?=htmlspecialchars($L['s_show'])?>"></span></span></div></div>
       <div class="sl-row"><label><?=$L['s_mx_room']?></label><div class="sl-in">
         <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server">
         <button type="button" class="sl-btn" onclick="slCheckMatrix()"><?=$L['s_check']?></button>
@@ -417,12 +438,20 @@ function slCheck(elId, url) {
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
 }
 function slVal(n) { return (document.querySelector('[name=' + n + ']') || {}).value || ''; }
+var SL_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+var SL_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><line x1="3.5" y1="3.5" x2="20.5" y2="20.5"/></svg>';
+// Inline reveal eye: swap the icon (open <-> slashed) and toggle the input type.
 function slToggle(id, btn) {
   var i = document.getElementById(id);
   if (!i) return;
-  if (i.type === 'password') { i.type = 'text'; btn.textContent = SLT.s_hide; }
-  else { i.type = 'password'; btn.textContent = SLT.s_show; }
+  if (i.type === 'password') { i.type = 'text'; if (btn) { btn.innerHTML = SL_EYE_OFF; btn.setAttribute('aria-label', SLT.s_hide || 'Hide'); } }
+  else { i.type = 'password'; if (btn) { btn.innerHTML = SL_EYE; btn.setAttribute('aria-label', SLT.s_show || 'Show'); } }
 }
+// Paint the open-eye icon into every inline reveal control on load + keyboard toggle.
+document.querySelectorAll('[data-eye]').forEach(function (b) {
+  b.innerHTML = SL_EYE;
+  b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
+});
 function slCheckDockerHub() {
   slCheck('sl-dh-result', '/plugins/shiplog/server/dockerhub-check.php?user=' +
     encodeURIComponent(slVal('DOCKERHUB_USERNAME')) + '&token=' + encodeURIComponent(slVal('DOCKERHUB_TOKEN')));
