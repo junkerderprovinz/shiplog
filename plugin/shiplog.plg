@@ -33,6 +33,12 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.9.1
+- Fix: the changelog window no longer renders as a rounded lozenge when CannonadeCommand's
+  shape is set to pill. The window read the shape token uncapped; it is now capped so a large
+  window keeps tight corners (rounded, square, or a max of 14px at pill), matching the other
+  CannonadeCommand popups.
+
 ### 2.9.0
 #1 New "critical" risk level for breaking updates. When an upstream release note
    flags a breaking change (a required database migration, a removed extension, a
