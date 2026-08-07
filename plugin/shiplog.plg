@@ -33,6 +33,17 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only —
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 2.10.0
+- The settings page now looks native to Unraid by default and only becomes the
+  GlimStone look when CannonadeCommand is installed. Without CannonadeCommand you
+  get Unraid's own form styling (native font, inputs, buttons, checkboxes and
+  section titles); with it the page turns into cards, wells, pill tabs and toggles
+  in your accent colour.
+- Token and password fields now carry a reveal eye inside the field on the right,
+  are as wide as every other field, and their check button sits on the line below.
+- Fix: the settings page no longer forces its own font; it inherits Unraid's, so
+  the text matches the rest of the WebGUI.
+
 ### 2.9.1
 - Fix: the changelog window no longer renders as a rounded lozenge when CannonadeCommand's
   shape is set to pill. The window read the shape token uncapped; it is now capped so a large
