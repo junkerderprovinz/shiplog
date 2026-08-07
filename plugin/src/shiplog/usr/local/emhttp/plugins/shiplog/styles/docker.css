@@ -37,17 +37,31 @@
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 .sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
 
-/* The bubble adapts to Unraid's theme: defaults are dark; .sl-light is applied
-   by docker.js when the page background is light (detected by luminance). */
-.sl-bubble{position:absolute;z-index:99999;box-sizing:border-box;width:640px;max-width:95vw;
-  min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
-  --sl-bg:#1d1d1d; --sl-bg2:#161616; --sl-txt:#e6e6e6; --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
-  --sl-line:#2a2a2a; --sl-line2:#333; --sl-edge:#525252; --sl-link:#8ab4f8;
-  background:var(--sl-bg);color:var(--sl-txt);border:1px solid var(--sl-edge);border-radius:12px;
-  box-shadow:0 14px 40px rgba(0,0,0,.55);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
-.sl-bubble.sl-light{ --sl-bg:#ffffff; --sl-bg2:#f3f3f3; --sl-txt:#1c1c1c; --sl-dim:#565656; --sl-dim2:#777;
-  --sl-line:#e3e3e3; --sl-line2:#d0d0d0; --sl-edge:#bcbcbc; --sl-link:#1a56db;
-  box-shadow:0 14px 40px rgba(0,0,0,.25)}
+/* CC-popup design: a blurred + dimmed backdrop behind a CENTERED window. The backdrop dim/blur, the window
+   surface and the corner radius READ CannonadeCommand's theme tokens when CC is installed (so ShipLog's
+   changelog window matches every other CC popup — same dim, same shape, same surface), and fall back to
+   standalone values when it isn't. docker.js inserts .sl-backdrop in openFor() and removes it in close(). */
+.sl-backdrop{position:fixed;inset:0;z-index:99998;
+  background:var(--cc-backdrop-dim,rgba(0,0,0,.55));
+  -webkit-backdrop-filter:var(--cc-backdrop-blur,blur(5px));backdrop-filter:var(--cc-backdrop-blur,blur(5px));
+  animation:sl-bd-in .14s ease both}
+@keyframes sl-bd-in{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sl-backdrop{animation:none}}
+
+/* The window adapts to Unraid's theme: defaults are dark; .sl-light is applied by docker.js when the page
+   background is light (detected by luminance). Separation is by SHADE + shadow, never an outer border line. */
+.sl-bubble{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;box-sizing:border-box;
+  width:640px;max-width:95vw;min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
+  --sl-bg:var(--cc-surface-window,#242424); --sl-bg2:var(--cc-surface-4,#161616); --sl-txt:var(--cc-text,#e6e6e6);
+  --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
+  --sl-line:var(--cc-shade-line,rgba(128,128,128,.14)); --sl-line2:rgba(128,128,128,.28); --sl-edge:#525252;
+  --sl-link:#8ab4f8;
+  background:var(--sl-bg);color:var(--sl-txt);border:none;border-radius:var(--cc-b-radius,14px);
+  box-shadow:0 18px 50px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
+.sl-bubble.sl-light{ --sl-bg:var(--cc-surface-window,#ffffff); --sl-bg2:var(--cc-surface-4,#f3f3f3);
+  --sl-txt:var(--cc-text,#1c1c1c); --sl-dim:#565656; --sl-dim2:#777;
+  --sl-line:rgba(90,90,90,.18); --sl-line2:rgba(90,90,90,.30); --sl-edge:#bcbcbc; --sl-link:#1a56db;
+  box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:12px 16px;border-bottom:1px solid var(--sl-line);
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
@@ -61,8 +75,9 @@
 .sl-bubble .sl-upd{font-weight:600}
 .sl-bubble .sl-gh:hover,.sl-bubble .sl-upd:hover{background:#ff8c2f;color:#fff}
 .sl-bubble .sl-upd.sl-upd-off{background:transparent;color:var(--sl-dim);border-color:var(--sl-line2);font-weight:400;cursor:default}
-.sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);border:1px solid var(--sl-line2);
-  border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
+.sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);background:var(--cc-chip,rgba(128,128,128,.18));border:none;
+  border-radius:var(--cc-b-radius,7px);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none;transition:background .12s}
+.sl-bubble .sl-x:hover{background:var(--cc-chip-hover,rgba(128,128,128,.30));color:var(--sl-txt)}
 .sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid var(--sl-line)}
 .sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
   color:var(--sl-dim2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
