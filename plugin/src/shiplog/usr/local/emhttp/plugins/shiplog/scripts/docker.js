@@ -272,6 +272,7 @@
   function close() {
     if (open) {
       if (open._ro) { try { open._ro.disconnect(); } catch (e) {} }
+      if (open._backdrop) { try { open._backdrop.remove(); } catch (e) {} } // #8: tear down the CC-popup backdrop
       open.remove();
       open = null;
     }
@@ -587,10 +588,18 @@
 
   function openFor(anchor, st) {
     close();
+    // #8: CC-popup design — a blurred+dimmed backdrop behind a CENTERED window (styled via CC tokens with
+    // standalone fallbacks in docker.css). The backdrop goes in FIRST so it paints behind the window; a click
+    // on it closes (the document-level outside-click listener would too, but a direct handler is clearer).
+    const bd = el("div", "sl-backdrop");
+    if (isLightBg()) bd.classList.add("sl-light");
+    bd.addEventListener("click", () => close());
+    document.body.appendChild(bd);
     const b = el("div", "sl-bubble", bubbleHTML(st));
     if (isLightBg()) b.classList.add("sl-light"); // match Unraid's light themes
     document.body.appendChild(b);
-    // restore the user's saved size (the bubble is resizable, drag the corner).
+    b._backdrop = bd;
+    // restore the user's saved size (the window is resizable, drag the corner).
     // The stored w/h are offsetWidth/offsetHeight (border-box); .sl-bubble is
     // box-sizing:border-box so writing them back to style.width/height is a fixed
     // point. Do NOT drop that box-sizing — under content-box this round-trip would
@@ -600,13 +609,8 @@
       if (s && s.w) b.style.width = s.w + "px";
       if (s && s.h) b.style.height = s.h + "px";
     } catch (e) {}
-    const r = anchor.getBoundingClientRect();
-    const w = b.offsetWidth || 640;
-    const maxLeft = window.scrollX + document.documentElement.clientWidth - w - 12;
-    let left = Math.min(window.scrollX + r.left, maxLeft);
-    left = Math.max(window.scrollX + 8, left);
-    b.style.left = left + "px";
-    b.style.top = window.scrollY + r.bottom + 8 + "px";
+    // The window is centered by CSS (position:fixed, translate(-50%,-50%)) like every other CC popup — no
+    // anchor math. `anchor` stays in the signature only so the caller need not change.
     b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); close(); });
     const updBtn = b.querySelector(".sl-upd");
     if (updBtn) updBtn.addEventListener("click", (e) => {
