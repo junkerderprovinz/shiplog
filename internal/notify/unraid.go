@@ -70,6 +70,17 @@ func (u *Unraid) run(ctx context.Context, args []string) error {
 // it is unit-testable without invoking the script.
 func updateArgs(st model.UpdateStatus) []string {
 	name := st.Container.Name
+	if st.Unmaintained {
+		reason := st.UnmaintainedReason
+		if reason == "" {
+			reason = "no longer maintained"
+		}
+		args := []string{"-e", "ShipLog", "-s", fmt.Sprintf("%s: no longer maintained", name), "-d", reason, "-i", "warning"}
+		if link := updateLink(st); link != "" {
+			args = append(args, "-l", link)
+		}
+		return args
+	}
 	from := st.Container.Tag
 	to := st.NewestTag
 	if st.Changelog != nil && len(st.Changelog.Entries) > 0 && st.Changelog.Entries[0].Tag != "" {

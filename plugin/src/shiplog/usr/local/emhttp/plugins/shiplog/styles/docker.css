@@ -37,6 +37,18 @@
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 .sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
 
+/* "Not maintained" state — an app that has reached a dead end (template pulled
+   from Community Applications, image gone, or upstream repo archived). This is a
+   separate axis from update risk, so it gets its own filled-red marker (ShipLog's
+   "severe" red #c81e28) that reads as a real problem. STATIC — no motion. NOT
+   gated on CannonadeCommand, so the colour shows on a plain Unraid too. */
+.sl-chip.sl-unmaint{color:#fff;background:#c81e28;border-radius:6px;padding:0 9px;font-weight:600}
+.sl-chip.sl-unmaint:hover{color:#fff;background:#b31b24}
+.sl-chip.sl-unmaint .sl-ico{opacity:1;width:13px;height:13px}
+.sl-pill.sl-unmaint{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-unmaint .sl-dot{background:#fff}
+.sl-unmaint-note{margin:8px 0 2px;padding:8px 10px;border-radius:6px;
+  background:rgba(200,30,40,.12);color:#e5645f;font:13px/1.45 inherit}
+
 /* CC-popup design: a blurred + dimmed backdrop behind a CENTERED window. The backdrop dim/blur, the window
    surface and the corner radius READ CannonadeCommand's theme tokens when CC is installed (so ShipLog's
    changelog window matches every other CC popup — same dim, same shape, same surface), and fall back to

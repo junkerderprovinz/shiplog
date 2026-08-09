@@ -135,6 +135,19 @@ func (m *Matrix) SendMessage(ctx context.Context, text, html string) error {
 // format builds the plain + HTML message bodies for an update.
 func format(st model.UpdateStatus) (text, html string) {
 	name := st.Container.Name
+	if st.Unmaintained {
+		reason := st.UnmaintainedReason
+		if reason == "" {
+			reason = "no longer maintained"
+		}
+		text = fmt.Sprintf("🚢 ShipLog · %s: no longer maintained (%s)", name, reason)
+		html = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: no longer maintained (%s)", esc(name), esc(reason))
+		if link := updateLink(st); link != "" {
+			text += "\n" + link
+			html += `<br/><a href="` + esc(link) + `">` + esc(link) + `</a>`
+		}
+		return text, html
+	}
 	from := st.Container.Tag
 	to := st.NewestTag
 	if st.Changelog != nil && len(st.Changelog.Entries) > 0 && st.Changelog.Entries[0].Tag != "" {

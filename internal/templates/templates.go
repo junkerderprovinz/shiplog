@@ -20,10 +20,11 @@ import (
 // Dir is the standard dockerMan user-template directory on Unraid.
 const Dir = "/boot/config/plugins/dockerMan/templates-user"
 
-// tmpl mirrors the two template fields we consume.
+// tmpl mirrors the template fields we consume.
 type tmpl struct {
-	Name    string `xml:"Name"`
-	Project string `xml:"Project"`
+	Name        string `xml:"Name"`
+	Project     string `xml:"Project"`
+	TemplateURL string `xml:"TemplateURL"`
 }
 
 // ProjectPages maps container name (lower-cased) → the template's <Project>
@@ -55,4 +56,36 @@ func ProjectPages(dir string) map[string]string {
 		pages[name] = project
 	}
 	return pages
+}
+
+// TemplateURLs maps container name (lower-cased) → the template's <TemplateURL>,
+// for every readable template in dir that declares one. That URL is where
+// Community Applications fetched the template from; a 404 there later means the
+// app was pulled from CA / its source deleted. Best-effort, like ProjectPages.
+func TemplateURLs(dir string) map[string]string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	urls := make(map[string]string)
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(strings.ToLower(e.Name()), ".xml") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		var t tmpl
+		if xml.Unmarshal(data, &t) != nil {
+			continue
+		}
+		name := strings.ToLower(strings.TrimSpace(t.Name))
+		u := strings.TrimSpace(t.TemplateURL)
+		if name == "" || u == "" {
+			continue
+		}
+		urls[name] = u
+	}
+	return urls
 }

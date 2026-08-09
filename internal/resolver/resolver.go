@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -19,6 +20,13 @@ import (
 	"sync"
 	"time"
 )
+
+// ErrRepoNotFound signals that the image repository no longer exists in the
+// registry (a definitive 404 on the tags list / token realm), i.e. the image
+// was deleted upstream. Callers use errors.Is to distinguish "image gone" from a
+// transient lookup failure and mark the container unmaintained rather than
+// carrying a stale "up to date" verdict forward.
+var ErrRepoNotFound = errors.New("image repository not found in the registry")
 
 // Accept lists the manifest media types we ask for on a HEAD, covering both
 // multi-arch indexes/lists and single-arch manifests, OCI and Docker flavors.
@@ -318,6 +326,11 @@ func (r *Resolver) fetchTags(ctx context.Context, base, host, pathRepo string) (
 		r.noteHostOutcome(host, resp.StatusCode)
 		if resp.StatusCode != http.StatusOK {
 			_ = resp.Body.Close()
+			// A definitive 404 means the repository is gone (deleted upstream) —
+			// signal it distinctly so the engine can mark the container unmaintained.
+			if resp.StatusCode == http.StatusNotFound {
+				return nil, ErrRepoNotFound
+			}
 			// A 429 that survives the retries is the registry rate-limiting our
 			// anonymous reads; say so plainly so the engine can keep the last-known
 			// result (and the user knows a token would help) instead of "unknown".
@@ -573,6 +586,10 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
+		// A 404 from the token realm means the repository doesn't exist (deleted).
+		if resp.StatusCode == http.StatusNotFound {
+			return "", 0, ErrRepoNotFound
+		}
 		// A rate-limited TOKEN realm must trip the registry's breaker too:
 		// auth.docker.io/ghcr token throttling is the most common 429 source,
 		// and without this the sweep would keep re-hammering it per container.

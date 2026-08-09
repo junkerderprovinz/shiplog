@@ -57,6 +57,8 @@
   "d_close": "close",
   "d_uptodate": "up to date",
   "d_deprecated": "DEPRECATED",
+  "d_unmaintained": "Not maintained",
+  "d_unmaintainedHint": "No more updates. Consider migrating to a maintained alternative.",
   "d_updateNow": "Update now",
   "d_updateHint": "triggers Unraid's own update for this container",
   "d_updateGone": "Couldn't find Unraid's update button — use 'apply update' on the row.",

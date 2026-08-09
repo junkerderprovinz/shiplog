@@ -4,13 +4,16 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
+	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/risk"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
 	"github.com/junkerderprovinz/shiplog/internal/templates"
@@ -80,6 +83,14 @@ type Engine struct {
 	// (sources precedence: override > curated > project > OCI). Injectable so
 	// tests run without an Unraid flash mount; nil-safe.
 	projectPages func() map[string]string
+	// templateURLs loads container-name → template <TemplateURL> per sweep; a 404
+	// at that URL means the app was pulled from Community Applications. Injectable
+	// (tests) and nil-safe.
+	templateURLs func() map[string]string
+	// checkURL GETs a URL and returns its HTTP status (0 on a transport error).
+	// Used to probe a template's <TemplateURL> for a 404. Injectable so tests
+	// avoid the network; nil-safe.
+	checkURL func(ctx context.Context, url string) int
 }
 
 // WithSummarizer enables AI changelog summaries (returns e for chaining). Pass a
@@ -119,7 +130,31 @@ func New(c Collector, r Resolver, cl Changelogger, s Storer, interval time.Durat
 		projectPages: func() map[string]string {
 			return templates.ProjectPages(templates.Dir)
 		},
+		templateURLs: func() map[string]string {
+			return templates.TemplateURLs(templates.Dir)
+		},
+		checkURL: defaultCheckURL,
 	}
+}
+
+// availClient probes template URLs. Short timeout, best-effort — a slow or
+// unreachable host must never hold up a sweep.
+var availClient = &http.Client{Timeout: 8 * time.Second}
+
+// defaultCheckURL GETs url and returns its HTTP status, or 0 on a transport
+// error. GET (not HEAD) because raw.githubusercontent serves small files and not
+// every host answers HEAD; the tiny body is read-closed and discarded.
+func defaultCheckURL(ctx context.Context, url string) int {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return 0
+	}
+	resp, err := availClient.Do(req)
+	if err != nil {
+		return 0
+	}
+	_ = resp.Body.Close()
+	return resp.StatusCode
 }
 
 // Sweep discovers every container and stores its update status. A failure for
@@ -142,6 +177,12 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if e.projectPages != nil {
 		projects = e.projectPages()
 	}
+	// Container-template source URLs, read once per sweep — to detect a template
+	// that was pulled from Community Applications (its <TemplateURL> now 404s).
+	var templateURLs map[string]string
+	if e.templateURLs != nil {
+		templateURLs = e.templateURLs()
+	}
 	// One registry lookup per DISTINCT (repo, tag) per sweep: duplicate images
 	// (multi-container stacks, stopped duplicates) share a single Resolve. The
 	// memo lives exactly one sweep, so there is no staleness to manage.
@@ -160,7 +201,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		go func(c model.Container) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := e.check(ctx, c, resolve, overrides, projects)
+			st := e.check(ctx, c, resolve, overrides, projects, templateURLs)
 			if uerr := e.store.Upsert(st); uerr != nil {
 				// Store failure for one row must not crash the sweep; the next
 				// sweep retries. (No logger dependency here on purpose.)
@@ -247,7 +288,7 @@ func noUpstreamReason(c model.Container) (string, bool) {
 }
 
 // check runs the per-container pipeline and returns the status to store.
-func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, projects map[string]string) model.UpdateStatus {
+func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, projects map[string]string, templateURLs map[string]string) model.UpdateStatus {
 	// Redirect the changelog source before anything else: a user override or a
 	// curated LSIO default wins over the image's OCI source label (which is often
 	// the packaging wrapper, plain wrong, or missing). srcKind labels the origin
@@ -288,6 +329,23 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 
 	newestTag, newestDigest, newestVerTag, newestVerDigest, err := resolve(ctx, c.Repo, c.Tag, c.Digest)
 	if err != nil {
+		// A definitive "repository not found" (404) means the image was deleted
+		// upstream — the app is a dead end. Mark it unmaintained (nothing to update
+		// to) instead of carrying a stale "up to date" verdict forward.
+		if errors.Is(err, resolver.ErrRepoNotFound) {
+			st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, "image removed from the registry"
+			st.Unmaintained, st.UnmaintainedReason = true, "Image no longer in the registry"
+			switch {
+			case hasPrior && prior.RunningVersion != "":
+				st.RunningVersion = prior.RunningVersion
+			case isVersion(c.Tag):
+				st.RunningVersion = c.Tag
+			case isVersion(c.ImageVersion):
+				st.RunningVersion = c.ImageVersion
+			}
+			e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
+			return st
+		}
 		// A transient lookup failure (e.g. a 429 burst against the registry) must
 		// NOT blank a container we already resolved. When we have a usable prior
 		// row, carry its verdict + changelog forward unchanged and stay silent —
@@ -391,7 +449,35 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 			e.maybeNotify(ctx, st, prior, hasPrior)
 		}
 	}
+	// Availability (independent of updates): an installed app can reach a dead end
+	// while still being "up to date" — its Unraid template was pulled from
+	// Community Applications (its <TemplateURL> now 404s), or its source repo is
+	// archived. Checked for every managed container, not only those with an update.
+	if !st.Unmaintained {
+		if u := templateURLs[strings.ToLower(c.Name)]; c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound {
+			st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
+		} else if st.Changelog != nil && st.Changelog.Deprecated {
+			st.Unmaintained, st.UnmaintainedReason = true, "Source repository archived"
+		}
+	}
+	e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
 	return st
+}
+
+// maybeNotifyUnmaintained fires a single notification when a container first
+// becomes unmaintained (template pulled from CA, image gone, or repo archived).
+// Like maybeNotify it needs a prior row (so first sight seeds silently) and only
+// fires on the transition INTO the state, never on every poll.
+func (e *Engine) maybeNotifyUnmaintained(ctx context.Context, st, prior model.UpdateStatus, hasPrior bool) {
+	if e.notifier == nil || !hasPrior || !st.Unmaintained {
+		return
+	}
+	if prior.Unmaintained {
+		return // already notified for this state
+	}
+	if err := e.notifier.Notify(ctx, st); err != nil {
+		log.Printf("shiplog: unmaintained notify failed for %s: %v", st.Container.Name, err)
+	}
 }
 
 // decideRunningVersion determines the version we believe is currently running.
