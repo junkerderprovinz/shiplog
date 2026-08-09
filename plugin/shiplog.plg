@@ -457,7 +457,7 @@ rm -f &plgPath;/*.txz
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>33c861fc5699a710f621b71a918b875d580ed0395637868ee19f6c74a6c3dbca</SHA256>
+  <SHA256>fbec1f730c879b0bb5a0b9f403264df64fca1fe2c33f4bcf9d27f3434e1f337e</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
