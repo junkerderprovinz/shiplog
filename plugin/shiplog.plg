@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "Junker der Provinz">
-  <!ENTITY version   "3.0.1">
+  <!ENTITY version   "3.1.0">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -32,6 +32,19 @@
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
+
+### 3.1.0
+✨ **Added**
+- **"Not maintained" warning for dead-end apps.** ShipLog now flags an installed
+   app that has reached a dead end, on a separate axis from the update risk: its
+   Unraid template was pulled from Community Applications (its source template now
+   404s), its image was deleted from the registry, or its upstream source
+   repository was archived. In the Docker tab a static red "Not maintained" button
+   replaces the Changelog chip (click it for the exact reason, plus the last
+   changelog if one is still available), and a single Matrix / Unraid notification
+   fires when an app first turns unmaintained. Healthy apps are untouched. This
+   closes the gap that let an installed app quietly stop getting updates without
+   you noticing (the case that prompted it: an app removed from CA).
 
 ### 3.0.1
 🐛 **Fixed**
