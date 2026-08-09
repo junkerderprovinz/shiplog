@@ -57,6 +57,8 @@
   "d_close": "zavřít",
   "d_uptodate": "aktuální",
   "d_deprecated": "ZASTARALÉ",
+  "d_unmaintained": "Neudržováno",
+  "d_unmaintainedHint": "Žádné další aktualizace. Zvažte přechod na udržovanou alternativu.",
   "d_updateNow": "Aktualizovat nyní",
   "d_updateHint": "spustí vlastní aktualizaci Unraidu pro tento kontejner",
   "d_updateGone": "Tlačítko aktualizace Unraidu nenalezeno — použijte „použít aktualizaci“ v řádku.",

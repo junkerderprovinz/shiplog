@@ -57,6 +57,8 @@
   "d_close": "luk",
   "d_uptodate": "opdateret",
   "d_deprecated": "FORÆLDET",
+  "d_unmaintained": "Ikke vedligeholdt",
+  "d_unmaintainedHint": "Ingen flere opdateringer. Overvej at skifte til et vedligeholdt alternativ.",
   "d_updateNow": "Opdater nu",
   "d_updateHint": "udløser Unraids egen opdatering for denne container",
   "d_updateGone": "Kunne ikke finde Unraids opdateringsknap — brug »anvend opdatering« i rækken.",

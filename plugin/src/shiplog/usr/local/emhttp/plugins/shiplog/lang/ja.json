@@ -57,6 +57,8 @@
   "d_close": "閉じる",
   "d_uptodate": "最新",
   "d_deprecated": "非推奨",
+  "d_unmaintained": "メンテナンス終了",
+  "d_unmaintainedHint": "今後の更新はありません。メンテナンスされている代替への移行を検討してください。",
   "d_updateNow": "今すぐ更新",
   "d_updateHint": "このコンテナに対してUnraid自身の更新を実行します",
   "d_updateGone": "Unraidの更新ボタンが見つかりません — 行の「更新を適用」を使用してください。",

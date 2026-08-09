@@ -57,6 +57,8 @@
   "d_close": "关闭",
   "d_uptodate": "最新",
   "d_deprecated": "已弃用",
+  "d_unmaintained": "不再维护",
+  "d_unmaintainedHint": "不再有更新。建议迁移到有维护的替代方案。",
   "d_updateNow": "立即更新",
   "d_updateHint": "为此容器触发 Unraid 自己的更新",
   "d_updateGone": "找不到 Unraid 的更新按钮 — 请在该行使用“应用更新”。",

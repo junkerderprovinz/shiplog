@@ -57,6 +57,8 @@
   "d_close": "închide",
   "d_uptodate": "la zi",
   "d_deprecated": "ÎNVECHIT",
+  "d_unmaintained": "Neîntreținut",
+  "d_unmaintainedHint": "Fără alte actualizări. Ia în calcul migrarea către o alternativă întreținută.",
   "d_updateNow": "Actualizează acum",
   "d_updateHint": "declanșează propria actualizare a Unraid pentru acest container",
   "d_updateGone": "Butonul de actualizare al Unraid nu a fost găsit — folosește „aplică actualizarea” pe rând.",
