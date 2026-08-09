@@ -57,6 +57,8 @@
   "d_close": "đóng",
   "d_uptodate": "đã cập nhật",
   "d_deprecated": "ĐÃ NGỪNG DÙNG",
+  "d_unmaintained": "Không còn bảo trì",
+  "d_unmaintainedHint": "Không còn cập nhật. Cân nhắc chuyển sang một lựa chọn được bảo trì.",
   "d_updateNow": "Cập nhật ngay",
   "d_updateHint": "kích hoạt bản cập nhật riêng của Unraid cho container này",
   "d_updateGone": "Không tìm thấy nút cập nhật của Unraid — dùng “áp dụng cập nhật” trên hàng.",

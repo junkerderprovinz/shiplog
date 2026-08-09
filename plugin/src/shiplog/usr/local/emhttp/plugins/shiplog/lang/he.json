@@ -57,6 +57,8 @@
   "d_close": "סגור",
   "d_uptodate": "מעודכן",
   "d_deprecated": "הוצא משימוש",
+  "d_unmaintained": "לא מתוחזק",
+  "d_unmaintainedHint": "אין עוד עדכונים. שקול מעבר לחלופה מתוחזקת.",
   "d_updateNow": "עדכן עכשיו",
   "d_updateHint": "מפעיל את העדכון של Unraid עצמו עבור מכולה זו",
   "d_updateGone": "לא נמצא כפתור העדכון של Unraid — השתמש ב“החל עדכון” בשורה.",
