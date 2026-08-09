@@ -21,8 +21,12 @@ name: Release
 # artifact, creates no release and touches nothing on main.
 
 on:
-  push:
-    tags: ['v*']
+  # tag trigger temporarily disabled to recreate the v3.0.0 release from its
+  # original historical commit without the auto-build (which always packages
+  # current main's tip, not the tag's target) clobbering it with today's code
+  # under an older version label. Re-enable right after.
+  # push:
+  #   tags: ['v*']
   workflow_dispatch:
 
 permissions:
