@@ -149,6 +149,7 @@ func defaultCheckURL(ctx context.Context, url string) int {
 	if err != nil {
 		return 0
 	}
+	req.Header.Set("User-Agent", "shiplog")
 	resp, err := availClient.Do(req)
 	if err != nil {
 		return 0
@@ -454,7 +455,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	// Community Applications (its <TemplateURL> now 404s), or its source repo is
 	// archived. Checked for every managed container, not only those with an update.
 	if !st.Unmaintained {
-		if u := templateURLs[strings.ToLower(c.Name)]; c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound {
+		if u := templateURLs[strings.ToLower(c.Name)]; c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
 			st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
 		} else if st.Changelog != nil && st.Changelog.Deprecated {
 			st.Unmaintained, st.UnmaintainedReason = true, "Source repository archived"
@@ -462,6 +463,40 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	}
 	e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
 	return st
+}
+
+// repoGone corroborates a template-URL 404 before trusting it as "removed from
+// Community Applications". A raw.githubusercontent.com URL 404s not only when
+// an app is genuinely pulled from CA, but whenever its source repo is renamed
+// (raw URLs don't follow GitHub's rename redirect, unlike github.com/{owner}/
+// {repo} itself) or the template file/branch simply moved inside a repo that
+// is still very much alive — both are routine maintenance, not removal, and
+// were observed firing false positives across several unrelated apps in the
+// same sweep, including our own after a feed-repo rename. For a recognizable
+// GitHub raw URL, only report the app as gone when the underlying repository
+// is unreachable too; any other host has no such secondary signal, so its 404
+// is trusted as-is.
+func (e *Engine) repoGone(ctx context.Context, templateURL string) bool {
+	repoURL, ok := githubRepoURL(templateURL)
+	if !ok || e.checkURL == nil {
+		return true
+	}
+	return e.checkURL(ctx, repoURL) != http.StatusOK
+}
+
+// githubRepoURL extracts "https://github.com/{owner}/{repo}" from a
+// "https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path...}" template
+// URL. Returns ok=false for any other host.
+func githubRepoURL(u string) (string, bool) {
+	const prefix = "https://raw.githubusercontent.com/"
+	if !strings.HasPrefix(u, prefix) {
+		return "", false
+	}
+	parts := strings.SplitN(strings.TrimPrefix(u, prefix), "/", 4)
+	if len(parts) < 3 || parts[0] == "" || parts[1] == "" {
+		return "", false
+	}
+	return "https://github.com/" + parts[0] + "/" + parts[1], true
 }
 
 // maybeNotifyUnmaintained fires a single notification when a container first

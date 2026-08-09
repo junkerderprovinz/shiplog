@@ -164,6 +164,54 @@ func TestSweepFlagsUnmaintained(t *testing.T) {
 	}
 }
 
+// A GitHub raw template URL that 404s must NOT be trusted as "removed from CA"
+// when the underlying repo is still reachable: reproduces a real false-positive
+// (a renamed feed repo, or a template file that moved within a repo that is
+// very much alive still 404s at its OLD raw path forever, since raw URLs don't
+// follow GitHub's rename redirect the way github.com/{owner}/{repo} does).
+// Confirms both directions: repo alive → not flagged; repo also gone → flagged.
+func TestSweepGithubRawURLRotIsNotFlaggedUnmaintained(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "moved", Name: "MovedApp", Repo: "ghcr.io/x/moved", Tag: "1.0.0", Digest: "sha256:m", Managed: true},
+		{ID: "gone", Name: "TrulyGoneApp", Repo: "ghcr.io/x/gone2", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/moved": {tag: "1.0.0", dig: "sha256:m"},
+		"ghcr.io/x/gone2": {tag: "1.0.0", dig: "sha256:g"},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{
+			"movedapp":     "https://raw.githubusercontent.com/someowner/renamed-repo/main/app/app.xml",
+			"trulygoneapp": "https://raw.githubusercontent.com/anotherowner/dead-repo/main/app/app.xml",
+		}
+	}
+	e.checkURL = func(_ context.Context, url string) int {
+		switch url {
+		case "https://raw.githubusercontent.com/someowner/renamed-repo/main/app/app.xml":
+			return 404 // the historical path is dead
+		case "https://github.com/someowner/renamed-repo":
+			return 200 // but the repo itself is very much alive
+		case "https://raw.githubusercontent.com/anotherowner/dead-repo/main/app/app.xml":
+			return 404
+		case "https://github.com/anotherowner/dead-repo":
+			return 404 // repo is genuinely gone too
+		}
+		t.Fatalf("unexpected checkURL call: %s", url)
+		return 0
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if m := st.rows["moved"]; m.Unmaintained {
+		t.Fatalf("moved: a dead raw path with a live repo must NOT be flagged unmaintained, got reason %q", m.UnmaintainedReason)
+	}
+	if g := st.rows["gone"]; !g.Unmaintained || g.UnmaintainedReason != "Removed from Community Applications" {
+		t.Fatalf("gone: a dead raw path AND a dead repo must still be flagged, got %v/%q", g.Unmaintained, g.UnmaintainedReason)
+	}
+}
+
 // An archived upstream repo (changelog Deprecated) flags the container as
 // unmaintained even when its image and template are still present.
 func TestSweepFlagsArchivedRepo(t *testing.T) {
