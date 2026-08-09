@@ -34,45 +34,13 @@ what changed from your running image to the newest, with a risk badge. Read-only
 optional AI summaries (Ollama) and Matrix alerts.
 
 ### 3.0.0
-- The settings page now looks native to Unraid by default and only becomes the
-  GlimStone look when CannonadeCommand is installed. Without CannonadeCommand you
-  get Unraid's own form styling (native font, inputs, buttons, checkboxes and
-  section titles); with it the page turns into cards, wells, pill tabs and toggles
-  in your accent colour.
-- Token and password fields now carry a reveal eye inside the field on the right,
-  are as wide as every other field, and their check button sits on the line below.
-- Fix: the settings page no longer forces its own font; it inherits Unraid's, so
-  the text matches the rest of the WebGUI.
-- Fix: the changelog window no longer renders as a rounded lozenge when CannonadeCommand's
-  shape is set to pill. The window read the shape token uncapped; it is now capped so a large
-  window keeps tight corners (rounded, square, or a max of 14px at pill), matching the other
-  CannonadeCommand popups.
+✨ **Added**
 - New "critical" risk level for breaking updates. When an upstream release note
    flags a breaking change (a required database migration, a removed extension, a
    dropped API), ShipLog now escalates that update to critical and shows a red
    badge, instead of grading a rolling ":latest" digest move as a harmless "low".
    This is the case that lets a breaking swap (for example Immich moving off
    pgvecto.rs to VectorChord) slip past unnoticed.
-- The changelog for a version jump now spans every release between your running
-   version and the newest one, newest first, so a multi-version update surfaces
-   the intermediate release that carries the breaking note, not just the single
-   newest release.
-- A critical update raises an Unraid "alert" notification (the level above a
-   major-version "warning"), so it stands out in the notification centre and in
-   whatever notification agents you have wired up.
-- Housekeeping: ShipLog now drops the leftover row for a container that was
-   recreated with a new ID (a local rebuild, or an update that replaces the
-   container) or removed entirely, so the list no longer accumulates stale
-   duplicate entries for things that are gone.
-- More containers now show a real changelog. A container running a bare
-   image-ID, a locally built image, or a digest-pinned image used to show no
-   release notes even when the image names its source repo; ShipLog now reads
-   that source label and shows the running version's notes anyway. Fixes the
-   common case of your own locally rebuilt containers showing nothing.
-- Curated more common images to their GitHub source, so they show real
-   release notes instead of a bare version delta: Redis, MariaDB, Ollama,
-   MinIO, jlesage FileBot and HandBrake, Storj, Nginx Proxy Manager, MySpeed
-   and ClamAV.
 - New "Native Unraid notifications" setting (community request, off by
    default), under Settings -> Notifications. Turn it on and ShipLog also sends
    its update alerts through Unraid's own notification system: they show in the
@@ -87,13 +55,44 @@ optional AI summaries (Ollama) and Matrix alerts.
    net.unraid.docker.managed label)  -  the same third-party distinction CA Auto
    Update uses. They drop out of the list and are no longer checked against the
    registry. Translated across the 26 supported languages.
-- The changelog popup no longer grew by a couple of pixels every time you
-   opened it. Its remembered size is now applied exactly, so the window stays
-   the size you left it at instead of creeping larger with each click.
-- The daemon no longer prints "shiplog: started (pid, port)" into Unraid's
-   footer status bar on array start. The start line now goes to the ShipLog
-   log only; genuine errors still surface. Purely cosmetic  -  nothing about
-   the service changes.
+- New auto-update safety switch (community suggestion): "Never if changelog
+  mentions"  -  a comma-separated word list (e.g. "breaking, migration
+  required"). An update that is otherwise eligible under your level policy is
+  blocked, never applied, when the pending version's own release notes contain
+  one of these words, case-insensitive. Catches an app that calls out a
+  breaking change even in a minor or patch release, which the SemVer level
+  alone can't. Blocked updates are still reported in the run summary (log +
+  Matrix)  -  including in Dry run, so you can see the safety switch working
+  before you trust it live. Off by default; empty word list = no effect.
+
+🎨 **Design**
+- The settings page now looks native to Unraid by default and only becomes the
+  GlimStone look when CannonadeCommand is installed. Without CannonadeCommand you
+  get Unraid's own form styling (native font, inputs, buttons, checkboxes and
+  section titles); with it the page turns into cards, wells, pill tabs and toggles
+  in your accent colour.
+- Token and password fields now carry a reveal eye inside the field on the right,
+  are as wide as every other field, and their check button sits on the line below.
+- The silent-update spinner is now much more visible  -  a translucent WHITE veil over the
+  container's logo (with a higher-contrast ring) instead of the earlier faint dark tint.
+
+⚡ **Improved**
+- The changelog for a version jump now spans every release between your running
+   version and the newest one, newest first, so a multi-version update surfaces
+   the intermediate release that carries the breaking note, not just the single
+   newest release.
+- A critical update raises an Unraid "alert" notification (the level above a
+   major-version "warning"), so it stands out in the notification centre and in
+   whatever notification agents you have wired up.
+- More containers now show a real changelog. A container running a bare
+   image-ID, a locally built image, or a digest-pinned image used to show no
+   release notes even when the image names its source repo; ShipLog now reads
+   that source label and shows the running version's notes anyway. Fixes the
+   common case of your own locally rebuilt containers showing nothing.
+- Curated more common images to their GitHub source, so they show real
+   release notes instead of a bare version delta: Redis, MariaDB, Ollama,
+   MinIO, jlesage FileBot and HandBrake, Storj, Nginx Proxy Manager, MySpeed
+   and ClamAV.
 - Changelogs now load far more reliably. ShipLog fetches each repo's release
    list once and caches it with an ETag, so a scan over many containers barely
    touches GitHub's API. The usual reason a changelog came back empty was
@@ -105,19 +104,6 @@ optional AI summaries (Ollama) and Matrix alerts.
 - When GitHub's rate limit really is reached, the bubble now says so and points
    you to the GitHub token field in ShipLog's settings. A personal access token
    (no scopes needed) raises the limit to about 5000 requests per hour.
-- Translated the two new messages into all 26 supported languages.
-- New auto-update safety switch (community suggestion): "Never if changelog
-  mentions"  -  a comma-separated word list (e.g. "breaking, migration
-  required"). An update that is otherwise eligible under your level policy is
-  blocked, never applied, when the pending version's own release notes contain
-  one of these words, case-insensitive. Catches an app that calls out a
-  breaking change even in a minor or patch release, which the SemVer level
-  alone can't. Blocked updates are still reported in the run summary (log +
-  Matrix)  -  including in Dry run, so you can see the safety switch working
-  before you trust it live. Off by default; empty word list = no effect.
-- Changelogs render as formatted text now (headings, bold, code, links, lists),
-  and stray HTML entities from upstream release notes no longer show literally.
-  Everything is escaped before rendering, so no upstream HTML runs in the page.
 - The container template's Project page joins the changelog-source chain
   (community suggestion): manual override, then the curated default, then the
   template's GitHub Project link, then the image's OCI source label. This fixes
@@ -145,12 +131,34 @@ optional AI summaries (Ollama) and Matrix alerts.
 - Common LinuxServer apps now resolve to their upstream project out of the box
   (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) instead of the
   wrapper's dependency-bump log. A manual override always wins.
-- The silent-update spinner is now much more visible  -  a translucent WHITE veil over the
-  container's logo (with a higher-contrast ring) instead of the earlier faint dark tint.
+
+🐛 **Fixed**
+- Fix: the settings page no longer forces its own font; it inherits Unraid's, so
+  the text matches the rest of the WebGUI.
+- Fix: the changelog window no longer renders as a rounded lozenge when CannonadeCommand's
+  shape is set to pill. The window read the shape token uncapped; it is now capped so a large
+  window keeps tight corners (rounded, square, or a max of 14px at pill), matching the other
+  CannonadeCommand popups.
+- Housekeeping: ShipLog now drops the leftover row for a container that was
+   recreated with a new ID (a local rebuild, or an update that replaces the
+   container) or removed entirely, so the list no longer accumulates stale
+   duplicate entries for things that are gone.
+- The changelog popup no longer grew by a couple of pixels every time you
+   opened it. Its remembered size is now applied exactly, so the window stays
+   the size you left it at instead of creeping larger with each click.
+- The daemon no longer prints "shiplog: started (pid, port)" into Unraid's
+   footer status bar on array start. The start line now goes to the ShipLog
+   log only; genuine errors still surface. Purely cosmetic  -  nothing about
+   the service changes.
+- Changelogs render as formatted text now (headings, bold, code, links, lists),
+  and stray HTML entities from upstream release notes no longer show literally.
+  Everything is escaped before rendering, so no upstream HTML runs in the page.
+
+🌐 **Translations**
+- Translated the two new messages into all 26 supported languages.
 
 ### 2.0.0
-- ShipLog grows from a read-only advisor into one that can also ACT: it can now update your
-  containers for you, on a schedule, gated by version level  -  so this is a major release.
+✨ **Added**
 - NEW: scheduled auto-update, gated by version level (Unraid plugin only, off by default). ShipLog
   can now apply container updates for you on a schedule  -  but only up to the level you choose:
   Patch, Minor or Major. Unknown / non-versioned tags are never auto-updated, and rolling ":latest"
@@ -167,7 +175,157 @@ optional AI summaries (Ollama) and Matrix alerts.
 - NEW: with "Silent update" on, a spinner overlays the container's logo with a white veil while the
   update runs, so you can clearly see it is in progress even though the download-log window stays
   hidden. It clears itself the moment the update finishes.
-- All new settings text is translated across the 26 supported languages.
+- New "Updates" settings for what happens when you click "Update now" in a changelog
+  bubble (ShipLog stays read-only  -  it triggers Unraid's own update either way):
+  "Ask before updating" (on by default) shows a confirmation first; "Silent update"
+  (off by default) runs the update without Unraid's pop-up download-log window  -  the
+  update still runs to completion in the background.
+- New logo: a gold anchor in a ring, in two variants  -  a light (white) ring for the
+  Plugins tile, menu icon and settings header (it pops on the dark themes and its dark
+  outline keeps it readable on the light ones), and a dark ring for the README / store.
+  The gold anchor is the constant, always-visible core.
+- NEW: registry friendliness  -  bearer tokens are cached until expiry, duplicate
+  images share one lookup per sweep, and a rate-limiting registry (including its
+  token endpoint) is backed off host-wide (1m..1h) instead of hammered; prior
+  verdicts carry forward with their original timestamp, so nothing flickers and
+  stale data is never presented as freshly checked.
+- NEW: "Update all (N)" button next to the Basic/Advanced view toggle. One click
+  triggers Unraid's own bulk update for every container with a pending update.
+  ShipLog stays read-only: it only relocates the native trigger. The button shows
+  the pending-update count and hides itself when nothing is pending.
+
+🎨 **Design**
+- Refreshed logo: the plugin tile, menu icon and settings header now use a flip-ready
+  double-ring mark that reads on every Unraid theme; the web-UI status page, the README
+  banner and the store icon follow the new gold-anchor design.
+- The plugin author shows as "Junker der Provinz", and the install/uninstall ceremony
+  prints the house ASCII banner ("ShipLog ist ready!" after an install, "Bye!" on removal).
+- Reworked ShipLog logo on the engine status page, recoloured to read on the
+  dark background.
+- Buttons match Unraid's native style and hover via the theme; the bubble link is
+  now labelled "Repository" since a project may not live on GitHub.
+- The status page shows the real ShipLog logo instead of the anchor glyph.
+- The ShipLog logo now shows in the GUI, not just the Plugins tab: the Settings
+  menu icon is the logo (Icon="shiplog.png") and the settings page header shows
+  the logo instead of the anchor emoji. The logo already ships under icons/ +
+  images/ (the FanCtrlPlus convention).
+- Logo + name + description in the Plugins tab now all work, the FanCtrlPlus way:
+  the package ships a README.md (shows "ShipLog" + the description) and the logo
+  under images/, and the plugin slug is lowercase so Unraid resolves both. The
+  v1.0.8 capital-name version showed the puzzle piece + no description.
+- Attempted to keep a capital name via the ICON element (didn't resolve the logo
+   -  superseded by 1.0.9).
+- Show the new white-framed logo in the Plugins tab (shipped under images/ +
+  icons/). (Superseded by 1.0.8  -  this version lowercased the name as a
+  workaround, which broke the name + description.)
+- Restores the "ShipLog" display name and the PNG logo icon.
+- Plugin icon is the ShipLog logo (PNG).
+
+⚡ **Improved**
+- ShipLog grows from a read-only advisor into one that can also ACT: it can now update your
+  containers for you, on a schedule, gated by version level  -  so this is a major release.
+- Uninstall now also removes the engine's appdata (/mnt/user/appdata/shiplog  -  the regenerable
+  version-memory) for a clean slate; your flash settings (.cfg) are still kept.
+- The "Ask before updating" and "Silent update" options now also apply to Unraid's OWN
+  native update controls on the Docker rows, not just the "Update now" button in ShipLog's
+  changelog bubble. With "Ask before updating" off, clicking a native "apply update" runs
+  without the confirmation prompt; with "Silent update" on, it runs without the pop-up
+  download-log window. Scoped strictly to the per-container update controls, so other
+  confirmation dialogs (e.g. removing a container) are never auto-confirmed. ShipLog stays
+  read-only  -  it only automates Unraid's own dialogs on top of Unraid's own click, and if
+  those dialogs ever look different on your build the update still runs, just visibly.
+- Localised: the settings page and the changelog bubble now follow Unraid's configured
+  language across 26 languages, from the plugin's own locale files, instead of English only.
+- The two Update toggles use Unraid's orange accent and each sits on its own tidy row with
+  the description on the line beneath.
+- Settings redesign to a flat, borderless Carbon look: no dark backing sheet, a clean
+  header, and borderless cards set apart by a lighter fill and a soft shadow.
+- The engine status page and the Docker-tab chip render the new pinned/local states
+  neutrally (grey) instead of a green "up to date".
+- Packaging fix (thanks @jesposito): the plugin package now forces root:root
+  ownership on every file. Without it a Windows-built package baked in the
+  builder's uid, which upgradepkg applied to "/" on install and broke SSH key
+  auth ("bad ownership or modes for directory /").
+- The risk dot is now a meaningful traffic light. An up-to-date container shows
+  GREEN (it was a dead grey), so a healthy box reads as a wall of green instead of
+  grey; grey now means only "could not resolve a version" (e.g. an anonymous rate
+  limit  -  set a GitHub token in Settings to grade it). Orange is a minor update,
+  red a major one.
+- Fixes the risk dot colour. A rolling ":latest" update is now graded by its real
+  version jump, so a minor shows orange and a major shows red, instead of always a
+  flat grey/green "digest" dot. Containers ShipLog cannot resolve a version for
+  stay grey; a same-version image rebuild stays a low (green) digest update.
+- The Update and Repository buttons in the changelog bubble use the Unraid accent:
+  an orange outline that fills on hover.
+- Shows the changelog of the pending update itself (the target release's notes)
+  instead of assembling the whole version span  -  fewer registry/GitHub calls, so
+  it shows something more often.
+- Rate-limit (HTTP 429) robustness for registries like ghcr.io / lscr.io: honours
+  Retry-After with backoff, throttles per host, reuses your GitHub token to
+  authenticate those registries, and keeps the last-known result instead of
+  "unknown" on a transient 429. Set a GitHub token (Settings) to mostly avoid 429
+  and empty changelogs.
+- "Update now" button in the changelog bubble when an update is available. ShipLog
+  stays read-only: the button triggers Unraid's own apply-update for that
+  container; it never writes to the Docker socket itself.
+- Ollama Autodetect now finds an Ollama running as a container (it asks the Docker
+  socket and probes the container's address), not just host ports.
+- Shows the INSTALLED version instead of just "latest". ShipLog now reads the
+  version an image declares about itself (the org.opencontainers.image.version
+  label) and shows it immediately, so a rolling ":latest" container displays its
+  real version on the first sweep, without waiting to witness an update. The
+  digest-proven version memory still takes precedence.
+- Works with Folder View 3. The Docker-tab changelog chip now finds containers
+  that Folder View groups into folders; the plain Docker tab is unchanged.
+- Settings: a Check button for the GitHub token (it shows your hourly rate limit,
+  since an anonymous 60/h is why changelogs often come back empty; a token raises
+  it to about 5000/h), an Autodetect button for Ollama (probes the common local
+  ports and fills in the URL and model), and a same-origin engine-status line that
+  replaces the status-page link which broke when the GUI is opened over the
+  myunraid.net hostname.
+- The Enable toggle is green when on, and the Apply button is a clearer primary.
+- Changelog resolution now logs once when the GitHub API rate limit is hit
+  (naming the cause and the fix) and skips a redundant API call for repos with no
+  releases, to stretch the anonymous budget.
+- Ollama: log the exact reason a summary comes back empty (HTTP status, an empty
+  model response, or output that is not the expected JSON) instead of a silent
+  "returned nothing", so AI-summary problems can be diagnosed.
+- The Engine "Enable" setting is now an on/off toggle (a switch) instead of a
+  Yes/No dropdown, and its On/Off label follows the active Unraid language
+  (e.g. Ein/Aus in German), with an English fallback.
+- The settings page (and the Docker bubble) actually appear now. The package
+  shipped its .page files with CRLF line endings (Windows build), and Unraid's
+  PageBuilder splits a page header from its body on a pure-LF "---" separator, so
+  a CRLF .page fails to parse and is silently dropped (no menu entry, no bubble).
+  All plugin files now ship with LF, enforced by a .gitattributes and an LF
+  normalise step in the packager. The v1.0.10 page rename alone did not fix this.
+- Settings page is back. It is now plugins/shiplog/shiplog.page with
+  launch="Settings/shiplog" (lowercase, matching the slug), so Unraid lists it
+  under Settings again. v1.0.9 lowercased the plugin name but kept the page as
+  ShipLog.page + launch Settings/ShipLog, so the settings entry vanished.
+- Settings: a "Show" toggle to reveal each token field, and a live "Check"
+  button for the Docker Hub credentials (like the Ollama/Matrix checks).
+- Optional Docker Hub credentials (Settings) raise the Docker Hub rate limit, so
+  docker.io images resolve a version + changelog instead of showing an update
+  with no version number.
+- Settings now explain what the GitHub and Docker Hub tokens are for.
+- Remembers the running version per container. A rolling ":latest" image is
+  pinned to a real version once its digest matches the newest release, then
+  carried forward  -  so a later update shows a true "1.7 -> 1.8" instead of
+  "latest". The newest version is proven by digest, so a :latest that lags a
+  newer published tag is never mislabeled.
+- The bubble header now shows the remembered version as the current one.
+- Resolve changelogs for ghcr.io images even without an OCI source label
+  (ghcr.io/owner/repo → github.com/owner/repo), so more containers get a
+  changelog + version instead of an empty "latest".
+- Installer now force-reinstalls the package (upgradepkg --reinstall), fixing
+  the "newer version already installed" skip when coming from the old
+  date-versioned test builds.
+- For an up-to-date ":latest" container, the header now shows the resolved
+  version number (e.g. "1.8.0") instead of "latest".
+- Release date in the bubble is now formatted DD.MM.YYYY.
+
+🐛 **Fixed**
 - FIX: with "Ask before updating" off and/or "Silent update" on, updating a container did not
   work  -  the confirmation could hang the page and the update never started. Root cause: the old
   code tried to auto-CLICK Unraid's confirmation dialog, which raced (and hid the backdrop before
@@ -187,16 +345,6 @@ optional AI summaries (Ollama) and Matrix alerts.
   scoped class that can never match the confirmation dialog), and auto-confirms only a single,
   ready proceed button  -  on any unexpected markup it does nothing and leaves the dialog to you.
   A native update can no longer be blocked or cancelled by ShipLog.
-- Uninstall now also removes the engine's appdata (/mnt/user/appdata/shiplog  -  the regenerable
-  version-memory) for a clean slate; your flash settings (.cfg) are still kept.
-- The "Ask before updating" and "Silent update" options now also apply to Unraid's OWN
-  native update controls on the Docker rows, not just the "Update now" button in ShipLog's
-  changelog bubble. With "Ask before updating" off, clicking a native "apply update" runs
-  without the confirmation prompt; with "Silent update" on, it runs without the pop-up
-  download-log window. Scoped strictly to the per-container update controls, so other
-  confirmation dialogs (e.g. removing a container) are never auto-confirmed. ShipLog stays
-  read-only  -  it only automates Unraid's own dialogs on top of Unraid's own click, and if
-  those dialogs ever look different on your build the update still runs, just visibly.
 - FIX: ShipLog's "update available / up to date" verdict could disagree with Unraid's own
   (e.g. a LinuxServer -lsNNN rebuild that Unraid flags but ShipLog's version compare missed,
   or a pinned tag where a newer version exists but your tag is current). The verdict now
@@ -208,30 +356,10 @@ optional AI summaries (Ollama) and Matrix alerts.
   only automates its dialogs on top: it auto-confirms Unraid's prompt when "Ask before
   updating" is off, and hides the log window when "Silent update" is on. If those dialogs
   ever look different on your build, the update still runs  -  it just shows normally.
-- Localised: the settings page and the changelog bubble now follow Unraid's configured
-  language across 26 languages, from the plugin's own locale files, instead of English only.
 - FIX: "Silent update" (and one-click update with "Ask before updating" off) did nothing  - 
   the container still showed an update after a refresh. ShipLog now fires Unraid's own update
   through Unraid's own call, so its CSRF token rides along and the update actually runs; in
   silent mode only the log window is hidden, and the row clears when the update finishes.
-- The two Update toggles use Unraid's orange accent and each sits on its own tidy row with
-  the description on the line beneath.
-- New "Updates" settings for what happens when you click "Update now" in a changelog
-  bubble (ShipLog stays read-only  -  it triggers Unraid's own update either way):
-  "Ask before updating" (on by default) shows a confirmation first; "Silent update"
-  (off by default) runs the update without Unraid's pop-up download-log window  -  the
-  update still runs to completion in the background.
-- Refreshed logo: the plugin tile, menu icon and settings header now use a flip-ready
-  double-ring mark that reads on every Unraid theme; the web-UI status page, the README
-  banner and the store icon follow the new gold-anchor design.
-- New logo: a gold anchor in a ring, in two variants  -  a light (white) ring for the
-  Plugins tile, menu icon and settings header (it pops on the dark themes and its dark
-  outline keeps it readable on the light ones), and a dark ring for the README / store.
-  The gold anchor is the constant, always-visible core.
-- Settings redesign to a flat, borderless Carbon look: no dark backing sheet, a clean
-  header, and borderless cards set apart by a lighter fill and a soft shadow.
-- The plugin author shows as "Junker der Provinz", and the install/uninstall ceremony
-  prints the house ASCII banner ("ShipLog ist ready!" after an install, "Bye!" on removal).
 - FIX: digest-pinned containers (image@sha256:..., also with a tag) were stuck on a
   permanent "could not resolve upstream" error or showed un-actionable updates; they
   now show an honest neutral "pinned" state with zero registry cost.
@@ -240,21 +368,10 @@ optional AI summaries (Ollama) and Matrix alerts.
   labelled "local image" (also covers docker-load'ed images; re-pull once to re-attach
   a side-loaded image to its registry).
 - FIX: images pulled through a mirror no longer show a phantom "digest drift".
-- NEW: registry friendliness  -  bearer tokens are cached until expiry, duplicate
-  images share one lookup per sweep, and a rate-limiting registry (including its
-  token endpoint) is backed off host-wide (1m..1h) instead of hammered; prior
-  verdicts carry forward with their original timestamp, so nothing flickers and
-  stale data is never presented as freshly checked.
-- The engine status page and the Docker-tab chip render the new pinned/local states
-  neutrally (grey) instead of a green "up to date".
 - FIX: the "Update all" button now really sits directly LEFT of the Basic/Advanced
   view toggle. Unraid's toggle row is a right-packing flex container, so the button
   is placed inside it as the first element; before this it flowed to the far left
   edge of the page.
-- NEW: "Update all (N)" button next to the Basic/Advanced view toggle. One click
-  triggers Unraid's own bulk update for every container with a pending update.
-  ShipLog stays read-only: it only relocates the native trigger. The button shows
-  the pending-update count and hides itself when nothing is pending.
 - CRITICAL uninstall fix (the same bug found and fixed in CannonadeCommander). The
   removal script was wrapped in a bare `&lt;REMOVE&gt;` tag, which Unraid's plugin
   manager does NOT execute (it only runs `&lt;FILE Method="remove"&gt;` blocks) - so the
@@ -267,117 +384,22 @@ optional AI summaries (Ollama) and Matrix alerts.
   daemon by PID, removes the exact registered package, wipes the dir + cached .txz,
   and keeps your appdata + settings. Installs now also wipe old plugin files first
   so nothing orphans across updates.
-- Reworked ShipLog logo on the engine status page, recoloured to read on the
-  dark background.
-- Packaging fix (thanks @jesposito): the plugin package now forces root:root
-  ownership on every file. Without it a Windows-built package baked in the
-  builder's uid, which upgradepkg applied to "/" on install and broke SSH key
-  auth ("bad ownership or modes for directory /").
-- The risk dot is now a meaningful traffic light. An up-to-date container shows
-  GREEN (it was a dead grey), so a healthy box reads as a wall of green instead of
-  grey; grey now means only "could not resolve a version" (e.g. an anonymous rate
-  limit  -  set a GitHub token in Settings to grade it). Orange is a minor update,
-  red a major one.
-- Fixes the risk dot colour. A rolling ":latest" update is now graded by its real
-  version jump, so a minor shows orange and a major shows red, instead of always a
-  flat grey/green "digest" dot. Containers ShipLog cannot resolve a version for
-  stay grey; a same-version image rebuild stays a low (green) digest update.
 - The settings Apply button no longer stays greyed out after Ollama Autodetect
   (a programmatically filled field now announces its change to Unraid).
-- The Update and Repository buttons in the changelog bubble use the Unraid accent:
-  an orange outline that fills on hover.
-- Shows the changelog of the pending update itself (the target release's notes)
-  instead of assembling the whole version span  -  fewer registry/GitHub calls, so
-  it shows something more often.
-- Rate-limit (HTTP 429) robustness for registries like ghcr.io / lscr.io: honours
-  Retry-After with backoff, throttles per host, reuses your GitHub token to
-  authenticate those registries, and keeps the last-known result instead of
-  "unknown" on a transient 429. Set a GitHub token (Settings) to mostly avoid 429
-  and empty changelogs.
-- "Update now" button in the changelog bubble when an update is available. ShipLog
-  stays read-only: the button triggers Unraid's own apply-update for that
-  container; it never writes to the Docker socket itself.
-- Ollama Autodetect now finds an Ollama running as a container (it asks the Docker
-  socket and probes the container's address), not just host ports.
-- Buttons match Unraid's native style and hover via the theme; the bubble link is
-  now labelled "Repository" since a project may not live on GitHub.
-- The status page shows the real ShipLog logo instead of the anchor glyph.
-- Shows the INSTALLED version instead of just "latest". ShipLog now reads the
-  version an image declares about itself (the org.opencontainers.image.version
-  label) and shows it immediately, so a rolling ":latest" container displays its
-  real version on the first sweep, without waiting to witness an update. The
-  digest-proven version memory still takes precedence.
-- Works with Folder View 3. The Docker-tab changelog chip now finds containers
-  that Folder View groups into folders; the plain Docker tab is unchanged.
-- Settings: a Check button for the GitHub token (it shows your hourly rate limit,
-  since an anonymous 60/h is why changelogs often come back empty; a token raises
-  it to about 5000/h), an Autodetect button for Ollama (probes the common local
-  ports and fills in the URL and model), and a same-origin engine-status line that
-  replaces the status-page link which broke when the GUI is opened over the
-  myunraid.net hostname.
-- The Enable toggle is green when on, and the Apply button is a clearer primary.
-- Changelog resolution now logs once when the GitHub API rate limit is hit
-  (naming the cause and the fix) and skips a redundant API call for repos with no
-  releases, to stretch the anonymous budget.
 - Survive a reboot. The engine no longer starts before the array/pools are
   mounted: rc.shiplog defers until DATA_DIR is on a real filesystem (not the root
   tmpfs), so the SQLite version-memory persists across restarts instead of being
   wiped every boot, and it no longer risks blocking the user share from mounting.
   event/started brings the daemon up once the array is online.
-- Ollama: log the exact reason a summary comes back empty (HTTP status, an empty
-  model response, or output that is not the expected JSON) instead of a silent
-  "returned nothing", so AI-summary problems can be diagnosed.
-- The Engine "Enable" setting is now an on/off toggle (a switch) instead of a
-  Yes/No dropdown, and its On/Off label follows the active Unraid language
-  (e.g. Ein/Aus in German), with an English fallback.
-- The ShipLog logo now shows in the GUI, not just the Plugins tab: the Settings
-  menu icon is the logo (Icon="shiplog.png") and the settings page header shows
-  the logo instead of the anchor emoji. The logo already ships under icons/ +
-  images/ (the FanCtrlPlus convention).
-- The settings page (and the Docker bubble) actually appear now. The package
-  shipped its .page files with CRLF line endings (Windows build), and Unraid's
-  PageBuilder splits a page header from its body on a pure-LF "---" separator, so
-  a CRLF .page fails to parse and is silently dropped (no menu entry, no bubble).
-  All plugin files now ship with LF, enforced by a .gitattributes and an LF
-  normalise step in the packager. The v1.0.10 page rename alone did not fix this.
-- Settings page is back. It is now plugins/shiplog/shiplog.page with
-  launch="Settings/shiplog" (lowercase, matching the slug), so Unraid lists it
-  under Settings again. v1.0.9 lowercased the plugin name but kept the page as
-  ShipLog.page + launch Settings/ShipLog, so the settings entry vanished.
-- Logo + name + description in the Plugins tab now all work, the FanCtrlPlus way:
-  the package ships a README.md (shows "ShipLog" + the description) and the logo
-  under images/, and the plugin slug is lowercase so Unraid resolves both. The
-  v1.0.8 capital-name version showed the puzzle piece + no description.
-- Attempted to keep a capital name via the ICON element (didn't resolve the logo
-   -  superseded by 1.0.9).
-- Show the new white-framed logo in the Plugins tab (shipped under images/ +
-  icons/). (Superseded by 1.0.8  -  this version lowercased the name as a
-  workaround, which broke the name + description.)
-- Settings: a "Show" toggle to reveal each token field, and a live "Check"
-  button for the Docker Hub credentials (like the Ollama/Matrix checks).
-- Restores the "ShipLog" display name and the PNG logo icon.
-- Optional Docker Hub credentials (Settings) raise the Docker Hub rate limit, so
-  docker.io images resolve a version + changelog instead of showing an update
-  with no version number.
-- Settings now explain what the GitHub and Docker Hub tokens are for.
-- Plugin icon is the ShipLog logo (PNG).
-- Remembers the running version per container. A rolling ":latest" image is
-  pinned to a real version once its digest matches the newest release, then
-  carried forward  -  so a later update shows a true "1.7 -> 1.8" instead of
-  "latest". The newest version is proven by digest, so a :latest that lags a
-  newer published tag is never mislabeled.
-- The bubble header now shows the remembered version as the current one.
-- Resolve changelogs for ghcr.io images even without an OCI source label
-  (ghcr.io/owner/repo → github.com/owner/repo), so more containers get a
-  changelog + version instead of an empty "latest".
-- Installer now force-reinstalls the package (upgradepkg --reinstall), fixing
-  the "newer version already installed" skip when coming from the old
-  date-versioned test builds.
-- For an up-to-date ":latest" container, the header now shows the resolved
-  version number (e.g. "1.8.0") instead of "latest".
-- Release date in the bubble is now formatted DD.MM.YYYY.
+
+🌐 **Translations**
+- All new settings text is translated across the 26 supported languages.
 
 ### 1.0.0
+🎨 **Design**
+- Card settings page; the bubble follows Unraid's light/dark theme and language.
+
+⚡ **Improved**
 - A changelog control next to every container in Unraid's native Docker tab: the
   version jump, a deterministic risk badge, the release notes, and a DEPRECATED
   badge when the upstream repo is archived. Up-to-date containers show the notes
@@ -386,7 +408,6 @@ optional AI summaries (Ollama) and Matrix alerts.
   updates  -  each with a live "Check" button in the settings.
 - Read-only by construction (read-only Docker socket); the engine runs as a host
   daemon, no separate container.
-- Card settings page; the bubble follows Unraid's light/dark theme and language.
 </CHANGES>
 
 <!-- Pre-install: stop the old daemon + wipe the plugin dir so files removed between
