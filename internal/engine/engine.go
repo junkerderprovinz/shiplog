@@ -376,7 +376,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// to critical so the operator reads them BEFORE pulling. Escalate only —
 		// never downgrade a verdict the version delta already rated higher.
 		if st.HasUpdate() {
-			if reason, breaking := risk.ScanBreaking(cl); breaking && model.RiskCritical.MoreSevere(st.Risk) {
+			if reason, breaking := risk.ScanBreaking(cl, st.RunningVersion); breaking && model.RiskCritical.MoreSevere(st.Risk) {
 				st.Risk, st.RiskReason = model.RiskCritical, reason
 			}
 		}
