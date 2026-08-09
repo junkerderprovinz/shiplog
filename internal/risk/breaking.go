@@ -44,24 +44,59 @@ var breakingSignals = []string{
 }
 
 // ScanBreaking looks through a changelog's release notes for a signal that the
-// update needs manual action before it is safe to pull. It scans every release
-// entry body first — a multi-version span can hide the breaking note in an
-// intermediate release, not the newest — then falls back to the raw body. It
-// returns a human-readable reason naming the matched signal and the release it
-// came from, or ("", false) when nothing matches. Pure: no I/O.
-func ScanBreaking(cl *model.Changelog) (string, bool) {
+// update needs manual action before it is safe to pull. It only considers
+// releases STRICTLY NEWER than fromTag (the running version): a breaking note in
+// a release you already run — or in a same-version digest rebuild where the span
+// does not advance — describes a change already in effect, not a pending action,
+// and must never raise the verdict. It scans every qualifying release entry body
+// first (a multi-version span can hide the note in an intermediate release, not
+// the newest), then falls back to the raw body, but only when the span genuinely
+// advances the version. Returns a human-readable reason naming the matched signal
+// and the release it came from, or ("", false) when nothing matches. Pure: no I/O.
+func ScanBreaking(cl *model.Changelog, fromTag string) (string, bool) {
 	if cl == nil {
 		return "", false
 	}
+	from, fromOK := parseSemver(fromTag)
 	for _, e := range cl.Entries {
+		// A note in a release at or below the running version is already in place,
+		// not part of the pending update — skip it. Only filter when both tags
+		// parse as semver; otherwise stay conservative and scan the entry.
+		if fromOK {
+			if ev, ok := parseSemver(e.Tag); ok && ev.compare(from) <= 0 {
+				continue
+			}
+		}
 		if sig, ok := findSignal(e.Body); ok {
 			return breakingReason(e.Tag, sig), true
 		}
 	}
-	if sig, ok := findSignal(cl.Raw); ok {
-		return breakingReason("", sig), true
+	// The raw body is unstructured and can't be version-filtered, so only trust it
+	// when the span actually advances the version. On a same-version digest rebuild
+	// the raw body is the CURRENT release's own notes, whose breaking line is
+	// already in effect — scanning it there would raise a phantom "critical".
+	if advancesVersion(fromTag, cl.ToTag) {
+		if sig, ok := findSignal(cl.Raw); ok {
+			return breakingReason("", sig), true
+		}
 	}
 	return "", false
+}
+
+// advancesVersion reports whether toTag is a strictly newer version than fromTag.
+// When both parse as semver it compares them; otherwise it falls back to a plain
+// inequality, so a rolling tag that resolved to the same version (or the same
+// literal tag) is correctly treated as "no advance", while genuinely different
+// tags still permit the raw-body fallback.
+func advancesVersion(fromTag, toTag string) bool {
+	f, fok := parseSemver(fromTag)
+	t, tok := parseSemver(toTag)
+	if fok && tok {
+		return t.compare(f) > 0
+	}
+	from := strings.TrimSpace(fromTag)
+	to := strings.TrimSpace(toTag)
+	return to != "" && to != from
 }
 
 // findSignal reports the first breaking signal contained in body (case-insensitive).
