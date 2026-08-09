@@ -75,15 +75,23 @@ type UpdateStatus struct {
 	// pinned tag it's the tag itself; for a rolling tag (":latest") it's resolved
 	// when the running image is the registry's current one, then REMEMBERED across
 	// sweeps so a later update shows a real "prev -> new" jump.
-	RunningVersion string     `json:"running_version"`
-	NewestTag      string     `json:"newest_tag"`
-	NewestDigest   string     `json:"newest_digest"`
-	Kind           Kind       `json:"kind"`
-	Risk           RiskLevel  `json:"risk"`
-	RiskReason     string     `json:"risk_reason"`
-	Changelog      *Changelog `json:"changelog,omitempty"`
-	CheckedAt      time.Time  `json:"checked_at"`
-	Error          string     `json:"error,omitempty"` // per-container failure, never fatal
+	RunningVersion string    `json:"running_version"`
+	NewestTag      string    `json:"newest_tag"`
+	NewestDigest   string    `json:"newest_digest"`
+	Kind           Kind      `json:"kind"`
+	Risk           RiskLevel `json:"risk"`
+	RiskReason     string    `json:"risk_reason"`
+	// Unmaintained flags an installed app that has reached a dead end, on a
+	// separate axis from the update Risk (an app can be up to date AND
+	// unmaintained): its Unraid template was removed from Community Applications,
+	// its image is gone from the registry, or its source repository was archived.
+	Unmaintained bool `json:"unmaintained,omitempty"`
+	// UnmaintainedReason is a short human label for why (e.g. "Removed from
+	// Community Applications"). Empty when Unmaintained is false.
+	UnmaintainedReason string     `json:"unmaintained_reason,omitempty"`
+	Changelog          *Changelog `json:"changelog,omitempty"`
+	CheckedAt          time.Time  `json:"checked_at"`
+	Error              string     `json:"error,omitempty"` // per-container failure, never fatal
 }
 
 // HasDigest reports whether d equals the container's primary digest or any of

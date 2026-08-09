@@ -34,6 +34,11 @@
     '<line x1="5.4" y1="5.5" x2="10.6" y2="5.5"/><line x1="5.4" y1="8" x2="10.6" y2="8"/>' +
     '<line x1="5.4" y1="10.5" x2="9" y2="10.5"/></svg>';
 
+  // Warning triangle for the "not maintained" state (replaces the log glyph).
+  const WARN_ICON =
+    '<svg class="sl-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<path d="M12 2 1 21h22L12 2zm0 6a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1zm0 9.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5z"/></svg>';
+
   // risk → css suffix used by both the chip dot and the bubble pill
   const RISK_CLASS = { low: "low", medium: "mid", high: "high", critical: "crit", unknown: "grey" };
 
@@ -47,6 +52,7 @@
     skips: "skips %n releases", newest: "newest %d",
     summary: "Summary", raw: "Changelog", source: "Source", close: "close", uptodate: "up to date",
     deprecated: "DEPRECATED",
+    unmaintained: "Not maintained", unmaintainedHint: "No more updates. Consider migrating to a maintained alternative.",
     updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
     updateGone: "Couldn't find Unraid's update button — use 'apply update' on the row.",
     confirmOne: "Update %s now?", confirmAll: "Update all %n containers with a pending update now?",
@@ -379,10 +385,11 @@
       <div class="sl-bh">
         <span class="sl-ver">${verHdr}</span>
         <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${rc === "crit" ? "⚠ " : ""}${pillTxt}</span>
-        ${cl.deprecated ? `<span class="sl-pill sl-high" title="upstream repository is archived">⚠ ${esc(T("deprecated"))}</span>` : ""}
+        ${st.unmaintained ? `<span class="sl-pill sl-unmaint" title="${esc(st.unmaintained_reason || T("unmaintained"))}">⚠ ${esc(T("unmaintained"))}</span>` : ""}
         <span class="sl-jump">${esc(jump)}</span>
         <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${esc(T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
+      ${st.unmaintained ? `<div class="sl-unmaint-note">⚠ ${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
       ${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
@@ -710,11 +717,20 @@
       const cell = findUpdateCell(tr);
       if (!cell || cell.getAttribute(MARK)) continue;
       const upd = isUpdate(st), seUpd = hasUpdate(st); // Unraid's live verdict wins
-      const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
-      const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
-      const chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
+      let chip;
+      if (st.unmaintained) {
+        // Dead-end app (template pulled from CA, image gone, or repo archived): the
+        // red button REPLACES the changelog chip. Still clickable → the bubble shows
+        // the reason (and the last changelog, if any).
+        chip = el("a", "sl-chip sl-unmaint", `${WARN_ICON}<span>${esc(T("unmaintained"))}</span>`);
+        chip.title = `ShipLog: ${st.unmaintained_reason || T("unmaintained")}`;
+      } else {
+        const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
+        const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
+        chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
+        chip.title = `ShipLog: ${label} — ${T("clickHint")}`;
+      }
       chip.href = "#";
-      chip.title = `ShipLog: ${label} — ${T("clickHint")}`;
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, st); });
       const row = el("div", "sl-chiprow");
       row.appendChild(chip);

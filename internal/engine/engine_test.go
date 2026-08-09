@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
+	"github.com/junkerderprovinz/shiplog/internal/resolver"
 )
 
 // --- fakes ---
@@ -41,17 +42,36 @@ func (f fakeResolver) Resolve(_ context.Context, repo, _, _ string) (string, str
 // The fakes are written from the engine's concurrent workers, so they guard
 // their state with a mutex (the real store/changelog are concurrency-safe).
 type fakeChangelog struct {
-	mu      sync.Mutex
-	called  int
-	raw     string               // optional canned raw body every Get returns
-	entries []model.ReleaseEntry // optional canned release entries every Get returns
+	mu         sync.Mutex
+	called     int
+	raw        string               // optional canned raw body every Get returns
+	entries    []model.ReleaseEntry // optional canned release entries every Get returns
+	deprecated bool                 // optional: mark every returned changelog as archived (EOL)
 }
 
 func (f *fakeChangelog) Get(_ context.Context, _ model.Container, from, to string) (*model.Changelog, bool) {
 	f.mu.Lock()
 	f.called++
 	f.mu.Unlock()
-	return &model.Changelog{FromTag: from, ToTag: to, Provider: "fake", Raw: f.raw, Entries: f.entries}, true
+	return &model.Changelog{FromTag: from, ToTag: to, Provider: "fake", Raw: f.raw, Entries: f.entries, Deprecated: f.deprecated}, true
+}
+
+type fakeNotifier struct {
+	mu sync.Mutex
+	n  int
+}
+
+func (f *fakeNotifier) Notify(context.Context, model.UpdateStatus) error {
+	f.mu.Lock()
+	f.n++
+	f.mu.Unlock()
+	return nil
+}
+
+func (f *fakeNotifier) count() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.n
 }
 
 type fakeStore struct {
@@ -104,6 +124,94 @@ func (f *fakeStore) List() ([]model.UpdateStatus, error) {
 }
 
 // --- tests ---
+
+// A container is flagged unmaintained when its image repo is gone (404) or its
+// Unraid template was pulled from Community Applications (its <TemplateURL> 404s),
+// while a healthy one is left alone.
+func TestSweepFlagsUnmaintained(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "gone", Name: "GoneApp", Repo: "ghcr.io/x/gone", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
+		{ID: "rm", Name: "RemovedApp", Repo: "ghcr.io/x/removed", Tag: "1.0.0", Digest: "sha256:r", Managed: true},
+		{ID: "fine", Name: "FineApp", Repo: "ghcr.io/x/fine", Tag: "1.0.0", Digest: "sha256:f", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/gone":    {err: resolver.ErrRepoNotFound},
+		"ghcr.io/x/removed": {tag: "1.0.0", dig: "sha256:r"}, // up to date
+		"ghcr.io/x/fine":    {tag: "1.0.0", dig: "sha256:f"}, // up to date
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"removedapp": "http://ca/removed.xml", "fineapp": "http://ca/fine.xml"}
+	}
+	e.checkURL = func(_ context.Context, url string) int {
+		if strings.Contains(url, "removed") {
+			return 404
+		}
+		return 200
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if g := st.rows["gone"]; !g.Unmaintained || g.UnmaintainedReason != "Image no longer in the registry" {
+		t.Fatalf("gone: want unmaintained/image gone, got %v/%q", g.Unmaintained, g.UnmaintainedReason)
+	}
+	if r := st.rows["rm"]; !r.Unmaintained || r.UnmaintainedReason != "Removed from Community Applications" {
+		t.Fatalf("removed: want unmaintained/removed-from-CA, got %v/%q", r.Unmaintained, r.UnmaintainedReason)
+	}
+	if f := st.rows["fine"]; f.Unmaintained {
+		t.Fatalf("fine: must NOT be unmaintained, got reason %q", f.UnmaintainedReason)
+	}
+}
+
+// An archived upstream repo (changelog Deprecated) flags the container as
+// unmaintained even when its image and template are still present.
+func TestSweepFlagsArchivedRepo(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "arch", Name: "ArchApp", Repo: "ghcr.io/x/arch", Tag: "1.0.0", Digest: "sha256:a", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/arch": {tag: "1.0.0", dig: "sha256:a"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{deprecated: true}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil } // no CA template → falls through to archived
+	e.checkURL = func(context.Context, string) int { return 200 }
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if a := st.rows["arch"]; !a.Unmaintained || a.UnmaintainedReason != "Source repository archived" {
+		t.Fatalf("arch: want unmaintained/archived, got %v/%q", a.Unmaintained, a.UnmaintainedReason)
+	}
+}
+
+// The unmaintained notification fires exactly once — on the transition from a
+// maintained prior row, and never again on later sweeps.
+func TestUnmaintainedNotifiesOnce(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "rm", Name: "RemovedApp", Repo: "ghcr.io/x/removed", Tag: "1.0.0", Digest: "sha256:r", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/removed": {tag: "1.0.0", dig: "sha256:r"}}}
+	// Seed a MAINTAINED prior row so the sweep sees a real maintained→unmaintained flip.
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"rm": {Container: model.Container{ID: "rm", Name: "RemovedApp", Digest: "sha256:r"}, Kind: model.KindNone, RunningVersion: "1.0.0"},
+	}}
+	nf := &fakeNotifier{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour).WithNotifier(nf)
+	e.templateURLs = func() map[string]string { return map[string]string{"removedapp": "http://ca/removed.xml"} }
+	e.checkURL = func(context.Context, string) int { return 404 }
+
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep 1: %v", err)
+	}
+	if nf.count() != 1 {
+		t.Fatalf("first flip must notify once, got %d", nf.count())
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep 2: %v", err)
+	}
+	if nf.count() != 1 {
+		t.Fatalf("already-unmaintained must not re-notify, got %d", nf.count())
+	}
+}
 
 func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	col := fakeCollector{list: []model.Container{

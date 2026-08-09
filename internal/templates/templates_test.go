@@ -44,3 +44,29 @@ func TestProjectPages_MissingDir(t *testing.T) {
 		t.Fatalf("missing dir must yield nil, got %v", pages)
 	}
 }
+
+func TestTemplateURLs(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "my-OpenCloud.xml",
+		`<?xml version="1.0"?><Container version="2"><Name>OpenCloud</Name><TemplateURL>https://raw.githubusercontent.com/junkerderprovinz/unraid-apps/main/opencloud/opencloud.xml</TemplateURL></Container>`)
+	// A manually-created container carries no <TemplateURL> and must be skipped.
+	write(t, dir, "my-Manual.xml", `<Container version="2"><Name>Manual</Name></Container>`)
+	write(t, dir, "my-Broken.xml", `<Container><Name>Broken`)
+
+	urls := TemplateURLs(dir)
+	if got := urls["opencloud"]; got != "https://raw.githubusercontent.com/junkerderprovinz/unraid-apps/main/opencloud/opencloud.xml" {
+		t.Fatalf("opencloud = %q", got)
+	}
+	if _, ok := urls["manual"]; ok {
+		t.Fatal("template without <TemplateURL> must be skipped")
+	}
+	if _, ok := urls["broken"]; ok {
+		t.Fatal("malformed template must be skipped")
+	}
+}
+
+func TestTemplateURLs_MissingDir(t *testing.T) {
+	if urls := TemplateURLs(filepath.Join(t.TempDir(), "nope")); urls != nil {
+		t.Fatalf("missing dir must yield nil, got %v", urls)
+	}
+}
