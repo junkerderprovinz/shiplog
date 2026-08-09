@@ -33,11 +33,6 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
-### 3.1.1
-🌐 **Translations**
-- Translated the new "Not maintained" warning (the button label and its reason
-   hint) into all 26 supported languages.
-
 ### 3.1.0
 ✨ **Added**
 - **"Not maintained" warning for dead-end apps.** ShipLog now flags an installed
@@ -50,21 +45,6 @@ optional AI summaries (Ollama) and Matrix alerts.
    fires when an app first turns unmaintained. Healthy apps are untouched. This
    closes the gap that let an installed app quietly stop getting updates without
    you noticing (the case that prompted it: an app removed from CA).
-
-### 3.0.1
-🐛 **Fixed**
-- The "critical" breaking-change badge no longer fires on updates that carry no
-   new version. A same-tag digest rebuild (":latest" moving to a fresh build of
-   the SAME version), and release notes belonging to the version you already run,
-   were still scanned for breaking-change wording — so a harmless rebuild could
-   show a red "critical" badge. Immich was flagged for its own current release's
-   note, and Redis for a "data loss" line in a version installed long ago. ShipLog
-   now only scans release notes for versions strictly newer than the running one,
-   and skips the raw-notes fallback entirely when the update does not advance the
-   version. Genuine breaking changes in a real update still escalate to critical.
-
-### 3.0.0
-✨ **Added**
 - New "critical" risk level for breaking updates. When an upstream release note
    flags a breaking change (a required database migration, a removed extension, a
    dropped API), ShipLog now escalates that update to critical and shows a red
@@ -183,9 +163,28 @@ optional AI summaries (Ollama) and Matrix alerts.
 - Changelogs render as formatted text now (headings, bold, code, links, lists),
   and stray HTML entities from upstream release notes no longer show literally.
   Everything is escaped before rendering, so no upstream HTML runs in the page.
+- The "critical" breaking-change badge no longer fires on updates that carry no
+   new version. A same-tag digest rebuild (":latest" moving to a fresh build of
+   the SAME version), and release notes belonging to the version you already run,
+   were still scanned for breaking-change wording  -  so a harmless rebuild could
+   show a red "critical" badge. Immich was flagged for its own current release's
+   note, and Redis for a "data loss" line in a version installed long ago. ShipLog
+   now only scans release notes for versions strictly newer than the running one,
+   and skips the raw-notes fallback entirely when the update does not advance the
+   version. Genuine breaking changes in a real update still escalate to critical.
+- **The "Not maintained" warning no longer fires on apps that are still perfectly
+   fine in Community Applications.** It checked only the app's historical template
+   URL for a 404, which is far too fragile a signal on its own: that link also
+   goes dead when its source repo gets renamed (raw GitHub links don't follow a
+   rename, unlike the repo page itself) or its template file simply moves to a new
+   path, both routine maintenance and nothing to do with removal. Seen firing on
+   several genuinely active apps in the same scan. ShipLog now double-checks a
+   dead raw-GitHub link against the source repository itself before calling an
+   app unmaintained.
 
 🌐 **Translations**
-- Translated the two new messages into all 26 supported languages.
+- Translated the new messages (the critical-risk badge and the "Not maintained"
+   warning's button label and reason hint) into all 26 supported languages.
 
 ### 2.0.0
 ✨ **Added**
