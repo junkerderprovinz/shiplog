@@ -16,7 +16,13 @@ const require = createRequire(import.meta.url);
 const { Resvg } = require(`${execSync("npm root -g").toString().trim()}/@resvg/resvg-js`);
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-// Put a white background rect behind the logo (dark ring + gold anchor).
+// Put a white background rect behind the logo (dark ring + gold anchor), then
+// flood-fill the border-connected white back to transparent. The ring is a
+// hollow path (no separate inner-disk fill), so a flat rect alone would leave
+// the 4 corners OUTSIDE the ring opaque white too (square-looking tile). The
+// flood fill stops at the ring's dark border, so only the disk it encloses
+// stays white (jdp, 2026-08-10: "nur innerhalb des schwarzen Rahmens einen
+// weißen Hintergrund").
 // viewBox-agnostic: size the rect from the logo's own viewBox (handles 960/1000/…).
 const logo = readFileSync(join(__dir, "logo.svg"), "utf8");
 const vb = (logo.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/) || [, "1000", "1000"]);
@@ -27,5 +33,7 @@ const iconSvg = logo.replace(
 
 writeFileSync(join(__dir, "icon.svg"), iconSvg);
 const png = new Resvg(iconSvg, { fitTo: { mode: "width", value: 512 } }).render().asPng();
-writeFileSync(join(__dir, "icon.png"), png);
-console.log("wrote icon.svg + icon.png (gold anchor + dark ring on white)");
+const iconPngPath = join(__dir, "icon.png");
+writeFileSync(iconPngPath, png);
+execSync(`python3 "${join(__dir, "flood-transparent.py")}" "${iconPngPath}"`);
+console.log("wrote icon.svg + icon.png (gold anchor + dark ring, white only inside the ring)");
