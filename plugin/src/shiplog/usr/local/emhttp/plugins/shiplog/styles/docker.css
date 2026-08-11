@@ -82,11 +82,17 @@ html.cc-header-on .sl-pill.sl-unmaint{border:none}   /* already a solid fill nat
   --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
   --sl-line:var(--cc-shade-line,rgba(128,128,128,.14)); --sl-line2:rgba(128,128,128,.28); --sl-edge:#525252;
   --sl-link:#8ab4f8;
+  /* #(user: "dunkles Fenster mit hellen cards, style wie zb das Docker updatefenster") - the locked update-
+     window template (Header.css: html.cc-popups-on .sweet-alert.nchan fieldset) is a dark #1a1a1a/#161616
+     frame holding LIGHT #2e2e2e step cards, explicit values, not a token-driven +2 shade. --sl-card matches
+     that literally in dark mode; in light mode the analogous lift is already what --cc-surface-4 gives. */
+  --sl-card:#2e2e2e;
   background:var(--sl-bg);color:var(--sl-txt);border:1px solid var(--sl-edge);border-radius:min(var(--cc-b-radius,14px),14px);
   box-shadow:0 18px 50px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
 .sl-bubble.sl-light{ --sl-bg:var(--cc-surface-window,#ffffff); --sl-bg2:var(--cc-surface-4,#f3f3f3);
   --sl-txt:var(--cc-text,#1c1c1c); --sl-dim:#565656; --sl-dim2:#777;
   --sl-line:rgba(90,90,90,.18); --sl-line2:rgba(90,90,90,.30); --sl-edge:#bcbcbc; --sl-link:#1a56db;
+  --sl-card:var(--cc-surface-4,#f3f3f3);
   box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:12px 16px;border-bottom:1px solid var(--sl-line);
@@ -131,15 +137,25 @@ html.cc-header-on .sl-pill.sl-unmaint{border:none}   /* already a solid fill nat
    further in as a nested block, same recipe, no ring. */
 html.cc-header-on .sl-bubble{border:none}
 html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:0 4px 10px -2px rgba(0,0,0,.35)}
-html.cc-header-on .sl-bubble .sl-gh,html.cc-header-on .sl-bubble .sl-upd{border:none;box-shadow:inset 0 0 0 1px #ff8c2f}
-html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:inset 0 0 0 1px var(--sl-line2)}
+/* buttons: the update-window reference never outlines a button either (Header.css button.confirm/.cancel -
+   border:none, box-shadow:none, solid fill). .sl-upd (the primary action) takes the same accent-vs-neutral
+   split confirm/cancel uses; .sl-gh (an external link, secondary) gets the neutral --sl-card fill so it
+   doesn't compete with the primary action, keeping its orange text for brand identity. */
+html.cc-header-on .sl-bubble .sl-gh,html.cc-header-on .sl-bubble .sl-upd{border:none;box-shadow:none;background:var(--sl-card)}
+html.cc-header-on .sl-bubble .sl-upd{background:#ff8c2f;color:#1a1207}
+/* re-pin each button's OWN fill on hover (same colour, no swap) - the base (native-mode) hover rule just
+   above still says background:#ff8c2f, which would otherwise beat .sl-gh's grey fill by turning it orange
+   on hover; matching Header.css's own button hover (filter:brightness(1.14) only, background untouched). */
+html.cc-header-on .sl-bubble .sl-gh:hover{background:var(--sl-card);filter:brightness(1.14)}
+html.cc-header-on .sl-bubble .sl-upd:hover{background:#ff8c2f;filter:brightness(1.14)}
+html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:none;background:var(--sl-card);color:var(--sl-dim)}
 html.cc-header-on .sl-bubble .sl-sec{
-  border-bottom:none;background:var(--sl-bg2);border-radius:min(var(--cc-b-radius,10px),10px);
-  margin:10px 16px;padding:12px 14px;
+  border-bottom:none;background:var(--sl-card);border-radius:min(var(--cc-b-radius,10px),10px);
+  margin:10px 16px;padding:12px 14px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
 }
 html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
 html.cc-header-on .sl-bubble .sl-raw{border:none;background:var(--sl-bg);border-radius:min(var(--cc-b-radius,8px),8px)}
-html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-bg2)}
+html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
 .sl-bubble .sl-rel + .sl-rel{margin-top:12px}
 .sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
 .sl-bubble .sl-reld{font:400 10px/1 "Segoe UI",sans-serif;color:var(--sl-dim2);letter-spacing:.3px}
