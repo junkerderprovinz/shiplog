@@ -26,16 +26,24 @@
 @media (prefers-reduced-motion:reduce){.sl-amp.sl-crit{animation:none}}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
-  font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;box-shadow:inset 0 0 0 1px currentColor}
+  font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
 .sl-pill .sl-dot{width:7px;height:7px;border-radius:50%}
-.sl-pill.sl-low {color:#3fae6a;box-shadow:inset 0 0 0 1px #2f6b46} .sl-pill.sl-low  .sl-dot{background:#3fae6a}
-.sl-pill.sl-mid {color:#d6a243;box-shadow:inset 0 0 0 1px #7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
-.sl-pill.sl-high{color:#d9534f;box-shadow:inset 0 0 0 1px #7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
+.sl-pill.sl-low {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-low  .sl-dot{background:#3fae6a}
+.sl-pill.sl-mid {color:#d6a243;border-color:#7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
+.sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
 /* crit pill is FILLED (not outlined) so a breaking-change verdict pops out from
    the outlined low/mid/high pills at a glance. */
-.sl-pill.sl-crit{color:#fff;background:#c81e28;box-shadow:inset 0 0 0 1px #c81e28} .sl-pill.sl-crit .sl-dot{background:#fff}
-.sl-pill.sl-grey{color:#9a9a9a;box-shadow:inset 0 0 0 1px #444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
-.sl-pill.sl-ok  {color:#3fae6a;box-shadow:inset 0 0 0 1px #2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
+.sl-pill.sl-crit{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-crit .sl-dot{background:#fff}
+.sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
+.sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
+/* GlimStone (CC installed): same border -> shade contract as the changelog bubble above. */
+html.cc-header-on .sl-pill{border:none;box-shadow:inset 0 0 0 1px currentColor}
+html.cc-header-on .sl-pill.sl-low {box-shadow:inset 0 0 0 1px #2f6b46}
+html.cc-header-on .sl-pill.sl-mid {box-shadow:inset 0 0 0 1px #7a6028}
+html.cc-header-on .sl-pill.sl-high{box-shadow:inset 0 0 0 1px #7a3331}
+html.cc-header-on .sl-pill.sl-crit{box-shadow:inset 0 0 0 1px #c81e28}
+html.cc-header-on .sl-pill.sl-grey{box-shadow:inset 0 0 0 1px #444}
+html.cc-header-on .sl-pill.sl-ok  {box-shadow:inset 0 0 0 1px #2f6b46}
 
 /* "Not maintained" state — an app that has reached a dead end (template pulled
    from Community Applications, image gone, or upstream repo archived). This is a
@@ -45,7 +53,8 @@
 .sl-chip.sl-unmaint{color:#fff;background:#c81e28;border-radius:6px;padding:0 9px;font-weight:600}
 .sl-chip.sl-unmaint:hover{color:#fff;background:#b31b24}
 .sl-chip.sl-unmaint .sl-ico{opacity:1;width:13px;height:13px}
-.sl-pill.sl-unmaint{color:#fff;background:#c81e28;box-shadow:inset 0 0 0 1px #c81e28} .sl-pill.sl-unmaint .sl-dot{background:#fff}
+.sl-pill.sl-unmaint{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-unmaint .sl-dot{background:#fff}
+html.cc-header-on .sl-pill.sl-unmaint{box-shadow:inset 0 0 0 1px #c81e28}
 .sl-unmaint-note{margin:8px 0 2px;padding:8px 10px;border-radius:6px;
   background:rgba(200,30,40,.12);color:#e5645f;font:13px/1.45 inherit}
 
@@ -61,52 +70,64 @@
 @media (prefers-reduced-motion:reduce){.sl-backdrop{animation:none}}
 
 /* The window adapts to Unraid's theme: defaults are dark; .sl-light is applied by docker.js when the page
-   background is light (detected by luminance). Separation is by SHADE + shadow, never an outer border line. */
+   background is light (detected by luminance). Base = a plain 1px border (native Unraid dialog look, no
+   CC installed). WITH CannonadeCommand (html.cc-header-on below), the border is replaced by shade + shadow
+   only, matching every other CC popup - never an outer border line. */
 .sl-bubble{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;box-sizing:border-box;
   width:640px;max-width:95vw;min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
   --sl-bg:var(--cc-surface-window,#242424); --sl-bg2:var(--cc-surface-4,#161616); --sl-txt:var(--cc-text,#e6e6e6);
   --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
   --sl-line:var(--cc-shade-line,rgba(128,128,128,.14)); --sl-line2:rgba(128,128,128,.28); --sl-edge:#525252;
   --sl-link:#8ab4f8;
-  background:var(--sl-bg);color:var(--sl-txt);border:none;border-radius:min(var(--cc-b-radius,14px),14px);
+  background:var(--sl-bg);color:var(--sl-txt);border:1px solid var(--sl-edge);border-radius:min(var(--cc-b-radius,14px),14px);
   box-shadow:0 18px 50px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
 .sl-bubble.sl-light{ --sl-bg:var(--cc-surface-window,#ffffff); --sl-bg2:var(--cc-surface-4,#f3f3f3);
   --sl-txt:var(--cc-text,#1c1c1c); --sl-dim:#565656; --sl-dim2:#777;
   --sl-line:rgba(90,90,90,.18); --sl-line2:rgba(90,90,90,.30); --sl-edge:#bcbcbc; --sl-link:#1a56db;
   box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:12px 16px;box-shadow:inset 0 -1px 0 var(--sl-line);
+  padding:12px 16px;border-bottom:1px solid var(--sl-line);
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
 .sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim)}
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
 .sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px}
 .sl-bubble .sl-bh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 /* Unraid-orange action buttons: outlined in the Unraid accent, filled on hover. */
-.sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;box-shadow:inset 0 0 0 1px #ff8c2f;border-radius:4px;
+.sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
   padding:5px 11px;text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
 .sl-bubble .sl-upd{font-weight:600}
 .sl-bubble .sl-gh:hover,.sl-bubble .sl-upd:hover{background:#ff8c2f;color:#fff}
-.sl-bubble .sl-upd.sl-upd-off{background:transparent;color:var(--sl-dim);box-shadow:inset 0 0 0 1px var(--sl-line2);font-weight:400;cursor:default}
+.sl-bubble .sl-upd.sl-upd-off{background:transparent;color:var(--sl-dim);border-color:var(--sl-line2);font-weight:400;cursor:default}
 .sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);background:var(--cc-chip,rgba(128,128,128,.18));border:none;
   border-radius:var(--cc-b-radius,7px);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none;transition:background .12s}
 .sl-bubble .sl-x:hover{background:var(--cc-chip-hover,rgba(128,128,128,.30));color:var(--sl-txt)}
-.sl-bubble .sl-sec{padding:12px 16px;box-shadow:inset 0 -1px 0 var(--sl-line)}
+.sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid var(--sl-line)}
 .sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
   color:var(--sl-dim2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
-.sl-bubble .sl-ai{font:400 10px/1 "Segoe UI",sans-serif;box-shadow:inset 0 0 0 1px var(--sl-line2);border-radius:4px;
+.sl-bubble .sl-ai{font:400 10px/1 "Segoe UI",sans-serif;border:1px solid var(--sl-line2);border-radius:4px;
   padding:2px 6px;color:var(--sl-dim2);text-transform:none;letter-spacing:0}
 .sl-bubble ul{list-style:none;margin:0;padding:0}
 .sl-bubble li{padding:3px 0 3px 18px;position:relative}
 .sl-bubble li:before{content:"–";position:absolute;left:2px;color:var(--sl-dim2)}
 .sl-bubble li.sl-warn:before{content:"\26A0";color:#d6a243;font-size:12px}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
-  box-shadow:inset 0 0 0 1px var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
+  border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}
 .sl-bubble .sl-raw a{color:var(--sl-link)}
 .sl-bubble .sl-raw .h{color:var(--sl-txt);font-weight:600;margin:6px 0 2px}
 .sl-bubble .sl-raw ul{margin:4px 0;padding-left:14px}
 .sl-bubble .sl-raw .sp{height:6px}
-.sl-bubble .sl-raw code{background:var(--sl-bg);box-shadow:inset 0 0 0 1px var(--sl-line);border-radius:4px;padding:0 4px}
+.sl-bubble .sl-raw code{background:var(--sl-bg);border:1px solid var(--sl-line);border-radius:4px;padding:0 4px}
+/* ── GlimStone (CannonadeCommand installed): borders -> shade + shadow only, same contract as
+   the settings page's html.cc-header-on .sl-cfg rules. Without CC these stay plain bordered dialogs. ── */
+html.cc-header-on .sl-bubble{border:none}
+html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:inset 0 -1px 0 var(--sl-line)}
+html.cc-header-on .sl-bubble .sl-gh,html.cc-header-on .sl-bubble .sl-upd{border:none;box-shadow:inset 0 0 0 1px #ff8c2f}
+html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:inset 0 0 0 1px var(--sl-line2)}
+html.cc-header-on .sl-bubble .sl-sec{border-bottom:none;box-shadow:inset 0 -1px 0 var(--sl-line)}
+html.cc-header-on .sl-bubble .sl-ai{border:none;box-shadow:inset 0 0 0 1px var(--sl-line2)}
+html.cc-header-on .sl-bubble .sl-raw{border:none;box-shadow:inset 0 0 0 1px var(--sl-line)}
+html.cc-header-on .sl-bubble .sl-raw code{border:none;box-shadow:inset 0 0 0 1px var(--sl-line)}
 .sl-bubble .sl-rel + .sl-rel{margin-top:12px}
 .sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
 .sl-bubble .sl-reld{font:400 10px/1 "Segoe UI",sans-serif;color:var(--sl-dim2);letter-spacing:.3px}
