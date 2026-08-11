@@ -476,12 +476,27 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 // GitHub raw URL, only report the app as gone when the underlying repository
 // is unreachable too; any other host has no such secondary signal, so its 404
 // is trusted as-is.
+//
+// Only a clean 404/410 on the repo page counts as that corroboration. Any
+// other outcome — a 403/429 rate limit, a 5xx, a timeout, or any status this
+// probe doesn't specifically recognize (checkURL returns 0 on a failed
+// request) — is inconclusive, not confirmation, and must fail OPEN (repo
+// assumed still there). The previous `!= http.StatusOK` treated every one of
+// those inconclusive outcomes as "confirmed gone", which is the same
+// fail-closed shape as the original bug this corroboration step exists to
+// fix, just one layer deeper: a rate-limited or errored probe carries no
+// positive evidence of removal.
 func (e *Engine) repoGone(ctx context.Context, templateURL string) bool {
 	repoURL, ok := githubRepoURL(templateURL)
 	if !ok || e.checkURL == nil {
 		return true
 	}
-	return e.checkURL(ctx, repoURL) != http.StatusOK
+	switch e.checkURL(ctx, repoURL) {
+	case http.StatusNotFound, http.StatusGone:
+		return true
+	default:
+		return false
+	}
 }
 
 // githubRepoURL extracts "https://github.com/{owner}/{repo}" from a

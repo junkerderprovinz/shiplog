@@ -212,6 +212,61 @@ func TestSweepGithubRawURLRotIsNotFlaggedUnmaintained(t *testing.T) {
 	}
 }
 
+// An inconclusive corroboration probe (rate limit, server error, or a failed
+// request) must NOT be trusted as confirmation the repo is gone — only a
+// clean 404/410 on the repo page is positive evidence. Treating "couldn't
+// tell" the same as "confirmed gone" is the same fail-closed shape as the
+// original bug TestSweepGithubRawURLRotIsNotFlaggedUnmaintained fixes, one
+// layer deeper: a probe that gets rate-limited or errors out is exactly as
+// likely on a repo that's still alive as on one that's genuinely gone.
+func TestSweepAmbiguousCorroborationIsNotFlaggedUnmaintained(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "limited", Name: "RateLimitedApp", Repo: "ghcr.io/x/limited", Tag: "1.0.0", Digest: "sha256:l", Managed: true},
+		{ID: "erred", Name: "ErroredApp", Repo: "ghcr.io/x/erred", Tag: "1.0.0", Digest: "sha256:e", Managed: true},
+		{ID: "failed", Name: "FailedProbeApp", Repo: "ghcr.io/x/failed", Tag: "1.0.0", Digest: "sha256:f", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/limited": {tag: "1.0.0", dig: "sha256:l"},
+		"ghcr.io/x/erred":   {tag: "1.0.0", dig: "sha256:e"},
+		"ghcr.io/x/failed":  {tag: "1.0.0", dig: "sha256:f"},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{
+			"ratelimitedapp": "https://raw.githubusercontent.com/owner/limited/main/app.xml",
+			"erroredapp":     "https://raw.githubusercontent.com/owner/erred/main/app.xml",
+			"failedprobeapp": "https://raw.githubusercontent.com/owner/failed/main/app.xml",
+		}
+	}
+	e.checkURL = func(_ context.Context, url string) int {
+		switch url {
+		case "https://raw.githubusercontent.com/owner/limited/main/app.xml":
+			return 404
+		case "https://github.com/owner/limited":
+			return 429 // rate-limited, not confirmation
+		case "https://raw.githubusercontent.com/owner/erred/main/app.xml":
+			return 404
+		case "https://github.com/owner/erred":
+			return 503 // server error, not confirmation
+		case "https://raw.githubusercontent.com/owner/failed/main/app.xml":
+			return 404
+		case "https://github.com/owner/failed":
+			return 0 // failed request (checkURL's own error sentinel), not confirmation
+		}
+		t.Fatalf("unexpected checkURL call: %s", url)
+		return 0
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	for id, label := range map[string]string{"limited": "rate-limited", "erred": "server-error", "failed": "failed-request"} {
+		if r := st.rows[id]; r.Unmaintained {
+			t.Fatalf("%s (%s): an inconclusive corroboration probe must NOT flag unmaintained, got reason %q", id, label, r.UnmaintainedReason)
+		}
+	}
+}
+
 // An archived upstream repo (changelog Deprecated) flags the container as
 // unmaintained even when its image and template are still present.
 func TestSweepFlagsArchivedRepo(t *testing.T) {
