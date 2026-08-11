@@ -36,14 +36,17 @@
 .sl-pill.sl-crit{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-crit .sl-dot{background:#fff}
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 .sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
-/* GlimStone (CC installed): same border -> shade contract as the changelog bubble above. */
-html.cc-header-on .sl-pill{border:none;box-shadow:inset 0 0 0 1px currentColor}
-html.cc-header-on .sl-pill.sl-low {box-shadow:inset 0 0 0 1px #2f6b46}
-html.cc-header-on .sl-pill.sl-mid {box-shadow:inset 0 0 0 1px #7a6028}
-html.cc-header-on .sl-pill.sl-high{box-shadow:inset 0 0 0 1px #7a3331}
-html.cc-header-on .sl-pill.sl-crit{box-shadow:inset 0 0 0 1px #c81e28}
-html.cc-header-on .sl-pill.sl-grey{box-shadow:inset 0 0 0 1px #444}
-html.cc-header-on .sl-pill.sl-ok  {box-shadow:inset 0 0 0 1px #2f6b46}
+/* GlimStone (CC installed): CC badges are a SOLID tinted fill, never an outline of any kind (a
+   box-shadow ring is still visually a border line, just drawn differently — see the .sl-bubble
+   card block below for the same lesson at section scale). 18% tint matches CC's own neutral-chip
+   convention (rgba(128,128,128,.18) throughout Header.css); .sl-crit/.sl-unmaint are already a
+   solid fill natively and need no change here beyond dropping their border. */
+html.cc-header-on .sl-pill{border:none;background:color-mix(in srgb, currentColor 18%, transparent)}
+html.cc-header-on .sl-pill.sl-low {background:color-mix(in srgb, #3fae6a 18%, transparent)}
+html.cc-header-on .sl-pill.sl-mid {background:color-mix(in srgb, #d6a243 18%, transparent)}
+html.cc-header-on .sl-pill.sl-high{background:color-mix(in srgb, #d9534f 18%, transparent)}
+html.cc-header-on .sl-pill.sl-grey{background:color-mix(in srgb, #9a9a9a 18%, transparent)}
+html.cc-header-on .sl-pill.sl-ok  {background:color-mix(in srgb, #3fae6a 18%, transparent)}
 
 /* "Not maintained" state — an app that has reached a dead end (template pulled
    from Community Applications, image gone, or upstream repo archived). This is a
@@ -54,7 +57,7 @@ html.cc-header-on .sl-pill.sl-ok  {box-shadow:inset 0 0 0 1px #2f6b46}
 .sl-chip.sl-unmaint:hover{color:#fff;background:#b31b24}
 .sl-chip.sl-unmaint .sl-ico{opacity:1;width:13px;height:13px}
 .sl-pill.sl-unmaint{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-unmaint .sl-dot{background:#fff}
-html.cc-header-on .sl-pill.sl-unmaint{box-shadow:inset 0 0 0 1px #c81e28}
+html.cc-header-on .sl-pill.sl-unmaint{border:none}   /* already a solid fill natively - just drop the border */
 .sl-unmaint-note{margin:8px 0 2px;padding:8px 10px;border-radius:6px;
   background:rgba(200,30,40,.12);color:#e5645f;font:13px/1.45 inherit}
 
@@ -118,16 +121,25 @@ html.cc-header-on .sl-pill.sl-unmaint{box-shadow:inset 0 0 0 1px #c81e28}
 .sl-bubble .sl-raw ul{margin:4px 0;padding-left:14px}
 .sl-bubble .sl-raw .sp{height:6px}
 .sl-bubble .sl-raw code{background:var(--sl-bg);border:1px solid var(--sl-line);border-radius:4px;padding:0 4px}
-/* ── GlimStone (CannonadeCommand installed): borders -> shade + shadow only, same contract as
-   the settings page's html.cc-header-on .sl-cfg rules. Without CC these stay plain bordered dialogs. ── */
+/* ── GlimStone (CannonadeCommand installed): CARDS, never dividing lines. A box-shadow ring is
+   STILL a line, just drawn with a different property — the actual CC convention (see
+   CannonadeCommand.Tokens.css li.cc-card-in: "one continuous SHADE block ... never a border
+   line") is a lifted background block with rounded corners, separated from its neighbours by
+   MARGIN, not by a 1px rule of any kind. Applied here: .sl-bh gets a real drop-shadow (it's
+   sticky, so it still needs to visually separate from content scrolling under it - that's
+   elevation, not a divider); every .sl-sec becomes its own card; .sl-raw sits one shade
+   further in as a nested block, same recipe, no ring. */
 html.cc-header-on .sl-bubble{border:none}
-html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:inset 0 -1px 0 var(--sl-line)}
+html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:0 4px 10px -2px rgba(0,0,0,.35)}
 html.cc-header-on .sl-bubble .sl-gh,html.cc-header-on .sl-bubble .sl-upd{border:none;box-shadow:inset 0 0 0 1px #ff8c2f}
 html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:inset 0 0 0 1px var(--sl-line2)}
-html.cc-header-on .sl-bubble .sl-sec{border-bottom:none;box-shadow:inset 0 -1px 0 var(--sl-line)}
-html.cc-header-on .sl-bubble .sl-ai{border:none;box-shadow:inset 0 0 0 1px var(--sl-line2)}
-html.cc-header-on .sl-bubble .sl-raw{border:none;box-shadow:inset 0 0 0 1px var(--sl-line)}
-html.cc-header-on .sl-bubble .sl-raw code{border:none;box-shadow:inset 0 0 0 1px var(--sl-line)}
+html.cc-header-on .sl-bubble .sl-sec{
+  border-bottom:none;background:var(--sl-bg2);border-radius:min(var(--cc-b-radius,10px),10px);
+  margin:10px 16px;padding:12px 14px;
+}
+html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
+html.cc-header-on .sl-bubble .sl-raw{border:none;background:var(--sl-bg);border-radius:min(var(--cc-b-radius,8px),8px)}
+html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-bg2)}
 .sl-bubble .sl-rel + .sl-rel{margin-top:12px}
 .sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
 .sl-bubble .sl-reld{font:400 10px/1 "Segoe UI",sans-serif;color:var(--sl-dim2);letter-spacing:.3px}
