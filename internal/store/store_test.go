@@ -67,6 +67,31 @@ func TestPinnedAndLocalRoundTrip(t *testing.T) {
 	}
 }
 
+// Managed must round-trip through Get()/List() — every consumer of the served
+// status (the JSON API, the status page) reads it back from the store, not
+// from the in-memory struct the sweep computed it into. (This column existed
+// on the model for several releases without ever being wired into the
+// schema/selectCols/scanStatus at all, which is exactly this bug: every
+// served container read back managed=false regardless of its real
+// net.unraid.docker.managed label.)
+func TestManagedRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{
+		Container: model.Container{ID: "mgd", Name: "teamspeak", Repo: "docker.io/binhex/arch-teamspeak", Managed: true},
+		Kind:      model.KindNone, Risk: model.RiskNone, CheckedAt: time.Now(),
+	}
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("mgd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Container.Managed {
+		t.Error("managed did not round-trip")
+	}
+}
+
 // Unmaintained/UnmaintainedReason and CADeprecated/CADeprecatedNote must round-trip
 // through Get() — engine.maybeNotifyUnmaintained's dedup ("if prior.Unmaintained {
 // return }") only ever sees a real value via Store.Get, never the in-memory struct

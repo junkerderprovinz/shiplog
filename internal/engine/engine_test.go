@@ -325,6 +325,42 @@ func TestSweepFlagsUnmaintainedViaCAFeedAbsent(t *testing.T) {
 	}
 }
 
+// Reproduces the real OpenHands case found live: the LOCALLY installed
+// template's <TemplateURL> still points at its old, now-404ing repo path
+// (junkerderprovinz/openhands), while the CA feed has already caught up to
+// the app's new location (junkerderprovinz/unraid-apps) and confirms it is
+// very much still listed. The feed's conclusive "still listed" must win over
+// the raw-URL proxy's stale 404 — the proxy is a narrower approximation of
+// exactly what the feed already answers authoritatively.
+func TestSweepCAFeedOverridesStaleRawURLProxy(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "moved2", Name: "OpenHands", Repo: "docker.openhands.dev/openhands/openhands", Tag: "1.7", Digest: "sha256:o", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"docker.openhands.dev/openhands/openhands": {tag: "1.7", dig: "sha256:o"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"openhands": "https://raw.githubusercontent.com/junkerderprovinz/openhands/main/templates/openhands.xml"}
+	}
+	rawURLChecked := false
+	e.checkURL = func(_ context.Context, url string) int {
+		rawURLChecked = true
+		return 404 // the stale local template path really is dead
+	}
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: true}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if m := st.rows["moved2"]; m.Unmaintained {
+		t.Fatalf("a stale raw template URL must NOT override a feed confirming the app is still listed, got reason %q", m.UnmaintainedReason)
+	}
+	if rawURLChecked {
+		t.Error("the raw-URL proxy must not even be consulted once the feed already gave a conclusive answer")
+	}
+}
+
 func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "bl", Name: "BadApp", Repo: "x/bad", Tag: "1.0.0", Digest: "sha256:b", Managed: true},

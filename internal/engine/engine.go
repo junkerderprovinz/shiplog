@@ -497,26 +497,46 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	if !st.Unmaintained {
 		u := templateURLs[strings.ToLower(c.Name)]
 		switch {
-		case c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u):
-			st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
 		case st.Changelog != nil && st.Changelog.Deprecated:
+			// The source repo itself is archived — the strongest, most
+			// unambiguous of these signals (no known false-positive mode, unlike
+			// a raw URL 404 or a name-only feed lookup) — checked first so it
+			// always wins over a merely-editorial CADeprecated from the feed
+			// below.
 			st.Unmaintained, st.UnmaintainedReason = true, "Source repository archived"
-		case c.Managed && caFeed != nil:
-			// The real CA catalog: catches an app pulled from the feed while its
-			// template file happens to still sit untouched (the raw-URL proxy
-			// above can never see that), a moderator blacklist, or an editorial
-			// demotion (CADeprecated) that is NOT a dead end — that app is still
-			// installable and still updated, so it must not replace the
-			// changelog the way a genuine Unmaintained verdict does.
-			if res, ok := caFeed.Lookup(c.Name, c.Repo, u); ok {
-				switch {
-				case !res.Listed && res.Note != "":
-					st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications: "+res.Note
-				case !res.Listed:
-					st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
-				case res.Deprecated:
-					st.CADeprecated, st.CADeprecatedNote = true, res.Note
+		default:
+			// The real CA catalog is consulted next and, when it gives a
+			// conclusive answer, is trusted over the narrower raw-URL proxy
+			// that follows: it's the same feed CA's own plugin reads,
+			// corroborated across two crawls before ever declaring an absence,
+			// and it can positively confirm an app is still listed — a
+			// moderator blacklist, or an editorial demotion (CADeprecated) that
+			// is NOT a dead end, that app is still installable and still
+			// updated, so it must not replace the changelog the way a genuine
+			// Unmaintained verdict does. The raw-URL proxy, by contrast, only
+			// ever proves ITS OWN template file is unreachable, which also
+			// happens for reasons that have nothing to do with CA removal — a
+			// moved repo, a renamed branch — while the app remains listed under
+			// an updated TemplateURL the feed already reflects (observed live:
+			// OpenHands' own template moved from junkerderprovinz/openhands to
+			// junkerderprovinz/unraid-apps; the feed caught up, the stale local
+			// install's <TemplateURL> didn't).
+			feedConclusive := false
+			if c.Managed && caFeed != nil {
+				if res, ok := caFeed.Lookup(c.Name, c.Repo, u); ok {
+					feedConclusive = true
+					switch {
+					case !res.Listed && res.Note != "":
+						st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications: "+res.Note
+					case !res.Listed:
+						st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
+					case res.Deprecated:
+						st.CADeprecated, st.CADeprecatedNote = true, res.Note
+					}
 				}
+			}
+			if !feedConclusive && c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
+				st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
 			}
 		}
 	}

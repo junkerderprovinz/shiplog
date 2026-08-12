@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS status (
 	digest          TEXT,
 	pinned_digest   TEXT,
 	is_local        INTEGER,
+	managed         INTEGER,
 	running_version TEXT,
 	newest_tag      TEXT,
 	newest_digest   TEXT,
@@ -130,6 +131,11 @@ func Open(path string) (*Store, error) {
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN unmaintained_reason TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated INTEGER`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated_note TEXT`)
+	// managed predates this migration guard too and was never wired into
+	// selectCols/scanStatus/Upsert either — every served status read it back
+	// as false regardless of the container's real net.unraid.docker.managed
+	// label. Caught alongside the unmaintained/ca_deprecated fix above.
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN managed INTEGER`)
 	return &Store{db: db}, nil
 }
 
@@ -172,11 +178,11 @@ func (s *Store) Upsert(st model.UpdateStatus) error {
 
 	_, err = s.db.Exec(`
 INSERT INTO status (
-	container_id, name, repo, image, tag, digest, pinned_digest, is_local, running_version,
+	container_id, name, repo, image, tag, digest, pinned_digest, is_local, managed, running_version,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error,
 	unmaintained, unmaintained_reason, ca_deprecated, ca_deprecated_note
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(container_id) DO UPDATE SET
 	name                = excluded.name,
 	repo                = excluded.repo,
@@ -185,6 +191,7 @@ ON CONFLICT(container_id) DO UPDATE SET
 	digest              = excluded.digest,
 	pinned_digest       = excluded.pinned_digest,
 	is_local            = excluded.is_local,
+	managed             = excluded.managed,
 	running_version     = excluded.running_version,
 	newest_tag          = excluded.newest_tag,
 	newest_digest       = excluded.newest_digest,
@@ -198,7 +205,7 @@ ON CONFLICT(container_id) DO UPDATE SET
 	unmaintained_reason = excluded.unmaintained_reason,
 	ca_deprecated       = excluded.ca_deprecated,
 	ca_deprecated_note  = excluded.ca_deprecated_note`,
-		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.Container.PinnedDigest, st.Container.IsLocal, st.RunningVersion,
+		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.Container.PinnedDigest, st.Container.IsLocal, st.Container.Managed, st.RunningVersion,
 		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
 		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
 		st.Unmaintained, st.UnmaintainedReason, st.CADeprecated, st.CADeprecatedNote,
@@ -222,7 +229,7 @@ END DESC, name ASC`
 
 const selectCols = `
 SELECT container_id, name, repo, image, tag, digest,
-	COALESCE(pinned_digest, ''), COALESCE(is_local, 0), COALESCE(running_version, ''),
+	COALESCE(pinned_digest, ''), COALESCE(is_local, 0), COALESCE(managed, 0), COALESCE(running_version, ''),
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error,
 	COALESCE(unmaintained, 0), COALESCE(unmaintained_reason, ''),
@@ -417,12 +424,12 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		kind, risk                 string
 		changelogJSON              string
 		checkedAt                  string
-		isLocal                    int64 // SQLite has no bool; scan the 0/1 integer explicitly
+		isLocal, managed           int64 // SQLite has no bool; scan the 0/1 integer explicitly
 		unmaintained, caDeprecated int64
 	)
 	err := sc.Scan(
 		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest,
-		&st.Container.PinnedDigest, &isLocal, &st.RunningVersion,
+		&st.Container.PinnedDigest, &isLocal, &managed, &st.RunningVersion,
 		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
 		&changelogJSON, &checkedAt, &st.Error,
 		&unmaintained, &st.UnmaintainedReason, &caDeprecated, &st.CADeprecatedNote,
@@ -431,6 +438,7 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		return model.UpdateStatus{}, err
 	}
 	st.Container.IsLocal = isLocal != 0
+	st.Container.Managed = managed != 0
 	st.Unmaintained = unmaintained != 0
 	st.CADeprecated = caDeprecated != 0
 	st.Kind = model.Kind(kind)
