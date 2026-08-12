@@ -22,6 +22,12 @@
 .sl-amp.sl-crit{background:#ff3b30;animation:sl-pulse 1.6s ease-in-out infinite}
 .sl-amp.sl-grey{background:#8a8a8a}
 .sl-amp.sl-ok  {background:#3fae6a}
+/* dep = editorially deprecated in Community Applications (hidden from default
+   search, usually a better-maintained alternative exists) while still listed
+   and still genuinely updated — informational, not a risk level, so a hollow
+   ring instead of the solid risk dots it sits next to; never replaces the
+   chip the way the red Unmaintained button does. */
+.sl-amp.sl-dep{background:transparent;border:1.5px solid #d6a243;box-sizing:border-box}
 @keyframes sl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.55)}50%{box-shadow:0 0 0 4px rgba(255,59,48,0)}}
 @media (prefers-reduced-motion:reduce){.sl-amp.sl-crit{animation:none}}
 

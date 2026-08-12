@@ -727,7 +727,12 @@
       } else {
         const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
         const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
-        chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
+        // ca_deprecated is informational, never a dead end (the app is still listed
+        // and still genuinely updated) — it rides ALONGSIDE the normal changelog
+        // chip as a small dot, reusing the existing sl-unmaint red button only for
+        // the real Unmaintained dead-end case above.
+        const dep = st.ca_deprecated ? `<span class="sl-amp sl-dep" title="${esc(T("deprecated"))}${st.ca_deprecated_note ? ": " + esc(st.ca_deprecated_note) : ""}"></span>` : "";
+        chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>${dep}`);
         chip.title = `ShipLog: ${label} — ${T("clickHint")}`;
       }
       chip.href = "#";
