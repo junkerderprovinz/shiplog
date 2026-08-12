@@ -62,9 +62,11 @@ type rawLastUpdated struct {
 
 // Feed is a parsed, matchable snapshot of the catalog.
 type Feed struct {
-	byName      map[string][]Entry
-	blacklisted map[string]string // normalized "owner/repo" -> reason
-	previous    *Feed             // the crawl before this one, if one was cached; nil otherwise
+	byName        map[string][]Entry
+	byRepo        map[string][]Entry // normalized "owner/repo" -> entries sharing that repo (more than one CA template can wrap the same image)
+	byTemplateURL map[string]Entry   // exact <TemplateURL> -> entry; CA's own canonical identity for a template
+	blacklisted   map[string]string  // normalized "owner/repo" -> reason
+	previous      *Feed              // the crawl before this one, if one was cached; nil otherwise
 }
 
 // Result is what the feed says about one container, after cross-crawl
@@ -193,19 +195,34 @@ func parseOne(b []byte) *Feed {
 	if json.Unmarshal(b, &raw) != nil {
 		return nil
 	}
-	byName := make(map[string][]Entry, len(raw.AppList))
-	for _, e := range raw.AppList {
-		name := normalizeName(e.Name)
-		if name == "" {
-			continue
-		}
-		byName[name] = append(byName[name], e)
-	}
+	byName, byRepo, byTemplateURL := indexEntries(raw.AppList)
 	blacklisted := make(map[string]string, len(raw.Blacklisted))
 	for repo, reason := range raw.Blacklisted {
 		blacklisted[normalizeRepo(repo)] = reason
 	}
-	return &Feed{byName: byName, blacklisted: blacklisted}
+	return &Feed{byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL, blacklisted: blacklisted}
+}
+
+// indexEntries builds the three lookup indexes Feed matches against: by
+// display Name (freely user-renameable on the container side, so matched
+// first but least reliable), by repository, and by exact TemplateURL (CA's
+// own canonical identity for a template).
+func indexEntries(entries []Entry) (byName, byRepo map[string][]Entry, byTemplateURL map[string]Entry) {
+	byName = make(map[string][]Entry, len(entries))
+	byRepo = make(map[string][]Entry, len(entries))
+	byTemplateURL = make(map[string]Entry, len(entries))
+	for _, e := range entries {
+		if n := normalizeName(e.Name); n != "" {
+			byName[n] = append(byName[n], e)
+		}
+		if r := normalizeRepo(e.Repository); r != "" {
+			byRepo[r] = append(byRepo[r], e)
+		}
+		if e.TemplateURL != "" {
+			byTemplateURL[e.TemplateURL] = e
+		}
+	}
+	return byName, byRepo, byTemplateURL
 }
 
 // Lookup reports what the feed says about a container. ok=false means
@@ -219,13 +236,27 @@ func (f *Feed) Lookup(name, repo, templateURL string) (Result, bool) {
 	var e Entry
 	switch len(matches) {
 	case 0:
-		if f.previous == nil {
-			return Result{}, false // nothing to confirm an absence against yet
+		// No hit on the container's own display name. That name is whatever
+		// the user typed into Unraid's Add Container form — freely renamed
+		// (a shorter label, a multi-instance "-II" suffix) or just spelled
+		// differently than the feed's canonical Name (observed live:
+		// "TeamSpeak" vs the feed's "binhex-teamspeak"). Rescue via the more
+		// stable repo/TemplateURL identity before concluding it's gone;
+		// only when NEITHER resolves does a two-crawl absence actually mean
+		// "removed from Community Applications".
+		found := false
+		if e, found = f.matchByIdentity(repo, templateURL); !found {
+			if f.previous == nil {
+				return Result{}, false // nothing to confirm an absence against yet
+			}
+			if len(f.previous.byName[n]) > 0 {
+				return Result{}, false // present last crawl by name; today's gap unconfirmed
+			}
+			if _, prevFound := f.previous.matchByIdentity(repo, templateURL); prevFound {
+				return Result{}, false // present last crawl by repo/URL; today's gap unconfirmed
+			}
+			return Result{Listed: false}, true // absent from two consecutive crawls, by every identity
 		}
-		if len(f.previous.byName[n]) > 0 {
-			return Result{}, false // present last crawl; today's gap unconfirmed
-		}
-		return Result{Listed: false}, true // absent from two consecutive crawls
 	case 1:
 		e = matches[0]
 	default:
@@ -239,6 +270,24 @@ func (f *Feed) Lookup(name, repo, templateURL string) (Result, bool) {
 		return Result{Listed: false, Note: reason}, true
 	}
 	return Result{Listed: true, Deprecated: e.Deprecated, Note: e.ModeratorComment}, true
+}
+
+// matchByIdentity finds an entry anywhere in the feed by repository or exact
+// TemplateURL — CA's own more stable identity for a template — used to
+// rescue a Lookup whose container display name matched no feed entry.
+// Mirrors disambiguate's precedence (repository first, then template URL).
+func (f *Feed) matchByIdentity(repo, templateURL string) (Entry, bool) {
+	if repo != "" {
+		if candidates := f.byRepo[normalizeRepo(repo)]; len(candidates) > 0 {
+			return candidates[0], true
+		}
+	}
+	if templateURL != "" {
+		if e, ok := f.byTemplateURL[templateURL]; ok {
+			return e, true
+		}
+	}
+	return Entry{}, false
 }
 
 // disambiguate picks the one entry among several same-named candidates that
@@ -266,13 +315,29 @@ func disambiguate(candidates []Entry, repo, templateURL string) (Entry, bool) {
 
 func normalizeName(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
 
-// normalizeRepo strips a docker.io registry prefix and the default
-// "library/" namespace, matching CA's own Docker-Hub-style "owner/repo"
-// Repository field. A non-Docker-Hub repo (ghcr.io, lscr.io, ...) passes
-// through unchanged and simply won't prefix-match any CA entry — expected,
-// since CA only lists Docker Hub images this way.
+// normalizeRepo reduces repo to a bare "owner/repo" form, stripping ANY
+// registry host (docker.io, ghcr.io, lscr.io, quay.io, ...), Docker Hub's
+// default "library/" namespace, and a trailing ":tag" or "@digest". CA's
+// Repository field is not consistently one registry — the same app is often
+// installed from docker.io while CA's template references its ghcr.io mirror
+// (observed live: docker.io/binhex/arch-teamspeak vs CA's own
+// ghcr.io/binhex/arch-teamspeak listing) — and is not consistently bare
+// either: CA sometimes bakes a tag straight into Repository (observed live:
+// "ghcr.io/open-webui/open-webui:main"), which the container's own Repo
+// field never carries (its tag is tracked separately). Host- and tag-blind
+// comparison is what makes the two sides comparable.
 func normalizeRepo(repo string) string {
-	repo = strings.TrimPrefix(repo, "docker.io/")
-	repo = strings.TrimPrefix(repo, "library/")
-	return repo
+	parts := strings.Split(repo, "/")
+	if len(parts) > 2 && strings.Contains(parts[0], ".") {
+		parts = parts[1:] // drop the registry host
+	}
+	if len(parts) > 1 && parts[0] == "library" {
+		parts = parts[1:] // drop Docker Hub's default namespace
+	}
+	if last := len(parts) - 1; last >= 0 {
+		if i := strings.IndexAny(parts[last], ":@"); i >= 0 {
+			parts[last] = parts[last][:i] // drop a baked-in ":tag" or "@digest"
+		}
+	}
+	return strings.Join(parts, "/")
 }

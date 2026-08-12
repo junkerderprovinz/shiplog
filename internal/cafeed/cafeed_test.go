@@ -13,12 +13,8 @@ import (
 // --- Lookup: pure matching logic, no network ---
 
 func feedFrom(entries []Entry, blacklisted map[string]string, previous *Feed) *Feed {
-	byName := make(map[string][]Entry, len(entries))
-	for _, e := range entries {
-		n := normalizeName(e.Name)
-		byName[n] = append(byName[n], e)
-	}
-	return &Feed{byName: byName, blacklisted: blacklisted, previous: previous}
+	byName, byRepo, byTemplateURL := indexEntries(entries)
+	return &Feed{byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL, blacklisted: blacklisted, previous: previous}
 }
 
 func TestLookupListedAndHealthy(t *testing.T) {
@@ -126,16 +122,91 @@ func TestLookupAmbiguousUnresolvableIsInconclusive(t *testing.T) {
 	}
 }
 
-func TestNormalizeRepoStripsDockerHubDefaults(t *testing.T) {
+func TestNormalizeRepoStripsAnyRegistryHost(t *testing.T) {
 	cases := map[string]string{
-		"docker.io/library/redis":    "redis",
-		"docker.io/coppit/handbrake": "coppit/handbrake",
-		"ghcr.io/x/y":                "ghcr.io/x/y", // non-Docker-Hub passes through unchanged
+		"docker.io/library/redis":                      "redis",
+		"docker.io/coppit/handbrake":                   "coppit/handbrake",
+		"ghcr.io/binhex/arch-teamspeak":                "binhex/arch-teamspeak", // must compare equal to the docker.io form below
+		"binhex/arch-teamspeak":                        "binhex/arch-teamspeak",
+		"quay.io/prometheus/prometheus":                "prometheus/prometheus",
+		"ghcr.io/open-webui/open-webui:main":           "open-webui/open-webui", // CA's Repository field observed live with a baked-in tag
+		"docker.openhands.dev/openhands/openhands:1.7": "openhands/openhands",
+		"redis:latest":                                 "redis",
 	}
 	for in, want := range cases {
 		if got := normalizeRepo(in); got != want {
 			t.Errorf("normalizeRepo(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// Reproduces the real OpenWebUI case found live: CA's Repository field bakes
+// in a ":main" tag the running container's own (tag-less) Repo never has.
+func TestLookupZeroNameMatchRescuedByRepoDespiteFeedTagSuffix(t *testing.T) {
+	f := feedFrom([]Entry{
+		{Name: "open-webui", Repository: "ghcr.io/open-webui/open-webui:main"},
+	}, nil, nil)
+	res, ok := f.Lookup("OpenWebUI", "ghcr.io/open-webui/open-webui", "")
+	if !ok || !res.Listed {
+		t.Fatalf("a feed Repository with a baked-in tag must still match the container's tag-less repo, got %+v ok=%v", res, ok)
+	}
+}
+
+// --- Lookup: zero-name-match rescue by repo/templateURL ---
+
+// Reproduces the real TeamSpeak case found live: the container is renamed
+// away from its CA template's canonical Name ("TeamSpeak" vs the feed's
+// "binhex-teamspeak"), and CA references the app via its ghcr.io mirror while
+// the container runs the docker.io original. Neither is a removal.
+func TestLookupZeroNameMatchRescuedByRepo(t *testing.T) {
+	f := feedFrom([]Entry{
+		{Name: "binhex-teamspeak", Repository: "ghcr.io/binhex/arch-teamspeak"},
+	}, nil, nil)
+	res, ok := f.Lookup("TeamSpeak", "docker.io/binhex/arch-teamspeak", "")
+	if !ok || !res.Listed {
+		t.Fatalf("a renamed container must still resolve via its repository, got %+v ok=%v", res, ok)
+	}
+}
+
+// A multi-instance container (user-suffixed "-II", "-III", ...) shares one
+// CA template's repository under a name the feed never lists.
+func TestLookupZeroNameMatchMultiInstanceRescuedByRepo(t *testing.T) {
+	f := feedFrom([]Entry{
+		{Name: "storj", Repository: "storjlabs/storagenode"},
+	}, nil, nil)
+	res, ok := f.Lookup("Storj-III", "docker.io/storjlabs/storagenode", "")
+	if !ok || !res.Listed {
+		t.Fatalf("a suffixed multi-instance container must still resolve via its repository, got %+v ok=%v", res, ok)
+	}
+}
+
+func TestLookupZeroNameMatchRescuedByTemplateURL(t *testing.T) {
+	f := feedFrom([]Entry{
+		{Name: "some-canonical-name", TemplateURL: "https://raw.githubusercontent.com/a/tpl/main/x.xml"},
+	}, nil, nil)
+	res, ok := f.Lookup("MyRenamedApp", "", "https://raw.githubusercontent.com/a/tpl/main/x.xml")
+	if !ok || !res.Listed {
+		t.Fatalf("a renamed container with no repo signal must still resolve via its installed TemplateURL, got %+v ok=%v", res, ok)
+	}
+}
+
+// The rescue must narrow false positives, not blind true removals: an app
+// absent by name AND repository across two crawls is still confirmed gone.
+func TestLookupZeroNameMatchStillAbsentWhenRepoAlsoMisses(t *testing.T) {
+	prev := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, nil)
+	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
+	res, ok := cur.Lookup("TrulyGoneApp", "x/gone-for-real", "")
+	if !ok || res.Listed {
+		t.Fatalf("absent by name AND repository from both crawls must still be confirmed not-listed, got %+v ok=%v", res, ok)
+	}
+}
+
+func TestLookupZeroNameMatchRepoPresentLastCrawlIsInconclusive(t *testing.T) {
+	prev := feedFrom([]Entry{{Name: "flaky-name", Repository: "x/flaky"}}, nil, nil)
+	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
+	_, ok := cur.Lookup("RenamedFlakyApp", "x/flaky", "")
+	if ok {
+		t.Fatal("present last crawl by repository, absent by both name and repo this crawl, must be inconclusive — a transient crawl gap")
 	}
 }
 
