@@ -153,6 +153,14 @@ html.cc-header-on .sl-bubble .sl-sec{
   border-bottom:none;background:var(--sl-card);border-radius:min(var(--cc-b-radius,10px),10px);
   margin:10px 16px;padding:12px 14px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
 }
+/* section badge (user: "cards mit Abschnittsbadge machen wie im updatefenster") - matches
+   Header.css's own fieldset > legend exactly: a filled accent pill, content-width (inline-flex,
+   not the base rule's full-width flex) so it reads as a badge sitting on the card, not a bar
+   spanning it. The nested .sl-ai chip (present only in the summary section) rides along inside. */
+html.cc-header-on .sl-bubble h4{
+  display:inline-flex;background:var(--cc-rbaccent,var(--cc-hdr-accent,#2f6feb));color:var(--cc-rbaccent-text,var(--cc-hdr-accent-text,#fff));
+  border-radius:var(--cc-b-radius,999px);padding:3px 12px;
+}
 html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
 html.cc-header-on .sl-bubble .sl-raw{border:none;background:var(--sl-bg);border-radius:min(var(--cc-b-radius,8px),8px)}
 html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
