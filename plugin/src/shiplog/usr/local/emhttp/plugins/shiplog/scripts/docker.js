@@ -599,6 +599,30 @@
     tick();
   }
 
+  // #46 (user asked for a real marquee, not truncation): only ever built when the text actually
+  // overflows its box AND the user hasn't asked for reduced motion — everything else stays the plain
+  // text node docker.css already ellipsis-clips as a safe fallback. Two IDENTICAL copies back to back,
+  // scrolled exactly one copy-width via translateX(-50%), loop seamlessly (no jump/reset visible).
+  function armJumpMarquee(bubble) {
+    try {
+      const jumpEl = bubble.querySelector(".sl-jump");
+      if (!jumpEl) return;
+      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const full = jumpEl.textContent;
+      if (reduceMotion || !full || jumpEl.scrollWidth <= jumpEl.clientWidth) return;
+      const track = el("span", "sl-jump-track");
+      track.appendChild(el("span", "sl-jump-txt", esc(full)));
+      const clone = el("span", "sl-jump-txt", esc(full));
+      clone.setAttribute("aria-hidden", "true");
+      track.appendChild(clone);
+      jumpEl.textContent = "";
+      jumpEl.appendChild(track);
+      jumpEl.classList.add("sl-jump-marquee");
+      // Slower for longer text so the reading speed stays roughly constant either way.
+      track.style.animationDuration = Math.max(6, Math.min(24, full.length / 8)) + "s";
+    } catch (e) {}
+  }
+
   function openFor(anchor, st) {
     close();
     // #8: CC-popup design — a blurred+dimmed backdrop behind a CENTERED window (styled via CC tokens with
@@ -622,6 +646,7 @@
       if (s && s.w) b.style.width = s.w + "px";
       if (s && s.h) b.style.height = s.h + "px";
     } catch (e) {}
+    armJumpMarquee(b); // #46: now that the bubble has its real (possibly restored) width, see if it needs to scroll
     // The window is centered by CSS (position:fixed, translate(-50%,-50%)) like every other CC popup — no
     // anchor math. `anchor` stays in the signature only so the caller need not change.
     b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); close(); });
