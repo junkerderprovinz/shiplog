@@ -57,7 +57,7 @@
   "d_close": "sulje",
   "d_uptodate": "ajan tasalla",
   "d_deprecated": "VANHENTUNUT",
-  "d_unmaintained": "Ei ylläpidetä",
+  "d_unmaintained": "Lopetettu",
   "d_unmaintainedHint": "Ei enää päivityksiä. Harkitse siirtymistä ylläpidettyyn vaihtoehtoon.",
   "d_updateNow": "Päivitä nyt",
   "d_updateHint": "laukaisee Unraidin oman päivityksen tälle kontille",

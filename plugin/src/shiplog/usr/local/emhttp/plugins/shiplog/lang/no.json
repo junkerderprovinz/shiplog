@@ -57,7 +57,7 @@
   "d_close": "lukk",
   "d_uptodate": "oppdatert",
   "d_deprecated": "UTDATERT",
-  "d_unmaintained": "Ikke vedlikeholdt",
+  "d_unmaintained": "Avviklet",
   "d_unmaintainedHint": "Ingen flere oppdateringer. Vurder å bytte til et vedlikeholdt alternativ.",
   "d_updateNow": "Oppdater nå",
   "d_updateHint": "utløser Unraids egen oppdatering for denne containeren",

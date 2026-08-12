@@ -381,17 +381,21 @@
       ? esc(seUpd ? kindLabel(st) : T("update"))
       : esc(noUpstream(st) ? noUpstreamLabel(st) : T("uptodate"));
 
+    // #47: a critical pill already carries the warning glyph — the plain risk dot
+    // next to it is a second, redundant "pay attention" signal. Show one or the
+    // other, never both.
+    const dotOrWarn = rc === "crit" ? "⚠ " : '<span class="sl-dot"></span>';
     return `
       <div class="sl-bh">
         <span class="sl-ver">${verHdr}</span>
-        <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${rc === "crit" ? "⚠ " : ""}${pillTxt}</span>
+        <span class="sl-pill sl-${rc}">${dotOrWarn}${pillTxt}</span>
         ${st.unmaintained ? `<span class="sl-pill sl-unmaint" title="${esc(st.unmaintained_reason || T("unmaintained"))}">⚠ ${esc(T("unmaintained"))}</span>` : ""}
         ${!st.unmaintained && st.ca_deprecated ? `<span class="sl-pill sl-dep" title="${esc(st.ca_deprecated_note || T("deprecated"))}">⚠ ${esc(T("deprecated"))}</span>` : ""}
-        <span class="sl-jump">${esc(jump)}</span>
+        <span class="sl-jump" title="${esc(jump)}">${esc(jump)}</span>
         <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${esc(T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
-      ${st.unmaintained ? `<div class="sl-unmaint-note">⚠ ${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
-      ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note">⚠ ${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
+      ${st.unmaintained ? `<div class="sl-unmaint-note"><h4>⚠ ${esc(T("unmaintained"))}</h4>${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
+      ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>⚠ ${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }

@@ -57,7 +57,7 @@
   "d_close": "إغلاق",
   "d_uptodate": "محدّث",
   "d_deprecated": "متوقف",
-  "d_unmaintained": "غير مُصان",
+  "d_unmaintained": "مُتوقف",
   "d_unmaintainedHint": "لا مزيد من التحديثات. فكّر في الانتقال إلى بديل مُصان.",
   "d_updateNow": "تحديث الآن",
   "d_updateHint": "يشغّل تحديث Unraid الخاص بهذه الحاوية",

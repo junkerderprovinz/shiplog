@@ -57,7 +57,7 @@
   "d_close": "sluiten",
   "d_uptodate": "up-to-date",
   "d_deprecated": "VEROUDERD",
-  "d_unmaintained": "Niet onderhouden",
+  "d_unmaintained": "Stopgezet",
   "d_unmaintainedHint": "Geen updates meer. Overweeg over te stappen naar een onderhouden alternatief.",
   "d_updateNow": "Nu bijwerken",
   "d_updateHint": "activeert Unraids eigen update voor deze container",

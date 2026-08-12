@@ -39,14 +39,22 @@
 /* GlimStone (CC installed): CC badges are a SOLID tinted fill, never an outline of any kind (a
    box-shadow ring is still visually a border line, just drawn differently — see the .sl-bubble
    card block below for the same lesson at section scale). 18% tint matches CC's own neutral-chip
-   convention (rgba(128,128,128,.18) throughout Header.css); .sl-crit/.sl-unmaint are already a
-   solid fill natively and need no change here beyond dropping their border. */
+   convention (rgba(128,128,128,.18) throughout Header.css). */
 html.cc-header-on .sl-pill{border:none;background:color-mix(in srgb, currentColor 18%, transparent)}
 html.cc-header-on .sl-pill.sl-low {background:color-mix(in srgb, #3fae6a 18%, transparent)}
 html.cc-header-on .sl-pill.sl-mid {background:color-mix(in srgb, #d6a243 18%, transparent)}
 html.cc-header-on .sl-pill.sl-high{background:color-mix(in srgb, #d9534f 18%, transparent)}
 html.cc-header-on .sl-pill.sl-grey{background:color-mix(in srgb, #9a9a9a 18%, transparent)}
 html.cc-header-on .sl-pill.sl-ok  {background:color-mix(in srgb, #3fae6a 18%, transparent)}
+/* #47/#48/#50 (user, live-verified): sl-crit/sl-unmaint/sl-dep are a PERSISTENT problem state, not
+   a routine risk level - the general currentColor-tint rule above was meant to skip them (see the
+   old comment removed here: "already a solid fill natively, need no change"), but nothing here
+   actually excluded them, so their white/dark text mixed down to a near-invisible 18% wash instead
+   of staying the solid red/amber they render as without CC. Keep their solid native fill explicitly;
+   more specific than the plain .sl-pill rule above, so it wins regardless of source order. */
+html.cc-header-on .sl-pill.sl-crit,
+html.cc-header-on .sl-pill.sl-unmaint{background:#c81e28}
+html.cc-header-on .sl-pill.sl-dep{background:#d6a243}
 
 /* "Not maintained" state — an app that has reached a dead end (template pulled
    from Community Applications, image gone, or upstream repo archived). This is a
@@ -112,8 +120,17 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
 .sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim)}
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
-.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px}
-.sl-bubble .sl-bh-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+/* #46: the risk-reason text can run long (a full breaking-change sentence) - clip it with an
+   ellipsis instead of forcing the header to wrap or grow; docker.js sets the full text as its
+   native title tooltip, so nothing is actually lost, just not all shown inline at once. */
+.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;max-width:260px;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis}
+/* #44 (user, live-verified): the button cluster sat at the end of the SAME wrapping flex row as
+   .sl-ver/.sl-pill/.sl-jump, so its wrap point - and therefore its on-screen position - depended on
+   how much that content added up to per container (a long .sl-jump risk-reason text wraps sooner than
+   a short "up to date" one). flex:0 0 100% forces it onto its OWN row every time, in the exact same
+   place regardless of container. */
+.sl-bubble .sl-bh-right{flex:0 0 100%;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:6px}
 /* Unraid-orange action buttons: outlined in the Unraid accent, filled on hover. */
 .sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
   padding:5px 11px;text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
@@ -173,6 +190,12 @@ html.cc-header-on .sl-bubble .sl-sec{
   margin:10px 16px;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
   position:relative;   /* #35c: positioning context for the straddling h4 badge below */
 }
+/* #52 (user, live-verified: rgb(46,46,46) --sl-card vs rgb(26,26,26) --sl-bg): the TOPMOST section,
+   directly under the sticky header, should read as part of the window frame rather than a lifted
+   card - only this first one; every section below it keeps the normal card lift. The badge itself
+   stays on its accent colour (that's not "the background" the user meant), only the card fill/shadow
+   is neutralised here. */
+html.cc-header-on .sl-bubble .sl-bh + .sl-sec{background:var(--sl-bg);box-shadow:none}
 /* section badge (user: "cards mit Abschnittsbadge machen wie im updatefenster") - a filled accent pill.
    #35c (user: "halb auf der card liegend"): a REAL <legend> inside a <fieldset> straddles its border
    natively (Header.css's fieldset>legend rule needs no position/margin trick at all for that reason) -
@@ -187,6 +210,21 @@ html.cc-header-on .sl-bubble h4{
   position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
 }
 html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
+/* #49 (user, "als Titelbadge wie im Container-Update-Fenster"): the Unmaintained/CADeprecated note
+   gets the SAME straddling-badge card as every .sl-sec above, kept as its OWN rule (not just adding
+   the .sl-sec class to the div) so the native red/amber note two rules up is never touched by this -
+   that native styling is exactly right without CC and must stay that way. */
+html.cc-header-on .sl-bubble .sl-unmaint-note{
+  background:var(--sl-card);color:var(--sl-txt);border-radius:min(var(--cc-b-radius,10px),10px);
+  margin:10px 16px;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
+  position:relative;
+}
+html.cc-header-on .sl-bubble .sl-unmaint-note h4{
+  display:inline-flex;background:var(--cc-err,#d9433f);color:#fff;
+  border-radius:var(--cc-b-radius,999px);padding:3px 12px;
+  position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
+}
+html.cc-header-on .sl-bubble .sl-dep-note h4{background:var(--cc-warn,#e0912a);color:#1a1207}
 /* #35b (user: "jetzt haben wir drei ebenen ... soll nur zwei ebenen sein"): this used to re-paint the
    window's own dark --sl-bg INSIDE the light --sl-card section - a third, visually distinct shade the
    locked reference never has (frame + card, nothing nested a third tone). Let it blend into its parent

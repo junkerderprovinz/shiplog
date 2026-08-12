@@ -57,7 +57,7 @@
   "d_close": "fermer",
   "d_uptodate": "à jour",
   "d_deprecated": "OBSOLÈTE",
-  "d_unmaintained": "Non maintenu",
+  "d_unmaintained": "Abandonné",
   "d_unmaintainedHint": "Plus de mises à jour. Envisagez de migrer vers une alternative maintenue.",
   "d_updateNow": "Mettre à jour maintenant",
   "d_updateHint": "déclenche la propre mise à jour d'Unraid pour ce conteneur",
