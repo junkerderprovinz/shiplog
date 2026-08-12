@@ -33,6 +33,15 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.2.5
+🐛 **Fixed**
+- The "Update now" and "Repository" buttons could still shift position between containers after the previous fix; they now always stay inline, top-right of the header, on every container.
+- The risk-reason text next to a badge is now a real scrolling marquee when it's too long to fit, instead of being cut short with an ellipsis.
+- (with CannonadeCommand installed) The topmost section's background no longer casts a stray drop shadow now that it matches the window behind it.
+
+🎨 **Design**
+- (with CannonadeCommand installed) Section cards in the changelog window no longer sit close enough for a card's title badge to overlap the card above it.
+
 ### 3.2.4
 🐛 **Fixed**
 - **Containers renamed away from their Community Applications template name, or running as a suffixed multi-instance copy, were wrongly flagged "removed from Community Applications."** The catalog lookup matched only your container's own display name against the feed — a container named differently than its template (renaming is common, and so is running several instances of one template with a suffix) could never match, and after two crawls without a name hit was reported as confirmed absent even though it was genuinely still listed. Lookups now also try the container's repository and installed template URL before concluding it's gone. Also fixed: a stale, no-longer-valid template URL could win over a catalog lookup that positively confirms the app is still listed under its current location.
