@@ -78,6 +78,19 @@ jobs:
             echo "::error::no '### $ver' block in plugin/shiplog.plg <CHANGES> — add it before tagging"
             exit 1
           fi
+          # Category lines ("🐛 **Fixed**") are bold-only in the .plg source because Unraid's
+          # in-app changelog viewer has fragile '#' handling (only the "### X.Y.Z" version
+          # heading is a proven-safe exception, see this repo's CLAUDE.md) - but on the GitHub
+          # release page that leaves them the same size as body text. Promote them to real
+          # headings HERE, in the extracted copy only; plugin/shiplog.plg itself is never
+          # touched, so the in-app viewer keeps the safe bold-only rendering.
+          sed -i -E \
+            -e 's/^🐛 \*\*Fixed\*\*$/## 🐛 Fixed/' \
+            -e 's/^✨ \*\*Added\*\*$/## ✨ Added/' \
+            -e 's/^🎨 \*\*Design\*\*$/## 🎨 Design/' \
+            -e 's/^⚡ \*\*Improved\*\*$/## ⚡ Improved/' \
+            -e 's/^🌐 \*\*Translations\*\*$/## 🌐 Translations/' \
+            release-notes.md
           echo "---- release notes ----"; cat release-notes.md
 
       - name: Publish release (asset goes live first)
