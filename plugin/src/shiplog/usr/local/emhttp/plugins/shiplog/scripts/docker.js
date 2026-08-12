@@ -386,10 +386,12 @@
         <span class="sl-ver">${verHdr}</span>
         <span class="sl-pill sl-${rc}"><span class="sl-dot"></span>${rc === "crit" ? "⚠ " : ""}${pillTxt}</span>
         ${st.unmaintained ? `<span class="sl-pill sl-unmaint" title="${esc(st.unmaintained_reason || T("unmaintained"))}">⚠ ${esc(T("unmaintained"))}</span>` : ""}
+        ${!st.unmaintained && st.ca_deprecated ? `<span class="sl-pill sl-dep" title="${esc(st.ca_deprecated_note || T("deprecated"))}">⚠ ${esc(T("deprecated"))}</span>` : ""}
         <span class="sl-jump">${esc(jump)}</span>
         <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${esc(T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
       </div>
       ${st.unmaintained ? `<div class="sl-unmaint-note">⚠ ${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
+      ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note">⚠ ${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
@@ -724,15 +726,18 @@
         // the reason (and the last changelog, if any).
         chip = el("a", "sl-chip sl-unmaint", `${WARN_ICON}<span>${esc(T("unmaintained"))}</span>`);
         chip.title = `ShipLog: ${st.unmaintained_reason || T("unmaintained")}`;
+      } else if (st.ca_deprecated) {
+        // Editorially demoted in Community Applications (hidden from default search,
+        // usually a maintained alternative exists) — same REPLACE-the-chip treatment
+        // as Unmaintained above (jdp: "soll den changelog badge ersetzen, wie bei dem
+        // not maintained badge"), just its own amber colour since the app is still
+        // listed and still genuinely updated, not a dead end.
+        chip = el("a", "sl-chip sl-dep", `${WARN_ICON}<span>${esc(T("deprecated"))}</span>`);
+        chip.title = `ShipLog: ${st.ca_deprecated_note || T("deprecated")}`;
       } else {
         const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
         const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
-        // ca_deprecated is informational, never a dead end (the app is still listed
-        // and still genuinely updated) — it rides ALONGSIDE the normal changelog
-        // chip as a small dot, reusing the existing sl-unmaint red button only for
-        // the real Unmaintained dead-end case above.
-        const dep = st.ca_deprecated ? `<span class="sl-amp sl-dep" title="${esc(T("deprecated"))}${st.ca_deprecated_note ? ": " + esc(st.ca_deprecated_note) : ""}"></span>` : "";
-        chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>${dep}`);
+        chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
         chip.title = `ShipLog: ${label} — ${T("clickHint")}`;
       }
       chip.href = "#";
