@@ -33,6 +33,13 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.1.1
+🎨 **Design**
+- **The CannonadeCommand-integrated look is fully border-free again and matches its own locked recipe.** Several elements inside the changelog window and the update-window card (section dividers, the GitHub/Update buttons, the risk/DIGEST pills, the AI-summary badge) had drifted back to literal border lines in follow-up feature work, contradicting GlimStone's shade-only convention; all of them now use the same box-shadow-based shading as the rest of CannonadeCommand, gated behind CC actually being installed so the plain native-Unraid look is untouched without it. Card and button colours now also match CannonadeCommand's own locked update-window recipe (a dark frame holding explicit light cards) instead of a token-driven shade too close to the frame to read as separate.
+
+🐛 **Fixed**
+- **The "Not maintained" warning could still fire on apps that are perfectly fine**, this time through its own corroboration check: a GitHub rate limit, a timeout, or any error probing the source repository was treated as confirmation the repo is gone  -  the same fail-closed mistake the 3.1.0 fix for this feature was meant to close, one layer deeper. Only a clean 404/410 on the repo page now counts as confirmation; anything inconclusive leaves the app alone.
+
 ### 3.1.0
 ✨ **Added**
 - **"Not maintained" warning for dead-end apps.** ShipLog now flags an installed app that has reached a dead end, on a separate axis from the update risk: its Unraid template was pulled from Community Applications (its source template now 404s), its image was deleted from the registry, or its upstream source repository was archived. In the Docker tab a static red "Not maintained" button replaces the Changelog chip (click it for the exact reason, plus the last changelog if one is still available), and a single Matrix / Unraid notification fires when an app first turns unmaintained. Healthy apps are untouched. This closes the gap that let an installed app quietly stop getting updates without you noticing (the case that prompted it: an app removed from CA).
