@@ -33,56 +33,34 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
-### 3.2.5
-🐛 **Fixed**
-- The "Update now" and "Repository" buttons could still shift position between containers after the previous fix; they now always stay inline, top-right of the header, on every container.
-- The risk-reason text next to a badge is now a real scrolling marquee when it's too long to fit, instead of being cut short with an ellipsis.
-- (with CannonadeCommand installed) The topmost section's background no longer casts a stray drop shadow now that it matches the window behind it.
-
+### 3.3.0
 🎨 **Design**
-- (with CannonadeCommand installed) Section cards in the changelog window no longer sit close enough for a card's title badge to overlap the card above it.
+- "Not maintained" is renamed to "Discontinued" throughout (all languages) — the old wording was easy to confuse with the separate "editorially deprecated" state.
+- The "editorially deprecated in Community Applications" state now replaces the Docker-tab changelog chip with its own amber button, the same way the red "Discontinued" button already does for a real dead end. Its own amber pill and explanatory note appear in the changelog bubble too, mirroring "Discontinued" there as well. Still its own colour and wording throughout: the app is still listed and still genuinely receiving updates, so it reads as a lesser warning, not the same severity as a real dead end.
+- **(with CannonadeCommand installed)** The "Removed from Community Applications" / "editorially deprecated" note now renders as its own title-badge card, matching the changelog window's other sections. Only the very first section under the header blends into the window background; every section below it keeps its own card look.
+- **(with CannonadeCommand installed)** Section cards in the changelog window no longer sit close enough for a card's title badge to overlap the card above it.
 
-### 3.2.4
 🐛 **Fixed**
 - **Containers renamed away from their Community Applications template name, or running as a suffixed multi-instance copy, were wrongly flagged "removed from Community Applications."** The catalog lookup matched only your container's own display name against the feed — a container named differently than its template (renaming is common, and so is running several instances of one template with a suffix) could never match, and after two crawls without a name hit was reported as confirmed absent even though it was genuinely still listed. Lookups now also try the container's repository and installed template URL before concluding it's gone. Also fixed: a stale, no-longer-valid template URL could win over a catalog lookup that positively confirms the app is still listed under its current location.
-- The header's "Update now" and "Repository" buttons could appear at a different position from container to container; they now always sit on their own row at a fixed spot.
+- The header's "Update now" and "Repository" buttons could shift position from container to container; they now always stay inline, top-right of the header, on every container.
 - A critical-risk badge showed both the plain risk dot and its warning triangle at once; the redundant dot is gone.
-- **(with CannonadeCommand installed)** The "Not maintained" and "Editorially deprecated" badges/buttons had washed out to a barely visible tint instead of their intended solid red/amber.
-
-🎨 **Design**
-- The risk-reason text next to a badge no longer stretches the header or wraps unpredictably on a long explanation; it's clipped with an ellipsis, full text on hover.
-- **(with CannonadeCommand installed)** The "Removed from Community Applications" / "editorially deprecated" note now renders as its own title-badge card, matching the changelog window's other sections. Only the very first section under the header blends into the window background; every section below it keeps its own card look.
-- "Not maintained" is renamed to "Discontinued" throughout (all languages) — the old wording was easy to confuse with the separate "editorially deprecated" state.
-
-### 3.2.3
-🐛 **Fixed**
+- The risk-reason text next to a badge is now a real scrolling marquee when it's too long to fit, instead of being cut short with an ellipsis.
+- **(with CannonadeCommand installed)** The "Discontinued" and "Editorially deprecated" badges/buttons had washed out to a barely visible tint instead of their intended solid red/amber.
 - The changelog window (with CannonadeCommand installed) now matches CC's own Docker update window exactly: the window background is the correct darker shade instead of a lighter generic surface, a stray third background layer inside the section cards is gone, and the section title badges now sit half on the card's own top edge like a real form legend instead of flush inside the card.
-
-### 3.2.2
-🎨 **Design**
-- **Corrects 3.2.1:** the "editorially deprecated in Community Applications" state now replaces the Docker-tab changelog chip with its own amber button, the same way the red "Not maintained" button already does for a real dead end — not the small alongside dot 3.2.1 shipped. Its own amber pill and explanatory note appear in the changelog bubble too, mirroring "Not maintained" there as well. Still its own colour and wording throughout: the app is still listed and still genuinely receiving updates, so it reads as a lesser warning, not the same severity as a real dead end.
-
-### 3.2.1
-🎨 **Design**
-- The "editorially deprecated in Community Applications" state (added in 3.2.0, API-only until now) now shows right on the Docker-tab changelog chip: a small hollow amber dot next to the usual risk dot, hover for the moderator's note. It sits alongside the changelog, not replacing it — the app is still listed and still genuinely receiving updates, unlike the red "Not maintained" button.
+- **(with CannonadeCommand installed)** The topmost section's background no longer casts a stray drop shadow now that it matches the window behind it.
 
 ### 3.2.0
-🎨 **Design**
-- Section headings on the changelog window's cards ("ZUSAMMENFASSUNG", "NEUESTE RELEASES") are now a filled accent badge, matching CannonadeCommand's own update-window recipe, instead of a full-width text bar.
-
 ✨ **Added**
 - **Real Community Applications catalog corroboration for the "Not maintained" warning.** ShipLog now fetches the same feed CA's own plugin reads, cached and refreshed only when it actually changes (no extra load on your GitHub rate limit), instead of relying only on whether an app's historical template file still happens to be reachable at its old raw GitHub URL. That raw-URL check can never see an app that was pulled from Community Applications while its template file happens to still sit untouched in its source repo, or one a moderator blacklisted directly — both are now caught. Same fail-open discipline as the raw-URL check: an ambiguous match (two apps sharing a display name) or a feed fetch failure never flags anything, and an apparent removal only counts once it holds across two separate crawls of the feed, since the feed itself is crowd-sourced and can have a transient gap for a renamed listing.
 - **New "editorially deprecated in CA" signal, separate from "Not maintained".** Community Applications also has a softer state: an app hidden from default search with a moderator note pointing at a better-maintained alternative, while still installable and still genuinely receiving updates (the real case that prompted this: HandBrake's `coppit/handbrake` listing, deprecated in favour of `jlesage/handbrake`, still updates fine). Unlike "Not maintained" this never replaces the changelog view — it is exposed as new `ca_deprecated` / `ca_deprecated_note` fields on the status API for now; a visual badge on the Docker-tab chip is a follow-up.
 
-🐛 **Fixed**
-- **The "Not maintained" warning could re-notify on every single sweep instead of once.** Its dedupe check reads the previous sweep's row back from the database, but the two columns behind it were never actually written there — a leftover gap from when the feature first shipped. An app that stayed unmaintained for days could re-trigger a Matrix / Unraid notification every 6 hours (the default poll interval) for as long as it stayed flagged, instead of exactly once on the transition into the state.
-
-### 3.1.1
 🎨 **Design**
 - **The CannonadeCommand-integrated look is fully border-free again and matches its own locked recipe.** Several elements inside the changelog window and the update-window card (section dividers, the GitHub/Update buttons, the risk/DIGEST pills, the AI-summary badge) had drifted back to literal border lines in follow-up feature work, contradicting GlimStone's shade-only convention; all of them now use the same box-shadow-based shading as the rest of CannonadeCommand, gated behind CC actually being installed so the plain native-Unraid look is untouched without it. Card and button colours now also match CannonadeCommand's own locked update-window recipe (a dark frame holding explicit light cards) instead of a token-driven shade too close to the frame to read as separate.
+- Section headings on the changelog window's cards ("Summary", "Recent releases") are now a filled accent badge, matching CannonadeCommand's own update-window recipe, instead of a full-width text bar.
 
 🐛 **Fixed**
-- **The "Not maintained" warning could still fire on apps that are perfectly fine**, this time through its own corroboration check: a GitHub rate limit, a timeout, or any error probing the source repository was treated as confirmation the repo is gone  -  the same fail-closed mistake the 3.1.0 fix for this feature was meant to close, one layer deeper. Only a clean 404/410 on the repo page now counts as confirmation; anything inconclusive leaves the app alone.
+- **The "Not maintained" warning could re-notify on every single sweep instead of once.** Its dedupe check reads the previous sweep's row back from the database, but the two columns behind it were never actually written there — a leftover gap from when the feature first shipped. An app that stayed unmaintained for days could re-trigger a Matrix / Unraid notification every 6 hours (the default poll interval) for as long as it stayed flagged, instead of exactly once on the transition into the state.
+- **The "Not maintained" warning could still fire on apps that are perfectly fine**, this time through its own corroboration check: a GitHub rate limit, a timeout, or any error probing the source repository was treated as confirmation the repo is gone — the same fail-closed mistake the 3.1.0 fix for this feature was meant to close, one layer deeper. Only a clean 404/410 on the repo page now counts as confirmation; anything inconclusive leaves the app alone.
 
 ### 3.1.0
 ✨ **Added**
