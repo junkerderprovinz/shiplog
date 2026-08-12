@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/junkerderprovinz/shiplog/internal/cafeed"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/risk"
@@ -61,6 +62,12 @@ type (
 	Notifier interface {
 		Notify(ctx context.Context, st model.UpdateStatus) error
 	}
+	// caFeedLookuper is the one method engine actually needs from *cafeed.Feed —
+	// declared narrow so tests can fake a feed without reaching into cafeed's
+	// unexported fields. *cafeed.Feed satisfies this automatically.
+	caFeedLookuper interface {
+		Lookup(name, repo, templateURL string) (cafeed.Result, bool)
+	}
 )
 
 // Engine wires the collaborators and owns the poll schedule.
@@ -91,6 +98,31 @@ type Engine struct {
 	// Used to probe a template's <TemplateURL> for a 404. Injectable so tests
 	// avoid the network; nil-safe.
 	checkURL func(ctx context.Context, url string) int
+	// caFeed loads the real Community Applications catalog once per sweep,
+	// corroborating (and going beyond) the raw-URL-reachability proxy above:
+	// it also catches an app editorially demoted (CADeprecated, still updated)
+	// or moderator-blacklisted, not only a genuinely deleted template. nil by
+	// default (tests skip it silently, matching every other collaborator
+	// here); wired to a real cafeed.Fetcher via WithCAFeed.
+	caFeed func(ctx context.Context) (caFeedLookuper, error)
+}
+
+// WithCAFeed enables real Community-Applications-catalog corroboration,
+// caching the feed under dir (typically the same DATA_DIR as the SQLite DB).
+// Returns e for chaining.
+func (e *Engine) WithCAFeed(dir string) *Engine {
+	fetcher := cafeed.NewFetcher(dir)
+	e.caFeed = func(ctx context.Context) (caFeedLookuper, error) {
+		feed, err := fetcher.Load(ctx)
+		if err != nil {
+			// Return a TRUE nil interface, not a non-nil caFeedLookuper wrapping a
+			// nil *cafeed.Feed (the classic typed-nil gotcha) — the latter would
+			// pass Sweep's "caFeed != nil" check and then panic inside Lookup.
+			return nil, err
+		}
+		return feed, nil
+	}
+	return e
 }
 
 // WithSummarizer enables AI changelog summaries (returns e for chaining). Pass a
@@ -184,6 +216,14 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if e.templateURLs != nil {
 		templateURLs = e.templateURLs()
 	}
+	// The real Community Applications catalog, fetched/cached at most once per
+	// sweep. A fetch failure leaves this nil silently — every container just
+	// skips CA-feed corroboration for this sweep; the raw-URL proxy and
+	// changelog.Deprecated checks below run unaffected either way.
+	var caFeed caFeedLookuper
+	if e.caFeed != nil {
+		caFeed, _ = e.caFeed(ctx)
+	}
 	// One registry lookup per DISTINCT (repo, tag) per sweep: duplicate images
 	// (multi-container stacks, stopped duplicates) share a single Resolve. The
 	// memo lives exactly one sweep, so there is no staleness to manage.
@@ -202,7 +242,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		go func(c model.Container) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := e.check(ctx, c, resolve, overrides, projects, templateURLs)
+			st := e.check(ctx, c, resolve, overrides, projects, templateURLs, caFeed)
 			if uerr := e.store.Upsert(st); uerr != nil {
 				// Store failure for one row must not crash the sweep; the next
 				// sweep retries. (No logger dependency here on purpose.)
@@ -289,7 +329,7 @@ func noUpstreamReason(c model.Container) (string, bool) {
 }
 
 // check runs the per-container pipeline and returns the status to store.
-func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, projects map[string]string, templateURLs map[string]string) model.UpdateStatus {
+func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, projects map[string]string, templateURLs map[string]string, caFeed caFeedLookuper) model.UpdateStatus {
 	// Redirect the changelog source before anything else: a user override or a
 	// curated LSIO default wins over the image's OCI source label (which is often
 	// the packaging wrapper, plain wrong, or missing). srcKind labels the origin
@@ -455,10 +495,29 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	// Community Applications (its <TemplateURL> now 404s), or its source repo is
 	// archived. Checked for every managed container, not only those with an update.
 	if !st.Unmaintained {
-		if u := templateURLs[strings.ToLower(c.Name)]; c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
+		u := templateURLs[strings.ToLower(c.Name)]
+		switch {
+		case c.Managed && u != "" && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u):
 			st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
-		} else if st.Changelog != nil && st.Changelog.Deprecated {
+		case st.Changelog != nil && st.Changelog.Deprecated:
 			st.Unmaintained, st.UnmaintainedReason = true, "Source repository archived"
+		case c.Managed && caFeed != nil:
+			// The real CA catalog: catches an app pulled from the feed while its
+			// template file happens to still sit untouched (the raw-URL proxy
+			// above can never see that), a moderator blacklist, or an editorial
+			// demotion (CADeprecated) that is NOT a dead end — that app is still
+			// installable and still updated, so it must not replace the
+			// changelog the way a genuine Unmaintained verdict does.
+			if res, ok := caFeed.Lookup(c.Name, c.Repo, u); ok {
+				switch {
+				case !res.Listed && res.Note != "":
+					st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications: "+res.Note
+				case !res.Listed:
+					st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
+				case res.Deprecated:
+					st.CADeprecated, st.CADeprecatedNote = true, res.Note
+				}
+			}
 		}
 	}
 	e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
