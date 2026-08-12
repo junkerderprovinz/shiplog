@@ -34,6 +34,9 @@ what changed from your running image to the newest, with a risk badge. Read-only
 optional AI summaries (Ollama) and Matrix alerts.
 
 ### 3.2.0
+🎨 **Design**
+- Section headings on the changelog window's cards ("ZUSAMMENFASSUNG", "NEUESTE RELEASES") are now a filled accent badge, matching CannonadeCommand's own update-window recipe, instead of a full-width text bar.
+
 ✨ **Added**
 - **Real Community Applications catalog corroboration for the "Not maintained" warning.** ShipLog now fetches the same feed CA's own plugin reads, cached and refreshed only when it actually changes (no extra load on your GitHub rate limit), instead of relying only on whether an app's historical template file still happens to be reachable at its old raw GitHub URL. That raw-URL check can never see an app that was pulled from Community Applications while its template file happens to still sit untouched in its source repo, or one a moderator blacklisted directly — both are now caught. Same fail-open discipline as the raw-URL check: an ambiguous match (two apps sharing a display name) or a feed fetch failure never flags anything, and an apparent removal only counts once it holds across two separate crawls of the feed, since the feed itself is crowd-sourced and can have a transient gap for a renamed listing.
 - **New "editorially deprecated in CA" signal, separate from "Not maintained".** Community Applications also has a softer state: an app hidden from default search with a moderator note pointing at a better-maintained alternative, while still installable and still genuinely receiving updates (the real case that prompted this: HandBrake's `coppit/handbrake` listing, deprecated in favour of `jlesage/handbrake`, still updates fine). Unlike "Not maintained" this never replaces the changelog view — it is exposed as new `ca_deprecated` / `ca_deprecated_note` fields on the status API for now; a visual badge on the Docker-tab chip is a follow-up.
