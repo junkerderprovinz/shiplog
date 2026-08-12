@@ -54,6 +54,11 @@ func main() {
 	// user turns on "ignore third-party containers" (default off = track all).
 	eng.WithIgnoreUnmanaged(cfg.IgnoreUnmanaged)
 
+	// Real Community Applications catalog corroboration (absent/deprecated/
+	// blacklisted), cached alongside the SQLite DB. Always on, like the raw-URL
+	// proxy and archived-repo checks it complements.
+	eng.WithCAFeed(cfg.DataDir)
+
 	// Optional AI summaries (Ollama). nil when unconfigured → silently skipped.
 	// Ping once at startup so the log says plainly whether summaries will work.
 	if sum := summarize.New(cfg.OllamaURL, cfg.OllamaModel); sum != nil {

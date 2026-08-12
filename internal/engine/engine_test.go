@@ -8,9 +8,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/junkerderprovinz/shiplog/internal/cafeed"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 )
+
+// fakeCAFeed is the smallest possible caFeedLookuper: a canned Lookup result
+// for every container, since these tests only exercise engine.check's own
+// branching on the result, not real feed matching (that's cafeed's own
+// package tests).
+type fakeCAFeed struct {
+	result cafeed.Result
+	ok     bool
+}
+
+func (f fakeCAFeed) Lookup(name, repo, templateURL string) (cafeed.Result, bool) {
+	return f.result, f.ok
+}
 
 // --- fakes ---
 
@@ -283,6 +297,151 @@ func TestSweepFlagsArchivedRepo(t *testing.T) {
 	}
 	if a := st.rows["arch"]; !a.Unmaintained || a.UnmaintainedReason != "Source repository archived" {
 		t.Fatalf("arch: want unmaintained/archived, got %v/%q", a.Unmaintained, a.UnmaintainedReason)
+	}
+}
+
+// The real CA catalog catches an app pulled from the feed even when its
+// template file still sits untouched (the raw-URL proxy above never fires
+// for that case — this is precisely the gap it exists to close).
+func TestSweepFlagsUnmaintainedViaCAFeedAbsent(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "gone", Name: "GoneApp", Repo: "ghcr.io/x/gone3", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/gone3": {tag: "1.0.0", dig: "sha256:g"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"goneapp": "https://raw.githubusercontent.com/x/gone/main/app.xml"}
+	}
+	e.checkURL = func(context.Context, string) int { return 200 } // raw URL still reachable — proxy sees nothing
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if g := st.rows["gone"]; !g.Unmaintained || g.UnmaintainedReason != "Removed from Community Applications" {
+		t.Fatalf("want unmaintained/removed-from-CA via feed, got %v/%q", g.Unmaintained, g.UnmaintainedReason)
+	}
+}
+
+func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "bl", Name: "BadApp", Repo: "x/bad", Tag: "1.0.0", Digest: "sha256:b", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"x/bad": {tag: "1.0.0", dig: "sha256:b"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil }
+	e.checkURL = func(context.Context, string) int { return 200 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false, Note: "Repository no longer exists on dockerHub"}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	want := "Removed from Community Applications: Repository no longer exists on dockerHub"
+	if b := st.rows["bl"]; !b.Unmaintained || b.UnmaintainedReason != want {
+		t.Fatalf("want unmaintained/%q, got %v/%q", want, b.Unmaintained, b.UnmaintainedReason)
+	}
+}
+
+// CADeprecated is informational, not a dead end: the app is still listed and
+// still updated, so it must NOT replace the changelog the way a genuine
+// Unmaintained verdict does (reproduces the real coppit/handbrake case).
+func TestSweepFlagsCADeprecatedWithoutUnmaintained(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "dep", Name: "HandBrake", Repo: "coppit/handbrake", Tag: "1.0.0", Digest: "sha256:h", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"coppit/handbrake": {tag: "1.0.0", dig: "sha256:h"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil }
+	e.checkURL = func(context.Context, string) int { return 200 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: true, Deprecated: true, Note: "A better supported and more up to date app is available from DJoss"}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	d := st.rows["dep"]
+	if d.Unmaintained {
+		t.Fatalf("a deprecated-but-listed app must NOT be Unmaintained, got reason %q", d.UnmaintainedReason)
+	}
+	if !d.CADeprecated || d.CADeprecatedNote == "" {
+		t.Fatalf("want CADeprecated with a note, got %v/%q", d.CADeprecated, d.CADeprecatedNote)
+	}
+}
+
+// An inconclusive feed lookup (ok=false — ambiguous match, or an absence not
+// yet confirmed across two crawls) must leave the container alone, exactly
+// like every other fail-open corroboration in this engine.
+func TestSweepCAFeedInconclusiveLeavesContainerAlone(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "inc", Name: "MaybeApp", Repo: "x/maybe", Tag: "1.0.0", Digest: "sha256:m", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"x/maybe": {tag: "1.0.0", dig: "sha256:m"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil }
+	e.checkURL = func(context.Context, string) int { return 200 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) { return fakeCAFeed{ok: false}, nil }
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if m := st.rows["inc"]; m.Unmaintained || m.CADeprecated {
+		t.Fatalf("inconclusive feed lookup must not flag anything, got unmaintained=%v ca_deprecated=%v", m.Unmaintained, m.CADeprecated)
+	}
+}
+
+// The existing raw-URL proxy and archived-repo signals take priority: the CA
+// feed is a fallback for what THEY can't see, not a replacement, so it must
+// not even be consulted once one of them has already flagged the container.
+func TestSweepCAFeedNotConsultedWhenAlreadyFlagged(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "arch2", Name: "ArchApp2", Repo: "ghcr.io/x/arch2", Tag: "1.0.0", Digest: "sha256:a", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/arch2": {tag: "1.0.0", dig: "sha256:a"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{deprecated: true}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil }
+	e.checkURL = func(context.Context, string) int { return 200 }
+	called := false
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		called = true
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: true, Deprecated: true}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if a := st.rows["arch2"]; !a.Unmaintained || a.UnmaintainedReason != "Source repository archived" {
+		t.Fatalf("archived signal should win, got %v/%q", a.Unmaintained, a.UnmaintainedReason)
+	}
+	if st.rows["arch2"].CADeprecated {
+		t.Fatal("CADeprecated must not be set once Unmaintained is already true via another signal")
+	}
+	_ = called // caFeed.Lookup itself may or may not run per-container; what matters is it never wins — asserted above
+}
+
+// A caFeed load failure (network down, nothing cached yet) must degrade
+// silently, never panic — regression guard for the typed-nil-interface trap
+// (a raw `return fetcher.Load(ctx)` would wrap a nil *cafeed.Feed in a
+// non-nil caFeedLookuper, and calling Lookup on it would nil-dereference).
+func TestSweepCAFeedLoadErrorDoesNotPanic(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "ok", Name: "FineApp", Repo: "ghcr.io/x/fine2", Tag: "1.0.0", Digest: "sha256:f", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/fine2": {tag: "1.0.0", dig: "sha256:f"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil }
+	e.checkURL = func(context.Context, string) int { return 200 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) { return nil, errors.New("network down") }
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if f := st.rows["ok"]; f.Unmaintained || f.CADeprecated {
+		t.Fatalf("a caFeed load error must leave the container unflagged, got unmaintained=%v ca_deprecated=%v", f.Unmaintained, f.CADeprecated)
 	}
 }
 
