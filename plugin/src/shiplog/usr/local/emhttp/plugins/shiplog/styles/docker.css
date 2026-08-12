@@ -148,7 +148,13 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
    sticky, so it still needs to visually separate from content scrolling under it - that's
    elevation, not a divider); every .sl-sec becomes its own card; .sl-raw sits one shade
    further in as a nested block, same recipe, no ring. */
-html.cc-header-on .sl-bubble{border:none}
+/* #35a (user: "Fensterhintergrundfarbe ist heller als bei dem Container-Update-Fenster"): the base --sl-bg
+   fallback above (var(--cc-surface-window,#242424)) assumed CC's generic surface-window token equals the
+   update window's own frame - it doesn't, that dialog hardcodes #1a1a1a directly (Header.css .sweet-alert.nchan).
+   Override the token itself here so every rule that reads var(--sl-bg) picks up the exact reference shade,
+   same "explicit literal, not token-driven" call already made for --sl-card below. Native (no CC) keeps its
+   own #242424 fallback untouched - this only fires once CC is actually installed. */
+html.cc-header-on .sl-bubble{border:none;--sl-bg:#1a1a1a}
 html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:0 4px 10px -2px rgba(0,0,0,.35)}
 /* buttons: the update-window reference never outlines a button either (Header.css button.confirm/.cancel -
    border:none, box-shadow:none, solid fill). .sl-upd (the primary action) takes the same accent-vs-neutral
@@ -164,18 +170,29 @@ html.cc-header-on .sl-bubble .sl-upd:hover{background:#ff8c2f;filter:brightness(
 html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:none;background:var(--sl-card);color:var(--sl-dim)}
 html.cc-header-on .sl-bubble .sl-sec{
   border-bottom:none;background:var(--sl-card);border-radius:min(var(--cc-b-radius,10px),10px);
-  margin:10px 16px;padding:12px 14px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
+  margin:10px 16px;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
+  position:relative;   /* #35c: positioning context for the straddling h4 badge below */
 }
-/* section badge (user: "cards mit Abschnittsbadge machen wie im updatefenster") - matches
-   Header.css's own fieldset > legend exactly: a filled accent pill, content-width (inline-flex,
-   not the base rule's full-width flex) so it reads as a badge sitting on the card, not a bar
-   spanning it. The nested .sl-ai chip (present only in the summary section) rides along inside. */
+/* section badge (user: "cards mit Abschnittsbadge machen wie im updatefenster") - a filled accent pill.
+   #35c (user: "halb auf der card liegend"): a REAL <legend> inside a <fieldset> straddles its border
+   natively (Header.css's fieldset>legend rule needs no position/margin trick at all for that reason) -
+   .sl-sec/h4 are a plain div+h4, no such native behaviour, so the straddle has to be built by hand:
+   pin the badge's top to the card's own top edge (position:relative on .sl-sec above) and pull it up by
+   EXACTLY half its own rendered height via translateY, the same visual result a native legend gets for
+   free, self-adjusting if the badge's padding/font ever changes. .sl-sec's padding-top grew (12px -> 24px)
+   so the card's own content clears the badge instead of colliding with it. */
 html.cc-header-on .sl-bubble h4{
   display:inline-flex;background:var(--cc-rbaccent,var(--cc-hdr-accent,#2f6feb));color:var(--cc-rbaccent-text,var(--cc-hdr-accent-text,#fff));
   border-radius:var(--cc-b-radius,999px);padding:3px 12px;
+  position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
 }
 html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
-html.cc-header-on .sl-bubble .sl-raw{border:none;background:var(--sl-bg);border-radius:min(var(--cc-b-radius,8px),8px)}
+/* #35b (user: "jetzt haben wir drei ebenen ... soll nur zwei ebenen sein"): this used to re-paint the
+   window's own dark --sl-bg INSIDE the light --sl-card section - a third, visually distinct shade the
+   locked reference never has (frame + card, nothing nested a third tone). Let it blend into its parent
+   card instead; .sl-raw code below still gets its own --sl-card highlight, which now reads as the only
+   nested accent, same role the fieldset legend badge plays elsewhere - not a competing background layer. */
+html.cc-header-on .sl-bubble .sl-raw{border:none;background:transparent}
 html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
 .sl-bubble .sl-rel + .sl-rel{margin-top:12px}
 .sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
