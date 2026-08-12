@@ -57,7 +57,7 @@
   "d_close": "bezárás",
   "d_uptodate": "naprakész",
   "d_deprecated": "ELAVULT",
-  "d_unmaintained": "Nem karbantartott",
+  "d_unmaintained": "Megszüntetve",
   "d_unmaintainedHint": "Nincs több frissítés. Fontolja meg a váltást egy karbantartott alternatívára.",
   "d_updateNow": "Frissítés most",
   "d_updateHint": "elindítja az Unraid saját frissítését ehhez a konténerhez",

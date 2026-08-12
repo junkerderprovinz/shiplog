@@ -57,7 +57,7 @@
   "d_close": "kapat",
   "d_uptodate": "güncel",
   "d_deprecated": "KULLANIMDAN KALDIRILDI",
-  "d_unmaintained": "Bakımı yapılmıyor",
+  "d_unmaintained": "Sonlandırıldı",
   "d_unmaintainedHint": "Artık güncelleme yok. Bakımı yapılan bir alternatife geçmeyi düşünün.",
   "d_updateNow": "Şimdi güncelle",
   "d_updateHint": "bu konteyner için Unraid'in kendi güncellemesini tetikler",

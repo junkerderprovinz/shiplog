@@ -57,7 +57,7 @@
   "d_close": "닫기",
   "d_uptodate": "최신",
   "d_deprecated": "지원 중단됨",
-  "d_unmaintained": "유지 관리 안 됨",
+  "d_unmaintained": "단종됨",
   "d_unmaintainedHint": "더 이상 업데이트가 없습니다. 유지 관리되는 대안으로 이전하는 것을 고려하세요.",
   "d_updateNow": "지금 업데이트",
   "d_updateHint": "이 컨테이너에 대해 Unraid 자체 업데이트를 실행합니다",
