@@ -67,6 +67,57 @@ func TestPinnedAndLocalRoundTrip(t *testing.T) {
 	}
 }
 
+// Unmaintained/UnmaintainedReason and CADeprecated/CADeprecatedNote must round-trip
+// through Get() — engine.maybeNotifyUnmaintained's dedup ("if prior.Unmaintained {
+// return }") only ever sees a real value via Store.Get, never the in-memory struct
+// directly, so a silent gap here means a container flagged unmaintained gets a fresh
+// notification on EVERY sweep forever instead of once on the transition into the
+// state. (These columns existed on the schema and the model for several releases
+// without ever being wired into selectCols/scanStatus, which is exactly this bug.)
+func TestUnmaintainedAndCADeprecatedRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{
+		Container: model.Container{ID: "flagged", Name: "handbrake", Repo: "coppit/handbrake"},
+		Kind:      model.KindNone, Risk: model.RiskNone, CheckedAt: time.Now(),
+		Unmaintained:       true,
+		UnmaintainedReason: "Removed from Community Applications",
+		CADeprecated:       true,
+		CADeprecatedNote:   "A better supported and more up to date app is available from DJoss",
+	}
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("flagged")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Unmaintained {
+		t.Error("Unmaintained did not round-trip (this is the notify-spam bug: prior.Unmaintained would always read false)")
+	}
+	if got.UnmaintainedReason != "Removed from Community Applications" {
+		t.Errorf("UnmaintainedReason did not round-trip: %q", got.UnmaintainedReason)
+	}
+	if !got.CADeprecated {
+		t.Error("CADeprecated did not round-trip")
+	}
+	if got.CADeprecatedNote != "A better supported and more up to date app is available from DJoss" {
+		t.Errorf("CADeprecatedNote did not round-trip: %q", got.CADeprecatedNote)
+	}
+
+	// A healthy row must round-trip as explicitly false/empty, not just "unset".
+	st2 := model.UpdateStatus{Container: model.Container{ID: "fine", Name: "fine"}, Kind: model.KindNone, Risk: model.RiskNone, CheckedAt: time.Now()}
+	if err := s.Upsert(st2); err != nil {
+		t.Fatal(err)
+	}
+	got2, err := s.Get("fine")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got2.Unmaintained || got2.CADeprecated {
+		t.Errorf("healthy row must not read back flagged: unmaintained=%v ca_deprecated=%v", got2.Unmaintained, got2.CADeprecated)
+	}
+}
+
 func TestHistoryAppendOnVersionChange(t *testing.T) {
 	s := newTestStore(t)
 	base := model.UpdateStatus{Container: model.Container{ID: "abc", Name: "immich", Tag: "1.122.0"}, RunningVersion: "1.122.0", CheckedAt: time.Now()}
