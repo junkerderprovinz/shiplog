@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.2.3
+🐛 **Fixed**
+- The changelog window (with CannonadeCommand installed) now matches CC's own Docker update window exactly: the window background is the correct darker shade instead of a lighter generic surface, a stray third background layer inside the section cards is gone, and the section title badges now sit half on the card's own top edge like a real form legend instead of flush inside the card.
+
 ### 3.2.2
 🎨 **Design**
 - **Corrects 3.2.1:** the "editorially deprecated in Community Applications" state now replaces the Docker-tab changelog chip with its own amber button, the same way the red "Not maintained" button already does for a real dead end — not the small alongside dot 3.2.1 shipped. Its own amber pill and explanatory note appear in the changelog bubble too, mirroring "Not maintained" there as well. Still its own colour and wording throughout: the app is still listed and still genuinely receiving updates, so it reads as a lesser warning, not the same severity as a real dead end.
