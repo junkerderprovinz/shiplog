@@ -33,6 +33,18 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.2.4
+🐛 **Fixed**
+- **Containers renamed away from their Community Applications template name, or running as a suffixed multi-instance copy, were wrongly flagged "removed from Community Applications."** The catalog lookup matched only your container's own display name against the feed — a container named differently than its template (renaming is common, and so is running several instances of one template with a suffix) could never match, and after two crawls without a name hit was reported as confirmed absent even though it was genuinely still listed. Lookups now also try the container's repository and installed template URL before concluding it's gone. Also fixed: a stale, no-longer-valid template URL could win over a catalog lookup that positively confirms the app is still listed under its current location.
+- The header's "Update now" and "Repository" buttons could appear at a different position from container to container; they now always sit on their own row at a fixed spot.
+- A critical-risk badge showed both the plain risk dot and its warning triangle at once; the redundant dot is gone.
+- **(with CannonadeCommand installed)** The "Not maintained" and "Editorially deprecated" badges/buttons had washed out to a barely visible tint instead of their intended solid red/amber.
+
+🎨 **Design**
+- The risk-reason text next to a badge no longer stretches the header or wraps unpredictably on a long explanation; it's clipped with an ellipsis, full text on hover.
+- **(with CannonadeCommand installed)** The "Removed from Community Applications" / "editorially deprecated" note now renders as its own title-badge card, matching the changelog window's other sections. Only the very first section under the header blends into the window background; every section below it keeps its own card look.
+- "Not maintained" is renamed to "Discontinued" throughout (all languages) — the old wording was easy to confuse with the separate "editorially deprecated" state.
+
 ### 3.2.3
 🐛 **Fixed**
 - The changelog window (with CannonadeCommand installed) now matches CC's own Docker update window exactly: the window background is the correct darker shade instead of a lighter generic surface, a stray third background layer inside the section cards is gone, and the section title badges now sit half on the card's own top edge like a real form legend instead of flush inside the card.
