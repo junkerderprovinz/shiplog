@@ -181,14 +181,16 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
    same "explicit literal, not token-driven" call already made for --sl-card below. Native (no CC) keeps its
    own #242424 fallback untouched - this only fires once CC is actually installed. */
 html.cc-header-on .sl-bubble{border:none;--sl-bg:#1a1a1a}
-html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:0 4px 10px -2px rgba(0,0,0,.35)}
-/* #52 (user: "farbe passt aber der obere Abschnitt hat noch einen Schlagschatten"): the shadow above
-   is the STICKY HEADER's own elevation cue (it needs one whenever it visually differs from the content
-   scrolling under it), not something painted on the first section - but now that the first .sl-sec
-   blends into --sl-bg (rule further down), the header shares its exact colour and the shadow just
-   floats there with no colour boundary to justify it. Drop it specifically for that pairing; a header
-   still followed by a colour-shifted element (the unmaintained/deprecated note) keeps its shadow. */
-html.cc-header-on .sl-bubble .sl-bh:has(+ .sl-sec){box-shadow:none}
+/* #67 (user, live-caught on a Discontinued container: "der Kopfabschnitt hat immer noch einen
+   Schlagschatten"): the #52 fix only ever dropped this shadow for the ONE pairing it was written
+   against (header directly above a plain .sl-sec, back when that first section blended into --sl-bg -
+   see #65 below for why that premise itself is gone now) - .sl-unmaint-note was never plain .sl-sec, so
+   :has(+ .sl-sec) never matched it and the shadow stayed on every Discontinued/deprecated bubble. Now
+   that every section, first or not, is a --sl-card-coloured lifted card (#65), the colour boundary
+   itself separates the header from whatever comes after it - the shadow was only ever compensating for
+   cases where that boundary was missing, so drop it unconditionally instead of re-deriving which
+   sibling still "needs" it. */
+html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:none}
 /* buttons: the update-window reference never outlines a button either (Header.css button.confirm/.cancel -
    border:none, box-shadow:none, solid fill). .sl-upd (the primary action) takes the same accent-vs-neutral
    split confirm/cancel uses; .sl-gh (an external link, secondary) gets the neutral --sl-card fill so it
@@ -213,12 +215,13 @@ html.cc-header-on .sl-bubble .sl-sec{
   margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
   position:relative;   /* #35c: positioning context for the straddling h4 badge below */
 }
-/* #52 (user, live-verified: rgb(46,46,46) --sl-card vs rgb(26,26,26) --sl-bg): the TOPMOST section,
-   directly under the sticky header, should read as part of the window frame rather than a lifted
-   card - only this first one; every section below it keeps the normal card lift. The badge itself
-   stays on its accent colour (that's not "the background" the user meant), only the card fill/shadow
-   is neutralised here. */
-html.cc-header-on .sl-bubble .sl-bh + .sl-sec{background:var(--sl-bg);box-shadow:none}
+/* #65 (user, live-caught: "die Zusammenfassungscard hat keinen hellen Hintergrund mehr" - the #52 fix
+   below made the TOPMOST section blend into --sl-bg unconditionally, reasoning it was always the same
+   deprecated/unmaintained note #52 was tested against; in practice the AI summary is just as often the
+   first section, and blending IT into the window background silently dropped its card too): removed -
+   every .sl-sec, first or not, keeps the normal --sl-card lift from the base rule above. #67 (a few
+   rules up) removes the header's own shadow instead, so the header-to-card colour boundary alone still
+   reads as a clean separation without needing a first-section special case to manufacture one. */
 /* section badge (user: "cards mit Abschnittsbadge machen wie im updatefenster") - a filled accent pill.
    #35c (user: "halb auf der card liegend"): a REAL <legend> inside a <fieldset> straddles its border
    natively (Header.css's fieldset>legend rule needs no position/margin trick at all for that reason) -
