@@ -59,7 +59,11 @@ CREATE TABLE IF NOT EXISTS status (
 	risk_reason     TEXT,
 	changelog_json  TEXT,
 	checked_at      TEXT,
-	error           TEXT
+	error           TEXT,
+	unmaintained        INTEGER,
+	unmaintained_reason TEXT,
+	ca_deprecated       INTEGER,
+	ca_deprecated_note  TEXT
 );
 CREATE TABLE IF NOT EXISTS history (
 	id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,6 +119,17 @@ func Open(path string) (*Store, error) {
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN running_version TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN pinned_digest TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN is_local INTEGER`)
+	// unmaintained/unmaintained_reason predate this migration guard by several
+	// releases but were never actually added to selectCols/scanStatus, so every
+	// Get() silently read them back as false/"" — the notify dedup in
+	// maybeNotifyUnmaintained (which only ever compares against prior.Unmaintained)
+	// could never see a true prior value and re-sent the same notification on
+	// every single sweep for as long as a container stayed flagged. Caught while
+	// adding ca_deprecated alongside it.
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN unmaintained INTEGER`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN unmaintained_reason TEXT`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated INTEGER`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated_note TEXT`)
 	return &Store{db: db}, nil
 }
 
@@ -159,28 +174,34 @@ func (s *Store) Upsert(st model.UpdateStatus) error {
 INSERT INTO status (
 	container_id, name, repo, image, tag, digest, pinned_digest, is_local, running_version,
 	newest_tag, newest_digest, kind, risk, risk_reason,
-	changelog_json, checked_at, error
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	changelog_json, checked_at, error,
+	unmaintained, unmaintained_reason, ca_deprecated, ca_deprecated_note
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(container_id) DO UPDATE SET
-	name            = excluded.name,
-	repo            = excluded.repo,
-	image           = excluded.image,
-	tag             = excluded.tag,
-	digest          = excluded.digest,
-	pinned_digest   = excluded.pinned_digest,
-	is_local        = excluded.is_local,
-	running_version = excluded.running_version,
-	newest_tag      = excluded.newest_tag,
-	newest_digest   = excluded.newest_digest,
-	kind            = excluded.kind,
-	risk            = excluded.risk,
-	risk_reason     = excluded.risk_reason,
-	changelog_json  = excluded.changelog_json,
-	checked_at      = excluded.checked_at,
-	error           = excluded.error`,
+	name                = excluded.name,
+	repo                = excluded.repo,
+	image               = excluded.image,
+	tag                 = excluded.tag,
+	digest              = excluded.digest,
+	pinned_digest       = excluded.pinned_digest,
+	is_local            = excluded.is_local,
+	running_version     = excluded.running_version,
+	newest_tag          = excluded.newest_tag,
+	newest_digest       = excluded.newest_digest,
+	kind                = excluded.kind,
+	risk                = excluded.risk,
+	risk_reason         = excluded.risk_reason,
+	changelog_json      = excluded.changelog_json,
+	checked_at          = excluded.checked_at,
+	error               = excluded.error,
+	unmaintained        = excluded.unmaintained,
+	unmaintained_reason = excluded.unmaintained_reason,
+	ca_deprecated       = excluded.ca_deprecated,
+	ca_deprecated_note  = excluded.ca_deprecated_note`,
 		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.Container.PinnedDigest, st.Container.IsLocal, st.RunningVersion,
 		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
 		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
+		st.Unmaintained, st.UnmaintainedReason, st.CADeprecated, st.CADeprecatedNote,
 	)
 	if err != nil {
 		return fmt.Errorf("store: upsert status: %w", err)
@@ -203,7 +224,9 @@ const selectCols = `
 SELECT container_id, name, repo, image, tag, digest,
 	COALESCE(pinned_digest, ''), COALESCE(is_local, 0), COALESCE(running_version, ''),
 	newest_tag, newest_digest, kind, risk, risk_reason,
-	changelog_json, checked_at, error
+	changelog_json, checked_at, error,
+	COALESCE(unmaintained, 0), COALESCE(unmaintained_reason, ''),
+	COALESCE(ca_deprecated, 0), COALESCE(ca_deprecated_note, '')
 FROM status`
 
 // List returns all status rows ordered by risk severity then name.
@@ -390,22 +413,26 @@ type scanner interface {
 
 func scanStatus(sc scanner) (model.UpdateStatus, error) {
 	var (
-		st            model.UpdateStatus
-		kind, risk    string
-		changelogJSON string
-		checkedAt     string
-		isLocal       int64 // SQLite has no bool; scan the 0/1 integer explicitly
+		st                         model.UpdateStatus
+		kind, risk                 string
+		changelogJSON              string
+		checkedAt                  string
+		isLocal                    int64 // SQLite has no bool; scan the 0/1 integer explicitly
+		unmaintained, caDeprecated int64
 	)
 	err := sc.Scan(
 		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest,
 		&st.Container.PinnedDigest, &isLocal, &st.RunningVersion,
 		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
 		&changelogJSON, &checkedAt, &st.Error,
+		&unmaintained, &st.UnmaintainedReason, &caDeprecated, &st.CADeprecatedNote,
 	)
 	if err != nil {
 		return model.UpdateStatus{}, err
 	}
 	st.Container.IsLocal = isLocal != 0
+	st.Unmaintained = unmaintained != 0
+	st.CADeprecated = caDeprecated != 0
 	st.Kind = model.Kind(kind)
 	st.Risk = model.RiskLevel(risk)
 	if checkedAt != "" {

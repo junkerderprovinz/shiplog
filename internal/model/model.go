@@ -88,10 +88,23 @@ type UpdateStatus struct {
 	Unmaintained bool `json:"unmaintained,omitempty"`
 	// UnmaintainedReason is a short human label for why (e.g. "Removed from
 	// Community Applications"). Empty when Unmaintained is false.
-	UnmaintainedReason string     `json:"unmaintained_reason,omitempty"`
-	Changelog          *Changelog `json:"changelog,omitempty"`
-	CheckedAt          time.Time  `json:"checked_at"`
-	Error              string     `json:"error,omitempty"` // per-container failure, never fatal
+	UnmaintainedReason string `json:"unmaintained_reason,omitempty"`
+	// CADeprecated flags an app editorially demoted in Community Applications
+	// (hidden from CA's default search, a moderator comment usually points at a
+	// better-maintained alternative) WITHOUT being pulled from the feed — unlike
+	// Unmaintained, the app is still installable and still very much receives
+	// registry updates, so this is informational, never a substitute for a real
+	// changelog. Independent of Unmaintained; both can be false, and in practice
+	// Unmaintained (a genuine dead end) always takes precedence when both would
+	// apply.
+	CADeprecated bool `json:"ca_deprecated,omitempty"`
+	// CADeprecatedNote is the moderator's stated reason (e.g. "A better supported
+	// and more up to date app is available from DJoss"). Empty when CADeprecated
+	// is false.
+	CADeprecatedNote string     `json:"ca_deprecated_note,omitempty"`
+	Changelog        *Changelog `json:"changelog,omitempty"`
+	CheckedAt        time.Time  `json:"checked_at"`
+	Error            string     `json:"error,omitempty"` // per-container failure, never fatal
 }
 
 // HasDigest reports whether d equals the container's primary digest or any of
