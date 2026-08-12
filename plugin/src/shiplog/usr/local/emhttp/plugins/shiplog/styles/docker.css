@@ -115,22 +115,31 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
   --sl-line:rgba(90,90,90,.18); --sl-line2:rgba(90,90,90,.30); --sl-edge:#bcbcbc; --sl-link:#1a56db;
   --sl-card:var(--cc-surface-4,#f3f3f3);
   box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+/* #44 (user, live-verified twice): forcing the button row onto its own line (first attempt) kept it
+   stable but moved it away from where the user actually wants it - inline, top-right, "their original
+   position". The real fix is the other direction: never wrap the header row at all, and make the ONE
+   genuinely-optional element (.sl-jump) the sole shrink/overflow target. .sl-ver and every .sl-pill
+   get flex-shrink:0 so they're never squeezed illegibly; .sl-bh-right gets flex-shrink:0 too so it
+   never moves from the far right regardless of what .sl-jump is doing. */
+.sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;
   padding:12px 16px;border-bottom:1px solid var(--sl-line);
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
-.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim)}
+.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim);flex-shrink:0}
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
-/* #46: the risk-reason text can run long (a full breaking-change sentence) - clip it with an
-   ellipsis instead of forcing the header to wrap or grow; docker.js sets the full text as its
-   native title tooltip, so nothing is actually lost, just not all shown inline at once. */
-.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;max-width:260px;overflow:hidden;
-  white-space:nowrap;text-overflow:ellipsis}
-/* #44 (user, live-verified): the button cluster sat at the end of the SAME wrapping flex row as
-   .sl-ver/.sl-pill/.sl-jump, so its wrap point - and therefore its on-screen position - depended on
-   how much that content added up to per container (a long .sl-jump risk-reason text wraps sooner than
-   a short "up to date" one). flex:0 0 100% forces it onto its OWN row every time, in the exact same
-   place regardless of container. */
-.sl-bubble .sl-bh-right{flex:0 0 100%;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:6px}
+.sl-bubble .sl-pill{flex-shrink:0}
+/* #46 (user: "kein Lauftext, Text ist abgeschnitten" - the ellipsis-only first attempt wasn't what was
+   asked for): a real marquee. docker.js measures whether the text actually overflows and, only then,
+   duplicates it into a two-copy track and adds .sl-jump-marquee; translateX(-50%) over two IDENTICAL
+   copies loops seamlessly (the second copy lands exactly where the first started). Text that already
+   fits, or a reduced-motion preference, never gets the marquee DOM at all - plain text + this base
+   rule's own ellipsis is the fallback in both cases. */
+.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;flex:1 1 auto;min-width:40px;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis;position:relative}
+.sl-bubble .sl-jump.sl-jump-marquee{text-overflow:clip}
+.sl-bubble .sl-jump-track{display:inline-flex;animation:sl-jump-scroll linear infinite}
+.sl-bubble .sl-jump-txt{padding-right:40px}
+@keyframes sl-jump-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.sl-bubble .sl-bh-right{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
 /* Unraid-orange action buttons: outlined in the Unraid accent, filled on hover. */
 .sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
   padding:5px 11px;text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
@@ -173,6 +182,13 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
    own #242424 fallback untouched - this only fires once CC is actually installed. */
 html.cc-header-on .sl-bubble{border:none;--sl-bg:#1a1a1a}
 html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:0 4px 10px -2px rgba(0,0,0,.35)}
+/* #52 (user: "farbe passt aber der obere Abschnitt hat noch einen Schlagschatten"): the shadow above
+   is the STICKY HEADER's own elevation cue (it needs one whenever it visually differs from the content
+   scrolling under it), not something painted on the first section - but now that the first .sl-sec
+   blends into --sl-bg (rule further down), the header shares its exact colour and the shadow just
+   floats there with no colour boundary to justify it. Drop it specifically for that pairing; a header
+   still followed by a colour-shifted element (the unmaintained/deprecated note) keeps its shadow. */
+html.cc-header-on .sl-bubble .sl-bh:has(+ .sl-sec){box-shadow:none}
 /* buttons: the update-window reference never outlines a button either (Header.css button.confirm/.cancel -
    border:none, box-shadow:none, solid fill). .sl-upd (the primary action) takes the same accent-vs-neutral
    split confirm/cancel uses; .sl-gh (an external link, secondary) gets the neutral --sl-card fill so it
@@ -185,9 +201,16 @@ html.cc-header-on .sl-bubble .sl-upd{background:#ff8c2f;color:#1a1207}
 html.cc-header-on .sl-bubble .sl-gh:hover{background:var(--sl-card);filter:brightness(1.14)}
 html.cc-header-on .sl-bubble .sl-upd:hover{background:#ff8c2f;filter:brightness(1.14)}
 html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:none;background:var(--sl-card);color:var(--sl-dim)}
+/* #60 (user: "Cards zu nah, Badge liegt auf der oberen Card auf" - live-measured: the second card's
+   badge started at y422.8 while the first card still ran to y423.5, a dead-on overlap): each badge
+   straddles UPWARD from its OWN card's top edge by half its rendered height (~10-11px) - with only
+   10px of margin between cards (and vertical margins COLLAPSING between block siblings, so two 10px
+   margins facing each other never actually summed to 20px), the badge had nowhere to sit but on top of
+   the card above. margin-bottom:0 makes each card's OWN top margin the sole, uncollapsed determinant of
+   the gap above it - 18px comfortably clears the badge's overhang with room to spare. */
 html.cc-header-on .sl-bubble .sl-sec{
   border-bottom:none;background:var(--sl-card);border-radius:min(var(--cc-b-radius,10px),10px);
-  margin:10px 16px;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
+  margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
   position:relative;   /* #35c: positioning context for the straddling h4 badge below */
 }
 /* #52 (user, live-verified: rgb(46,46,46) --sl-card vs rgb(26,26,26) --sl-bg): the TOPMOST section,
@@ -216,8 +239,8 @@ html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
    that native styling is exactly right without CC and must stay that way. */
 html.cc-header-on .sl-bubble .sl-unmaint-note{
   background:var(--sl-card);color:var(--sl-txt);border-radius:min(var(--cc-b-radius,10px),10px);
-  margin:10px 16px;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
-  position:relative;
+  margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
+  position:relative;   /* #60: margin-bottom:0, see the matching .sl-sec rule's comment */
 }
 html.cc-header-on .sl-bubble .sl-unmaint-note h4{
   display:inline-flex;background:var(--cc-err,#d9433f);color:#fff;
@@ -238,6 +261,9 @@ html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
 .sl-bubble .sl-relx{color:var(--sl-link);text-decoration:none;font-size:12px;margin-left:auto}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
+/* #60 follow-up: the last card's own margin-bottom is now 0 (see .sl-sec), so the footer needs its
+   OWN top margin to keep the same breathing room the collapsed margin used to provide accidentally. */
+html.cc-header-on .sl-bubble .sl-bf{margin-top:8px}
 
 /* ── update-all button (left of the Basic/Advanced toggle) ─────────────── */
 a.sl-updall {
