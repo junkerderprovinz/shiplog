@@ -23,6 +23,10 @@
 <b>Read-only</b> — it never pulls, recreates or stops anything. Optional: AI changelog summaries via a local Ollama, and Matrix notifications.
 </p>
 
+<p align="center">
+A solo, free-time project. Bugs and ideas via <a href="https://github.com/junkerderprovinz/shiplog/issues">GitHub issues</a>; if it's useful to you, a coffee is always welcome.
+</p>
+
 <br>
 
 <p align="center">
@@ -160,6 +164,10 @@ ShipLog is free software under the **GNU Affero General Public License v3.0** (A
 ## 9. Support this project
 
 Questions, bugs, ideas? **[Unraid support thread →](https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/)** (or open a [GitHub issue](https://github.com/junkerderprovinz/shiplog/issues)).
+
+ShipLog is a one-person project. I write, test, and support it myself, in whatever free time is left after work.
+
+If you'd like to support the time that goes into it, you're welcome to buy me a coffee. Genuinely appreciated either way.
 
 <p align="center">
   <a href="https://buymeacoffee.com/junkerderprovinz">
