@@ -823,7 +823,30 @@
     injectUpdateAllButton();
     // Unraid re-renders the table on its auto-refresh — re-tag new rows and keep
     // the update-all counter current. tagRows() is a no-op while byName is empty.
-    const mo = new MutationObserver(() => { tagRows(); injectUpdateAllButton(); refreshSpinners(); });
+    // A native container update streams its nchan log into .sweet-alert as hundreds
+    // of individual DOM mutations/sec; each one is its own MutationObserver callback,
+    // and each callback re-scans the whole document (findRows() -> multiple
+    // querySelectorAll/querySelector passes). Undebounced, that saturates the main
+    // thread for the length of the update and freezes the tab until it drains. Ignore
+    // mutations that originate inside our own or Unraid's dialog chrome, and coalesce
+    // any real burst into one leading pass + one trailing pass.
+    let moT = null, moTrail = false;
+    const moPass = () => {
+      moTrail = false;
+      tagRows(); injectUpdateAllButton(); refreshSpinners();
+      moT = setTimeout(() => { moT = null; if (moTrail) moPass(); }, 60);
+    };
+    const mo = new MutationObserver((recs) => {
+      let relevant = false;
+      for (let i = 0; i < recs.length && !relevant; i++) {
+        const t = recs[i].target;
+        if (t && t.nodeType === 1 && t.closest && t.closest(".sweet-alert, .sweet-overlay, .sl-bubble, .sl-backdrop")) continue;
+        relevant = true;
+      }
+      if (!relevant) return;
+      if (moT) { moTrail = true; return; } // in cooldown — fold into the trailing pass
+      moPass(); // leading edge: tag in the same frame the rows appear
+    });
     try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
     const ok = await load();

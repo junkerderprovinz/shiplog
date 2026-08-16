@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.3.2
+⚡ **Improved**
+- The Docker-tab watcher that keeps container rows tagged now coalesces bursts of page updates into one pass instead of reacting to every single one. A streaming container-update log can mutate the page hundreds of times per second; on a host with many containers this used to add unnecessary work on top of an already busy tab during an update.
+
 ### 3.3.1
 🐛 **Fixed**
 - (with CannonadeCommand installed) The topmost section of the changelog bubble — often the AI summary — could lose its card background and blend into the window instead, and a Discontinued container's header could still show a stray drop shadow. Every section now consistently keeps its card styling regardless of position.
