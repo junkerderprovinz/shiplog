@@ -33,6 +33,11 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.3.3
+🐛 **Fixed**
+- A self-built app (a hand-authored template, or a plain docker run with no template at all) could get permanently branded "Discontinued" - the two-crawl Community Applications absence check treated its natural absence from the CA feed as removal, even though it was never listed there to begin with. Now skipped entirely for any container without a CA TemplateURL.
+- A changelog-source override (telling ShipLog where YOUR app's changelog actually lives) now also exempts that app from the CA verdicts. A template pointing into your own private repo 404s publicly, which used to trip the same false "removed from Community Applications" verdict on top of the override already in place. Credit: nphil, who found and fixed both of these independently.
+
 ### 3.3.2
 ⚡ **Improved**
 - The Docker-tab watcher that keeps container rows tagged now coalesces bursts of page updates into one pass instead of reacting to every single one. A streaming container-update log can mutate the page hundreds of times per second; on a host with many containers this used to add unnecessary work on top of an already busy tab during an update.
