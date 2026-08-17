@@ -336,3 +336,38 @@ func TestSourceOverridesRoundTrip(t *testing.T) {
 		t.Fatalf("after delete = %v", m)
 	}
 }
+
+func TestSuppressedUnmaintainedRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	if m, err := s.SuppressedUnmaintained(); err != nil || len(m) != 0 {
+		t.Fatalf("empty: got %v, %v", m, err)
+	}
+	if err := s.SuppressUnmaintained("ghcr.io/x/myapp"); err != nil {
+		t.Fatal(err)
+	}
+	// Upsert: suppressing an already-suppressed repo is a harmless no-op.
+	if err := s.SuppressUnmaintained("ghcr.io/x/myapp"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SuppressUnmaintained("ghcr.io/x/other"); err != nil {
+		t.Fatal(err)
+	}
+	m, err := s.SuppressedUnmaintained()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m) != 2 || !m["ghcr.io/x/myapp"] || !m["ghcr.io/x/other"] {
+		t.Fatalf("suppressed = %v", m)
+	}
+	if err := s.UnsuppressUnmaintained("ghcr.io/x/myapp"); err != nil {
+		t.Fatal(err)
+	}
+	// Unsuppressing an absent repo is a no-op, not an error.
+	if err := s.UnsuppressUnmaintained("does/not-exist"); err != nil {
+		t.Fatalf("unsuppress absent: %v", err)
+	}
+	m, _ = s.SuppressedUnmaintained()
+	if len(m) != 1 || !m["ghcr.io/x/other"] {
+		t.Fatalf("after unsuppress = %v", m)
+	}
+}

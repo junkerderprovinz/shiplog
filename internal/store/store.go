@@ -93,6 +93,10 @@ CREATE TABLE IF NOT EXISTS source_overrides (
 	source     TEXT NOT NULL,
 	updated_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS unmaintained_suppressions (
+	repo       TEXT PRIMARY KEY,
+	updated_at INTEGER
+);
 `
 
 // Open opens (creating if needed) the SQLite database at path, applies the
@@ -369,6 +373,51 @@ func (s *Store) SourceOverrides() (map[string]string, error) {
 			return nil, fmt.Errorf("store: scan source override: %w", err)
 		}
 		m[repo] = source
+	}
+	return m, rows.Err()
+}
+
+// SuppressUnmaintained records that the user has manually silenced the
+// Unmaintained verdict for an image repo — "I know this app is fine, stop
+// warning me" — overriding every detection signal (registry-gone,
+// archived-source, CA-feed-absent, raw-URL-proxy-404) at once. Unlike
+// SetSourceOverride this carries no value: presence in the table IS the
+// signal, so repeated calls for the same repo are harmless no-ops.
+func (s *Store) SuppressUnmaintained(repo string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO unmaintained_suppressions (repo, updated_at) VALUES (?, ?)
+		 ON CONFLICT(repo) DO UPDATE SET updated_at = excluded.updated_at`,
+		repo, time.Now().Unix())
+	if err != nil {
+		return fmt.Errorf("store: suppress unmaintained %q: %w", repo, err)
+	}
+	return nil
+}
+
+// UnsuppressUnmaintained removes a prior suppression for repo (no error if absent).
+func (s *Store) UnsuppressUnmaintained(repo string) error {
+	if _, err := s.db.Exec(`DELETE FROM unmaintained_suppressions WHERE repo = ?`, repo); err != nil {
+		return fmt.Errorf("store: unsuppress unmaintained %q: %w", repo, err)
+	}
+	return nil
+}
+
+// SuppressedUnmaintained returns the set of repos with an active manual
+// suppression, as a repo→true map (empty, not nil-erroring, when there are
+// none) so callers can do a plain map lookup.
+func (s *Store) SuppressedUnmaintained() (map[string]bool, error) {
+	rows, err := s.db.Query(`SELECT repo FROM unmaintained_suppressions`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list unmaintained suppressions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	m := map[string]bool{}
+	for rows.Next() {
+		var repo string
+		if err := rows.Scan(&repo); err != nil {
+			return nil, fmt.Errorf("store: scan unmaintained suppression: %w", err)
+		}
+		m[repo] = true
 	}
 	return m, rows.Err()
 }

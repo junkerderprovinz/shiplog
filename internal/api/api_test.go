@@ -31,7 +31,10 @@ type fakeRefresher struct{ called int }
 
 func (f *fakeRefresher) Refresh() { f.called++ }
 
-type fakeOverrides struct{ m map[string]string }
+type fakeOverrides struct {
+	m map[string]string
+	s map[string]bool
+}
 
 func (f *fakeOverrides) SourceOverrides() (map[string]string, error) { return f.m, nil }
 func (f *fakeOverrides) SetSourceOverride(repo, source string) error {
@@ -42,6 +45,16 @@ func (f *fakeOverrides) SetSourceOverride(repo, source string) error {
 	return nil
 }
 func (f *fakeOverrides) DeleteSourceOverride(repo string) error { delete(f.m, repo); return nil }
+
+func (f *fakeOverrides) SuppressedUnmaintained() (map[string]bool, error) { return f.s, nil }
+func (f *fakeOverrides) SuppressUnmaintained(repo string) error {
+	if f.s == nil {
+		f.s = map[string]bool{}
+	}
+	f.s[repo] = true
+	return nil
+}
+func (f *fakeOverrides) UnsuppressUnmaintained(repo string) error { delete(f.s, repo); return nil }
 
 func testAPI() (http.Handler, *fakeRefresher) {
 	src := fakeSource{rows: []model.UpdateStatus{
@@ -122,6 +135,55 @@ func TestOverrideEndpoints(t *testing.T) {
 	}
 }
 
+func TestSuppressionEndpoints(t *testing.T) {
+	ovr := &fakeOverrides{}
+	ref := &fakeRefresher{}
+	a := New(fakeSource{}, ovr, ref, "")
+	a.verify = okVerify
+	h := a.Handler()
+
+	// PUT suppresses a repo.
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/unmaintained-suppression", strings.NewReader(`{"repo":"ghcr.io/x/myapp"}`)))
+	if rr.Code != 200 {
+		t.Fatalf("PUT code %d: %s", rr.Code, rr.Body.String())
+	}
+	if !ovr.s["ghcr.io/x/myapp"] {
+		t.Fatalf("stored suppressed = %v", ovr.s)
+	}
+	if ref.called == 0 {
+		t.Fatalf("PUT did not trigger a refresh")
+	}
+
+	// A missing repo is rejected.
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/unmaintained-suppression", strings.NewReader(`{}`)))
+	if rr.Code != 400 {
+		t.Fatalf("empty repo: want 400, got %d", rr.Code)
+	}
+
+	// GET lists it.
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/unmaintained-suppressions", nil))
+	var m map[string]bool
+	if err := json.Unmarshal(rr.Body.Bytes(), &m); err != nil {
+		t.Fatal(err)
+	}
+	if !m["ghcr.io/x/myapp"] {
+		t.Fatalf("GET suppressions = %v", m)
+	}
+
+	// DELETE via query param clears it.
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("DELETE", "/api/unmaintained-suppression?repo=ghcr.io/x/myapp", nil))
+	if rr.Code != 200 {
+		t.Fatalf("DELETE code %d", rr.Code)
+	}
+	if ovr.s["ghcr.io/x/myapp"] {
+		t.Fatalf("suppression not deleted: %v", ovr.s)
+	}
+}
+
 func TestStatusPageRenders(t *testing.T) {
 	h, _ := testAPI()
 	rr := httptest.NewRecorder()
@@ -130,7 +192,7 @@ func TestStatusPageRenders(t *testing.T) {
 		t.Fatalf("status page code %d", rr.Code)
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`data-repo="ghcr.io/x/immich"`, "srcedit", "immich"} {
+	for _, want := range []string{`data-repo="ghcr.io/x/immich"`, "srcedit", "suptoggle", "immich"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("status page missing %q", want)
 		}

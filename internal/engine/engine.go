@@ -43,12 +43,14 @@ type (
 		Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool)
 	}
 	// Storer persists one status row and reads the prior one (for notify dedupe),
-	// reads the user's changelog-source overrides (repo → github source), and
-	// deletes a row (used when "ignore third-party containers" drops one).
+	// reads the user's changelog-source overrides (repo → github source) and
+	// manual unmaintained-suppressions (repo → silenced), and deletes a row
+	// (used when "ignore third-party containers" drops one).
 	Storer interface {
 		Upsert(model.UpdateStatus) error
 		Get(id string) (model.UpdateStatus, error)
 		SourceOverrides() (map[string]string, error)
+		SuppressedUnmaintained() (map[string]bool, error)
 		Delete(id string) error
 		// List returns every stored row, used after a sweep to prune rows whose
 		// container no longer exists (recreated with a new ID, or removed).
@@ -204,6 +206,14 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if oerr != nil {
 		overrides = nil
 	}
+	// User unmaintained-suppressions, read once per sweep. Best-effort, same as
+	// overrides above: a read failure must never abort a sweep, and falling back
+	// to "nothing suppressed" is the safe direction (a stale suppression missing
+	// for one sweep just means a warning reappears briefly, not the reverse).
+	suppressed, serr := e.store.SuppressedUnmaintained()
+	if serr != nil {
+		suppressed = nil
+	}
 	// Container-template project pages, read once per sweep (best-effort: a
 	// missing/unreadable template dir simply yields no project candidates).
 	var projects map[string]string
@@ -242,7 +252,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		go func(c model.Container) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := e.check(ctx, c, resolve, overrides, projects, templateURLs, caFeed)
+			st := e.check(ctx, c, resolve, overrides, suppressed, projects, templateURLs, caFeed)
 			if uerr := e.store.Upsert(st); uerr != nil {
 				// Store failure for one row must not crash the sweep; the next
 				// sweep retries. (No logger dependency here on purpose.)
@@ -329,7 +339,14 @@ func noUpstreamReason(c model.Container) (string, bool) {
 }
 
 // check runs the per-container pipeline and returns the status to store.
-func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, projects map[string]string, templateURLs map[string]string, caFeed caFeedLookuper) model.UpdateStatus {
+func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, suppressed map[string]bool, projects map[string]string, templateURLs map[string]string, caFeed caFeedLookuper) model.UpdateStatus {
+	// A manual per-repo suppression silences EVERY Unmaintained trigger below
+	// (registry-gone, archived-source, CA-feed-absent, raw-URL-proxy-404) at
+	// once — "I know this app is fine, stop warning me". Keyed by Container.Repo,
+	// the same key as source_overrides, so it works identically for a
+	// self-built/template-less container as for a CA-installed one: neither
+	// this nor SourceOverrides ever looks at whether a TemplateURL exists.
+	silenced := suppressed[c.Repo]
 	// Redirect the changelog source before anything else: a user override or a
 	// curated LSIO default wins over the image's OCI source label (which is often
 	// the packaging wrapper, plain wrong, or missing). srcKind labels the origin
@@ -375,7 +392,9 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// to) instead of carrying a stale "up to date" verdict forward.
 		if errors.Is(err, resolver.ErrRepoNotFound) {
 			st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, "image removed from the registry"
-			st.Unmaintained, st.UnmaintainedReason = true, "Image no longer in the registry"
+			if !silenced {
+				st.Unmaintained, st.UnmaintainedReason = true, "Image no longer in the registry"
+			}
 			switch {
 			case hasPrior && prior.RunningVersion != "":
 				st.RunningVersion = prior.RunningVersion
@@ -494,7 +513,9 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	// while still being "up to date" — its Unraid template was pulled from
 	// Community Applications (its <TemplateURL> now 404s), or its source repo is
 	// archived. Checked for every managed container, not only those with an update.
-	if !st.Unmaintained {
+	// A manual suppression skips this whole block, archived-repo included — that
+	// signal is otherwise unconditional and has no other opt-out.
+	if !st.Unmaintained && !silenced {
 		u := templateURLs[strings.ToLower(c.Name)]
 		switch {
 		case st.Changelog != nil && st.Changelog.Deprecated:

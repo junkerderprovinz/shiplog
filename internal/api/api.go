@@ -39,11 +39,15 @@ type Refresher interface {
 	Refresh()
 }
 
-// OverrideStore reads and writes the user's changelog-source overrides.
+// OverrideStore reads and writes the user's changelog-source overrides and
+// manual unmaintained-suppressions.
 type OverrideStore interface {
 	SourceOverrides() (map[string]string, error)
 	SetSourceOverride(repo, source string) error
 	DeleteSourceOverride(repo string) error
+	SuppressedUnmaintained() (map[string]bool, error)
+	SuppressUnmaintained(repo string) error
+	UnsuppressUnmaintained(repo string) error
 }
 
 // API bundles the HTTP handlers.
@@ -112,6 +116,9 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/overrides", a.listOverrides)
 	mux.HandleFunc("PUT /api/override", a.setOverride)
 	mux.HandleFunc("DELETE /api/override", a.deleteOverride)
+	mux.HandleFunc("GET /api/unmaintained-suppressions", a.listSuppressions)
+	mux.HandleFunc("PUT /api/unmaintained-suppression", a.setSuppression)
+	mux.HandleFunc("DELETE /api/unmaintained-suppression", a.deleteSuppression)
 	mux.HandleFunc("GET /logo.svg", a.logo)
 	mux.HandleFunc("GET /", a.statusPage)
 	return mux
@@ -226,6 +233,68 @@ func (a *API) deleteOverride(w http.ResponseWriter, r *http.Request) {
 	a.ref.Refresh()
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"override cleared"}`))
+}
+
+// listSuppressions returns the set of repos with an active manual
+// unmaintained-suppression, as a repo→true map.
+func (a *API) listSuppressions(w http.ResponseWriter, _ *http.Request) {
+	m, err := a.ovr.SuppressedUnmaintained()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if m == nil {
+		m = map[string]bool{}
+	}
+	writeJSON(w, http.StatusOK, m)
+}
+
+type suppressionReq struct {
+	Repo string `json:"repo"`
+}
+
+// setSuppression silences every Unmaintained trigger for an image repo. A
+// successful change triggers a refresh so the badge disappears without
+// waiting for the poll interval.
+func (a *API) setSuppression(w http.ResponseWriter, r *http.Request) {
+	var req suppressionReq
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	repo := strings.TrimSpace(req.Repo)
+	if repo == "" {
+		http.Error(w, "repo is required", http.StatusBadRequest)
+		return
+	}
+	if err := a.ovr.SuppressUnmaintained(repo); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.ref.Refresh()
+	writeJSON(w, http.StatusOK, map[string]string{"repo": repo})
+}
+
+// deleteSuppression removes a prior suppression for a repo (given as ?repo=
+// or a JSON body) and triggers a refresh so Unmaintained detection resumes.
+func (a *API) deleteSuppression(w http.ResponseWriter, r *http.Request) {
+	repo := strings.TrimSpace(r.URL.Query().Get("repo"))
+	if repo == "" {
+		var req suppressionReq
+		_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req)
+		repo = strings.TrimSpace(req.Repo)
+	}
+	if repo == "" {
+		http.Error(w, "repo is required", http.StatusBadRequest)
+		return
+	}
+	if err := a.ovr.UnsuppressUnmaintained(repo); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.ref.Refresh()
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"suppression cleared"}`))
 }
 
 type pageData struct {
