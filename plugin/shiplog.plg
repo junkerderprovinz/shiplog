@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.4.0
+✨ **Added**
+- A "mute unmaintained" toggle on the status page, next to the existing "source" override. Silences the Unmaintained badge for that container permanently, covering every detection trigger at once - registry-gone, archived-source-repo, and both Community Applications signals - including the two the automatic exemptions in 3.3.3 don't reach. Works identically for self-built/template-less containers as for Community-Applications-installed ones, since it's keyed by the image repo, not by whether a template exists.
+
 ### 3.3.3
 🐛 **Fixed**
 - A self-built app (a hand-authored template, or a plain docker run with no template at all) could get permanently branded "Discontinued" - the two-crawl Community Applications absence check treated its natural absence from the CA feed as removal, even though it was never listed there to begin with. Now skipped entirely for any container without a CA TemplateURL.
