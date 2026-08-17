@@ -89,15 +89,22 @@ func (f *fakeNotifier) count() int {
 }
 
 type fakeStore struct {
-	mu        sync.Mutex
-	rows      map[string]model.UpdateStatus
-	overrides map[string]string
+	mu         sync.Mutex
+	rows       map[string]model.UpdateStatus
+	overrides  map[string]string
+	suppressed map[string]bool
 }
 
 func (f *fakeStore) SourceOverrides() (map[string]string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.overrides, nil
+}
+
+func (f *fakeStore) SuppressedUnmaintained() (map[string]bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.suppressed, nil
 }
 
 func (f *fakeStore) Upsert(s model.UpdateStatus) error {
@@ -283,6 +290,39 @@ func TestSweepAmbiguousCorroborationIsNotFlaggedUnmaintained(t *testing.T) {
 
 // An archived upstream repo (changelog Deprecated) flags the container as
 // unmaintained even when its image and template are still present.
+// A manual suppression is a stronger, explicit "I know this app is fine"
+// signal than the automatic exemptions (no-TemplateURL, source-override): it
+// silences every Unmaintained trigger, including "Source repository archived"
+// and "Image no longer in the registry", neither of which has any other
+// opt-out. Two containers hit two different triggers to prove it's not
+// special-cased to just one code path.
+func TestSweepSuppressedUnmaintainedSilencesEveryTrigger(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "gone", Name: "GoneApp", Repo: "ghcr.io/x/gone-suppressed", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
+		{ID: "arch", Name: "ArchApp", Repo: "ghcr.io/x/arch-suppressed", Tag: "1.0.0", Digest: "sha256:a", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/gone-suppressed": {err: resolver.ErrRepoNotFound},
+		"ghcr.io/x/arch-suppressed": {tag: "1.0.0", dig: "sha256:a"},
+	}}
+	st := &fakeStore{suppressed: map[string]bool{
+		"ghcr.io/x/gone-suppressed": true,
+		"ghcr.io/x/arch-suppressed": true,
+	}}
+	e := New(col, res, &fakeChangelog{deprecated: true}, st, time.Hour)
+	e.templateURLs = func() map[string]string { return nil }
+	e.checkURL = func(context.Context, string) int { return 200 }
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if g := st.rows["gone"]; g.Unmaintained {
+		t.Fatalf("gone: suppressed registry-404 must not flag unmaintained, got reason %q", g.UnmaintainedReason)
+	}
+	if a := st.rows["arch"]; a.Unmaintained {
+		t.Fatalf("arch: suppressed archived-repo must not flag unmaintained, got reason %q", a.UnmaintainedReason)
+	}
+}
+
 func TestSweepFlagsArchivedRepo(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "arch", Name: "ArchApp", Repo: "ghcr.io/x/arch", Tag: "1.0.0", Digest: "sha256:a", Managed: true},

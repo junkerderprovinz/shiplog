@@ -40,6 +40,10 @@
   .srcsave:hover{color:var(--low);border-color:var(--low)}
   .srcreset:hover{color:var(--high);border-color:var(--high)}
   .srcmsg{font-size:11px;color:var(--dim2)}
+  .suptoggle{background:none;border:1px solid var(--line2);color:var(--dim2);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}
+  .suptoggle:hover{color:var(--txt);border-color:var(--dim)}
+  .suptoggle[data-active="1"]{color:var(--mid);border-color:var(--mid)}
+  .supmsg{font-size:11px;color:var(--dim2)}
   .empty{color:var(--dim2);text-align:center;padding:60px}
   footer{max-width:1180px;margin:18px auto 0;padding:0 28px;color:var(--dim2);font-size:12px}
 </style>
@@ -71,6 +75,8 @@
           <div class="srcrow">
             <button type="button" class="srcedit">source</button>
             <span class="srccur"></span>
+            <button type="button" class="suptoggle">mute unmaintained</button>
+            <span class="supmsg"></span>
           </div>
           <div class="srcbox" hidden>
             <input type="text" class="srcin" placeholder="owner/repo or https://github.com/owner/repo" spellcheck="false" autocapitalize="off">
@@ -105,6 +111,19 @@
       if(inp){ inp.value = m[repo]; }
     });
   }).catch(function(){});
+  function setToggleState(btn, active){
+    if(!btn) return;
+    btn.setAttribute("data-active", active ? "1" : "0");
+    btn.textContent = active ? "unmaintained muted ✓" : "mute unmaintained";
+  }
+  // Prefill each row's mute toggle from the stored suppressions.
+  fetch("/api/unmaintained-suppressions").then(function(r){ return r.json(); }).then(function(m){
+    m = m || {};
+    document.querySelectorAll("td.clog[data-repo]").forEach(function(td){
+      var repo = td.getAttribute("data-repo"); if(!repo) return;
+      setToggleState(td.querySelector(".suptoggle"), !!m[repo]);
+    });
+  }).catch(function(){});
   // Delegated handlers so it works for every row without per-row wiring.
   document.addEventListener("click", function(e){
     var t = e.target; if(!t || !t.classList) return;
@@ -126,6 +145,17 @@
         if(r.ok){ reloadSoon(td,"cleared — refreshing…"); }
         else { msg(td,"error"); }
       }).catch(function(){ msg(td,"network error"); });
+    } else if(t.classList.contains("suptoggle")){
+      var repo2 = td.getAttribute("data-repo"), sm = td.querySelector(".supmsg");
+      var nowActive = t.getAttribute("data-active") === "1";
+      var req = nowActive
+        ? fetch("/api/unmaintained-suppression?repo="+encodeURIComponent(repo2),{method:"DELETE"})
+        : fetch("/api/unmaintained-suppression",{method:"PUT",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({repo:repo2})});
+      req.then(function(r){
+        if(r.ok){ setToggleState(t, !nowActive); if(sm){ sm.textContent = "saved — refreshing…"; } setTimeout(function(){ location.reload(); }, 2500); }
+        else { r.text().then(function(x){ if(sm){ sm.textContent = x || "error"; } }); }
+      }).catch(function(){ if(sm){ sm.textContent = "network error"; } });
     }
   });
 })();
