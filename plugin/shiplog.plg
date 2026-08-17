@@ -35,19 +35,14 @@ optional AI summaries (Ollama) and Matrix alerts.
 
 ### 3.4.0
 ✨ **Added**
-- A "mute unmaintained" toggle on the status page, next to the existing "source" override. Silences the Unmaintained badge for that container permanently, covering every detection trigger at once - registry-gone, archived-source-repo, and both Community Applications signals - including the two the automatic exemptions in 3.3.3 don't reach. Works identically for self-built/template-less containers as for Community-Applications-installed ones, since it's keyed by the image repo, not by whether a template exists.
+- A "mute unmaintained" toggle on the status page, next to the existing "source" override. Silences the Unmaintained badge for that container permanently, covering every detection trigger at once - registry-gone, archived-source-repo, and both Community Applications signals - including the two the automatic exemptions below don't reach. Works identically for self-built/template-less containers as for Community-Applications-installed ones, since it's keyed by the image repo, not by whether a template exists.
 
-### 3.3.3
-🐛 **Fixed**
-- A self-built app (a hand-authored template, or a plain docker run with no template at all) could get permanently branded "Discontinued" - the two-crawl Community Applications absence check treated its natural absence from the CA feed as removal, even though it was never listed there to begin with. Now skipped entirely for any container without a CA TemplateURL.
-- A changelog-source override (telling ShipLog where YOUR app's changelog actually lives) now also exempts that app from the CA verdicts. A template pointing into your own private repo 404s publicly, which used to trip the same false "removed from Community Applications" verdict on top of the override already in place. Credit: nphil, who found and fixed both of these independently.
-
-### 3.3.2
 ⚡ **Improved**
 - The Docker-tab watcher that keeps container rows tagged now coalesces bursts of page updates into one pass instead of reacting to every single one. A streaming container-update log can mutate the page hundreds of times per second; on a host with many containers this used to add unnecessary work on top of an already busy tab during an update.
 
-### 3.3.1
 🐛 **Fixed**
+- A self-built app (a hand-authored template, or a plain docker run with no template at all) could get permanently branded "Discontinued" - the two-crawl Community Applications absence check treated its natural absence from the CA feed as removal, even though it was never listed there to begin with. Now skipped entirely for any container without a CA TemplateURL.
+- A changelog-source override (telling ShipLog where YOUR app's changelog actually lives) now also exempts that app from the CA verdicts. A template pointing into your own private repo 404s publicly, which used to trip the same false "removed from Community Applications" verdict on top of the override already in place. Credit: nphil, who found and fixed both of these independently.
 - (with CannonadeCommand installed) The topmost section of the changelog bubble — often the AI summary — could lose its card background and blend into the window instead, and a Discontinued container's header could still show a stray drop shadow. Every section now consistently keeps its card styling regardless of position.
 
 ### 3.3.0
