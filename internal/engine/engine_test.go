@@ -361,6 +361,64 @@ func TestSweepCAFeedOverridesStaleRawURLProxy(t *testing.T) {
 	}
 }
 
+// A container from a hand-authored template (no <TemplateURL>) was never in
+// Community Applications, so the feed's conclusive "absent from two crawls"
+// must not brand it removed — that verdict is only meaningful for apps that
+// actually came from CA. Reproduces the false positive nphil found live on
+// every self-built app on his box (homelabber, stashify, retiron).
+// (nphil, https://github.com/nphil/shiplog)
+func TestSweepPersonalTemplateIsNotFlaggedUnmaintained(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "own", Name: "MyOwnApp", Repo: "ghcr.io/x/ownapp", Tag: "1.0.0", Digest: "sha256:p", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/ownapp": {tag: "1.0.0", dig: "sha256:p"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"myownapp": ""} // user template with an empty <TemplateURL/>
+	}
+	e.checkURL = func(context.Context, string) int { return 404 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if g := st.rows["own"]; g.Unmaintained {
+		t.Fatalf("personal-template app wrongly flagged unmaintained: %q", g.UnmaintainedReason)
+	}
+}
+
+// A source override is the user saying "this app is mine, its changelog lives
+// here" — that must also exempt the app from the CA verdicts, because such a
+// template often points its <TemplateURL> into the user's own PRIVATE repo,
+// which 404s publicly and would otherwise trip the raw-URL proxy (reproduces
+// the live stashify case nphil found: private nphil/stashify template URL,
+// override set). (nphil, https://github.com/nphil/shiplog)
+func TestSweepSourceOverrideExemptsFromUnmaintained(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "mine", Name: "Stashify", Repo: "ghcr.io/x/stashify", Tag: "1.0.0", Digest: "sha256:s", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/stashify": {tag: "1.0.0", dig: "sha256:s"}}}
+	st := &fakeStore{overrides: map[string]string{"ghcr.io/x/stashify": "https://github.com/x/stashify"}}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"stashify": "https://raw.githubusercontent.com/x/stashify/main/unraid/stashify.xml"}
+	}
+	// A private repo 404s publicly on the raw path AND the repo page, so the
+	// proxy plus its corroboration would both scream "gone" without the override.
+	e.checkURL = func(context.Context, string) int { return 404 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if g := st.rows["mine"]; g.Unmaintained {
+		t.Fatalf("override-sourced app wrongly flagged unmaintained: %q", g.UnmaintainedReason)
+	}
+}
+
 func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "bl", Name: "BadApp", Repo: "x/bad", Tag: "1.0.0", Digest: "sha256:b", Managed: true},
@@ -368,7 +426,10 @@ func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
 	res := fakeResolver{byRepo: map[string]resolveResult{"x/bad": {tag: "1.0.0", dig: "sha256:b"}}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)
-	e.templateURLs = func() map[string]string { return nil }
+	// CA-installed, so it carries a TemplateURL — the feed verdict only applies to those.
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"badapp": "https://raw.githubusercontent.com/x/bad/main/badapp.xml"}
+	}
 	e.checkURL = func(context.Context, string) int { return 200 }
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false, Note: "Repository no longer exists on dockerHub"}}, nil
@@ -392,7 +453,10 @@ func TestSweepFlagsCADeprecatedWithoutUnmaintained(t *testing.T) {
 	res := fakeResolver{byRepo: map[string]resolveResult{"coppit/handbrake": {tag: "1.0.0", dig: "sha256:h"}}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)
-	e.templateURLs = func() map[string]string { return nil }
+	// CA-installed, so it carries a TemplateURL — the feed verdict only applies to those.
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"handbrake": "https://raw.githubusercontent.com/coppit/handbrake/main/handbrake.xml"}
+	}
 	e.checkURL = func(context.Context, string) int { return 200 }
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: true, Deprecated: true, Note: "A better supported and more up to date app is available from DJoss"}}, nil
