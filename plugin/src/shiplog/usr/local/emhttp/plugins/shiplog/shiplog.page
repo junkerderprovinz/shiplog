@@ -126,6 +126,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-res.err{color:var(--status-fail-text,#d9534f)}
   .sl-res.run{color:var(--dim)}
   .sl-actions{display:flex;gap:10px;margin:6px 2px 4px}
+  .sl-version{color:var(--dim2);font-size:11.5px;margin:2px 2px 0}
   .sl-cfg a{color:#8ab4f8;text-decoration:none}
 
   /* info bubble (both looks — neutral, never accent) */
@@ -381,6 +382,15 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <button type="button" class="sl-btn" onclick="slCheckMatrix()"><?=$L['s_check']?></button>
         <span id="sl-matrix-result" class="sl-res"></span></div></div>
     </div>
+
+    <?php
+      // Bump both alongside the <!ENTITY version> bump at release time — this file has
+      // no build-time stamping step (unlike CannonadeCommand's @@CCVER@@), so these are
+      // the plain, manually-kept source of truth for what's shown here.
+      $slVer = "3.4.1";
+      $slGlimstoneVer = "1.0.0";
+    ?>
+    <div class="sl-version">ShipLog v<?=htmlspecialchars($slVer)?> · GlimStone v<?=htmlspecialchars($slGlimstoneVer)?></div>
 
     <div class="sl-actions">
       <input type="submit" name="#apply" class="sl-btn sl-primary" value="<?=htmlspecialchars($L['s_apply'])?>">
