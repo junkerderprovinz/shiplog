@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.4.1
+✨ **Added**
+- A version line at the bottom of the settings page (ShipLog vX.Y.Z · GlimStone vX.Y.Z), matching the same convention applied across every other GlimStone-adopting app.
+
 ### 3.4.0
 ✨ **Added**
 - A "mute unmaintained" toggle on the status page, next to the existing "source" override. Silences the Unmaintained badge for that container permanently, covering every detection trigger at once - registry-gone, archived-source-repo, and both Community Applications signals - including the two the automatic exemptions below don't reach. Works identically for self-built/template-less containers as for Community-Applications-installed ones, since it's keyed by the image repo, not by whether a template exists.
