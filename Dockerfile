@@ -10,7 +10,7 @@
 # footprint for a 24/7 daemon. The build image must satisfy go.mod's directive
 # (>= 1.25, pulled in by modernc.org/sqlite).
 # =============================================================================
-FROM golang:1.26-bookworm AS build
+FROM golang:1.27-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -27,7 +27,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 #
 # Pinned by digest for a reproducible, supply-chain-hardened base (Renovate keeps
 # the digest fresh against the :latest tag; the index carries linux/amd64+arm64).
-FROM gcr.io/distroless/static-debian12:latest@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd
+FROM gcr.io/distroless/static-debian12:latest@sha256:6447365a6337c3732f412d1b74357b30a633831955b2bc45552b0086be907687
 LABEL org.opencontainers.image.title="ShipLog" \
       org.opencontainers.image.description="Read-only update advisor — what changes between your running image and the newest one, and how risky." \
       org.opencontainers.image.source="https://github.com/junkerderprovinz/shiplog" \
