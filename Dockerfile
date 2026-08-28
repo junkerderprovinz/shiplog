@@ -27,7 +27,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 #
 # Pinned by digest for a reproducible, supply-chain-hardened base (Renovate keeps
 # the digest fresh against the :latest tag; the index carries linux/amd64+arm64).
-FROM gcr.io/distroless/static-debian12:latest@sha256:6447365a6337c3732f412d1b74357b30a633831955b2bc45552b0086be907687
+FROM gcr.io/distroless/static-debian12:latest@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2
 LABEL org.opencontainers.image.title="ShipLog" \
       org.opencontainers.image.description="Read-only update advisor — what changes between your running image and the newest one, and how risky." \
       org.opencontainers.image.source="https://github.com/junkerderprovinz/shiplog" \
