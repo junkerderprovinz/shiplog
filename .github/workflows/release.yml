@@ -80,7 +80,7 @@ jobs:
           fi
           # Category lines ("🐛 **Fixed**") are bold-only in the .plg source because Unraid's
           # in-app changelog viewer has fragile '#' handling (only the "### X.Y.Z" version
-          # heading is a proven-safe exception, see this repo's CLAUDE.md) - but on the GitHub
+          # heading is a proven-safe exception, see this repo's conventions) - but on the GitHub
           # release page that leaves them the same size as body text. Promote them to real
           # headings HERE, in the extracted copy only; plugin/shiplog.plg itself is never
           # touched, so the in-app viewer keeps the safe bold-only rendering.
