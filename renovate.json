@@ -5,44 +5,92 @@
     "helpers:pinGitHubActionDigests",
     ":semanticCommits",
     ":dependencyDashboard",
-    ":enableVulnerabilityAlertsWithLabel(security)"
+    ":enableVulnerabilityAlertsWithLabel(security)",
+    "docker:pinDigests"
   ],
   "timezone": "Europe/Vienna",
-  "schedule": ["before 6am on monday"],
-  "labels": ["dependencies"],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "labels": [
+    "dependencies"
+  ],
   "prHourlyLimit": 4,
   "prConcurrentLimit": 6,
-  "postUpdateOptions": ["gomodTidy"],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "packageRules": [
     {
       "description": "Go modules: grouped, manual review (tests gate behaviour)",
-      "matchManagers": ["gomod"],
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "Go modules",
       "commitMessagePrefix": "chore:",
-      "labels": ["go"]
+      "labels": [
+        "go"
+      ]
     },
     {
       "description": "Docker base images (golang build stage, distroless runtime): manual review",
-      "matchManagers": ["dockerfile"],
+      "matchManagers": [
+        "dockerfile"
+      ],
       "groupName": "base images",
       "commitMessagePrefix": "build:",
-      "labels": ["base-image"]
+      "labels": [
+        "base-image"
+      ]
     },
     {
       "description": "GitHub Actions: auto-merge minor/patch/digest",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
       "automerge": true,
       "automergeType": "branch",
       "commitMessagePrefix": "ci:",
-      "labels": ["github-actions"]
+      "labels": [
+        "github-actions"
+      ]
     },
     {
       "description": "GitHub Actions major: manual PRs",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "commitMessagePrefix": "ci:",
-      "labels": ["github-actions", "major-update"]
+      "labels": [
+        "github-actions",
+        "major-update"
+      ]
+    },
+    {
+      "description": "Docker: auto-merge digest pins and digest refreshes (same tag, new build). Major/minor stay open for review.",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "matchUpdateTypes": [
+        "pinDigest",
+        "digest"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true,
+      "commitMessagePrefix": "ci:",
+      "labels": [
+        "docker"
+      ]
     }
   ]
 }
