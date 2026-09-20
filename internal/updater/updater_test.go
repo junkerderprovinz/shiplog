@@ -20,8 +20,6 @@ func TestUnraidOffBox(t *testing.T) {
 	if (Unraid{}).Supported() {
 		t.Skip("host has the Unraid template dir; off-box assertion skipped")
 	}
-	// Absent the Unraid template dir, Unraid reports unsupported and Update errors
-	// cleanly (no template) rather than doing anything.
 	if err := (Unraid{}).Update(context.Background(), "plex"); err == nil {
 		t.Error("Unraid.Update must error off-box (no template)")
 	}
