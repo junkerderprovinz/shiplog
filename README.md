@@ -18,9 +18,9 @@
 <br>
 
 <p align="center">
-⚓ <b>ShipLog</b> reads the changelog before you update — right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major) and the real <b>version jump</b> (e.g. 1.7 → 1.8).<br>
+⚓ <b>ShipLog</b> reads the changelog before you update, right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major) and the real <b>version jump</b> (e.g. 1.7 → 1.8).<br>
 <br>
-<b>Read-only</b> — it never pulls, recreates or stops anything. Optional: AI changelog summaries via a local Ollama, and Matrix notifications.
+<b>Read-only</b>: it never pulls, recreates or stops anything. Optional: AI changelog summaries via a local Ollama, and Matrix notifications.
 </p>
 
 <p align="center">
@@ -58,13 +58,13 @@ If it has earned a place on your server or computer, toss a coin to your knight:
 
 ## 1. What is this?
 
-A single static Go binary on a distroless image (~tens of MB, low idle RAM) that polls the read-only Docker socket, resolves which images have updates, fetches the changelog for the version span, classifies the risk, and serves it on a small status page + JSON API. The headline experience — a changelog bubble next to each container in Unraid's Docker tab — ships as a companion Unraid plugin; this engine is the brain and works on any Docker host via its status page.
+A single static Go binary on a distroless image (~tens of MB, low idle RAM) that polls the read-only Docker socket, resolves which images have updates, fetches the changelog for the version span, classifies the risk, and serves it on a small status page and JSON API. The changelog bubble next to each container in Unraid's Docker tab ships as a companion Unraid plugin; this engine is the brain and works on any Docker host via its status page.
 
 ## 2. Screenshots
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/changelog-bubble.png" alt="ShipLog changelog bubble in Unraid's Docker tab" width="90%">
-  <br><em>Click the Changelog chip on any container — the bubble shows the version jump, a risk badge, the release notes, an optional AI summary, and a read-only Update-now button, right in Unraid's Docker tab.</em>
+  <br><em>Click the Changelog chip on any container. The bubble shows the version jump, a risk badge, the release notes, an optional AI summary, and a read-only Update-now button, right in Unraid's Docker tab.</em>
 </p>
 
 <br>
@@ -88,22 +88,22 @@ A single static Go binary on a distroless image (~tens of MB, low idle RAM) that
 <details>
 <summary><b>Feature list</b></summary>
 
-- **What changed, not just "update available"** — changelog between your running tag and the newest, newest-first, with a link to the full release notes.
-- **Deterministic risk badge** — digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
-- **Breaking-change escalation** — when a release note in the update span flags a breaking change (a required database migration, a removed extension, a dropped API), the badge is bumped to **critical** and raises an Unraid alert, so a rolling `:latest` digest move that would otherwise read as a harmless "low" no longer slips past.
-- **Honest degradation** — when no changelog is machine-findable, ShipLog says so and shows what it does know, never pretends.
-- **Fix a wrong changelog source** — an image's OCI source label often points at the packaging wrapper (LinuxServer's `docker-<app>`), is wrong (inherited from a base image), or is missing. Click **source** on any row of the status page and point it at the correct GitHub repo; the override sticks to the image and survives container recreation. Common LinuxServer apps (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) resolve to their upstream project out of the box.
-- **Read-only by construction** — never writes to the Docker socket.
-- **Registry-friendly by construction** — manifest checks are `HEAD` requests, which do **not** count against Docker Hub's pull rate limit. Bearer tokens are cached, duplicate images share one lookup per sweep, and a rate-limiting registry is backed off host-wide instead of hammered.
-- **Knows what has no upstream** — digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
-- **Flags a dead-end app** — when a container's Unraid template has been pulled from Community Applications, its image is gone, or its source repo is archived, the changelog chip is replaced with a red **Unmaintained** badge. Still clickable: the bubble explains why, and shows the last changelog it ever found. Self-built containers (no Unraid template, or a hand-authored one) and anything with a manual source override are exempt automatically — those were never in Community Applications to begin with. For anything else that gets flagged wrongly, click **mute unmaintained** on the status page to silence it for that container, permanently.
-- **Flags an editorially demoted app** — Community Applications can also just hide an app from its default search while it stays fully listed, installable and updated by its own maintainer (CA's own "Deprecated" flag, distinct from the dead end above). ShipLog checks the same feed CA's own plugin reads, replaces the chip with an amber **Deprecated** badge, and surfaces the moderator's own note when there is one (often naming a better-maintained alternative).
-- **Update all in one click** — a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
-- **Update controls** — optional confirmation before an update, and an optional silent update that skips Unraid's pop-up download-log window (Settings → Updates).
-- **Scheduled auto-update, gated by SemVer level** *(Unraid plugin only)* — optionally let ShipLog apply updates on a schedule, but only up to a level you choose: patch, minor or major. Unknown / non-versioned tags are never auto-applied, and `:latest` / digest-only moves have their own separate toggle. Runs daily, at boot, or every N hours / days, with a dry-run mode that only reports what *would* update — to the ShipLog log, and to Matrix if configured. It hands the work to Unraid's own container-update path, so containers come back identical to a manual update — the engine itself still never writes to the Docker socket.
-- **Localised** — the settings page and the changelog bubble follow Unraid's configured language across 26 languages.
+- **What changed, not just "update available"**: changelog between your running tag and the newest, newest-first, with a link to the full release notes.
+- **Deterministic risk badge**: digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
+- **Breaking-change escalation**: when a release note in the update span flags a breaking change (a required database migration, a removed extension, a dropped API), the badge is bumped to **critical** and raises an Unraid alert, so a rolling `:latest` digest move that would otherwise read as a harmless "low" no longer slips past.
+- **Honest degradation**: when no changelog is machine-findable, ShipLog says so and shows what it does know.
+- **Fix a wrong changelog source**: an image's OCI source label often points at the packaging wrapper (LinuxServer's `docker-<app>`), is wrong (inherited from a base image), or is missing. Click **source** on any row of the status page and point it at the correct GitHub repo; the override sticks to the image and survives container recreation. Common LinuxServer apps (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) resolve to their upstream project out of the box.
+- **Read-only by construction**: never writes to the Docker socket.
+- **Registry-friendly by construction**: manifest checks are `HEAD` requests, which do not count against Docker Hub's pull rate limit. Bearer tokens are cached, duplicate images share one lookup per sweep, and a rate-limiting registry is backed off host-wide instead of hammered.
+- **Knows what has no upstream**: digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
+- **Flags a dead-end app**: when a container's Unraid template has been pulled from Community Applications, its image is gone, or its source repo is archived, the changelog chip is replaced with a red **Unmaintained** badge. Still clickable: the bubble explains why, and shows the last changelog it ever found. Self-built containers (no Unraid template, or a hand-authored one) and anything with a manual source override are exempt automatically, since those were never in Community Applications to begin with. For anything else that gets flagged wrongly, click **mute unmaintained** on the status page to silence it for that container, permanently.
+- **Flags an editorially demoted app**: Community Applications can also just hide an app from its default search while it stays fully listed, installable and updated by its own maintainer (CA's own "Deprecated" flag, distinct from the dead end above). ShipLog checks the same feed CA's own plugin reads, replaces the chip with an amber **Deprecated** badge, and surfaces the moderator's own note when there is one (often naming a better-maintained alternative).
+- **Update all in one click**: a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
+- **Update controls**: optional confirmation before an update, and an optional silent update that skips Unraid's pop-up download-log window (Settings → Updates).
+- **Scheduled auto-update, gated by SemVer level** *(Unraid plugin only)*: optionally let ShipLog apply updates on a schedule, but only up to a level you choose: patch, minor or major. Unknown / non-versioned tags are never auto-applied, and `:latest` / digest-only moves have their own separate toggle. Runs daily, at boot, or every N hours / days, with a dry-run mode that only reports what *would* update, to the ShipLog log and to Matrix if configured. It hands the work to Unraid's own container-update path, so containers come back identical to a manual update. The engine itself still never writes to the Docker socket.
+- **Localised**: the settings page and the changelog bubble follow Unraid's configured language across 26 languages.
 - **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
-- **Tiny + multi-arch** (amd64 + arm64), pure-Go (no cgo), boot-smoke-gated CI.
+- **Tiny and multi-arch** (amd64, arm64), pure-Go (no cgo), boot-smoke-gated CI.
 
 </details>
 
@@ -121,44 +121,44 @@ Open the WebUI on port **8484**.
 
 ## 5. Configuration
 
-On the Unraid plugin the settings page groups these into tabs — **General**, **Updates**, **Notifications**, **Sources** — so it stays tidy as it grows. The `AUTOUPDATE_*` keys below are Unraid-plugin only (the generic container image stays a read-only advisor).
+On the Unraid plugin the settings page groups these into tabs (**General**, **Updates**, **Notifications**, **Sources**), so it stays tidy as it grows. The `AUTOUPDATE_*` keys below are Unraid-plugin only (the generic container image stays a read-only advisor).
 
 | Variable | Default | Notes |
 |---|---|---|
-| `PORT` | `8484` | engine API + status page |
+| `PORT` | `8484` | engine API and status page |
 | `DOCKER_SOCKET` | `/var/run/docker.sock` | mounted read-only |
-| `DATA_DIR` | `/config` | SQLite database + curated-mapping override |
+| `DATA_DIR` | `/config` | SQLite database and curated-mapping override |
 | `POLL_INTERVAL` | `6h` | how often to re-check (e.g. `1h`, `12h`, `24h`) |
 | `IGNORE_UNMANAGED` | `false` | skip third-party containers not created from an Unraid template (Docker Compose, Dockhand, plain `docker run`); only Unraid-managed containers are tracked |
-| `GITHUB_TOKEN` | — | optional; raises the anonymous GitHub API limit for changelog fetching |
-| `OLLAMA_URL` / `OLLAMA_MODEL` | — | optional AI summaries |
-| `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | — | optional enriched notifications |
-| `UNRAID_NOTIFY` | `false` | *(plugin only)* also send update alerts through Unraid's own notification system (the notification centre + every agent you configured: email, Discord, Telegram, ...) |
+| `GITHUB_TOKEN` | *(none)* | optional; raises the anonymous GitHub API limit for changelog fetching |
+| `OLLAMA_URL` / `OLLAMA_MODEL` | *(none)* | optional AI summaries |
+| `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | *(none)* | optional enriched notifications |
+| `UNRAID_NOTIFY` | `false` | *(plugin only)* also send update alerts through Unraid's own notification system (the notification centre and every agent you configured: email, Discord, Telegram, ...) |
 | `CONFIRM_UPDATE` | `true` | ask for confirmation before "Update now" triggers Unraid's update |
 | `SILENT_UPDATE` | `false` | run the update without Unraid's pop-up download-log window (it still runs in the background) |
 | `AUTOUPDATE_ENABLED` | `false` | *(plugin only)* master switch for scheduled auto-update |
 | `AUTOUPDATE_LEVEL` | `off` | highest bump to auto-apply: `off` / `patch` / `minor` / `major` |
 | `AUTOUPDATE_DIGEST` | `false` | also auto-apply `:latest` / digest-only moves (they carry no SemVer level) |
-| `AUTOUPDATE_DRYRUN` | `false` | report what *would* update (ShipLog log + Matrix if set), apply nothing |
+| `AUTOUPDATE_DRYRUN` | `false` | report what *would* update (ShipLog log and Matrix if set), apply nothing |
 | `AUTOUPDATE_SCHED_MODE` | `off` | `off` / `daily` / `boot` / `hours` / `days` |
 | `AUTOUPDATE_SCHED_TIME` | `04:00` | run time for `daily` |
 | `AUTOUPDATE_SCHED_EVERY` | `6` | interval for `hours` / `days` |
-| `AUTOUPDATE_EXCLUDE_WORDS` | *(empty)* | comma-separated words; block an otherwise-eligible update whose changelog text contains any of them, case-insensitive (e.g. `breaking, migration required`) — catches a release that names its own danger even at a minor/patch bump |
+| `AUTOUPDATE_EXCLUDE_WORDS` | *(empty)* | comma-separated words; block an otherwise-eligible update whose changelog text contains any of them, case-insensitive (e.g. `breaking, migration required`). Catches a release that names its own danger even at a minor/patch bump |
 
 ## 6. How it works
 
 Every `POLL_INTERVAL`, for each container:
 
-1. **Discover** via the read-only Docker socket (image ref, digest, OCI labels). Digest-pinned (`image@sha256:…`), image-ID-referenced and locally built containers are recognised here and honestly labelled — they have no upstream to check, so no registry call is made for them.
-2. **Resolve** the newest tag + same-tag digest from the registry (Docker Hub / GHCR / generic OCI v2, anonymous). Manifest checks are `HEAD`-only and don't consume Docker Hub's pull rate limit; the `tags/list` call is subject only to generic throttling, which ShipLog meets with per-request retries (honouring `Retry-After`), a per-host request gate, bearer-token caching, one lookup per distinct image per sweep, and a host-wide backoff after a hard 429.
-3. **Changelog** via a layered provider chain — first hit wins: the image's `org.opencontainers.image.source` label → GitHub releases between the tags; otherwise a version-delta fallback with a compare link.
+1. **Discover** via the read-only Docker socket (image ref, digest, OCI labels). Digest-pinned (`image@sha256:…`), image-ID-referenced and locally built containers are recognised here and honestly labelled: they have no upstream to check, so no registry call is made for them.
+2. **Resolve** the newest tag and same-tag digest from the registry (Docker Hub / GHCR / generic OCI v2, anonymous). Manifest checks are `HEAD`-only and don't consume Docker Hub's pull rate limit; the `tags/list` call is subject only to generic throttling, which ShipLog meets with per-request retries (honouring `Retry-After`), a per-host request gate, bearer-token caching, one lookup per distinct image per sweep, and a host-wide backoff after a hard 429.
+3. **Changelog** via a layered provider chain, first hit wins: the image's `org.opencontainers.image.source` label → GitHub releases between the tags; otherwise a version-delta fallback with a compare link.
 4. **Risk** is a deterministic function of the version delta, then escalated to **critical** if a release note in the update span flags a breaking change (required migration, removed extension, dropped API).
-5. **CA status** — for containers installed from an Unraid template, cross-check Community Applications' own feed for a pulled listing (dead end) or an editorial "Deprecated" flag (still maintained, just hidden from default search), replacing the changelog chip with the matching badge when either applies.
-6. **Store** in SQLite (status + a small per-container version history) and surface on the API + status page.
+5. **CA status**: for containers installed from an Unraid template, cross-check Community Applications' own feed for a pulled listing (dead end) or an editorial "Deprecated" flag (still maintained, just hidden from default search), replacing the changelog chip with the matching badge when either applies.
+6. **Store** in SQLite (status and a small per-container version history) and surface on the API and status page.
 
 ## 7. Security
 
-ShipLog mounts the Docker socket **read-only** and never issues a write call over it — the engine itself cannot start, stop, recreate, or pull anything directly. Update actions (the one-click bulk update, and on the Unraid plugin the opt-in scheduled auto-update) are handed to **Unraid's own** container-update tooling, which performs the pull + recreate; ShipLog only triggers it, and only for a container it has already classified as having an eligible update. The generic container image has no update path at all and stays a pure read-only advisor. v1 has no authentication and is intended for a trusted LAN; do not expose port 8484 to the internet. It makes outbound HTTPS calls to image registries and (for changelogs) GitHub.
+ShipLog mounts the Docker socket **read-only** and never issues a write call over it. The engine itself cannot start, stop, recreate, or pull anything directly. Update actions (the one-click bulk update, and on the Unraid plugin the opt-in scheduled auto-update) are handed to **Unraid's own** container-update tooling, which performs the pull and recreate; ShipLog only triggers it, and only for a container it has already classified as having an eligible update. The generic container image has no update path at all and stays a pure read-only advisor. v1 has no authentication and is intended for a trusted LAN; do not expose port 8484 to the internet. It makes outbound HTTPS calls to image registries and (for changelogs) GitHub.
 
 ## 8. License
 
