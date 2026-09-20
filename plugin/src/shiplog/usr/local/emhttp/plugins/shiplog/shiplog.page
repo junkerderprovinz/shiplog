@@ -3,9 +3,9 @@ Title="ShipLog"
 Icon="shiplog.png"
 ---
 <?php
-/* ShipLog settings → writes /boot/config/plugins/shiplog/shiplog.cfg via Unraid's
-   /update.php, then restarts the daemon. NB: no functions defined in a .page
-   (Unraid may include it more than once → "Cannot redeclare" → blank page). */
+/* Writes /boot/config/plugins/shiplog/shiplog.cfg through Unraid's /update.php
+   and restarts the daemon. Unraid may include a .page more than once, so it
+   defines no functions; a "Cannot redeclare" error would leave a blank page. */
 $cfg    = parse_plugin_cfg("shiplog");
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
 $port   = !empty($cfg['PORT'])          ? $cfg['PORT']          : '8484';
@@ -23,7 +23,7 @@ $unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true')
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // ask before updating (default on)
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // suppress Unraid's update pop-up (default off)
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // skip 3rd-party (non-Unraid) containers (default off)
-/* Scheduled SemVer-gated auto-update (all default off/safe). */
+/* Auto-update settings, all off by default. */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
 $auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';
 $auDigest= (isset($cfg['AUTOUPDATE_DIGEST'])  && $cfg['AUTOUPDATE_DIGEST']==='true');
@@ -35,7 +35,7 @@ $auExclude = isset($cfg['AUTOUPDATE_EXCLUDE_WORDS']) ? $cfg['AUTOUPDATE_EXCLUDE_
 /* CA Auto Update coexistence: warn so the user doesn't run both. */
 $caPresent = is_dir('/usr/local/emhttp/plugins/ca.update.applications') || is_dir('/boot/config/plugins/ca.update.applications');
 
-/* On/Off label in the active Unraid language (no function defs in a .page). */
+/* On/Off label in the active Unraid language. */
 $lang = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
 $onoff = array(
   'en'=>array('On','Off'),   'de'=>array('Ein','Aus'),   'nl'=>array('Aan','Uit'),
@@ -51,8 +51,7 @@ $onoff = array(
 $lbl   = isset($onoff[$lang]) ? $onoff[$lang] : $onoff['en'];
 $onTxt = $lbl[0]; $offTxt = $lbl[1];
 
-/* All other UI text follows Unraid's language too — load this plugin's locale file
-   (English base, then overlay the active language; missing keys fall back to English). */
+/* The other UI text comes from the locale files, the active language over English. */
 $langdir = '/usr/local/emhttp/plugins/shiplog/lang';
 $L = json_decode(@file_get_contents("$langdir/en.json"), true) ?: array();
 if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
@@ -60,8 +59,8 @@ if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
   if (is_array($tr)) $L = array_merge($L, $tr);
 }
 
-/* Best-effort LAN IP for the status-page link — works even when the GUI is opened
-   via the myunraid.net hostname, where location.hostname can't reach :PORT. */
+/* The LAN IP for the status page link, because location.hostname cannot reach
+   :PORT when the GUI is opened through myunraid.net. */
 $lanip = '';
 $net = '/var/local/emhttp/network.ini';
 if (is_file($net) && preg_match('/IPADDR(?::0)?\s*=\s*"?([0-9.]+)/', file_get_contents($net), $mip)) $lanip = $mip[1];
@@ -69,15 +68,12 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 ?>
 
 <style>
-  /* ShipLog settings — ONE markup, TWO looks:
-     BASE = native Unraid (no CC). We add only layout and lean on Unraid's own form
-     CSS (bottom-border inputs, orange buttons, native checkboxes, bold section
-     titles). GLIMSTONE = only when CannonadeCommand is installed (html.cc-header-on):
-     cards, wells, eyebrows, pill tabs + toggles, filled buttons, all from the --cc-*
-     tokens. GlimStone is progressive enhancement, not the default.
-     See the GlimStone style guide + [[never-border-lines]]. */
+  /* One markup, two looks. The base look adds only layout and leaves the forms
+     to Unraid's own CSS. With CannonadeCommand installed (html.cc-header-on), the
+     GlimStone look adds cards, pill tabs, toggles and filled buttons from the
+     --cc-* tokens. */
 
-  /* tokens — CC values when present, dark fallbacks otherwise (used by GlimStone layer) */
+  /* CC tokens when present, dark fallbacks otherwise. */
   .sl-cfg{
     --card:      var(--cc-card-bg,   #242424);
     --well:      var(--cc-field-bg,  #171717);
@@ -94,7 +90,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     max-width:820px;margin:6px auto 0;font-size:14px;line-height:1.5}
   .sl-cfg *{box-sizing:border-box}
 
-  /* ---------- shared LAYOUT (both looks) ---------- */
+  /* Layout shared by both looks. */
   .sl-hd{display:flex;align-items:center;gap:15px;padding:0 2px 16px;margin-bottom:12px}
   .sl-hd .sl-logo{width:46px;height:46px;flex:none}
   .sl-hd .sl-ttl{font-size:21px;font-weight:600;letter-spacing:.2px}
@@ -129,7 +125,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-version{color:var(--dim2);font-size:11.5px;margin:2px 2px 0}
   .sl-cfg a{color:#8ab4f8;text-decoration:none}
 
-  /* info bubble (both looks — neutral, never accent) */
+  /* The info bubble stays neutral in both looks. */
   .sl-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
     color:var(--dim2);opacity:.7;cursor:help;flex:none;padding:0;background:none;border:none}
   .sl-info:hover,.sl-info:focus{opacity:1;outline:none;color:var(--dim)}
@@ -139,16 +135,15 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-info-pop a{color:#8ab4f8}
   .sl-info-pop code{background:rgba(255,255,255,.08);padding:1px 4px;border-radius:4px;font-size:11.5px}
 
-  /* ---------- BASE look = native Unraid (no CC): lean on Unraid's form CSS ---------- */
+  /* Base look; inputs, selects and buttons keep Unraid's styling. */
   .sl-card > h3{margin:14px 2px 10px;font-size:16px;font-weight:700}
   .sl-card > h3 small{font-weight:400;color:var(--dim2);font-size:12.5px;margin-left:8px}
   .sl-track{display:none}
   .sl-state{color:inherit}
   .sl-cfg .sl-tab.active{background:var(--accent)!important;background-image:none!important;color:#fff!important}
   .sl-warn{background:rgba(241,194,27,.12);border-radius:4px;color:#f1c21b;padding:10px 12px;margin:2px 0 12px;font-size:12.5px;line-height:1.45}
-  /* inputs, selects, buttons: intentionally NOT styled here -> Unraid's native look */
 
-  /* ---------- GLIMSTONE look = only when CannonadeCommand is installed ---------- */
+  /* GlimStone look, only with CannonadeCommand. */
   html.cc-header-on .sl-cfg{color:var(--txt)}
   html.cc-header-on .sl-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 3px rgba(0,0,0,.3);padding:6px 18px 18px}
   html.cc-header-on .sl-card > h3{display:flex;align-items:baseline;gap:10px;margin:16px 2px 16px;
@@ -188,9 +183,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 <div class="sl-cfg">
 
   <div class="sl-hd">
-    <!-- Logo (user design): gold anchor + double ring (dark/white/dark). Fixed colours, reads
-         on ANY Unraid theme — the white ring pops on the dark ones, the dark outer ring frames
-         it on the light ones. Served as a file so it stays crisp. -->
+    <!-- The double ring reads on light and dark Unraid themes alike. -->
     <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog-unraid.svg')?>" alt="ShipLog">
     <div>
       <div class="sl-ttl"><b>Ship</b>Log</div>
@@ -384,9 +377,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
     </div>
 
     <?php
-      // Bump both alongside the <!ENTITY version> bump at release time — this file has
-      // no build-time stamping step (unlike CannonadeCommand's @@CCVER@@), so these are
-      // the plain, manually-kept source of truth for what's shown here.
+      // Nothing stamps these at build time; bump them with <!ENTITY version>.
       $slVer = "3.4.1";
       $slGlimstoneVer = "1.0.0";
     ?>
@@ -426,7 +417,6 @@ function slEnable(cb) {
   document.getElementById('sl-enable-state').textContent = cb.checked ? SL_ON : SL_OFF;
   slFire(document.getElementById('sl-enable'));
 }
-// generic on/off switch: sets the hidden field + its label, then un-greys Apply
 function slSwitch(cb, hiddenId, stateId) {
   document.getElementById(hiddenId).value = cb.checked ? 'true' : 'false';
   document.getElementById(stateId).textContent = cb.checked ? SL_ON : SL_OFF;
@@ -450,14 +440,12 @@ function slCheck(elId, url) {
 function slVal(n) { return (document.querySelector('[name=' + n + ']') || {}).value || ''; }
 var SL_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
 var SL_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><line x1="3.5" y1="3.5" x2="20.5" y2="20.5"/></svg>';
-// Inline reveal eye: swap the icon (open <-> slashed) and toggle the input type.
 function slToggle(id, btn) {
   var i = document.getElementById(id);
   if (!i) return;
   if (i.type === 'password') { i.type = 'text'; if (btn) { btn.innerHTML = SL_EYE_OFF; btn.setAttribute('aria-label', SLT.s_hide || 'Hide'); } }
   else { i.type = 'password'; if (btn) { btn.innerHTML = SL_EYE; btn.setAttribute('aria-label', SLT.s_show || 'Show'); } }
 }
-// Paint the open-eye icon into every inline reveal control on load + keyboard toggle.
 document.querySelectorAll('[data-eye]').forEach(function (b) {
   b.innerHTML = SL_EYE;
   b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
@@ -493,7 +481,6 @@ function slDetectOllama() {
     })
     .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
 }
-// Settings tabs (CC-style): show only the active tab's cards.
 (function () {
   var tabs = document.querySelectorAll('#sl-tabs .sl-tab');
   var cards = document.querySelectorAll('.sl-card[data-tab]');
@@ -504,7 +491,6 @@ function slDetectOllama() {
   tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-go')); }); });
   show('general');
 })();
-// Auto-update schedule: show the time input for "daily", the interval for hours/days.
 function slAuMode() {
   var m = (document.getElementById('sl-au-mode') || {}).value;
   var t = document.getElementById('sl-au-time'), e = document.getElementById('sl-au-every'), u = document.getElementById('sl-au-every-unit');
@@ -513,11 +499,9 @@ function slAuMode() {
   if (u) u.textContent = m === 'hours' ? (SLT.s_au_unit_hours || '') : (m === 'days' ? (SLT.s_au_unit_days || '') : '');
 }
 slAuMode();
-// Info icons (CC convention): move each field's help text (.sl-help inline hints
-// + .sl-desc toggle descriptions) into a small ⓘ next to its label. The bubble
-// renders the original HTML, so the GitHub/Docker-Hub token links stay clickable;
-// it stays open while the pointer is over it. Graceful: if this never runs, the
-// original help text remains visible.
+// Moves each help text into an info icon next to its label. The bubble renders
+// the original HTML, so links stay clickable, and without this script the help
+// text simply stays visible.
 (function () {
   var ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.1" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="4.7" r="1.05" fill="currentColor"/><rect x="7.05" y="6.8" width="1.9" height="5" rx=".95" fill="currentColor"/></svg>';
   var pop = null, hideT = null;
@@ -559,6 +543,6 @@ slAuMode();
       label.appendChild(icon);
       if (h.parentNode) h.parentNode.removeChild(h);
     });
-  } catch (e) { /* leave the help text visible on any failure */ }
+  } catch (e) { /* the help text stays visible */ }
 })();
 </script>

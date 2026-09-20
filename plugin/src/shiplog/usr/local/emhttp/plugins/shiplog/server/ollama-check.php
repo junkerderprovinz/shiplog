@@ -1,7 +1,6 @@
 <?php
-/* ShipLog — live Ollama check for the settings page. Tests the URL + model the
- * user just typed (before Apply), straight from PHP so there's no CORS and no
- * dependency on the engine. Returns {"ok":bool,"message":string}. */
+/* Checks the Ollama URL and model typed on the settings page, before Apply and
+ * without the engine. Returns {"ok":bool,"message":string}. */
 
 header('Content-Type: application/json');
 

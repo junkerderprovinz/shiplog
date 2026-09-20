@@ -1,9 +1,7 @@
 <?php
-/* ShipLog — live GitHub token check for the settings page. Validates the token
- * the user just typed (before Apply) and reports the effective hourly rate limit,
- * straight from PHP so there's no CORS. The rate limit is the whole point: an
- * anonymous 60/h runs out fast and changelogs come back empty, so a low limit is
- * reported as "not ok" even though the request itself succeeded.
+/* Checks the GitHub token typed on the settings page, before Apply, and reports
+ * the hourly rate limit. Without a token the result is not ok, because the
+ * anonymous 60 requests run out fast and changelogs come back empty.
  * Returns {"ok":bool,"message":string}. */
 
 header('Content-Type: application/json');
@@ -31,7 +29,7 @@ if ($body === false || $code === 0) {
     exit;
 }
 if ($code === 401) {
-    echo json_encode(['ok' => false, 'message' => 'Token rejected (401) — check the value.']);
+    echo json_encode(['ok' => false, 'message' => 'Token rejected (401), check the value.']);
     exit;
 }
 if ($code !== 200) {
@@ -44,9 +42,9 @@ $limit = isset($data['resources']['core']['limit']) ? (int) $data['resources']['
        : (isset($data['rate']['limit']) ? (int) $data['rate']['limit'] : 0);
 
 if ($token === '') {
-    echo json_encode(['ok' => false, 'message' => 'No token set — anonymous limit ' . $limit . '/h, so changelogs often come back empty. Add a token to raise it to ~5000/h.']);
+    echo json_encode(['ok' => false, 'message' => 'No token set: the anonymous limit is ' . $limit . '/h, so changelogs often come back empty. Add a token to raise it to ~5000/h.']);
 } elseif ($limit >= 5000) {
-    echo json_encode(['ok' => true, 'message' => 'Token valid — ' . $limit . ' requests/hour.']);
+    echo json_encode(['ok' => true, 'message' => 'Token valid, ' . $limit . ' requests/hour.']);
 } else {
     echo json_encode(['ok' => true, 'message' => 'Token accepted (' . $limit . '/h).']);
 }
