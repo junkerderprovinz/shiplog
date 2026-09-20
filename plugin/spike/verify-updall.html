@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>sl-updall verify</title>
 <style>
-/* real Unraid rule (dynamix default-base.css) — the toggle row is a full-width
-   flex container packing right; the button must sit inside it as first child */
+/* Unraid's rule from dynamix default-base.css: a full-width flex row packed to
+   the right, so the button has to be its first child. */
 .ToggleViewMode { display: flex; justify-content: flex-end; align-items: center; gap: .5rem; margin-bottom: 1rem; }
 </style>
 </head>
 <body>
-<!-- real Unraid structure: the toggle the button must sit LEFT of -->
+<!-- Unraid's structure; the button belongs left of the toggle. -->
 <div id="host">
   <div class="ToggleViewMode"><span><input type="checkbox" class="advancedview"></span></div>
 </div>
 <table><tbody id="docker_list"></tbody></table>
 <div id="result">RUNNING</div>
 <script>
-  // native stubs (what DockerContainers.page provides)
+  // Stubs for what DockerContainers.page provides.
   window.docker = [
     { name: "a", update: 1 }, { name: "b", update: 0 }, { name: "c", update: 1 },
   ];
@@ -26,7 +26,7 @@
   (async () => {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const fails = [];
-    await sleep(300); // let boot() run (its fetch to the absent engine rejects)
+    await sleep(300); // boot() runs; its fetch to the absent engine rejects
 
     const btns = document.querySelectorAll(".sl-updall");
     if (btns.length !== 1) fails.push("inject-count=" + btns.length);
@@ -40,7 +40,7 @@
     if (btn) btn.click();
     if (window.__calls !== 1) fails.push("calls=" + window.__calls);
 
-    // idempotency under mutations + hide at zero
+    // No duplicate on a mutation, and hidden at zero.
     window.docker.forEach((d) => (d.update = 0));
     document.body.appendChild(document.createElement("i")); // force observer tick
     await sleep(300);
