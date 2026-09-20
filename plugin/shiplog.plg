@@ -21,9 +21,9 @@
         min="6.10.0"
         support="https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/">
 
-<!-- FanCtrlPlus convention: name is the lowercase slug so Unraid resolves the
-     logo (plugins/<slug>/images/<slug>.png) AND the Plugins-tab description
-     (plugins/<slug>/README.md). The pretty "ShipLog" name comes from README.md. -->
+<!-- The name is the lowercase slug, so Unraid finds the logo
+     (plugins/<slug>/images/<slug>.png) and the Plugins-tab description
+     (plugins/<slug>/README.md), which carries the display name. -->
 <ICON>
 /usr/local/emhttp/plugins/&slug;/images/&slug;.png
 </ICON>
@@ -381,9 +381,8 @@ optional AI summaries (Ollama) and Matrix alerts.
   daemon, no separate container.
 </CHANGES>
 
-<!-- Pre-install: stop the old daemon + wipe the plugin dir so files removed between
-     versions can't linger (installpkg overwrites same-path files but never deletes
-     orphans); drop old flash .txz. Appdata + the .cfg on the flash are untouched. -->
+<!-- Pre-install: installpkg never deletes files a newer version dropped, so the
+     plugin dir is wiped first. Appdata and the .cfg on the flash stay. -->
 <FILE Run="/bin/bash">
 <INLINE>
 &emhttp;/scripts/rc.shiplog stop 2>/dev/null
@@ -393,8 +392,8 @@ rm -f &plgPath;/*.txz
 </FILE>
 
 <!--
-  The package (engine binary + plugin files) is built by plugin/pkg_build.sh and
-  attached to the GitHub release "v&version;". SHA256 is injected at release.
+  plugin/pkg_build.sh builds the package for the GitHub release "v&version;";
+  the release workflow fills in the SHA256.
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
@@ -413,17 +412,14 @@ echo "ShipLog ist ready!"
 </INLINE>
 </FILE>
 
-<!-- Remove. MUST be a <FILE ... Method="remove"> block: Unraid's plugin manager
-     only runs <FILE> elements, so a bare <REMOVE> tag is silently IGNORED and the
-     cleanup never runs (daemon + files linger; the flash .plg is still moved off
-     because a remove that runs no FILE trivially "succeeds"). MUST end with exit 0,
-     or Unraid leaves the .plg on the flash and it reinstalls on boot. Never
-     'pkill -f &slug;' (matches this /tmp/inlineN-&slug;.sh + the `plugin remove`
-     parent -> self-kill). Stop by PID, kill a stray only by full binary path, drop
-     the exact package + files + cached .txz + the appdata cache; keep the flash .cfg. -->
+<!-- Unraid's plugin manager runs only <FILE> elements and ignores a bare <REMOVE>,
+     so removal is a <FILE Method="remove"> block. It has to exit 0, or Unraid
+     keeps the .plg on the flash and reinstalls it on boot. 'pkill -f &slug;'
+     would also kill this script and its `plugin remove` parent, so a stray
+     daemon is matched by its full binary path. The flash .cfg stays. -->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
-# goodbye ceremony FIRST, while the files still exist
+# The banner has to print while its file still exists.
 cat &emhttp;/banner.txt 2>/dev/null
 echo ""
 echo "Bye!"
@@ -434,13 +430,10 @@ pkg=$(ls /var/log/packages/ 2>/dev/null | grep -E "^&slug;(-[^-]+-[^-]+-[^-]+)?$
 if [ -n "$pkg" ]; then removepkg "$pkg" 2>/dev/null; fi
 rm -rf &emhttp;
 rm -f &plgPath;/*.txz &plgPath;/*.txz.md5 /var/run/&slug;.pid /var/run/&slug;.sock
-# The engine's appdata (the SQLite version-memory) is deliberately LEFT IN
-# PLACE: a read-only advisor should never delete a user-visible folder on its
-# own (community feedback), and keeping it means a reinstall resumes with the
-# full version history instead of a cold start. It is small; the message below
-# tells the user where it lives if they want it gone.
+# The appdata with the version history stays: a read-only advisor should not
+# delete a folder the user can see, and a reinstall resumes with the history.
 echo "ShipLog removed. Settings (flash .cfg) and the version history at"
-echo "/mnt/user/appdata/&slug; were kept — delete that folder manually if you"
+echo "/mnt/user/appdata/&slug; were kept; delete that folder manually if you"
 echo "don't plan to reinstall."
 exit 0
 </INLINE>

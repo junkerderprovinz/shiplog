@@ -1,11 +1,10 @@
 #!/bin/bash
-# Build the ShipLog Unraid plugin package (.txz) = the engine binary + plugin
-# files. Portable (uses tar, not Slackware makepkg) so it runs in GitHub CI.
+# Builds the Unraid plugin package (.txz) from the engine binary and the plugin
+# files. It uses tar instead of Slackware's makepkg, so it runs in CI.
 #
 #   plugin/pkg_build.sh [VERSION]      # VERSION defaults to today (YYYY.MM.DD)
 #
-# Output: plugin/out/shiplog-<version>-x86_64-1.txz (+ .sha256). The release
-# workflow attaches the .txz and injects the SHA256 into shiplog.plg.
+# Output: plugin/out/shiplog-<version>-x86_64-1.txz and its .sha256.
 set -euo pipefail
 
 VERSION="${1:-$(date +%Y.%m.%d)}"
@@ -27,10 +26,8 @@ chmod +x "$PKGROOT/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog"
 chmod +x "$PKGROOT/usr/local/emhttp/plugins/shiplog/event/"* 2>/dev/null || true
 chmod +x "$PKGROOT/$BIN_REL"
 
-# Normalise text files to LF. A CRLF .page breaks Unraid's PageBuilder (it splits
-# the header on a pure-LF "\n---\n", so a CRLF page never parses and is dropped),
-# and a trailing CR breaks shell shebangs. Belt-and-suspenders next to
-# .gitattributes, so a Windows/autocrlf checkout still produces a valid package.
+# Unraid's PageBuilder drops a CRLF .page, and a trailing CR breaks shebangs.
+# .gitattributes covers checkouts; this covers a Windows autocrlf tree.
 echo "==> normalising text files to LF"
 find "$PKGROOT" -type f ! -path "*/bin/*" ! -name '*.png' -print0 \
   | while IFS= read -r -d '' f; do perl -i -pe 's/\r\n/\n/g; s/\r$//' "$f"; done
@@ -38,17 +35,12 @@ find "$PKGROOT" -type f ! -path "*/bin/*" ! -name '*.png' -print0 \
 mkdir -p "$OUT"
 TXZ="$OUT/shiplog-$VERSION-$ARCH-1.txz"
 echo "==> packaging → $TXZ"
-# --force-local: a Windows output path like "D:/..." has a colon that GNU tar
-# would otherwise read as a remote host[:path]. Harmless on Linux/CI.
-# --owner/--group/--numeric-owner: force root:root on every entry INCLUDING
-# "./". Without this the builder's uid is baked in, and upgradepkg (running as
-# root) applies it to / on install, which breaks sshd StrictModes key auth
-# ("bad ownership or modes for directory /"). Happened with the 1.2.3 txz
-# built on Windows (MSYS uid 197608).
+# --force-local keeps GNU tar from reading the colon in "D:/..." as a remote
+# host. Every entry, "./" included, has to be root:root, because upgradepkg
+# applies the owner of "./" to / and a wrong owner there breaks sshd key auth.
 tar --force-local --owner=0 --group=0 --numeric-owner -C "$PKGROOT" -caf "$TXZ" .
 
 echo "==> sha256"
-# cd into $OUT so the .sha256 carries a bare filename, not the build path —
-# otherwise `sha256sum -c` fails for anyone who downloads it.
+# A bare filename in the .sha256 lets `sha256sum -c` work after a download.
 ( cd "$OUT" && b="$(basename "$TXZ")" && sha256sum "$b" | tee "$b.sha256" )
 echo "done: $TXZ"

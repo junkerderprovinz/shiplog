@@ -1,57 +1,42 @@
 // ==UserScript==
-// @name         ShipLog — Docker-tab bubble (feasibility spike)
+// @name         ShipLog Docker-tab bubble (feasibility spike)
 // @namespace    https://github.com/junkerderprovinz/shiplog
 // @version      0.3.0
-// @description  P2.0 spike: a discreet, Unraid-native "log · Changelog · traffic-light" control in the Docker-tab update column; clicking opens the changelog bubble. Proves the DOM hook on the real box and harvests the exact selectors before the full .plg plugin is built.
+// @description  Adds a changelog control with a risk dot to the Docker-tab update column and opens the changelog bubble on click, to find the DOM hooks before the plugin exists.
 // @match        http*://*/Docker
 // @match        http*://*/Dashboard
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
 //
-// HOW TO RUN (no install needed):
-//   1. Open Unraid → the DOCKER tab.
-//   2. Open the browser DevTools console (F12 → "Console").
-//   3. Paste this whole file, press Enter.
-//   => A discreet "▤ Changelog ●" control appears in each container's UPDATE
-//      column. The trailing dot is a risk traffic-light. Click it for the bubble.
+// To run it, open the Docker tab in Unraid, paste this file into the DevTools
+// console and press Enter. If no control appears, the console prints the
+// structure of the Docker table, which shows the selectors to use.
 //
-// v0.3.0: restyled to match Unraid — dim link text, a small log glyph, and a
-//         traffic-light risk dot. No pill, no layout shift.
-//
-// WHAT TO SEND BACK if it does NOT add the control:
-//   copy the "[ShipLog spike]" diagnostics block the console prints and paste
-//   it back — it dumps the Docker table structure so the exact selectors for
-//   your Unraid version can be locked in for the real plugin.
-//
-// This spike uses DEMO data. Real per-container data arrives in the plugin via a
-// server-side PHP proxy to the engine (same-origin → no CORS).
+// The spike shows demo data; the plugin gets real data through a PHP proxy.
 
 (function () {
   "use strict";
 
-  // ──────────────────────────────────────────────────────────── config
   const CONFIG = {
-    ENGINE_URL: "", // e.g. "http://192.168.20.51:8484" — leave "" for demo data
-    MARK: "data-shiplog", // marker so we never double-tag a cell
+    ENGINE_URL: "", // e.g. "http://192.168.1.10:8484", empty for demo data
+    MARK: "data-shiplog",
   };
   const TAG = "[ShipLog spike]";
 
-  // Update-column status phrases (German Unraid + English), lower-case.
+  // Status phrases of the German and English Unraid UI, lower-cased.
   const UPDATE_PHRASES = [
     "aktualisierung anwenden", "auf dem neu", "nicht verfügbar", "wird geprüft",
     "up-to-date", "up to date", "update ready", "apply update", "not available",
     "rebuild ready", "rebuild dndc",
   ];
 
-  // A small log/changelog glyph (inline SVG, inherits the link colour).
   const LOG_ICON =
     '<svg class="sl-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" ' +
     'stroke-linecap="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/>' +
     '<line x1="5.4" y1="5.5" x2="10.6" y2="5.5"/><line x1="5.4" y1="8" x2="10.6" y2="8"/>' +
     '<line x1="5.4" y1="10.5" x2="9" y2="10.5"/></svg>';
 
-  // ──────────────────────────────────────────────────────────── styles
   const CSS = `
   .sl-chip{display:inline-flex;align-items:center;gap:6px;margin-left:12px;
     font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none}
@@ -90,7 +75,7 @@
     padding:2px 6px;color:#6f6f6f;text-transform:none;letter-spacing:0}
   .sl-bubble ul{list-style:none;margin:0;padding:0}
   .sl-bubble li{padding:3px 0 3px 18px;position:relative}
-  .sl-bubble li:before{content:"–";position:absolute;left:2px;color:#6f6f6f}
+  .sl-bubble li:before{content:"\\2013";position:absolute;left:2px;color:#6f6f6f}
   .sl-bubble li.sl-warn:before{content:"⚠";color:#d6a243;font-size:12px}
   .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:#9a9a9a;background:#161616;
     border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;white-space:pre-wrap;overflow:auto;max-height:160px}
@@ -108,8 +93,7 @@
   .sl-toast code{color:#9a9a9a}
   `;
 
-  // ─────────────────────────────────────────────────── demo payloads
-  // Deterministic per name so each container keeps a stable, varied look.
+  // Picked by a hash of the name, so each container keeps its demo.
   const DEMOS = [
     {
       risk: "low", label: "LOW · Patch", cur: "1.41.3", next: "1.41.9",
@@ -121,30 +105,29 @@
       risk: "mid", label: "MEDIUM · 2× minor", cur: "v1.122.0", next: "v1.124.2",
       jump: "skips 2 releases (v1.123.0, v1.124.0)", source: "OCI label → GitHub Releases",
       summary: [
-        ["New facial-recognition model — first start re-indexes the library", false],
+        ["New facial-recognition model; the first start re-indexes the library", false],
         ["Breaking: requires PostgreSQL ≥ 15 with pgvecto-rs ≥ 0.3", true],
         ["Fixes: video-transcode leak, HEIC thumbnails, upload duplicates", false],
       ],
-      raw: "## v1.124.2\n- fix(server): video transcode memory leak (#13412)\n## v1.124.0\n- feat(ml): new facial recognition model — requires re-index (#13201)\n- breaking(server): requires PostgreSQL >= 15 (#13176)",
+      raw: "## v1.124.2\n- fix(server): video transcode memory leak (#13412)\n## v1.124.0\n- feat(ml): new facial recognition model, requires re-index (#13201)\n- breaking(server): requires PostgreSQL >= 15 (#13176)",
     },
     {
       risk: "high", label: "HIGH · Major", cur: "29.0.4", next: "30.0.1",
       jump: "major version bump", source: "linuxserver.io changelog",
       summary: [
-        ["Major release — review the upgrade notes before applying", true],
+        ["Major release: review the upgrade notes before applying", true],
         ["Dropped support for PHP 8.1; container now ships PHP 8.3", false],
       ],
       raw: "## 30.0.0\n- breaking: minimum PHP 8.2, image ships 8.3\n- feat: new files UI\n## 30.0.1\n- fix: occ upgrade on large instances",
     },
     {
       risk: "grey", label: "UNKNOWN", cur: ":latest", next: "new digest",
-      jump: "no semver — digest changed", source: "no changelog source resolved",
+      jump: "no semver, digest changed", source: "no changelog source resolved",
       summary: [["No changelog source could be resolved for this image", false]],
-      raw: "(no changelog found — image sets no OCI source label and matches no known convention)",
+      raw: "(no changelog found: the image sets no OCI source label and matches no known convention)",
     },
   ];
 
-  // ──────────────────────────────────────────────────────── helpers
   function hash(s) {
     let h = 0;
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
@@ -161,7 +144,7 @@
     return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   }
 
-  // Find container rows in the Docker table. Returns {rows, selector} or null.
+  // findRows returns {rows, selector} or null.
   function findRows() {
     const candidates = [
       "table#docker_list tbody tr",
@@ -177,7 +160,6 @@
     return null;
   }
 
-  // Display name for a row (for the bubble title + stable demo selection).
   function rowName(tr) {
     const img = tr.querySelector("img");
     const cell = img ? img.closest("td") || tr : tr;
@@ -187,7 +169,7 @@
     return (name.slice(0, 60) || "container");
   }
 
-  // The update-status cell (right column), found by its status text.
+  // The update cell is found by its status text.
   function findUpdateCell(tr) {
     const cells = Array.from(tr.querySelectorAll("td"));
     for (const td of cells) {
@@ -197,7 +179,6 @@
     return cells[cells.length - 1] || tr;
   }
 
-  // ──────────────────────────────────────────────────────── bubble
   let openBubble = null;
   function closeBubble() { if (openBubble) { openBubble.remove(); openBubble = null; } }
   function openFor(anchor, name, d) {
@@ -226,7 +207,7 @@
         <a class="sl-link" href="https://${repoGuess}" target="_blank" rel="noopener">Open on GitHub ↗</a>
       </div>`;
     document.body.appendChild(b);
-    // Position under the control, clamped to the viewport so it never runs off-screen.
+    // Below the control, clamped to the viewport.
     const r = anchor.getBoundingClientRect();
     const width = b.offsetWidth || 560;
     const maxLeft = window.scrollX + document.documentElement.clientWidth - width - 12;
@@ -238,7 +219,6 @@
     openBubble = b;
   }
 
-  // ──────────────────────────────────────────────────────── inject
   function tagRows() {
     const found = findRows();
     if (!found) return null;
@@ -248,10 +228,9 @@
       if (!cell || cell.getAttribute(CONFIG.MARK)) continue;
       const name = rowName(tr);
       const d = demoFor(name);
-      // discreet control: log glyph · "Changelog" · risk traffic-light
       const chip = el("a", "sl-chip", `${LOG_ICON}<span>Changelog</span><span class="sl-amp sl-${d.risk}"></span>`);
       chip.href = "#";
-      chip.title = `ShipLog: ${d.label} — click for the changelog`;
+      chip.title = `ShipLog: ${d.label} · click for the changelog`;
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, name, d); });
       cell.appendChild(chip);
       cell.setAttribute(CONFIG.MARK, "1");
@@ -267,7 +246,7 @@
   }
 
   function diagnostics() {
-    console.group(`${TAG} diagnostics — no update cells matched`);
+    console.group(`${TAG} diagnostics: no update cells matched`);
     const tables = Array.from(document.querySelectorAll("table"));
     console.log(`tables on page: ${tables.length}`);
     tables.forEach((t, i) => {
@@ -280,7 +259,6 @@
     console.groupEnd();
   }
 
-  // ──────────────────────────────────────────────────────── run
   function injectStyleOnce() {
     if (document.getElementById("sl-spike-style")) return;
     const s = el("style"); s.id = "sl-spike-style"; s.textContent = CSS;
@@ -299,13 +277,12 @@
     toast(`<span class="sl-anchor">⚓</span><b>ShipLog spike active.</b> Added a discreet Changelog control to <b>${res.tagged}</b> container(s) in the update column. Click one for the bubble. <code>(demo data · ${res.selector})</code>`);
   }
 
-  // close the bubble on outside click / Esc
   document.addEventListener("click", (e) => {
     if (openBubble && !openBubble.contains(e.target) && !e.target.closest(".sl-chip")) closeBubble();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeBubble(); });
 
-  // Unraid re-renders the Docker table on its auto-refresh — re-tag new cells.
+  // Unraid re-renders the Docker table on its auto-refresh.
   const mo = new MutationObserver(() => { if (document.getElementById("sl-spike-style")) tagRows(); });
   try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
