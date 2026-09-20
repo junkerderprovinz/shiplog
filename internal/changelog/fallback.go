@@ -7,16 +7,12 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// Fallback is the terminal provider in a Chain: it always handles, producing a
-// bare version-delta changelog so the engine never returns nothing for an
-// update. It carries no release entries and an empty Raw body.
+// Fallback is the last provider in a Chain. It always answers with a bare
+// version delta, so an update never comes without a changelog.
 type Fallback struct{}
 
-// Get always returns (changelog, true). When the container source is a
-// github.com or gitlab.com repo, the URL links to that repo's RELEASES page, so
-// even a bare version-delta row is a clickable jump to the real source. (A
-// version-to-version compare link often 404s because the version tags aren't
-// git refs.) Empty for an absent/unrecognized source.
+// Get links to the source repo's releases page on GitHub or GitLab. A compare
+// link would often 404, since image tags are rarely git refs.
 func (Fallback) Get(_ context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool) {
 	return &model.Changelog{
 		FromTag:  fromTag,
@@ -28,8 +24,6 @@ func (Fallback) Get(_ context.Context, c model.Container, fromTag, toTag string)
 	}, true
 }
 
-// sourceReleasesURL builds a host-appropriate releases link from a github/gitlab
-// source URL. It returns "" when the source is empty or an unrecognized host.
 func sourceReleasesURL(source string) string {
 	if owner, repo, ok := parseGitHubRepo(source); ok {
 		return "https://github.com/" + owner + "/" + repo + "/releases"
@@ -40,8 +34,7 @@ func sourceReleasesURL(source string) string {
 	return ""
 }
 
-// parseGitLabRepo extracts owner/repo from a gitlab.com URL, tolerating a
-// trailing ".git" or "/". It returns false for empty or non-gitlab sources.
+// parseGitLabRepo extracts owner/repo from a gitlab.com URL.
 func parseGitLabRepo(source string) (owner, repo string, ok bool) {
 	s := strings.TrimSpace(source)
 	if !strings.Contains(s, "gitlab.com") {

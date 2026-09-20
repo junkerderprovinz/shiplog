@@ -1,13 +1,7 @@
 // Package changelog resolves the "what changed" payload for a container update.
-//
-// Providers are tried in order via a Chain: the first provider that reports it
-// handled the request wins. The GitHub provider mines upstream releases from the
-// repo named by the container's OCI source label; the Fallback provider always
-// handles, producing a bare version-delta changelog so the engine never returns
-// nothing for an update.
-//
-// It is a dependency-free unit: standard library only. The GitHub base URL is
-// injectable so tests can route the API at an httptest server.
+// A Chain tries its providers in order; GitHub reads the releases of the
+// container's source repo, and Fallback always answers with a bare version
+// delta.
 package changelog
 
 import (
@@ -28,8 +22,7 @@ type Provider interface {
 // Chain tries each Provider in order and returns the first handled result.
 type Chain []Provider
 
-// Get returns the first handled changelog in the chain, or (nil, false) if no
-// provider handled the request.
+// Get returns the first handled changelog in the chain.
 func (ch Chain) Get(ctx context.Context, c model.Container, fromTag, toTag string) (*model.Changelog, bool) {
 	for _, p := range ch {
 		if cl, ok := p.Get(ctx, c, fromTag, toTag); ok {
@@ -39,11 +32,10 @@ func (ch Chain) Get(ctx context.Context, c model.Container, fromTag, toTag strin
 	return nil, false
 }
 
-// semver is a parsed major.minor.patch triple. A private copy lives here so the
-// changelog unit stays decoupled from internal/risk and internal/resolver.
+// semver is a major.minor.patch triple, kept here so that changelog does not
+// depend on risk or resolver.
 type semver struct{ major, minor, patch int }
 
-// compare returns -1 if v < o, 0 if equal, +1 if v > o.
 func (v semver) compare(o semver) int {
 	switch {
 	case v.major != o.major:
@@ -66,9 +58,8 @@ func sign(n int) int {
 	}
 }
 
-// parseSemver strips a leading 'v', drops any '-prerelease'/'+build' suffix,
-// and reads up to three numeric components (missing default to 0). It reports
-// false if there are zero numeric components or any present one is non-numeric.
+// parseSemver reads up to three numeric components from a tag, ignoring a
+// leading "v" and any pre-release or build suffix. Missing components are 0.
 func parseSemver(tag string) (semver, bool) {
 	core := strings.TrimPrefix(strings.TrimSpace(tag), "v")
 	if i := strings.IndexByte(core, '+'); i >= 0 {
