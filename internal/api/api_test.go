@@ -126,7 +126,7 @@ func TestOverrideEndpoints(t *testing.T) {
 	if _, ok := ovr.m["x/y"]; ok {
 		t.Fatalf("nonexistent repo should not be stored")
 	}
-	// An inconclusive check (checked=false) must NOT block the save.
+	// An inconclusive check does not block the save.
 	a.verify = func(context.Context, string) (bool, bool) { return false, false }
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/override", strings.NewReader(`{"repo":"x/y","source":"owner/maybe"}`)))
@@ -248,12 +248,11 @@ func TestStatusPage(t *testing.T) {
 	if !strings.Contains(rr.Body.String(), "immich") {
 		t.Fatal("status page missing container name")
 	}
-	// The header must reference the served logo, not the old anchor glyph.
 	if !strings.Contains(rr.Body.String(), `src="/logo.svg"`) {
 		t.Error("status page header does not reference /logo.svg")
 	}
 	if strings.Contains(rr.Body.String(), "&#9875;") {
-		t.Error("status page still carries the old anchor glyph")
+		t.Error("status page header uses the anchor glyph instead of the logo")
 	}
 }
 

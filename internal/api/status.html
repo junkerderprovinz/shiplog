@@ -91,17 +91,16 @@
     </tbody>
   </table>
 {{else}}
-  <div class="empty">No containers yet &mdash; the first poll is running. Refresh in a moment.</div>
+  <div class="empty">No containers yet. The first poll is running, refresh in a moment.</div>
 {{end}}
 </main>
-<footer>ShipLog is read-only &mdash; apply updates in Unraid as usual. Risk is derived from the version jump; changelog summaries (when configured) are AI-generated and marked as such. Wrong or missing changelog link? Click <b>source</b> on a row to point it at the right GitHub repo.</footer>
+<footer>ShipLog is read-only; apply updates in Unraid as usual. Risk is derived from the version jump; changelog summaries (when configured) are AI-generated and marked as such. Wrong or missing changelog link? Click <b>source</b> on a row to point it at the right GitHub repo.</footer>
 <script>
-// Per-image changelog-source override. All same-origin to the engine; no deps.
+// Per-image changelog source override and unmaintained mute.
 (function(){
   "use strict";
   function msg(td,t){ var m=td.querySelector(".srcmsg"); if(m){ m.textContent=t; } }
   function reloadSoon(td,t){ msg(td,t); setTimeout(function(){ location.reload(); }, 2500); }
-  // Prefill each row from the stored overrides so a manual link is visible + editable.
   fetch("/api/overrides").then(function(r){ return r.json(); }).then(function(m){
     m = m || {};
     document.querySelectorAll("td.clog[data-repo]").forEach(function(td){
@@ -116,7 +115,6 @@
     btn.setAttribute("data-active", active ? "1" : "0");
     btn.textContent = active ? "unmaintained muted ✓" : "mute unmaintained";
   }
-  // Prefill each row's mute toggle from the stored suppressions.
   fetch("/api/unmaintained-suppressions").then(function(r){ return r.json(); }).then(function(m){
     m = m || {};
     document.querySelectorAll("td.clog[data-repo]").forEach(function(td){
@@ -124,7 +122,6 @@
       setToggleState(td.querySelector(".suptoggle"), !!m[repo]);
     });
   }).catch(function(){});
-  // Delegated handlers so it works for every row without per-row wiring.
   document.addEventListener("click", function(e){
     var t = e.target; if(!t || !t.classList) return;
     var td = t.closest ? t.closest("td.clog") : null; if(!td) return;
@@ -136,13 +133,13 @@
       if(!src){ msg(td,"enter a repo, e.g. owner/repo"); return; }
       fetch("/api/override",{method:"PUT",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({repo:repo,source:src})}).then(function(r){
-          if(r.ok){ reloadSoon(td,"saved — refreshing…"); }
+          if(r.ok){ reloadSoon(td,"saved, refreshing…"); }
           else { r.text().then(function(x){ msg(td, x || "invalid source"); }); }
         }).catch(function(){ msg(td,"network error"); });
     } else if(t.classList.contains("srcreset")){
       var rp = td.getAttribute("data-repo");
       fetch("/api/override?repo="+encodeURIComponent(rp),{method:"DELETE"}).then(function(r){
-        if(r.ok){ reloadSoon(td,"cleared — refreshing…"); }
+        if(r.ok){ reloadSoon(td,"cleared, refreshing…"); }
         else { msg(td,"error"); }
       }).catch(function(){ msg(td,"network error"); });
     } else if(t.classList.contains("suptoggle")){
@@ -153,7 +150,7 @@
         : fetch("/api/unmaintained-suppression",{method:"PUT",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({repo:repo2})});
       req.then(function(r){
-        if(r.ok){ setToggleState(t, !nowActive); if(sm){ sm.textContent = "saved — refreshing…"; } setTimeout(function(){ location.reload(); }, 2500); }
+        if(r.ok){ setToggleState(t, !nowActive); if(sm){ sm.textContent = "saved, refreshing…"; } setTimeout(function(){ location.reload(); }, 2500); }
         else { r.text().then(function(x){ if(sm){ sm.textContent = x || "error"; } }); }
       }).catch(function(){ if(sm){ sm.textContent = "network error"; } });
     }
