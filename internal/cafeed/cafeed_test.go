@@ -10,8 +10,6 @@ import (
 	"testing"
 )
 
-// --- Lookup: pure matching logic, no network ---
-
 func feedFrom(entries []Entry, blacklisted map[string]string, previous *Feed) *Feed {
 	byName, byRepo, byTemplateURL := indexEntries(entries)
 	return &Feed{byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL, blacklisted: blacklisted, previous: previous}
@@ -25,8 +23,6 @@ func TestLookupListedAndHealthy(t *testing.T) {
 	}
 }
 
-// Reproduces the real coppit/handbrake feed entry found live: Deprecated with
-// a moderator comment, while still genuinely listed (not absent).
 func TestLookupDeprecatedIsNotAbsent(t *testing.T) {
 	f := feedFrom([]Entry{{
 		Name: "HandBrake", Repository: "coppit/handbrake",
@@ -37,7 +33,7 @@ func TestLookupDeprecatedIsNotAbsent(t *testing.T) {
 		t.Fatal("want ok")
 	}
 	if !res.Listed {
-		t.Error("a deprecated (but not removed) app must still read Listed=true — it's an editorial demotion, not a dead end")
+		t.Error("a deprecated app is still listed")
 	}
 	if !res.Deprecated || res.Note == "" {
 		t.Errorf("want Deprecated=true with a note, got %+v", res)
@@ -57,7 +53,7 @@ func TestLookupAbsentPresentInPreviousCrawlIsInconclusive(t *testing.T) {
 	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
 	_, ok := cur.Lookup("FlakyApp", "x/flaky", "")
 	if ok {
-		t.Fatal("present last crawl, absent this one, must be inconclusive — a transient crawl gap, not confirmed removal (the exact false-positive shape already fixed once for the raw-URL proxy)")
+		t.Fatal("present last crawl and absent in this one must be inconclusive")
 	}
 }
 
@@ -82,9 +78,6 @@ func TestLookupBlacklisted(t *testing.T) {
 	}
 }
 
-// Two maintainers publish an app under the same display Name (the real
-// HandBrake case) — must disambiguate by the container's own repository,
-// not just grab the first match.
 func TestLookupAmbiguousNameDisambiguatedByRepo(t *testing.T) {
 	f := feedFrom([]Entry{
 		{Name: "HandBrake", Repository: "coppit/handbrake", Deprecated: true, ModeratorComment: "superseded"},
@@ -95,7 +88,7 @@ func TestLookupAmbiguousNameDisambiguatedByRepo(t *testing.T) {
 		t.Fatal("want ok")
 	}
 	if res.Deprecated {
-		t.Error("matched the wrong maintainer's entry — jlesage's is not deprecated, coppit's is")
+		t.Error("matched coppit's deprecated entry instead of jlesage's")
 	}
 }
 
@@ -104,7 +97,6 @@ func TestLookupAmbiguousNameDisambiguatedByTemplateURL(t *testing.T) {
 		{Name: "SameName", Repository: "a/x", TemplateURL: "https://raw.githubusercontent.com/a/tpl/main/x.xml"},
 		{Name: "SameName", Repository: "b/x", TemplateURL: "https://raw.githubusercontent.com/b/tpl/main/x.xml", Deprecated: true},
 	}, nil, nil)
-	// repo doesn't narrow it (empty), templateURL must.
 	res, ok := f.Lookup("SameName", "", "https://raw.githubusercontent.com/b/tpl/main/x.xml")
 	if !ok || !res.Deprecated {
 		t.Fatalf("want the b/x entry via templateURL match, got %+v ok=%v", res, ok)
@@ -118,7 +110,7 @@ func TestLookupAmbiguousUnresolvableIsInconclusive(t *testing.T) {
 	}, nil, nil)
 	_, ok := f.Lookup("SameName", "docker.io/c/x", "")
 	if ok {
-		t.Fatal("neither candidate's repository matches the container's — must be inconclusive, not a guess")
+		t.Fatal("no candidate repository matches, so the lookup must be inconclusive")
 	}
 }
 
@@ -126,10 +118,10 @@ func TestNormalizeRepoStripsAnyRegistryHost(t *testing.T) {
 	cases := map[string]string{
 		"docker.io/library/redis":                      "redis",
 		"docker.io/coppit/handbrake":                   "coppit/handbrake",
-		"ghcr.io/binhex/arch-teamspeak":                "binhex/arch-teamspeak", // must compare equal to the docker.io form below
+		"ghcr.io/binhex/arch-teamspeak":                "binhex/arch-teamspeak",
 		"binhex/arch-teamspeak":                        "binhex/arch-teamspeak",
 		"quay.io/prometheus/prometheus":                "prometheus/prometheus",
-		"ghcr.io/open-webui/open-webui:main":           "open-webui/open-webui", // CA's Repository field observed live with a baked-in tag
+		"ghcr.io/open-webui/open-webui:main":           "open-webui/open-webui",
 		"docker.openhands.dev/openhands/openhands:1.7": "openhands/openhands",
 		"redis:latest":                                 "redis",
 	}
@@ -140,8 +132,6 @@ func TestNormalizeRepoStripsAnyRegistryHost(t *testing.T) {
 	}
 }
 
-// Reproduces the real OpenWebUI case found live: CA's Repository field bakes
-// in a ":main" tag the running container's own (tag-less) Repo never has.
 func TestLookupZeroNameMatchRescuedByRepoDespiteFeedTagSuffix(t *testing.T) {
 	f := feedFrom([]Entry{
 		{Name: "open-webui", Repository: "ghcr.io/open-webui/open-webui:main"},
@@ -152,12 +142,8 @@ func TestLookupZeroNameMatchRescuedByRepoDespiteFeedTagSuffix(t *testing.T) {
 	}
 }
 
-// --- Lookup: zero-name-match rescue by repo/templateURL ---
-
-// Reproduces the real TeamSpeak case found live: the container is renamed
-// away from its CA template's canonical Name ("TeamSpeak" vs the feed's
-// "binhex-teamspeak"), and CA references the app via its ghcr.io mirror while
-// the container runs the docker.io original. Neither is a removal.
+// A renamed container running the docker.io original of an image that CA
+// lists under its ghcr.io mirror is still listed.
 func TestLookupZeroNameMatchRescuedByRepo(t *testing.T) {
 	f := feedFrom([]Entry{
 		{Name: "binhex-teamspeak", Repository: "ghcr.io/binhex/arch-teamspeak"},
@@ -168,8 +154,6 @@ func TestLookupZeroNameMatchRescuedByRepo(t *testing.T) {
 	}
 }
 
-// A multi-instance container (user-suffixed "-II", "-III", ...) shares one
-// CA template's repository under a name the feed never lists.
 func TestLookupZeroNameMatchMultiInstanceRescuedByRepo(t *testing.T) {
 	f := feedFrom([]Entry{
 		{Name: "storj", Repository: "storjlabs/storagenode"},
@@ -190,14 +174,12 @@ func TestLookupZeroNameMatchRescuedByTemplateURL(t *testing.T) {
 	}
 }
 
-// The rescue must narrow false positives, not blind true removals: an app
-// absent by name AND repository across two crawls is still confirmed gone.
 func TestLookupZeroNameMatchStillAbsentWhenRepoAlsoMisses(t *testing.T) {
 	prev := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, nil)
 	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
 	res, ok := cur.Lookup("TrulyGoneApp", "x/gone-for-real", "")
 	if !ok || res.Listed {
-		t.Fatalf("absent by name AND repository from both crawls must still be confirmed not-listed, got %+v ok=%v", res, ok)
+		t.Fatalf("absent by name and repository from both crawls must be confirmed not-listed, got %+v ok=%v", res, ok)
 	}
 }
 
@@ -206,11 +188,9 @@ func TestLookupZeroNameMatchRepoPresentLastCrawlIsInconclusive(t *testing.T) {
 	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
 	_, ok := cur.Lookup("RenamedFlakyApp", "x/flaky", "")
 	if ok {
-		t.Fatal("present last crawl by repository, absent by both name and repo this crawl, must be inconclusive — a transient crawl gap")
+		t.Fatal("present last crawl by repository and absent in this one must be inconclusive")
 	}
 }
-
-// --- Fetcher: HTTP + on-disk cache behaviour ---
 
 const miniFeedTS1 = `{"applist":[{"Name":"App","Repository":"x/app"}],"last_updated_timestamp":1}`
 const miniFeedTS2 = `{"applist":[{"Name":"App","Repository":"x/app"},{"Name":"NewApp","Repository":"x/new"}],"last_updated_timestamp":2}`
@@ -293,7 +273,6 @@ func TestFetcherLoadRefetchesWhenTimestampChanges(t *testing.T) {
 	if _, ok := feed.Lookup("NewApp", "x/new", ""); !ok {
 		t.Fatal("second Load should have refetched and picked up the new entry")
 	}
-	// And the previous crawl must now be available for absence cross-checks.
 	if feed.previous == nil {
 		t.Fatal("expected the prior crawl to be cached as .previous after a refetch")
 	}
@@ -307,7 +286,7 @@ func TestFetcherLoadFallsBackToCacheOnFetchFailure(t *testing.T) {
 	if _, err := f.Load(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	srv.Close() // upstream now unreachable
+	srv.Close()
 
 	feed, err := f.Load(context.Background())
 	if err != nil {
@@ -329,7 +308,7 @@ func TestFetcherLoadErrorsOnlyWhenNothingCachedAtAll(t *testing.T) {
 
 	_, err := f.Load(context.Background())
 	if err == nil {
-		t.Fatal("want an error: fetch failed AND nothing was ever cached — genuinely nothing to check against")
+		t.Fatal("want an error when the fetch failed and nothing was cached")
 	}
 	if !strings.Contains(err.Error(), "cafeed") {
 		t.Errorf("error should be identifiable as coming from cafeed, got: %v", err)
