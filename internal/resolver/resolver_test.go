@@ -11,38 +11,31 @@ import (
 	"time"
 )
 
-// newTestServer builds a fake OCI registry v2 backend. When requireAuth is
-// true the registry rejects unauthenticated requests with a 401 carrying a
-// WWW-Authenticate header that points the resolver at this server's /token
-// endpoint; the second (bearer-authenticated) attempt then succeeds.
+// newTestServer builds a fake registry. With requireAuth, repository requests
+// without a bearer token get a 401 challenge pointing at /token.
 func newTestServer(requireAuth bool) *httptest.Server {
 	mux := http.NewServeMux()
 
-	// Anonymous bearer token endpoint.
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"token":"x"}`))
 	})
 
-	// Tags list.
 	mux.HandleFunc("/v2/lib/app/tags/list", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"name":"lib/app","tags":["1.0.0","1.2.0","1.1.0","latest","nightly"]}`))
 	})
 
-	// Manifest HEAD for tag 1.0.0 → digest sha256:NEW.
 	mux.HandleFunc("/v2/lib/app/manifests/1.0.0", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Docker-Content-Digest", "sha256:NEW")
 		w.WriteHeader(http.StatusOK)
 	})
 
-	// Manifest HEAD for the newest semver tag 1.2.0 → digest sha256:NEWEST.
 	mux.HandleFunc("/v2/lib/app/manifests/1.2.0", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Docker-Content-Digest", "sha256:NEWEST")
 		w.WriteHeader(http.StatusOK)
 	})
 
-	// Manifest HEAD for tag latest → digest sha256:LATEST.
 	mux.HandleFunc("/v2/lib/app/manifests/latest", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Docker-Content-Digest", "sha256:LATEST")
 		w.WriteHeader(http.StatusOK)
@@ -52,8 +45,6 @@ func newTestServer(requireAuth bool) *httptest.Server {
 		return httptest.NewServer(mux)
 	}
 
-	// Wrap the mux: every /v2/ request must carry a bearer token, otherwise
-	// reply 401 + WWW-Authenticate. /token and /v2/ (version check) stay open.
 	srv := httptest.NewServer(nil)
 	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/v2/lib/app/") && r.Header.Get("Authorization") == "" {
@@ -68,14 +59,12 @@ func newTestServer(requireAuth bool) *httptest.Server {
 	return srv
 }
 
-// newResolverFor returns a Resolver whose baseURL maps every host to the test
-// server, so the resolver talks only to the fake registry. Backoff sleeps and
-// the per-host gate are neutered so tests run instantly and deterministically.
+// newResolverFor routes every host to srv and turns off spacing and backoff.
 func newResolverFor(srv *httptest.Server) *Resolver {
 	r := New()
 	r.baseURL = func(host string) string { return srv.URL }
-	r.gate = newHostGate(0)                           // no inter-request spacing in tests
-	r.sleep = func(context.Context, time.Duration) {} // don't actually back off
+	r.gate = newHostGate(0)
+	r.sleep = func(context.Context, time.Duration) {}
 	return r
 }
 
@@ -99,14 +88,13 @@ func TestResolve_NewestTagAndDigest(t *testing.T) {
 	if newestVerTag != "1.2.0" {
 		t.Errorf("newestVerTag = %q, want %q", newestVerTag, "1.2.0")
 	}
-	// Pinned semver tag: the proof-digest fetch is skipped, so it stays empty.
 	if newestVerDigest != "" {
 		t.Errorf("newestVerDigest = %q, want empty for a pinned tag", newestVerDigest)
 	}
 }
 
 func TestResolve_AnonymousTokenFlow(t *testing.T) {
-	srv := newTestServer(true) // first call 401, must follow WWW-Authenticate
+	srv := newTestServer(true)
 	defer srv.Close()
 
 	r := newResolverFor(srv)
@@ -156,8 +144,6 @@ func TestResolve_CachesBearerTokenAcrossRequests(t *testing.T) {
 			t.Fatalf("Resolve %d returned error: %v", i, err)
 		}
 	}
-	// One 401 fills the cache; every later request (the manifest HEAD of the
-	// first Resolve AND the entire second Resolve) rides the cached token.
 	if got := tokenHits.Load(); got != 1 {
 		t.Errorf("token endpoint hit %d times, want exactly 1 (cache must cover follow-up requests)", got)
 	}
@@ -191,8 +177,6 @@ func TestResolve_ExpiredCachedTokenHealsViaChallenge(t *testing.T) {
 	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err != nil {
 		t.Fatalf("first Resolve: %v", err)
 	}
-	// Let the cached token expire; the next Resolve must transparently
-	// re-authenticate instead of failing.
 	r.now = func() time.Time { return time.Now().Add(time.Hour) }
 	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", ""); err != nil {
 		t.Fatalf("second Resolve after token expiry: %v", err)
@@ -203,9 +187,6 @@ func TestResolve_ExpiredCachedTokenHealsViaChallenge(t *testing.T) {
 }
 
 func TestResolve_BreakerTripsOnTokenRealm429(t *testing.T) {
-	// The most common real-world 429 source is the TOKEN endpoint
-	// (auth.docker.io / ghcr token issuance), not the /v2/ endpoints. A hard
-	// token 429 must mute the host too, or the sweep keeps re-hammering it.
 	var tokenHits atomic.Int64
 	srv := httptest.NewServer(nil)
 	defer srv.Close()
@@ -251,8 +232,6 @@ func TestResolve_BreakerMutesHostAfterHard429(t *testing.T) {
 	}
 	hitsAfterFirst := v2Hits.Load()
 
-	// Host is now muted: the next Resolve must answer without any network and
-	// say why.
 	_, _, _, _, err := r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
 	if err == nil || !strings.Contains(err.Error(), "backing off") {
 		t.Fatalf("second Resolve error = %v, want a backing-off error", err)
@@ -261,7 +240,6 @@ func TestResolve_BreakerMutesHostAfterHard429(t *testing.T) {
 		t.Errorf("muted host still received %d extra requests", got-hitsAfterFirst)
 	}
 
-	// After the window has passed, the host is queried again.
 	r.now = func() time.Time { return time.Now().Add(2 * time.Minute) }
 	_, _, _, _, _ = r.Resolve(context.Background(), "docker.io/lib/app", "1.0.0", "")
 	if got := v2Hits.Load(); got == hitsAfterFirst {
@@ -286,8 +264,6 @@ func TestResolve_NonSemverTag(t *testing.T) {
 	if sameTagDigest != "sha256:LATEST" {
 		t.Errorf("sameTagDigest = %q, want %q", sameTagDigest, "sha256:LATEST")
 	}
-	// A rolling tag still resolves the newest version AND its digest, so the
-	// engine can prove which version a :latest container is running.
 	if newestVerTag != "1.2.0" {
 		t.Errorf("newestVerTag = %q, want %q", newestVerTag, "1.2.0")
 	}
@@ -297,8 +273,6 @@ func TestResolve_NonSemverTag(t *testing.T) {
 }
 
 func TestResolve_FollowsTagPagination(t *testing.T) {
-	// Page 1 returns old tags + a Link to page 2; page 2 has the newer tags.
-	// Reading only page 1 would pick 0.59; following the Link finds 1.8.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/v2/lib/app/tags/list" && r.URL.Query().Get("last") == "":
@@ -307,7 +281,7 @@ func TestResolve_FollowsTagPagination(t *testing.T) {
 			_, _ = w.Write([]byte(`{"tags":["0.58","0.59"]}`))
 		case r.URL.Path == "/v2/lib/app/tags/list":
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"tags":["1.7","1.8"]}`)) // page 2, no Link → stop
+			_, _ = w.Write([]byte(`{"tags":["1.7","1.8"]}`))
 		case strings.HasPrefix(r.URL.Path, "/v2/lib/app/manifests/"):
 			w.Header().Set("Docker-Content-Digest", "sha256:X")
 			w.WriteHeader(http.StatusOK)
@@ -327,9 +301,6 @@ func TestResolve_FollowsTagPagination(t *testing.T) {
 	}
 }
 
-// When Docker Hub credentials are configured, the token request for a docker.io
-// image must carry HTTP Basic auth (so the issued token has the authenticated,
-// higher rate limit). For other registries, no credentials must leak.
 func TestResolve_DockerHubBasicAuthOnToken(t *testing.T) {
 	var gotTokenAuth string
 	mux := http.NewServeMux()
@@ -359,7 +330,6 @@ func TestResolve_DockerHubBasicAuthOnToken(t *testing.T) {
 	})
 
 	r := newResolverFor(srv).WithDockerHubAuth("alice", "dh-secret")
-	// "docker.io/library/app" → host registry-1.docker.io → Basic auth expected.
 	if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/library/app", "latest", ""); err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
@@ -374,11 +344,11 @@ func TestNewestSemver_AcceptsTwoPartTags(t *testing.T) {
 		tags []string
 		want string
 	}{
-		{[]string{"0.16", "0.17", "0.18", "latest"}, "0.18"},                // OpenHands-style two-part tags
-		{[]string{"0.17.5", "0.18", "0.16.9"}, "0.18"},                      // a two-part tag beats an older three-part one
-		{[]string{"1.0.0", "1.2.0", "1.1.0", "latest", "nightly"}, "1.2.0"}, // three-part still works
-		{[]string{"1.8.0-rc1", "1.7.9"}, "1.7.9"},                           // prerelease never ranks as newest
-		{[]string{"latest", "nightly", "main"}, ""},                         // nothing semver
+		{[]string{"0.16", "0.17", "0.18", "latest"}, "0.18"},
+		{[]string{"0.17.5", "0.18", "0.16.9"}, "0.18"},
+		{[]string{"1.0.0", "1.2.0", "1.1.0", "latest", "nightly"}, "1.2.0"},
+		{[]string{"1.8.0-rc1", "1.7.9"}, "1.7.9"},
+		{[]string{"latest", "nightly", "main"}, ""},
 	}
 	for _, c := range cases {
 		if got := newestSemver(c.tags); got != c.want {
@@ -387,13 +357,10 @@ func TestNewestSemver_AcceptsTwoPartTags(t *testing.T) {
 	}
 }
 
-// A transient 429 on tags/list must be retried (honouring Retry-After) and
-// succeed once the registry stops rate-limiting.
 func TestResolve_RetriesOn429ThenSucceeds(t *testing.T) {
 	var tagsCalls int32
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v2/lib/app/tags/list", func(w http.ResponseWriter, r *http.Request) {
-		// First two attempts: 429 with a Retry-After; third: the real list.
 		if atomic.AddInt32(&tagsCalls, 1) <= 2 {
 			w.Header().Set("Retry-After", "0")
 			w.WriteHeader(http.StatusTooManyRequests)
@@ -422,8 +389,6 @@ func TestResolve_RetriesOn429ThenSucceeds(t *testing.T) {
 	}
 }
 
-// A 429 that never clears (exceeds the retry budget) surfaces a clear, honest
-// rate-limit error rather than a generic "unexpected status".
 func TestResolve_429ExhaustsRetriesWithClearError(t *testing.T) {
 	var tagsCalls int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -444,15 +409,11 @@ func TestResolve_429ExhaustsRetriesWithClearError(t *testing.T) {
 	if !strings.Contains(err.Error(), "rate limited") {
 		t.Errorf("error = %q, want a clear rate-limit message", err.Error())
 	}
-	// 1 initial + maxRetries attempts.
 	if got := atomic.LoadInt32(&tagsCalls); got != int32(maxRetries+1) {
 		t.Errorf("tags/list called %d×, want %d", got, maxRetries+1)
 	}
 }
 
-// When a GitHub token is configured, the token request for ghcr.io / lscr.io
-// must carry HTTP Basic auth (any user, token as password) so the issued bearer
-// has the authenticated rate limit. The token never leaks to other registries.
 func TestResolve_GitHubTokenBasicAuthOnGHCR(t *testing.T) {
 	const tok = "ghp_secret"
 	for _, host := range []string{"ghcr.io", "lscr.io"} {
@@ -496,7 +457,6 @@ func TestResolve_GitHubTokenBasicAuthOnGHCR(t *testing.T) {
 	}
 }
 
-// A GitHub token must NEVER be attached to a non-ghcr registry's token request.
 func TestResolve_GitHubTokenNotLeakedToOtherRegistries(t *testing.T) {
 	var gotTokenAuth string
 	mux := http.NewServeMux()
@@ -555,8 +515,6 @@ func TestRetryAfter(t *testing.T) {
 }
 
 func TestBackoffGrowsAndCaps(t *testing.T) {
-	// Each attempt's backoff (minus jitter) must be >= the base*2^attempt, and
-	// never exceed maxBackoff + one jitter quantum.
 	prev := time.Duration(0)
 	for attempt := 0; attempt < 8; attempt++ {
 		d := backoff(attempt)
