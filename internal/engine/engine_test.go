@@ -13,10 +13,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 )
 
-// fakeCAFeed is the smallest possible caFeedLookuper: a canned Lookup result
-// for every container, since these tests only exercise engine.check's own
-// branching on the result, not real feed matching (that's cafeed's own
-// package tests).
+// fakeCAFeed answers every lookup with the same result.
 type fakeCAFeed struct {
 	result cafeed.Result
 	ok     bool
@@ -25,8 +22,6 @@ type fakeCAFeed struct {
 func (f fakeCAFeed) Lookup(name, repo, templateURL string) (cafeed.Result, bool) {
 	return f.result, f.ok
 }
-
-// --- fakes ---
 
 type fakeCollector struct{ list []model.Container }
 
@@ -39,8 +34,8 @@ func (errCollector) List(context.Context) ([]model.Container, error) {
 }
 
 type resolveResult struct {
-	tag, dig       string // newestTag (as-is) + same-tag digest
-	verTag, verDig string // newest semver tag + its digest
+	tag, dig       string // newest tag and same-tag digest
+	verTag, verDig string // newest semver tag and its digest
 	err            error
 }
 type fakeResolver struct{ byRepo map[string]resolveResult }
@@ -53,14 +48,13 @@ func (f fakeResolver) Resolve(_ context.Context, repo, _, _ string) (string, str
 	return r.tag, r.dig, r.verTag, r.verDig, r.err
 }
 
-// The fakes are written from the engine's concurrent workers, so they guard
-// their state with a mutex (the real store/changelog are concurrency-safe).
+// The fakes are called from concurrent workers, hence the mutexes.
 type fakeChangelog struct {
 	mu         sync.Mutex
 	called     int
-	raw        string               // optional canned raw body every Get returns
-	entries    []model.ReleaseEntry // optional canned release entries every Get returns
-	deprecated bool                 // optional: mark every returned changelog as archived (EOL)
+	raw        string
+	entries    []model.ReleaseEntry
+	deprecated bool
 }
 
 func (f *fakeChangelog) Get(_ context.Context, _ model.Container, from, to string) (*model.Changelog, bool) {
@@ -144,11 +138,6 @@ func (f *fakeStore) List() ([]model.UpdateStatus, error) {
 	return out, nil
 }
 
-// --- tests ---
-
-// A container is flagged unmaintained when its image repo is gone (404) or its
-// Unraid template was pulled from Community Applications (its <TemplateURL> 404s),
-// while a healthy one is left alone.
 func TestSweepFlagsUnmaintained(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "gone", Name: "GoneApp", Repo: "ghcr.io/x/gone", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
@@ -157,8 +146,8 @@ func TestSweepFlagsUnmaintained(t *testing.T) {
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
 		"ghcr.io/x/gone":    {err: resolver.ErrRepoNotFound},
-		"ghcr.io/x/removed": {tag: "1.0.0", dig: "sha256:r"}, // up to date
-		"ghcr.io/x/fine":    {tag: "1.0.0", dig: "sha256:f"}, // up to date
+		"ghcr.io/x/removed": {tag: "1.0.0", dig: "sha256:r"},
+		"ghcr.io/x/fine":    {tag: "1.0.0", dig: "sha256:f"},
 	}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)
@@ -181,16 +170,11 @@ func TestSweepFlagsUnmaintained(t *testing.T) {
 		t.Fatalf("removed: want unmaintained/removed-from-CA, got %v/%q", r.Unmaintained, r.UnmaintainedReason)
 	}
 	if f := st.rows["fine"]; f.Unmaintained {
-		t.Fatalf("fine: must NOT be unmaintained, got reason %q", f.UnmaintainedReason)
+		t.Fatalf("fine: must not be unmaintained, got reason %q", f.UnmaintainedReason)
 	}
 }
 
-// A GitHub raw template URL that 404s must NOT be trusted as "removed from CA"
-// when the underlying repo is still reachable: reproduces a real false-positive
-// (a renamed feed repo, or a template file that moved within a repo that is
-// very much alive still 404s at its OLD raw path forever, since raw URLs don't
-// follow GitHub's rename redirect the way github.com/{owner}/{repo} does).
-// Confirms both directions: repo alive → not flagged; repo also gone → flagged.
+// A dead raw template path counts only when the GitHub repo is gone as well.
 func TestSweepGithubRawURLRotIsNotFlaggedUnmaintained(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "moved", Name: "MovedApp", Repo: "ghcr.io/x/moved", Tag: "1.0.0", Digest: "sha256:m", Managed: true},
@@ -211,13 +195,13 @@ func TestSweepGithubRawURLRotIsNotFlaggedUnmaintained(t *testing.T) {
 	e.checkURL = func(_ context.Context, url string) int {
 		switch url {
 		case "https://raw.githubusercontent.com/someowner/renamed-repo/main/app/app.xml":
-			return 404 // the historical path is dead
+			return 404
 		case "https://github.com/someowner/renamed-repo":
-			return 200 // but the repo itself is very much alive
+			return 200
 		case "https://raw.githubusercontent.com/anotherowner/dead-repo/main/app/app.xml":
 			return 404
 		case "https://github.com/anotherowner/dead-repo":
-			return 404 // repo is genuinely gone too
+			return 404
 		}
 		t.Fatalf("unexpected checkURL call: %s", url)
 		return 0
@@ -226,20 +210,15 @@ func TestSweepGithubRawURLRotIsNotFlaggedUnmaintained(t *testing.T) {
 		t.Fatalf("sweep: %v", err)
 	}
 	if m := st.rows["moved"]; m.Unmaintained {
-		t.Fatalf("moved: a dead raw path with a live repo must NOT be flagged unmaintained, got reason %q", m.UnmaintainedReason)
+		t.Fatalf("moved: a dead raw path with a live repo must not be flagged unmaintained, got reason %q", m.UnmaintainedReason)
 	}
 	if g := st.rows["gone"]; !g.Unmaintained || g.UnmaintainedReason != "Removed from Community Applications" {
-		t.Fatalf("gone: a dead raw path AND a dead repo must still be flagged, got %v/%q", g.Unmaintained, g.UnmaintainedReason)
+		t.Fatalf("gone: a dead raw path and a dead repo must be flagged, got %v/%q", g.Unmaintained, g.UnmaintainedReason)
 	}
 }
 
-// An inconclusive corroboration probe (rate limit, server error, or a failed
-// request) must NOT be trusted as confirmation the repo is gone — only a
-// clean 404/410 on the repo page is positive evidence. Treating "couldn't
-// tell" the same as "confirmed gone" is the same fail-closed shape as the
-// original bug TestSweepGithubRawURLRotIsNotFlaggedUnmaintained fixes, one
-// layer deeper: a probe that gets rate-limited or errors out is exactly as
-// likely on a repo that's still alive as on one that's genuinely gone.
+// Only a 404 or 410 on the repo page confirms the removal; a rate limit, a
+// server error or a failed request proves nothing.
 func TestSweepAmbiguousCorroborationIsNotFlaggedUnmaintained(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "limited", Name: "RateLimitedApp", Repo: "ghcr.io/x/limited", Tag: "1.0.0", Digest: "sha256:l", Managed: true},
@@ -265,15 +244,15 @@ func TestSweepAmbiguousCorroborationIsNotFlaggedUnmaintained(t *testing.T) {
 		case "https://raw.githubusercontent.com/owner/limited/main/app.xml":
 			return 404
 		case "https://github.com/owner/limited":
-			return 429 // rate-limited, not confirmation
+			return 429
 		case "https://raw.githubusercontent.com/owner/erred/main/app.xml":
 			return 404
 		case "https://github.com/owner/erred":
-			return 503 // server error, not confirmation
+			return 503
 		case "https://raw.githubusercontent.com/owner/failed/main/app.xml":
 			return 404
 		case "https://github.com/owner/failed":
-			return 0 // failed request (checkURL's own error sentinel), not confirmation
+			return 0
 		}
 		t.Fatalf("unexpected checkURL call: %s", url)
 		return 0
@@ -283,19 +262,13 @@ func TestSweepAmbiguousCorroborationIsNotFlaggedUnmaintained(t *testing.T) {
 	}
 	for id, label := range map[string]string{"limited": "rate-limited", "erred": "server-error", "failed": "failed-request"} {
 		if r := st.rows[id]; r.Unmaintained {
-			t.Fatalf("%s (%s): an inconclusive corroboration probe must NOT flag unmaintained, got reason %q", id, label, r.UnmaintainedReason)
+			t.Fatalf("%s (%s): an inconclusive corroboration probe must not flag unmaintained, got reason %q", id, label, r.UnmaintainedReason)
 		}
 	}
 }
 
-// An archived upstream repo (changelog Deprecated) flags the container as
-// unmaintained even when its image and template are still present.
-// A manual suppression is a stronger, explicit "I know this app is fine"
-// signal than the automatic exemptions (no-TemplateURL, source-override): it
-// silences every Unmaintained trigger, including "Source repository archived"
-// and "Image no longer in the registry", neither of which has any other
-// opt-out. Two containers hit two different triggers to prove it's not
-// special-cased to just one code path.
+// A suppression also silences the archived-repo and registry-gone signals,
+// which have no other way out.
 func TestSweepSuppressedUnmaintainedSilencesEveryTrigger(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "gone", Name: "GoneApp", Repo: "ghcr.io/x/gone-suppressed", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
@@ -323,6 +296,8 @@ func TestSweepSuppressedUnmaintainedSilencesEveryTrigger(t *testing.T) {
 	}
 }
 
+// An archived source repo flags the container even while its image and
+// template still exist.
 func TestSweepFlagsArchivedRepo(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "arch", Name: "ArchApp", Repo: "ghcr.io/x/arch", Tag: "1.0.0", Digest: "sha256:a", Managed: true},
@@ -330,7 +305,7 @@ func TestSweepFlagsArchivedRepo(t *testing.T) {
 	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/arch": {tag: "1.0.0", dig: "sha256:a"}}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{deprecated: true}, st, time.Hour)
-	e.templateURLs = func() map[string]string { return nil } // no CA template → falls through to archived
+	e.templateURLs = func() map[string]string { return nil }
 	e.checkURL = func(context.Context, string) int { return 200 }
 	if err := e.Sweep(context.Background()); err != nil {
 		t.Fatalf("sweep: %v", err)
@@ -340,9 +315,7 @@ func TestSweepFlagsArchivedRepo(t *testing.T) {
 	}
 }
 
-// The real CA catalog catches an app pulled from the feed even when its
-// template file still sits untouched (the raw-URL proxy above never fires
-// for that case — this is precisely the gap it exists to close).
+// The feed catches an app pulled from CA whose template file still exists.
 func TestSweepFlagsUnmaintainedViaCAFeedAbsent(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "gone", Name: "GoneApp", Repo: "ghcr.io/x/gone3", Tag: "1.0.0", Digest: "sha256:g", Managed: true},
@@ -353,7 +326,7 @@ func TestSweepFlagsUnmaintainedViaCAFeedAbsent(t *testing.T) {
 	e.templateURLs = func() map[string]string {
 		return map[string]string{"goneapp": "https://raw.githubusercontent.com/x/gone/main/app.xml"}
 	}
-	e.checkURL = func(context.Context, string) int { return 200 } // raw URL still reachable — proxy sees nothing
+	e.checkURL = func(context.Context, string) int { return 200 }
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false}}, nil
 	}
@@ -365,13 +338,8 @@ func TestSweepFlagsUnmaintainedViaCAFeedAbsent(t *testing.T) {
 	}
 }
 
-// Reproduces the real OpenHands case found live: the LOCALLY installed
-// template's <TemplateURL> still points at its old, now-404ing repo path
-// (junkerderprovinz/openhands), while the CA feed has already caught up to
-// the app's new location (junkerderprovinz/unraid-apps) and confirms it is
-// very much still listed. The feed's conclusive "still listed" must win over
-// the raw-URL proxy's stale 404 — the proxy is a narrower approximation of
-// exactly what the feed already answers authoritatively.
+// A feed that still lists the app wins over a dead template URL left behind by
+// a moved repo.
 func TestSweepCAFeedOverridesStaleRawURLProxy(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "moved2", Name: "OpenHands", Repo: "docker.openhands.dev/openhands/openhands", Tag: "1.7", Digest: "sha256:o", Managed: true},
@@ -385,7 +353,7 @@ func TestSweepCAFeedOverridesStaleRawURLProxy(t *testing.T) {
 	rawURLChecked := false
 	e.checkURL = func(_ context.Context, url string) int {
 		rawURLChecked = true
-		return 404 // the stale local template path really is dead
+		return 404
 	}
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: true}}, nil
@@ -394,19 +362,15 @@ func TestSweepCAFeedOverridesStaleRawURLProxy(t *testing.T) {
 		t.Fatalf("sweep: %v", err)
 	}
 	if m := st.rows["moved2"]; m.Unmaintained {
-		t.Fatalf("a stale raw template URL must NOT override a feed confirming the app is still listed, got reason %q", m.UnmaintainedReason)
+		t.Fatalf("a stale raw template URL must not override a feed confirming the app is still listed, got reason %q", m.UnmaintainedReason)
 	}
 	if rawURLChecked {
-		t.Error("the raw-URL proxy must not even be consulted once the feed already gave a conclusive answer")
+		t.Error("the raw-URL probe must not run once the feed gave a conclusive answer")
 	}
 }
 
-// A container from a hand-authored template (no <TemplateURL>) was never in
-// Community Applications, so the feed's conclusive "absent from two crawls"
-// must not brand it removed — that verdict is only meaningful for apps that
-// actually came from CA. Reproduces the false positive nphil found live on
-// every self-built app on his box (homelabber, stashify, retiron).
-// (nphil, https://github.com/nphil/shiplog)
+// An app from a hand-authored template never came from CA, so its absence from
+// the feed means nothing.
 func TestSweepPersonalTemplateIsNotFlaggedUnmaintained(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "own", Name: "MyOwnApp", Repo: "ghcr.io/x/ownapp", Tag: "1.0.0", Digest: "sha256:p", Managed: true},
@@ -415,7 +379,7 @@ func TestSweepPersonalTemplateIsNotFlaggedUnmaintained(t *testing.T) {
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)
 	e.templateURLs = func() map[string]string {
-		return map[string]string{"myownapp": ""} // user template with an empty <TemplateURL/>
+		return map[string]string{"myownapp": ""}
 	}
 	e.checkURL = func(context.Context, string) int { return 404 }
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
@@ -429,12 +393,8 @@ func TestSweepPersonalTemplateIsNotFlaggedUnmaintained(t *testing.T) {
 	}
 }
 
-// A source override is the user saying "this app is mine, its changelog lives
-// here" — that must also exempt the app from the CA verdicts, because such a
-// template often points its <TemplateURL> into the user's own PRIVATE repo,
-// which 404s publicly and would otherwise trip the raw-URL proxy (reproduces
-// the live stashify case nphil found: private nphil/stashify template URL,
-// override set). (nphil, https://github.com/nphil/shiplog)
+// A source override marks the app as the user's own, whose template URL may
+// point into a private repo that 404s publicly.
 func TestSweepSourceOverrideExemptsFromUnmaintained(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "mine", Name: "Stashify", Repo: "ghcr.io/x/stashify", Tag: "1.0.0", Digest: "sha256:s", Managed: true},
@@ -445,8 +405,6 @@ func TestSweepSourceOverrideExemptsFromUnmaintained(t *testing.T) {
 	e.templateURLs = func() map[string]string {
 		return map[string]string{"stashify": "https://raw.githubusercontent.com/x/stashify/main/unraid/stashify.xml"}
 	}
-	// A private repo 404s publicly on the raw path AND the repo page, so the
-	// proxy plus its corroboration would both scream "gone" without the override.
 	e.checkURL = func(context.Context, string) int { return 404 }
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: false}}, nil
@@ -466,7 +424,6 @@ func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
 	res := fakeResolver{byRepo: map[string]resolveResult{"x/bad": {tag: "1.0.0", dig: "sha256:b"}}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)
-	// CA-installed, so it carries a TemplateURL — the feed verdict only applies to those.
 	e.templateURLs = func() map[string]string {
 		return map[string]string{"badapp": "https://raw.githubusercontent.com/x/bad/main/badapp.xml"}
 	}
@@ -483,9 +440,7 @@ func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
 	}
 }
 
-// CADeprecated is informational, not a dead end: the app is still listed and
-// still updated, so it must NOT replace the changelog the way a genuine
-// Unmaintained verdict does (reproduces the real coppit/handbrake case).
+// A demoted app is still listed and updated, so it is not unmaintained.
 func TestSweepFlagsCADeprecatedWithoutUnmaintained(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "dep", Name: "HandBrake", Repo: "coppit/handbrake", Tag: "1.0.0", Digest: "sha256:h", Managed: true},
@@ -493,7 +448,6 @@ func TestSweepFlagsCADeprecatedWithoutUnmaintained(t *testing.T) {
 	res := fakeResolver{byRepo: map[string]resolveResult{"coppit/handbrake": {tag: "1.0.0", dig: "sha256:h"}}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)
-	// CA-installed, so it carries a TemplateURL — the feed verdict only applies to those.
 	e.templateURLs = func() map[string]string {
 		return map[string]string{"handbrake": "https://raw.githubusercontent.com/coppit/handbrake/main/handbrake.xml"}
 	}
@@ -506,16 +460,13 @@ func TestSweepFlagsCADeprecatedWithoutUnmaintained(t *testing.T) {
 	}
 	d := st.rows["dep"]
 	if d.Unmaintained {
-		t.Fatalf("a deprecated-but-listed app must NOT be Unmaintained, got reason %q", d.UnmaintainedReason)
+		t.Fatalf("a deprecated but listed app must not be Unmaintained, got reason %q", d.UnmaintainedReason)
 	}
 	if !d.CADeprecated || d.CADeprecatedNote == "" {
 		t.Fatalf("want CADeprecated with a note, got %v/%q", d.CADeprecated, d.CADeprecatedNote)
 	}
 }
 
-// An inconclusive feed lookup (ok=false — ambiguous match, or an absence not
-// yet confirmed across two crawls) must leave the container alone, exactly
-// like every other fail-open corroboration in this engine.
 func TestSweepCAFeedInconclusiveLeavesContainerAlone(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "inc", Name: "MaybeApp", Repo: "x/maybe", Tag: "1.0.0", Digest: "sha256:m", Managed: true},
@@ -534,9 +485,7 @@ func TestSweepCAFeedInconclusiveLeavesContainerAlone(t *testing.T) {
 	}
 }
 
-// The existing raw-URL proxy and archived-repo signals take priority: the CA
-// feed is a fallback for what THEY can't see, not a replacement, so it must
-// not even be consulted once one of them has already flagged the container.
+// An archived repo wins over a demotion in the feed.
 func TestSweepCAFeedNotConsultedWhenAlreadyFlagged(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "arch2", Name: "ArchApp2", Repo: "ghcr.io/x/arch2", Tag: "1.0.0", Digest: "sha256:a", Managed: true},
@@ -546,9 +495,7 @@ func TestSweepCAFeedNotConsultedWhenAlreadyFlagged(t *testing.T) {
 	e := New(col, res, &fakeChangelog{deprecated: true}, st, time.Hour)
 	e.templateURLs = func() map[string]string { return nil }
 	e.checkURL = func(context.Context, string) int { return 200 }
-	called := false
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
-		called = true
 		return fakeCAFeed{ok: true, result: cafeed.Result{Listed: true, Deprecated: true}}, nil
 	}
 	if err := e.Sweep(context.Background()); err != nil {
@@ -560,13 +507,8 @@ func TestSweepCAFeedNotConsultedWhenAlreadyFlagged(t *testing.T) {
 	if st.rows["arch2"].CADeprecated {
 		t.Fatal("CADeprecated must not be set once Unmaintained is already true via another signal")
 	}
-	_ = called // caFeed.Lookup itself may or may not run per-container; what matters is it never wins — asserted above
 }
 
-// A caFeed load failure (network down, nothing cached yet) must degrade
-// silently, never panic — regression guard for the typed-nil-interface trap
-// (a raw `return fetcher.Load(ctx)` would wrap a nil *cafeed.Feed in a
-// non-nil caFeedLookuper, and calling Lookup on it would nil-dereference).
 func TestSweepCAFeedLoadErrorDoesNotPanic(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "ok", Name: "FineApp", Repo: "ghcr.io/x/fine2", Tag: "1.0.0", Digest: "sha256:f", Managed: true},
@@ -585,14 +527,11 @@ func TestSweepCAFeedLoadErrorDoesNotPanic(t *testing.T) {
 	}
 }
 
-// The unmaintained notification fires exactly once — on the transition from a
-// maintained prior row, and never again on later sweeps.
 func TestUnmaintainedNotifiesOnce(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "rm", Name: "RemovedApp", Repo: "ghcr.io/x/removed", Tag: "1.0.0", Digest: "sha256:r", Managed: true},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/removed": {tag: "1.0.0", dig: "sha256:r"}}}
-	// Seed a MAINTAINED prior row so the sweep sees a real maintained→unmaintained flip.
 	st := &fakeStore{rows: map[string]model.UpdateStatus{
 		"rm": {Container: model.Container{ID: "rm", Name: "RemovedApp", Digest: "sha256:r"}, Kind: model.KindNone, RunningVersion: "1.0.0"},
 	}}
@@ -624,7 +563,7 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	res := fakeResolver{byRepo: map[string]resolveResult{
 		"ghcr.io/x/immich":        {tag: "1.4.0", dig: "sha256:n"},
 		"docker.io/library/redis": {err: errors.New("registry timeout")},
-		"docker.io/library/caddy": {tag: "2.7.0", dig: "sha256:c"}, // up to date
+		"docker.io/library/caddy": {tag: "2.7.0", dig: "sha256:c"},
 	}}
 	cl := &fakeChangelog{}
 	st := &fakeStore{}
@@ -641,13 +580,11 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	if immich.NewestTag != "1.4.0" || immich.Changelog == nil {
 		t.Fatalf("immich: expected newest tag + changelog, got %q / %v", immich.NewestTag, immich.Changelog)
 	}
-	// Changelog is fetched for every container that resolves (immich + caddy);
-	// redis fails at resolve, so it never reaches the changelog step.
+	// redis fails to resolve and never reaches the changelog step.
 	if cl.called != 2 {
 		t.Fatalf("changelog should be fetched for each resolved container, got %d", cl.called)
 	}
 
-	// caddy is up to date but still gets a changelog (the running version's notes).
 	caddy := st.rows["c"]
 	if caddy.HasUpdate() {
 		t.Errorf("caddy: expected up-to-date (no update), got kind %s", caddy.Kind)
@@ -663,17 +600,13 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	if redis.Risk != model.RiskUnknown {
 		t.Fatalf("redis: failed lookup should be unknown risk, got %s", redis.Risk)
 	}
-	// The whole sweep still succeeded despite one container failing.
 }
 
-// A changelog whose release notes flag a breaking change escalates the verdict
-// to critical even when the version delta alone reads as a benign digest move —
-// the trap that let an Immich pgvecto.rs -> VectorChord swap ship as "low".
+// Breaking release notes raise even a low-risk digest move to critical.
 func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:old", Source: "https://github.com/x/immich"},
 	}}
-	// A rolling ":latest" digest move — Classify alone rates this KindDigest/low.
 	res := fakeResolver{byRepo: map[string]resolveResult{
 		"ghcr.io/x/immich": {tag: "latest", dig: "sha256:new"},
 	}}
@@ -692,14 +625,11 @@ func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 	if !strings.Contains(row.RiskReason, "breaking change") {
 		t.Errorf("reason should explain the escalation, got %q", row.RiskReason)
 	}
-	// The update kind is untouched — only the risk is escalated.
 	if row.Kind != model.KindDigest {
 		t.Errorf("kind = %s, want digest (escalation must not rewrite the kind)", row.Kind)
 	}
 }
 
-// A benign changelog must NOT escalate: the version-delta verdict stands, so a
-// critical badge stays rare enough to be trusted.
 func TestSweepBenignChangelogKeepsVersionRisk(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "1.2.0", Digest: "sha256:o", Source: "https://github.com/x/immich"},
@@ -720,10 +650,6 @@ func TestSweepBenignChangelogKeepsVersionRisk(t *testing.T) {
 	}
 }
 
-// The "ignore third-party containers" filter drops containers that lack Unraid's
-// net.unraid.docker.managed label (Compose/Dockhand/docker run) from the sweep,
-// and forgets any row they already had, while leaving Unraid-managed containers
-// fully tracked. Off by default → every container is tracked.
 func TestSweepIgnoreUnmanagedFiltersThirdParty(t *testing.T) {
 	mk := func() fakeCollector {
 		return fakeCollector{list: []model.Container{
@@ -736,7 +662,6 @@ func TestSweepIgnoreUnmanagedFiltersThirdParty(t *testing.T) {
 		"docker.io/library/nginx": {tag: "1.28.0", dig: "sha256:nn"},
 	}}
 
-	// Default (off): both the managed and the third-party container are tracked.
 	stOff := &fakeStore{}
 	if err := New(mk(), res, &fakeChangelog{}, stOff, time.Hour).Sweep(context.Background()); err != nil {
 		t.Fatalf("sweep (off) returned: %v", err)
@@ -748,7 +673,6 @@ func TestSweepIgnoreUnmanagedFiltersThirdParty(t *testing.T) {
 		t.Error("off: third-party container must be tracked when the filter is off")
 	}
 
-	// On: the third-party container is skipped AND its pre-existing row is deleted.
 	stOn := &fakeStore{rows: map[string]model.UpdateStatus{
 		"t": {Container: model.Container{ID: "t", Name: "compose-app"}},
 	}}
@@ -764,15 +688,11 @@ func TestSweepIgnoreUnmanagedFiltersThirdParty(t *testing.T) {
 	}
 }
 
-// A rolling ":latest" whose resolved version actually moved (7.1.0 -> 7.2.0) must
-// be classified by that version delta (minor/medium), not the flat tag comparison
-// (latest vs latest -> digest/low) that cannot see the jump.
 func TestSweepRollingTagUsesVersionDeltaForRisk(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "oc", Name: "opencloud", Repo: "ghcr.io/o/opencloud", Tag: "latest", Digest: "sha256:run", ImageVersion: "7.1.0"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
-		// rolling tag unchanged (latest==latest), but the resolved newest semver is 7.2.0
 		"ghcr.io/o/opencloud": {tag: "latest", dig: "sha256:new", verTag: "7.2.0", verDig: "sha256:v72"},
 	}}
 	st := &fakeStore{}
@@ -791,8 +711,8 @@ func TestSweepRollingTagUsesVersionDeltaForRisk(t *testing.T) {
 
 func TestDecideRunningVersion(t *testing.T) {
 	const (
-		dRun = "sha256:running" // digest of the running image
-		dNew = "sha256:newver"  // digest of the newest semver version
+		dRun = "sha256:running"
+		dNew = "sha256:newver"
 	)
 	cases := []struct {
 		name            string
@@ -821,24 +741,24 @@ func TestDecideRunningVersion(t *testing.T) {
 			name:            "latest proven to be newest by matching digest",
 			c:               model.Container{Tag: "latest", Digest: dNew},
 			newestVerTag:    "1.8.0",
-			newestVerDigest: dNew, // running image == the newest version's image
+			newestVerDigest: dNew,
 			want:            "1.8.0",
 		},
 		{
 			name:            "latest unchanged carries the remembered version forward",
 			c:               model.Container{Tag: "latest", Digest: dRun},
 			newestVerTag:    "1.9.0",
-			newestVerDigest: dNew, // running != newest → not proven this sweep
+			newestVerDigest: dNew,
 			prior:           model.UpdateStatus{Container: model.Container{Digest: dRun}, RunningVersion: "1.7.0"},
 			hasPrior:        true,
 			want:            "1.7.0",
 		},
 		{
-			name:            "latest lagging a newer published tag is NOT mislabeled",
-			c:               model.Container{Tag: "latest", Digest: dRun}, // running an older image
+			name:            "latest lagging a newer published tag is not mislabeled",
+			c:               model.Container{Tag: "latest", Digest: dRun},
 			newestVerTag:    "2.0.0",
-			newestVerDigest: dNew, // 2.0.0's digest differs from what's running
-			want:            "",   // must NOT claim the running image is 2.0.0
+			newestVerDigest: dNew,
+			want:            "",
 		},
 		{
 			name:            "first sight of an out-of-date latest is unknown",
@@ -850,24 +770,20 @@ func TestDecideRunningVersion(t *testing.T) {
 		{
 			name:            "repo without semver tags stays unknown",
 			c:               model.Container{Tag: "latest", Digest: dRun},
-			newestVerTag:    "", // no semver tags
+			newestVerTag:    "",
 			newestVerDigest: "",
 			want:            "",
 		},
 		{
-			name: "image label version shows immediately for an unproven latest",
-			// First sight, digest doesn't match the newest version, no prior — but
-			// the image declares its own version via the OCI label.
+			name:            "image label version shows immediately for an unproven latest",
 			c:               model.Container{Tag: "latest", Digest: dRun, ImageVersion: "2.7.2"},
 			newestVerTag:    "2.8.0",
 			newestVerDigest: dNew,
 			want:            "2.7.2",
 		},
 		{
-			name: "digest proof outranks the image label",
-			c:    model.Container{Tag: "latest", Digest: dNew, ImageVersion: "1.0.0"},
-			// running image IS the newest version by digest → trust the proof, not
-			// a possibly-stale self-declared label.
+			name:            "digest proof outranks the image label",
+			c:               model.Container{Tag: "latest", Digest: dNew, ImageVersion: "1.0.0"},
 			newestVerTag:    "1.8.0",
 			newestVerDigest: dNew,
 			want:            "1.8.0",
@@ -884,9 +800,7 @@ func TestDecideRunningVersion(t *testing.T) {
 			want:            "1.7.0",
 		},
 		{
-			name: "non-version image label is ignored",
-			// A revision SHA (org.opencontainers.image.revision fallback) isn't
-			// version-like, so it must not be shown as a version.
+			name:            "revision label is not shown as a version",
 			c:               model.Container{Tag: "latest", Digest: dRun, ImageVersion: "6e5f64bd"},
 			newestVerTag:    "2.0.0",
 			newestVerDigest: dNew,
@@ -911,15 +825,11 @@ func TestDecideRunningVersion(t *testing.T) {
 	}
 }
 
-// After a :latest container updates under ShipLog's watch, the stored status
-// must carry the version we resolved so the next sweep can show "prev -> new".
 func TestSweepRemembersLatestVersion(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "oh", Name: "openhands", Repo: "ghcr.io/x/openhands", Tag: "latest", Digest: "sha256:v18"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
-		// :latest echoed as newestTag; running digest == newest VERSION's digest
-		// → proven to be running 1.8.0.
 		"ghcr.io/x/openhands": {tag: "latest", dig: "sha256:v18", verTag: "1.8.0", verDig: "sha256:v18"},
 	}}
 	st := &fakeStore{}
@@ -932,8 +842,6 @@ func TestSweepRemembersLatestVersion(t *testing.T) {
 	}
 }
 
-// When the registry lookup fails, a container with no remembered version should
-// still show its image-declared version (or pinned tag) rather than blank.
 func TestSweepResolveErrorFallsBackToImageVersion(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "bv", Name: "bombvault", Repo: "ghcr.io/x/bombvault", Tag: "latest", Digest: "sha256:d", ImageVersion: "3.0.1"},
@@ -955,15 +863,11 @@ func TestSweepResolveErrorFallsBackToImageVersion(t *testing.T) {
 	}
 }
 
-// A transient resolve failure (e.g. a 429 burst) must NOT blank a container we
-// already resolved: the prior verdict + changelog are carried forward unchanged
-// and no error is surfaced. Only the CheckedAt timestamp advances.
 func TestSweepTransientFailureKeepsPriorVerdict(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:d"},
 	}}
 	st := &fakeStore{}
-	// Seed a good prior row (as a successful earlier sweep would have stored).
 	prior := model.UpdateStatus{
 		Container:      model.Container{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:d"},
 		RunningVersion: "1.122.0",
@@ -975,7 +879,6 @@ func TestSweepTransientFailureKeepsPriorVerdict(t *testing.T) {
 	}
 	_ = st.Upsert(prior)
 
-	// This sweep's resolve fails transiently.
 	res := fakeResolver{byRepo: map[string]resolveResult{
 		"ghcr.io/x/immich": {err: errors.New("tags/list: rate limited (429)")},
 	}}
@@ -999,8 +902,6 @@ func TestSweepTransientFailureKeepsPriorVerdict(t *testing.T) {
 	}
 }
 
-// A transient resolve failure with NO usable prior must fall back to the bare
-// "unknown" verdict and surface the honest error.
 func TestSweepTransientFailureNoPriorSurfacesError(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "new", Name: "fresh", Repo: "ghcr.io/x/fresh", Tag: "latest", Digest: "sha256:d", ImageVersion: "2.0.0"},
@@ -1066,8 +967,7 @@ func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "l", Name: "local", Repo: "docker.io/library/myapp", Tag: "latest", IsLocal: true},
 		{ID: "p", Name: "pinned", Repo: "ghcr.io/x/y", Tag: "", PinnedDigest: "sha256:aaa"},
-		// The compose-style pin KEEPS a tag for readability; Docker still pulls
-		// the digest, so an "update available" verdict would be un-actionable.
+		// A pin that also names a tag still runs the digest.
 		{ID: "tp", Name: "tagged-pin", Repo: "ghcr.io/x/y", Tag: "1.2.3", PinnedDigest: "sha256:aaa"},
 		{ID: "i", Name: "byid", Repo: "", Tag: ""},
 	}}
@@ -1082,10 +982,10 @@ func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
 		t.Errorf("resolver was called for upstream-less containers: %v", res.calls)
 	}
 	for id, wantReason := range map[string]string{
-		"l":  "no registry digest (built or loaded locally) — not checked against a registry",
-		"p":  "pinned by digest — updates only when the pin changes",
-		"tp": "pinned by digest — updates only when the pin changes",
-		"i":  "referenced by image ID — no tag to compare",
+		"l":  "no registry digest (built or loaded locally), not checked against a registry",
+		"p":  "pinned by digest, updates only when the pin changes",
+		"tp": "pinned by digest, updates only when the pin changes",
+		"i":  "referenced by image ID, no tag to compare",
 	} {
 		row := st.rows[id]
 		if row.Kind != model.KindNone || row.Risk != model.RiskNone {
@@ -1098,8 +998,6 @@ func TestSweepSkipsContainersWithoutUpstream(t *testing.T) {
 			t.Errorf("%s: unexpected error %q", id, row.Error)
 		}
 	}
-	// Fix A: no upstream to diff against still resolves a changelog from the
-	// image's source label, so the container shows its running-version notes.
 	for _, id := range []string{"l", "p", "tp", "i"} {
 		if st.rows[id].Changelog == nil {
 			t.Errorf("%s: expected a changelog resolved without an upstream, got none", id)
@@ -1133,8 +1031,6 @@ func TestSweepResolvesEachRepoTagOnce(t *testing.T) {
 }
 
 func TestCheckAcceptsMirrorDigestAsCurrent(t *testing.T) {
-	// The running image was pulled through a mirror: its primary digest differs
-	// from the upstream one, but RepoDigests carries the upstream digest too.
 	col := fakeCollector{list: []model.Container{
 		{
 			ID: "m", Name: "mirrored", Repo: "docker.io/library/caddy", Tag: "2.7.0",
@@ -1157,8 +1053,6 @@ func TestCheckAcceptsMirrorDigestAsCurrent(t *testing.T) {
 	}
 }
 
-// TestSweepPrunesOrphanedRows: a stored row whose container is no longer in the
-// current list (recreated with a new ID, or removed) is deleted after the sweep.
 func TestSweepPrunesOrphanedRows(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "live", Name: "live", Repo: "docker.io/library/app", Tag: "1.0", Managed: true},
