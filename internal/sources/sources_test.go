@@ -16,7 +16,6 @@ func TestResolvePrecedence(t *testing.T) {
 		{"empty repo can't be keyed", "", "https://github.com/x/y", "https://github.com/x/y", KindOCI},
 		{"blank override ignored", "lscr.io/linuxserver/bazarr", "https://github.com/linuxserver/docker-bazarr", "https://github.com/morpheus65535/bazarr", KindCurated},
 	}
-	// add a blank override to prove it's skipped (falls to curated)
 	ov["lscr.io/linuxserver/bazarr"] = "  "
 	for _, tt := range tests {
 		src, kind := Resolve(tt.repo, tt.oci, ov, "")
@@ -50,8 +49,6 @@ func TestNormalizeGitHubSource(t *testing.T) {
 	}
 }
 
-// Curated third-party / official images (not just LinuxServer) resolve to their
-// upstream GitHub source, across registry-host and docker.io "library/" forms.
 func TestResolve_CuratedThirdParty(t *testing.T) {
 	cases := []struct {
 		name, repo, wantSrc string
@@ -67,7 +64,7 @@ func TestResolve_CuratedThirdParty(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			// A non-GitHub project page (the app homepage) must NOT override curated.
+			// A homepage as project page does not override the curated source.
 			src, kind := Resolve(c.repo, "", nil, "https://example.com/")
 			if src != c.wantSrc || kind != KindCurated {
 				t.Fatalf("Resolve(%q) = (%q,%q); want (%q,%q)", c.repo, src, kind, c.wantSrc, KindCurated)
@@ -76,7 +73,6 @@ func TestResolve_CuratedThirdParty(t *testing.T) {
 	}
 }
 
-// Project-page precedence (btTeddy): override > curated > project > OCI.
 func TestResolve_ProjectPage(t *testing.T) {
 	cases := []struct {
 		name, repo, oci, project string
