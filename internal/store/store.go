@@ -29,8 +29,8 @@ type HistoryEntry struct {
 	SeenAt  time.Time
 }
 
-// AutoUpdateRecord is one auto-update ACTION ShipLog took (success or failure) —
-// an audit trail distinct from the passive running-version `history`.
+// AutoUpdateRecord is one auto-update ShipLog applied or tried to apply, as
+// opposed to the observed version changes in History.
 type AutoUpdateRecord struct {
 	Name    string
 	FromVer string
@@ -118,27 +118,15 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("store: create schema: %w", err)
 	}
-	// Migrate older databases that predate later columns. On a fresh DB the
-	// columns already exist, so the duplicate-column error is expected and
-	// ignored.
+	// Databases created before these columns existed get them added; on a
+	// current database the duplicate-column error is expected.
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN running_version TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN pinned_digest TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN is_local INTEGER`)
-	// unmaintained/unmaintained_reason predate this migration guard by several
-	// releases but were never actually added to selectCols/scanStatus, so every
-	// Get() silently read them back as false/"" — the notify dedup in
-	// maybeNotifyUnmaintained (which only ever compares against prior.Unmaintained)
-	// could never see a true prior value and re-sent the same notification on
-	// every single sweep for as long as a container stayed flagged. Caught while
-	// adding ca_deprecated alongside it.
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN unmaintained INTEGER`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN unmaintained_reason TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated INTEGER`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated_note TEXT`)
-	// managed predates this migration guard too and was never wired into
-	// selectCols/scanStatus/Upsert either — every served status read it back
-	// as false regardless of the container's real net.unraid.docker.managed
-	// label. Caught alongside the unmaintained/ca_deprecated fix above.
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN managed INTEGER`)
 	return &Store{db: db}, nil
 }
@@ -146,14 +134,12 @@ func Open(path string) (*Store, error) {
 // Close closes the underlying database.
 func (s *Store) Close() error { return s.db.Close() }
 
-// Upsert writes the status, and records a history row when the running version
-// changed from a non-empty prior value. Keying off running_version (not the raw
-// tag) means a ":latest" upgrade — where the tag stays "latest" but the resolved
-// version moves 1.7.0 -> 1.8.0 — is recorded too.
+// Upsert writes the status and records a history row when the running version
+// changed. It compares versions rather than tags, so a ":latest" upgrade from
+// 1.7.0 to 1.8.0 is recorded too.
 func (s *Store) Upsert(st model.UpdateStatus) error {
 	var priorVer string
-	// COALESCE so a row migrated from a pre-running_version DB (column backfilled
-	// NULL) scans into a string instead of erroring and aborting the upsert.
+	// A migrated row holds NULL here.
 	err := s.db.QueryRow(`SELECT COALESCE(running_version, '') FROM status WHERE container_id = ?`, st.Container.ID).Scan(&priorVer)
 	switch {
 	case err == nil:
@@ -166,7 +152,7 @@ func (s *Store) Upsert(st model.UpdateStatus) error {
 			}
 		}
 	case errors.Is(err, sql.ErrNoRows):
-		// first time we see this container; no history to record
+		// A new container has no history yet.
 	default:
 		return fmt.Errorf("store: read prior status: %w", err)
 	}
@@ -300,9 +286,8 @@ func (s *Store) History(id string) ([]HistoryEntry, error) {
 	return out, nil
 }
 
-// SetMeta upserts a single scalar key/value that must survive a restart (e.g.
-// the last scheduled auto-update run time, so a reboot does not re-trigger an
-// off-schedule run).
+// SetMeta stores a value that has to survive a restart, such as the time of
+// the last scheduled auto-update run.
 func (s *Store) SetMeta(key, value string) error {
 	_, err := s.db.Exec(
 		`INSERT INTO meta (key, value) VALUES (?, ?)
@@ -313,7 +298,7 @@ func (s *Store) SetMeta(key, value string) error {
 	return nil
 }
 
-// GetMeta returns the value for key, or "" (and no error) when the key is absent.
+// GetMeta returns the value for key, or "" when the key is absent.
 func (s *Store) GetMeta(key string) (string, error) {
 	var v string
 	err := s.db.QueryRow(`SELECT value FROM meta WHERE key = ?`, key).Scan(&v)
@@ -326,9 +311,8 @@ func (s *Store) GetMeta(key string) (string, error) {
 	return v, nil
 }
 
-// SetSourceOverride records a user-chosen changelog source (a github.com repo
-// URL) for an image repo, so the engine uses it instead of the image's OCI
-// source label. repo is the normalised image repo (e.g. "lscr.io/linuxserver/radarr").
+// SetSourceOverride records the user's changelog source for a normalized image
+// repo such as "lscr.io/linuxserver/radarr".
 func (s *Store) SetSourceOverride(repo, source string) error {
 	_, err := s.db.Exec(
 		`INSERT INTO source_overrides (repo, source, updated_at) VALUES (?, ?, ?)
@@ -340,9 +324,7 @@ func (s *Store) SetSourceOverride(repo, source string) error {
 	return nil
 }
 
-// Delete removes the status row for a container id (no error if absent). Used
-// when "ignore third-party containers" drops a previously-tracked container so
-// it disappears from the advisor.
+// Delete removes the status row for a container id.
 func (s *Store) Delete(id string) error {
 	if _, err := s.db.Exec(`DELETE FROM status WHERE container_id = ?`, id); err != nil {
 		return fmt.Errorf("store: delete status %q: %w", id, err)
@@ -350,7 +332,7 @@ func (s *Store) Delete(id string) error {
 	return nil
 }
 
-// DeleteSourceOverride removes any override for repo (no error if absent).
+// DeleteSourceOverride removes any override for repo.
 func (s *Store) DeleteSourceOverride(repo string) error {
 	if _, err := s.db.Exec(`DELETE FROM source_overrides WHERE repo = ?`, repo); err != nil {
 		return fmt.Errorf("store: delete source override %q: %w", repo, err)
@@ -358,8 +340,7 @@ func (s *Store) DeleteSourceOverride(repo string) error {
 	return nil
 }
 
-// SourceOverrides returns all user overrides as a repo→source map (empty, not
-// nil-erroring, when there are none).
+// SourceOverrides returns all user overrides as a repo→source map.
 func (s *Store) SourceOverrides() (map[string]string, error) {
 	rows, err := s.db.Query(`SELECT repo, source FROM source_overrides`)
 	if err != nil {
@@ -377,12 +358,8 @@ func (s *Store) SourceOverrides() (map[string]string, error) {
 	return m, rows.Err()
 }
 
-// SuppressUnmaintained records that the user has manually silenced the
-// Unmaintained verdict for an image repo — "I know this app is fine, stop
-// warning me" — overriding every detection signal (registry-gone,
-// archived-source, CA-feed-absent, raw-URL-proxy-404) at once. Unlike
-// SetSourceOverride this carries no value: presence in the table IS the
-// signal, so repeated calls for the same repo are harmless no-ops.
+// SuppressUnmaintained silences the Unmaintained verdict for an image repo,
+// whichever signal raised it.
 func (s *Store) SuppressUnmaintained(repo string) error {
 	_, err := s.db.Exec(
 		`INSERT INTO unmaintained_suppressions (repo, updated_at) VALUES (?, ?)
@@ -394,7 +371,7 @@ func (s *Store) SuppressUnmaintained(repo string) error {
 	return nil
 }
 
-// UnsuppressUnmaintained removes a prior suppression for repo (no error if absent).
+// UnsuppressUnmaintained removes a suppression for repo.
 func (s *Store) UnsuppressUnmaintained(repo string) error {
 	if _, err := s.db.Exec(`DELETE FROM unmaintained_suppressions WHERE repo = ?`, repo); err != nil {
 		return fmt.Errorf("store: unsuppress unmaintained %q: %w", repo, err)
@@ -402,9 +379,7 @@ func (s *Store) UnsuppressUnmaintained(repo string) error {
 	return nil
 }
 
-// SuppressedUnmaintained returns the set of repos with an active manual
-// suppression, as a repo→true map (empty, not nil-erroring, when there are
-// none) so callers can do a plain map lookup.
+// SuppressedUnmaintained returns the set of suppressed repos.
 func (s *Store) SuppressedUnmaintained() (map[string]bool, error) {
 	rows, err := s.db.Query(`SELECT repo FROM unmaintained_suppressions`)
 	if err != nil {
@@ -462,7 +437,7 @@ func (s *Store) AutoUpdateHistory(limit int) ([]AutoUpdateRecord, error) {
 	return out, nil
 }
 
-// scanner abstracts *sql.Row and *sql.Rows for shared column scanning.
+// scanner is satisfied by both *sql.Row and *sql.Rows.
 type scanner interface {
 	Scan(dest ...any) error
 }
@@ -473,7 +448,7 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		kind, risk                 string
 		changelogJSON              string
 		checkedAt                  string
-		isLocal, managed           int64 // SQLite has no bool; scan the 0/1 integer explicitly
+		isLocal, managed           int64
 		unmaintained, caDeprecated int64
 	)
 	err := sc.Scan(
