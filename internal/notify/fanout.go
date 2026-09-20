@@ -6,23 +6,21 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// Sink is one notification channel (Matrix, native Unraid, ...): a per-update
-// Notify plus a free-text SendMessage used for the auto-update run summary.
-// Both *Matrix and *Unraid satisfy it.
+// Sink is one notification channel such as Matrix or native Unraid. SendMessage
+// carries the auto-update run summary.
 type Sink interface {
 	Notify(ctx context.Context, st model.UpdateStatus) error
 	SendMessage(ctx context.Context, text, html string) error
 }
 
-// Fanout delivers each notification to every configured sink, best-effort: one
-// sink failing never stops the others. It returns the first error encountered so
-// the caller can log that something went wrong.
+// Fanout delivers each notification to every sink. A failing sink does not stop
+// the others; the first error is returned for logging.
 type Fanout struct {
 	sinks []Sink
 }
 
-// NewFanout returns a Fanout over the given sinks, or nil when there are none —
-// so the engine treats "no channels configured" as no notifier at all.
+// NewFanout returns nil when there are no sinks, so the engine sees no notifier
+// at all.
 func NewFanout(sinks ...Sink) *Fanout {
 	if len(sinks) == 0 {
 		return nil
