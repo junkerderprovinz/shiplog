@@ -1,8 +1,3 @@
-// Unraid sends native Unraid notifications by shelling out to Unraid's own
-// notify tool. They appear in Unraid's notification centre and fan out to every
-// agent the user configured (email, Discord, Telegram, Pushover, ...). It only
-// works on an Unraid host (the ShipLog plugin runs the engine as a host daemon),
-// so New returns nil when the tool is absent or the feature is off.
 package notify
 
 import (
@@ -15,18 +10,18 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// UnraidScriptPath is Unraid's notification helper. Overridable via
-// UNRAID_NOTIFY_SCRIPT (used by tests; real Unraid hosts use the default).
+// UnraidScriptPath is Unraid's notification helper. Tests override it through
+// UNRAID_NOTIFY_SCRIPT.
 const UnraidScriptPath = "/usr/local/emhttp/webGui/scripts/notify"
 
-// Unraid shells out to the Unraid notify tool.
+// Unraid shells out to Unraid's notify tool, whose notifications fan out to
+// every agent the user configured (email, Discord, Pushover, ...).
 type Unraid struct {
 	script string
 }
 
-// NewUnraid returns an Unraid notifier when the feature is enabled and the
-// notify tool exists, else nil (a nil *Unraid is a no-op on every method, so
-// callers need not special-case it).
+// NewUnraid returns nil when the feature is off or the notify tool is missing,
+// as on any host that is not Unraid. A nil *Unraid does nothing.
 func NewUnraid(enabled bool) *Unraid {
 	if !enabled {
 		return nil
@@ -36,12 +31,12 @@ func NewUnraid(enabled bool) *Unraid {
 		script = UnraidScriptPath
 	}
 	if _, err := os.Stat(script); err != nil {
-		return nil // not on an Unraid host (or notify tool missing) → stay silent
+		return nil
 	}
 	return &Unraid{script: script}
 }
 
-// Notify sends a per-update notification. nil receiver → no-op.
+// Notify sends a per-update notification.
 func (u *Unraid) Notify(ctx context.Context, st model.UpdateStatus) error {
 	if u == nil {
 		return nil
@@ -49,8 +44,8 @@ func (u *Unraid) Notify(ctx context.Context, st model.UpdateStatus) error {
 	return u.run(ctx, updateArgs(st))
 }
 
-// SendMessage sends the auto-update run summary as a normal notification. The
-// HTML form is ignored — Unraid notifications are plain text. nil → no-op.
+// SendMessage sends the auto-update run summary. The HTML form is dropped
+// because Unraid notifications are plain text.
 func (u *Unraid) SendMessage(ctx context.Context, text, _ string) error {
 	if u == nil {
 		return nil
@@ -66,8 +61,6 @@ func (u *Unraid) run(ctx context.Context, args []string) error {
 	return nil
 }
 
-// updateArgs builds the notify CLI arguments for one container update. Pure, so
-// it is unit-testable without invoking the script.
 func updateArgs(st model.UpdateStatus) []string {
 	name := st.Container.Name
 	if st.Unmaintained {
@@ -88,9 +81,8 @@ func updateArgs(st model.UpdateStatus) []string {
 	}
 	risk := strings.ToUpper(string(st.Risk))
 
-	// Unraid importance: a changelog-flagged breaking update ("critical") is an
-	// "alert" — it needs a hands-on migration before the pull. A major (high-risk)
-	// update is a "warning", the rest are "normal".
+	// A breaking change needs a manual migration before the pull, so it raises an
+	// alert rather than a warning.
 	importance := "normal"
 	switch st.Risk {
 	case model.RiskCritical:

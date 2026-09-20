@@ -1,5 +1,5 @@
-// Package notify sends an optional Matrix message the first time a new container
-// update is sighted. It is off unless MATRIX_HOMESERVER/TOKEN/ROOM are all set.
+// Package notify announces a newly sighted container update through Matrix and
+// native Unraid notifications.
 package notify
 
 import (
@@ -88,7 +88,7 @@ func (m *Matrix) roomID(ctx context.Context) (string, error) {
 	return b.RoomID, nil
 }
 
-// Notify posts a per-update message. nil receiver → no-op (caller-friendly).
+// Notify posts a per-update message. A nil receiver does nothing.
 func (m *Matrix) Notify(ctx context.Context, st model.UpdateStatus) error {
 	if m == nil {
 		return nil
@@ -97,8 +97,8 @@ func (m *Matrix) Notify(ctx context.Context, st model.UpdateStatus) error {
 	return m.SendMessage(ctx, text, html)
 }
 
-// SendMessage posts a plain + HTML message to the room. nil receiver → no-op.
-// Used for the per-update Notify and the auto-update run summary.
+// SendMessage posts a plain and HTML message to the room. A nil receiver does
+// nothing.
 func (m *Matrix) SendMessage(ctx context.Context, text, html string) error {
 	if m == nil {
 		return nil
@@ -132,7 +132,6 @@ func (m *Matrix) SendMessage(ctx context.Context, text, html string) error {
 	return nil
 }
 
-// format builds the plain + HTML message bodies for an update.
 func format(st model.UpdateStatus) (text, html string) {
 	name := st.Container.Name
 	if st.Unmaintained {
