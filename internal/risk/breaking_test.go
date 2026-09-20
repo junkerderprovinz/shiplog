@@ -60,8 +60,6 @@ func TestScanBreaking(t *testing.T) {
 			"v1.0.0", false, "",
 		},
 		{
-			// Regression: a same-version digest rebuild must NOT flag the running
-			// release's own breaking note (Immich v3.1.0 iOS-14 case).
 			"same-version rebuild does not flag the running release's own note",
 			&model.Changelog{FromTag: "v3.1.0", ToTag: "v3.1.0", Entries: []model.ReleaseEntry{
 				{Tag: "v3.1.0", Body: "## Breaking change\nDrop support for iOS 14."},
@@ -69,8 +67,6 @@ func TestScanBreaking(t *testing.T) {
 			"v3.1.0", false, "",
 		},
 		{
-			// Regression: an already-installed older release must not flag (Redis
-			// 8.6.5 "data loss" while running 8.10).
 			"older already-installed release does not flag",
 			&model.Changelog{FromTag: "8.10", ToTag: "8.10", Entries: []model.ReleaseEntry{
 				{Tag: "8.6.5", Body: "Fix a bug that could cause data loss on restart."},
@@ -78,13 +74,11 @@ func TestScanBreaking(t *testing.T) {
 			"8.10", false, "",
 		},
 		{
-			// Raw must not be scanned when the span does not advance the version.
 			"raw is ignored on a same-version rebuild",
 			&model.Changelog{FromTag: "v1.0.0", ToTag: "v1.0.0", Raw: "This build is not backward compatible."},
 			"v1.0.0", false, "",
 		},
 		{
-			// A genuinely newer release above the running version still flags.
 			"release newer than running still flags",
 			&model.Changelog{FromTag: "v3.1.0", ToTag: "v3.2.0", Entries: []model.ReleaseEntry{
 				{Tag: "v3.2.0", Body: "## Breaking change\nConfig format changed."},
