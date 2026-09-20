@@ -9,8 +9,7 @@ func TestRiskLevelOrder(t *testing.T) {
 	if RiskUnknown.MoreSevere(RiskLow) {
 		t.Fatal("unknown must not outrank a real level")
 	}
-	// Critical is the top of the ladder: it outranks every other level, so a
-	// changelog-driven escalation never gets undercut by the version-delta verdict.
+	// A changelog escalation to critical must not lose to the version-delta verdict.
 	if !RiskCritical.MoreSevere(RiskHigh) || !RiskCritical.MoreSevere(RiskLow) || RiskHigh.MoreSevere(RiskCritical) {
 		t.Fatal("critical must outrank every other level")
 	}
