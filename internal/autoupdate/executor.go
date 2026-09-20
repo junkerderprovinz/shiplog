@@ -20,11 +20,9 @@ type Outcome struct {
 	Level   string
 	Updated bool
 	Err     error
-	// Blocked is set when the update was level-eligible but the changelog matched
-	// a configured exclude word (BlockedWord). Updated is false and Err is nil in
-	// that case — it is a deliberate skip, not a failure. Set in both real and
-	// dry-run mode, so the safety switch is visible ("would have been blocked")
-	// before anyone has to trust it in production.
+	// Blocked marks an eligible update whose changelog matched BlockedWord. It is
+	// set in dry-run mode too, so the exclude list can be checked before it is
+	// trusted.
 	Blocked     bool
 	BlockedWord string
 }
@@ -44,10 +42,8 @@ type Executor struct {
 // NewExecutor builds an Executor over a status lister and an updater.
 func NewExecutor(l Lister, u updater.Updater) *Executor { return &Executor{list: l, upd: u} }
 
-// Run applies (or, in dryRun, would-apply) every eligible container's update,
-// one at a time. A single failure is captured in its Outcome and never aborts
-// the rest. It is a no-op (empty Result) when the updater is unsupported (e.g.
-// the generic non-Unraid container).
+// Run applies every eligible update one at a time, or only reports them in
+// dryRun. A failure is recorded in its Outcome and does not stop the rest.
 func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 	res := Result{DryRun: dryRun}
 	if !e.upd.Supported() {
@@ -71,10 +67,10 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 			o.Blocked = true
 			o.BlockedWord = word
 			res.Outcomes = append(res.Outcomes, o)
-			continue // never applied, in dry-run OR real mode — no Updater call either way
+			continue
 		}
 		if dryRun {
-			o.Updated = true // "would update"
+			o.Updated = true
 		} else {
 			o.Err = e.upd.Update(ctx, st.Container.Name)
 			o.Updated = o.Err == nil

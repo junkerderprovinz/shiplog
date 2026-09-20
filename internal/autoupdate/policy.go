@@ -1,6 +1,5 @@
 // Package autoupdate decides which container updates to apply automatically and
-// runs them serially. The policy here is pure (no I/O), so it is exhaustively
-// unit-tested; the schedule and executor build on top of it.
+// applies them one at a time on a schedule.
 package autoupdate
 
 import (
@@ -19,7 +18,7 @@ const (
 	LevelMajor
 )
 
-// ParseLevel maps a config string to a Level; anything unrecognised → LevelOff.
+// ParseLevel maps a config string to a Level, defaulting to LevelOff.
 func ParseLevel(s string) Level {
 	switch s {
 	case "patch":
@@ -36,14 +35,12 @@ func ParseLevel(s string) Level {
 // Policy is the global auto-update decision input.
 type Policy struct {
 	Level        Level    // SemVer threshold
-	Digest       bool     // also auto-apply :latest / digest-only moves (level-less)
-	ExcludeWords []string // block an otherwise-eligible update whose changelog text contains any of these (case-insensitive)
+	Digest       bool     // also auto-apply :latest and other digest-only moves
+	ExcludeWords []string // block an eligible update whose changelog contains one of these
 }
 
-// ParseExcludeWords splits the AUTOUPDATE_EXCLUDE_WORDS setting (comma-separated)
-// into a clean word list: trimmed, empties dropped. Original casing is kept (only
-// the MATCH is case-insensitive) so a blocked-update message can quote the word
-// back to the admin exactly as they typed it.
+// ParseExcludeWords splits the comma-separated setting. It keeps the casing, so
+// a blocked-update message quotes the word as the admin typed it.
 func ParseExcludeWords(s string) []string {
 	var words []string
 	for _, w := range strings.Split(s, ",") {
@@ -55,14 +52,8 @@ func ParseExcludeWords(s string) []string {
 	return words
 }
 
-// MatchedExcludeWord reports the FIRST configured word found in the pending
-// update's changelog text (case-insensitive substring match against cl.Raw —
-// the body of the target release), or "" when nothing matches. Nil-safe: no
-// changelog, an empty body, or no configured words all report no match, so this
-// is a pure opt-in safety net that never blocks when there is nothing to check
-// against. A container without release notes (e.g. the version-delta Fallback,
-// which carries an empty Raw) is therefore never blocked by this check — only a
-// changelog whose own text names the danger word is.
+// MatchedExcludeWord returns the first word found in the target release's notes,
+// ignoring case. An update without release notes is never blocked.
 func MatchedExcludeWord(cl *model.Changelog, words []string) string {
 	if cl == nil || cl.Raw == "" || len(words) == 0 {
 		return ""
@@ -76,9 +67,8 @@ func MatchedExcludeWord(cl *model.Changelog, words []string) string {
 	return ""
 }
 
-// Eligible reports whether the container's available update should be applied
-// under the policy. Unknown (non-SemVer) bumps are never eligible; digest moves
-// only via the separate toggle; SemVer bumps only at or below the threshold.
+// Eligible reports whether the policy allows applying the container's update.
+// A version bump that cannot be classified never is.
 func Eligible(st model.UpdateStatus, p Policy) bool {
 	if !st.HasUpdate() {
 		return false
@@ -92,7 +82,7 @@ func Eligible(st model.UpdateStatus, p Policy) bool {
 		return p.Level >= LevelMajor
 	case model.KindDigest:
 		return p.Digest
-	default: // KindUnknown, KindNone, anything unclassified — never auto
+	default:
 		return false
 	}
 }

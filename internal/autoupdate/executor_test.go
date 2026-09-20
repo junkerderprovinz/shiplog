@@ -106,7 +106,7 @@ func TestExecutorExcludeWordBlocksRealUpdate(t *testing.T) {
 	}}, upd)
 	res := e.Run(context.Background(), Policy{Level: LevelPatch, ExcludeWords: []string{"breaking"}}, false)
 	if !reflect.DeepEqual(upd.calls, []string{"b"}) {
-		t.Fatalf("Updater.Update calls = %v, want only [b] — the blocked container must never be applied", upd.calls)
+		t.Fatalf("Updater.Update calls = %v, want only [b]; the blocked container must not be applied", upd.calls)
 	}
 	if len(res.Outcomes) != 2 {
 		t.Fatalf("want 2 outcomes (one blocked, one updated), got %+v", res.Outcomes)
@@ -121,8 +121,6 @@ func TestExecutorExcludeWordBlocksRealUpdate(t *testing.T) {
 }
 
 func TestExecutorExcludeWordBlocksDryRunToo(t *testing.T) {
-	// The safety switch must be visible in dry-run — an admin verifying it works
-	// before arming real updates must see "would be blocked", not "would update".
 	upd := &fakeUpdater{sup: true}
 	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
 		stWithChangelog("a", model.KindPatch, "BREAKING: config format changed"),
@@ -141,7 +139,7 @@ func TestExecutorNoExcludeWordsConfiguredUpdatesNormally(t *testing.T) {
 	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
 		stWithChangelog("a", model.KindPatch, "BREAKING: this text is irrelevant with no configured words"),
 	}}, upd)
-	res := e.Run(context.Background(), Policy{Level: LevelPatch}, false) // ExcludeWords nil
+	res := e.Run(context.Background(), Policy{Level: LevelPatch}, false)
 	if !reflect.DeepEqual(upd.calls, []string{"a"}) {
 		t.Fatalf("with no exclude words configured the update must proceed normally, calls=%v", upd.calls)
 	}

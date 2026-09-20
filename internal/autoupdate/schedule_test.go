@@ -26,7 +26,6 @@ func TestScheduleDue(t *testing.T) {
 	if !(Schedule{Mode: "days", Every: 2}).Due(base.Add(-49*time.Hour), base) {
 		t.Error("days=2 is due after 49h")
 	}
-	// daily at 04:00: due when now has passed 04:00 today and the last run was before it.
 	if !(Schedule{Mode: "daily", Time: "04:00"}).Due(base.Add(-25*time.Hour), base) {
 		t.Error("daily is due at 04:00 when last run was yesterday")
 	}
@@ -36,18 +35,16 @@ func TestScheduleDue(t *testing.T) {
 	if (Schedule{Mode: "daily", Time: "04:00"}).Due(base, base) {
 		t.Error("daily is not due again the same day after already running at 04:00")
 	}
-	// unparseable time falls back to 04:00.
 	if !(Schedule{Mode: "daily", Time: "nonsense"}).Due(base.Add(-25*time.Hour), base) {
 		t.Error("daily with bad time defaults to 04:00 and is due")
 	}
-	// interval modes fire immediately on the first-ever run (zero last time).
 	if !(Schedule{Mode: "hours", Every: 6}).Due(time.Time{}, base) {
 		t.Error("hours is due on the first run (never run before)")
 	}
 	if !(Schedule{Mode: "days", Every: 2}).Due(time.Time{}, base) {
 		t.Error("days is due on the first run (never run before)")
 	}
-	// a zero/negative interval is clamped to >= 1 unit — it must NOT fire every tick.
+	// An interval below 1 is clamped, so it does not fire on every tick.
 	if (Schedule{Mode: "hours", Every: 0}).Due(base.Add(-30*time.Minute), base) {
 		t.Error("hours=0 clamps to 1h and is not due 30min after the last run")
 	}
@@ -57,7 +54,6 @@ func TestScheduleDue(t *testing.T) {
 	if (Schedule{Mode: "days", Every: 0}).Due(base.Add(-2*time.Hour), base) {
 		t.Error("days=0 clamps to 1 day and is not due 2h after the last run")
 	}
-	// an out-of-range daily time (hour>=24 / min>=60) falls back to 04:00.
 	if !(Schedule{Mode: "daily", Time: "25:70"}).Due(base.Add(-25*time.Hour), base) {
 		t.Error("daily 25:70 falls back to 04:00 and is due")
 	}
