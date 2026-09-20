@@ -9,9 +9,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// releasesJSON is a canned GitHub /repos/o/r/releases response: a JSON ARRAY of
-// releases, newest first, as the real API returns. Six entries so the "recent N"
-// path (min(5, …)) is exercised as a real cap.
+// releasesJSON lists six releases newest first, one more than the recent cap.
 const releasesJSON = `[
 {"tag_name":"v2.0.0","body":"sixth feature","html_url":"https://github.com/o/r/releases/tag/v2.0.0","published_at":"2026-06-01T00:00:00Z"},
 {"tag_name":"v1.5.0","body":"fifth feature","html_url":"https://github.com/o/r/releases/tag/v1.5.0","published_at":"2026-05-01T00:00:00Z"},
@@ -21,8 +19,6 @@ const releasesJSON = `[
 {"tag_name":"v1.1.0","body":"first feature","html_url":"https://github.com/o/r/releases/tag/v1.1.0","published_at":"2026-01-01T00:00:00Z"}
 ]`
 
-// fakeGitHub serves the releases LIST at /repos/o/r/releases and the repo object
-// at /repos/o/r (archived:false); everything else 404s like the real API.
 func fakeGitHub(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -40,8 +36,6 @@ func fakeGitHub(t *testing.T) *httptest.Server {
 	return srv
 }
 
-// A pinned version bump whose exact release exists shows THAT single release,
-// Recent=false.
 func TestGitHub_Get_ExactVersionMatch(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
@@ -78,15 +72,13 @@ func TestGitHub_Get_ExactVersionMatch(t *testing.T) {
 	}
 }
 
-// The v-prefix is tolerated on both sides: a bare "1.2.0" toTag still matches a
-// "v1.2.0" release exactly (Recent=false), not the recent-N path.
 func TestGitHub_Get_ExactVersionMatch_VPrefixTolerant(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
 	gh.baseURL = srv.URL
 
 	c := model.Container{Source: "https://github.com/o/r"}
-	cl, ok := gh.Get(context.Background(), c, "1.1.0", "1.2.0") // no leading v
+	cl, ok := gh.Get(context.Background(), c, "1.1.0", "1.2.0")
 	if !ok || cl == nil {
 		t.Fatalf("expected a handled changelog, got (%v, %v)", cl, ok)
 	}
@@ -95,8 +87,6 @@ func TestGitHub_Get_ExactVersionMatch_VPrefixTolerant(t *testing.T) {
 	}
 }
 
-// A rolling tag (":latest") has no version to match, so the recent N releases
-// are shown (capped at 5), Recent=true, Raw = the newest release's body.
 func TestGitHub_Get_RollingTag_ShowsRecent(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
@@ -121,15 +111,13 @@ func TestGitHub_Get_RollingTag_ShowsRecent(t *testing.T) {
 	}
 }
 
-// A pinned version tag with no matching release falls to the recent N (not a
-// single "latest"), Recent=true.
 func TestGitHub_Get_NoMatchingRelease_ShowsRecent(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
 	gh.baseURL = srv.URL
 	c := model.Container{Source: "https://github.com/o/r"}
 
-	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v9.9.9") // no release v9.9.9
+	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v9.9.9")
 	if !ok || cl == nil {
 		t.Fatalf("expected a handled changelog, got (%v, %v)", cl, ok)
 	}
@@ -141,16 +129,12 @@ func TestGitHub_Get_NoMatchingRelease_ShowsRecent(t *testing.T) {
 	}
 }
 
-// A known version span shows EVERY release in (from, to], newest first, so a
-// multi-version jump surfaces the intermediate releases (where a breaking note
-// usually hides), not just the newest. Recent=true so the UI lists them all.
 func TestGitHub_Get_VersionSpan_ListsIntermediate(t *testing.T) {
 	srv := fakeGitHub(t)
 	gh := New("")
 	gh.baseURL = srv.URL
 	c := model.Container{Source: "https://github.com/o/r"}
 
-	// span (1.1.0, 1.4.0] over {2.0,1.5,1.4,1.3,1.2,1.1} = {1.4.0, 1.3.0, 1.2.0}
 	cl, ok := gh.Get(context.Background(), c, "v1.1.0", "v1.4.0")
 	if !ok || cl == nil {
 		t.Fatal("expected a handled changelog")
@@ -169,8 +153,6 @@ func TestGitHub_Get_VersionSpan_ListsIntermediate(t *testing.T) {
 	}
 }
 
-// The releases LIST is cached: a second Get within the TTL makes NO new HTTP
-// call, and after the TTL an ETag conditional GET → 304 keeps the cached data.
 func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {
 	const etag = `"v1-list-etag"`
 	var releasesCalls, archivedCalls int
@@ -180,7 +162,7 @@ func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {
 		case "/repos/o/r/releases":
 			releasesCalls++
 			if r.Header.Get("If-None-Match") == etag {
-				w.WriteHeader(http.StatusNotModified) // unchanged: does not count against the rate limit
+				w.WriteHeader(http.StatusNotModified)
 				return
 			}
 			w.Header().Set("ETag", etag)
@@ -198,7 +180,6 @@ func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {
 	gh.baseURL = srv.URL
 	c := model.Container{Source: "https://github.com/o/r"}
 
-	// First fetch: one releases call + one archived call, list cached with ETag.
 	if _, ok := gh.Get(context.Background(), c, "latest", "latest"); !ok {
 		t.Fatal("first Get: expected handled")
 	}
@@ -206,7 +187,6 @@ func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {
 		t.Fatalf("after first Get: releasesCalls=%d archivedCalls=%d, want 1/1", releasesCalls, archivedCalls)
 	}
 
-	// Second Get within the TTL: served entirely from cache, no new HTTP calls.
 	if _, ok := gh.Get(context.Background(), c, "latest", "latest"); !ok {
 		t.Fatal("second Get: expected handled")
 	}
@@ -214,9 +194,8 @@ func TestGitHub_Get_CachesList_And304Revalidates(t *testing.T) {
 		t.Fatalf("within TTL a second Get must not touch the API: releasesCalls=%d archivedCalls=%d, want 1/1", releasesCalls, archivedCalls)
 	}
 
-	// Force the cache stale: the next Get revalidates with If-None-Match and gets
-	// a 304, so the releases endpoint is hit again but the archived one is not,
-	// and the cached data is still served.
+	// A stale cache is revalidated, and the 304 keeps it without refetching
+	// the archived flag.
 	gh.ttl = 0
 	cl, ok := gh.Get(context.Background(), c, "latest", "latest")
 	if !ok || cl == nil {
@@ -277,7 +256,6 @@ func TestGitHub_Get_EmptySource_NotHandled(t *testing.T) {
 }
 
 func TestGitHub_Get_APIError_FallsThrough(t *testing.T) {
-	// Server that 404s everything → non-200, not rate-limited, no cache → (nil, false).
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
@@ -291,15 +269,13 @@ func TestGitHub_Get_APIError_FallsThrough(t *testing.T) {
 	}
 }
 
-// A github repo whose releases list is empty ([]) must fall through so the
-// version-delta Fallback handles it, rather than returning an empty github
-// changelog that would shadow the Fallback.
+// An empty releases list falls through, so it does not shadow the Fallback.
 func TestGitHub_Get_EmptyReleases_FallsThrough(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/repos/o/r/releases":
-			_, _ = w.Write([]byte(`[]`)) // repo exists but has cut no releases
+			_, _ = w.Write([]byte(`[]`))
 		case "/repos/o/r":
 			_, _ = w.Write([]byte(`{"archived":false}`))
 		default:
@@ -316,8 +292,6 @@ func TestGitHub_Get_EmptyReleases_FallsThrough(t *testing.T) {
 	}
 }
 
-// A 403 with X-RateLimit-Remaining: 0 and NO prior cache surfaces an honest
-// RateLimited changelog (handled=true) so the UI shows a note instead of a blank.
 func TestGitHub_Get_RateLimited_NoCache_Handled(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-RateLimit-Remaining", "0")
@@ -428,7 +402,6 @@ func TestFallback_NonURLSource_EmptyURL(t *testing.T) {
 }
 
 func TestChain_FallsThroughToFallback(t *testing.T) {
-	// github pointed at a 404 server, empty Source → github not handled.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
@@ -437,7 +410,7 @@ func TestChain_FallsThroughToFallback(t *testing.T) {
 	gh.baseURL = srv.URL
 
 	ch := Chain{gh, Fallback{}}
-	c := model.Container{Source: ""} // github bails on non-github source
+	c := model.Container{Source: ""}
 	cl, ok := ch.Get(context.Background(), c, "v1.0.0", "v2.0.0")
 	if !ok || cl == nil {
 		t.Fatalf("chain must be handled by fallback, got (%v, %v)", cl, ok)
@@ -464,7 +437,6 @@ func TestChain_PicksGitHubFirst(t *testing.T) {
 }
 
 func TestChain_NoneHandled(t *testing.T) {
-	// A chain with only a github provider that bails → (nil, false).
 	gh := New("")
 	ch := Chain{gh}
 	c := model.Container{Source: ""}
