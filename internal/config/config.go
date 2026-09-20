@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// Config holds all runtime settings (env-driven; the Unraid template surfaces
-// every field).
+// Config holds all runtime settings, each read from the environment variable
+// named beside it.
 type Config struct {
 	DockerSocket string        // DOCKER_SOCKET
 	Port         string        // PORT
@@ -17,32 +17,25 @@ type Config struct {
 	PollInterval time.Duration // POLL_INTERVAL
 	GithubToken  string        // GITHUB_TOKEN (optional; raises GitHub API limit for changelogs)
 
-	// IgnoreUnmanaged skips containers WITHOUT Unraid's net.unraid.docker.managed
-	// label — third-party containers (Docker Compose / Dockhand / plain
-	// `docker run`) — so the advisor tracks only Unraid-template containers.
-	// IGNORE_UNMANAGED, default off.
+	// IgnoreUnmanaged (IGNORE_UNMANAGED) skips containers that were not created
+	// from an Unraid template, such as Compose stacks or plain `docker run`.
 	IgnoreUnmanaged bool
 
-	// Docker Hub credentials (optional; raise the anonymous Docker Hub pull/manifest
-	// rate limit used when resolving versions + digests for docker.io images).
+	// Docker Hub credentials raise the anonymous rate limit for docker.io lookups.
 	DockerHubUser  string // DOCKERHUB_USERNAME
-	DockerHubToken string // DOCKERHUB_TOKEN (a Docker Hub access token / password)
+	DockerHubToken string // DOCKERHUB_TOKEN (access token or password)
 
-	// P1 (parsed now, unused until the providers land):
 	OllamaURL        string // OLLAMA_URL
 	OllamaModel      string // OLLAMA_MODEL
 	MatrixHomeserver string // MATRIX_HOMESERVER
 	MatrixToken      string // MATRIX_TOKEN
 	MatrixRoom       string // MATRIX_ROOM
 
-	// UnraidNotify sends native Unraid notifications (they show in Unraid's
-	// notification centre and fan out to every agent the user configured) in
-	// addition to any Matrix alerts. Unraid plugin/host only. UNRAID_NOTIFY,
-	// default off.
+	// UnraidNotify (UNRAID_NOTIFY) also sends native Unraid notifications, which
+	// fan out to every agent configured on the host.
 	UnraidNotify bool
 
-	// AutoUpdate holds the scheduled SemVer-gated auto-update settings (Unraid
-	// plugin only; default off). See internal/autoupdate.
+	// AutoUpdate holds the scheduled auto-update settings of the Unraid plugin.
 	AutoUpdate AutoUpdateConfig
 }
 
@@ -55,12 +48,9 @@ type AutoUpdateConfig struct {
 	SchedMode  string // AUTOUPDATE_SCHED_MODE: off|daily|boot|hours|days
 	SchedTime  string // AUTOUPDATE_SCHED_TIME "HH:MM" (daily)
 	SchedEvery int    // AUTOUPDATE_SCHED_EVERY (hours|days), >= 1
-	// ExcludeWords: AUTOUPDATE_EXCLUDE_WORDS, comma-separated. An otherwise-eligible
-	// update is skipped (and reported as "blocked", not applied) when the pending
-	// version's changelog text contains any of these words, case-insensitive — e.g.
-	// "breaking" catches a release whose own notes call out a breaking change even
-	// at a minor/patch bump. Empty by default: off, matching every other auto-update
-	// safety toggle here.
+	// ExcludeWords (AUTOUPDATE_EXCLUDE_WORDS, comma-separated) blocks an eligible
+	// update whose changelog contains one of the words, so "breaking" can hold
+	// back a patch release that calls out a breaking change.
 	ExcludeWords string
 }
 
@@ -94,9 +84,7 @@ func Load() Config {
 	}
 }
 
-// truthy reports whether the env var is an on/true value. It accepts both the
-// settings page's "true"/"false" (like ENABLE) and "yes"/"1"/"on", so the config
-// is robust to either convention.
+// truthy accepts the settings page's "true" as well as "yes", "1" and "on".
 func truthy(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
 	case "true", "yes", "1", "on":
@@ -105,7 +93,6 @@ func truthy(key string) bool {
 	return false
 }
 
-// levelOrOff validates an auto-update level, defaulting anything else to "off".
 func levelOrOff(s string) string {
 	switch s {
 	case "patch", "minor", "major":
@@ -115,7 +102,7 @@ func levelOrOff(s string) string {
 	}
 }
 
-// atoiMin1 parses an int env var, clamped to >= 1, falling back to def.
+// atoiMin1 falls back to def when the value is missing, invalid or below 1.
 func atoiMin1(key string, def int) int {
 	n, err := strconv.Atoi(os.Getenv(key))
 	if err != nil || n < 1 {
