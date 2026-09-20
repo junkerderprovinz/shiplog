@@ -1,13 +1,6 @@
-// Package templates reads the Unraid dockerMan user templates so the engine
-// can use a container's <Project> page as a changelog-source candidate
-// (sources.KindProject — community suggestion by btTeddy: most templates carry
-// a proper GitHub link there, which covers images whose OCI source label is
-// missing or inherited from a base image).
-//
-// The templates live as one XML file per container under
-// /boot/config/plugins/dockerMan/templates-user/. Reading them is strictly
-// best-effort: any unreadable file or malformed XML is skipped — a broken
-// template must never break a sweep.
+// Package templates reads the Unraid dockerMan user templates, one XML file per
+// container, for their project page and template URL. An unreadable or
+// malformed template is skipped, so it cannot break a sweep.
 package templates
 
 import (
@@ -20,16 +13,14 @@ import (
 // Dir is the standard dockerMan user-template directory on Unraid.
 const Dir = "/boot/config/plugins/dockerMan/templates-user"
 
-// tmpl mirrors the template fields we consume.
 type tmpl struct {
 	Name        string `xml:"Name"`
 	Project     string `xml:"Project"`
 	TemplateURL string `xml:"TemplateURL"`
 }
 
-// ProjectPages maps container name (lower-cased) → the template's <Project>
-// URL, for every readable template in dir that has both fields. Non-GitHub
-// URLs are included as-is — the sources package decides usability.
+// ProjectPages maps the lower-cased container name to the template's <Project>
+// URL. Whether the URL can serve as a changelog source is up to package sources.
 func ProjectPages(dir string) map[string]string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -58,10 +49,9 @@ func ProjectPages(dir string) map[string]string {
 	return pages
 }
 
-// TemplateURLs maps container name (lower-cased) → the template's <TemplateURL>,
-// for every readable template in dir that declares one. That URL is where
-// Community Applications fetched the template from; a 404 there later means the
-// app was pulled from CA / its source deleted. Best-effort, like ProjectPages.
+// TemplateURLs maps the lower-cased container name to the template's
+// <TemplateURL>, where Community Applications fetched it from. A 404 there means
+// the app was pulled from CA or its source deleted.
 func TemplateURLs(dir string) map[string]string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
