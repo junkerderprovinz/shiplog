@@ -1,24 +1,15 @@
 name: Release
 
-# Cuts a ShipLog plugin release from a v* tag. CI is the single source of truth
-# for the package AND for what main advertises, so a release never depends on a
-# local (Windows) build and main never points at a version whose asset/SHA are
-# not live yet.
+# Cuts a plugin release from a v* tag. Unraid reads plugin/shiplog.plg from main
+# and checks the .txz against its <SHA256>, so version and hash on main change
+# only after the release asset is live. A failure before that leaves the
+# previous version advertised, and rerunning the tag finishes the release.
 #
-# Order (the important part): build -> publish the GitHub release (asset goes
-# live) -> confirm the asset is reachable -> ONLY THEN flip <!ENTITY version> +
-# <SHA256> in plugin/shiplog.plg on main. Unraid reads that .plg from raw main
-# and verifies the .txz against <SHA256>, so main must flip last. If any step
-# before the flip fails, main still advertises the previous version -> zero user
-# impact, re-running the tag heals it.
+# To release, add a "### X.Y.Z" block to <CHANGES> in plugin/shiplog.plg and tag
+# vX.Y.Z on main. CI bumps <!ENTITY version>; bumping it by hand advertises the
+# version before its asset exists.
 #
-# MAINTAINER FLOW: add a "### X.Y.Z" block to plugin/shiplog.plg <CHANGES> and
-# `git tag vX.Y.Z` on main. You do NOT need to bump <!ENTITY version> by hand —
-# CI flips it (bumping it early is harmless but reopens the advertise-before-live
-# window, so prefer to leave it).
-#
-# workflow_dispatch = build-only dry run: builds the .txz and uploads it as an
-# artifact, creates no release and touches nothing on main.
+# workflow_dispatch only builds the .txz and uploads it as an artifact.
 
 on:
   push:
@@ -67,7 +58,7 @@ jobs:
           name: shiplog-txz
           path: plugin/out/*
 
-      # ---- tag-only from here ----
+      # The remaining steps run for tags only.
       - name: Extract release notes from .plg CHANGES
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -75,15 +66,11 @@ jobs:
           awk -v v="### $ver" '$0==v{grab=1;next} grab&&/^### /{exit} grab{print}' \
             plugin/shiplog.plg > release-notes.md
           if [ ! -s release-notes.md ]; then
-            echo "::error::no '### $ver' block in plugin/shiplog.plg <CHANGES> — add it before tagging"
+            echo "::error::no '### $ver' block in plugin/shiplog.plg <CHANGES>; add it before tagging"
             exit 1
           fi
-          # Category lines ("🐛 **Fixed**") are bold-only in the .plg source because Unraid's
-          # in-app changelog viewer has fragile '#' handling (only the "### X.Y.Z" version
-          # heading is a proven-safe exception, see this repo's conventions) - but on the GitHub
-          # release page that leaves them the same size as body text. Promote them to real
-          # headings HERE, in the extracted copy only; plugin/shiplog.plg itself is never
-          # touched, so the in-app viewer keeps the safe bold-only rendering.
+          # Unraid's changelog viewer mishandles '#', so the .plg keeps category
+          # lines bold-only; the release page gets them as real headings.
           sed -i -E \
             -e 's/^🐛 \*\*Fixed\*\*$/## 🐛 Fixed/' \
             -e 's/^✨ \*\*Added\*\*$/## ✨ Added/' \
@@ -131,10 +118,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git diff --quiet -- plugin/shiplog.plg; then
-            echo "shiplog.plg already current — nothing to commit"
+            echo "shiplog.plg already current, nothing to commit"
           else
             git add plugin/shiplog.plg
-            git commit -m "ci: release v${ver} — pin version + package SHA256 [skip ci]"
+            git commit -m "ci: release v${ver}, pin version and package SHA256 [skip ci]"
             git pull --rebase origin main
             git push origin HEAD:main
           fi

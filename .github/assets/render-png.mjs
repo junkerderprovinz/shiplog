@@ -1,6 +1,5 @@
-/* Render an SVG to a transparent PNG at a given square-ish size, viewBox-agnostic.
- * Usage: node render-png.mjs <in.svg> <out.png> <width>
- * Uses global @resvg/resvg-js (same resolution as gen-banner.mjs). */
+/* Renders an SVG to a transparent PNG with the global @resvg/resvg-js.
+ * Usage: node render-png.mjs <in.svg> <out.png> <width> */
 import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
