@@ -5,9 +5,8 @@ import (
 	"strings"
 )
 
-// RenderSummary builds the plain-text + HTML bodies for one auto-update run, or
-// ("","") when nothing was eligible (the caller then sends nothing). It lives in
-// this package (not notify) so notify stays model-only and this owns its wording.
+// RenderSummary builds the plain-text and HTML bodies for one auto-update run,
+// both empty when nothing was eligible.
 func RenderSummary(res Result) (text, html string) {
 	if len(res.Outcomes) == 0 {
 		return "", ""

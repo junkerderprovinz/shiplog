@@ -13,9 +13,7 @@ type Schedule struct {
 	Every int    // interval for hours|days (clamped to >= 1)
 }
 
-// Due reports whether a run is due at now, given the last run time (zero = never
-// ran): off → never; boot → once when never run; hours/days → interval elapsed;
-// daily → now is at/after today's HH:MM and the last run was before it.
+// Due reports whether a run is due at now. A zero last means it never ran.
 func (s Schedule) Due(last, now time.Time) bool {
 	switch s.Mode {
 	case "boot":
@@ -27,7 +25,7 @@ func (s Schedule) Due(last, now time.Time) bool {
 	case "daily":
 		at := todayAt(now, s.Time)
 		return !now.Before(at) && last.Before(at)
-	default: // off / unknown
+	default:
 		return false
 	}
 }
@@ -39,7 +37,7 @@ func sinceElapsed(last, now time.Time, d time.Duration) bool {
 	return now.Sub(last) >= d
 }
 
-// todayAt returns today's HH:MM in now's location; unparseable input → 04:00.
+// todayAt returns today's HH:MM in now's location, or 04:00 for bad input.
 func todayAt(now time.Time, hhmm string) time.Time {
 	h, m := 4, 0
 	if parts := strings.SplitN(hhmm, ":", 2); len(parts) == 2 {
