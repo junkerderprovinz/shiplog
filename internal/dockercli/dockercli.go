@@ -1,6 +1,5 @@
-// Package dockercli is a tiny, read-only Docker Engine API client that talks
-// to the daemon over its unix socket. It only ever issues GET requests, so it
-// cannot mutate container state by construction.
+// Package dockercli is a read-only Docker Engine API client over the unix
+// socket. It issues GET requests only, so it cannot change container state.
 package dockercli
 
 import (
@@ -16,19 +15,15 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// OCI image labels we read. source points at the project repo; version (with
-// revision as a fallback) is what the image declares as its own version, used to
-// show a rolling container's installed version without first witnessing an update.
+// OCI image labels for the project repo and the version an image declares.
 const (
 	sourceLabel   = "org.opencontainers.image.source"
 	versionLabel  = "org.opencontainers.image.version"
 	revisionLabel = "org.opencontainers.image.revision"
 )
 
-// managedLabel is the label Unraid's Docker Manager stamps on every container it
-// creates from a template. Third-party containers (Docker Compose / Dockhand /
-// plain `docker run`) lack it — that absence is how "ignore third-party
-// containers" tells them apart.
+// managedLabel is set by Unraid's Docker Manager on every container it creates
+// from a template.
 const managedLabel = "net.unraid.docker.managed"
 
 // Client is a read-only Docker Engine API client over a unix socket.
@@ -51,8 +46,6 @@ func New(socketPath string) *Client {
 	}
 }
 
-// dockerContainer mirrors the subset of /containers/json we consume. Labels are
-// included in the list response on modern engines, so one GET suffices.
 type dockerContainer struct {
 	ID      string            `json:"Id"`
 	Names   []string          `json:"Names"`
@@ -62,11 +55,9 @@ type dockerContainer struct {
 	Labels  map[string]string `json:"Labels"`
 }
 
-// dockerImage mirrors the subset of /images/{id}/json we consume. RepoDigests
-// carries the registry MANIFEST digest ("repo@sha256:…") — the thing to compare
-// against the registry, unlike ImageID which is the local config digest. Config
-// and ContainerConfig hold the image's own OCI labels (the version/revision the
-// image declares about itself).
+// dockerImage is the part of /images/{id}/json in use. RepoDigests carries the
+// registry manifest digest, which unlike ImageID can be compared with the
+// registry.
 type dockerImage struct {
 	RepoDigests []string `json:"RepoDigests"`
 	Config      struct {
@@ -77,12 +68,8 @@ type dockerImage struct {
 	} `json:"ContainerConfig"`
 }
 
-// imageInfo is the per-image data one inspect yields: the registry manifest
-// digest(s), the version the image declares about itself, and whether the
-// image only exists locally. isLocal is only ever set after a SUCCESSFUL
-// inspect (empty RepoDigests = built locally, never pushed/pulled); a failed
-// inspect leaves the zero value so a Docker hiccup can't demote a registry
-// image to "local".
+// imageInfo is what one image inspect yields. isLocal is set only after a
+// successful inspect, so a failed one cannot mark a registry image as local.
 type imageInfo struct {
 	digest  string
 	digests []string
@@ -90,8 +77,7 @@ type imageInfo struct {
 	isLocal bool
 }
 
-// List fetches all containers (running and stopped) and resolves each into a
-// model.Container. It issues a single GET /containers/json?all=1.
+// List returns all containers, running and stopped, inspecting each image once.
 func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/containers/json?all=1", nil)
 	if err != nil {
@@ -115,7 +101,7 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	}
 
 	out := make([]model.Container, 0, len(raw))
-	infoCache := map[string]imageInfo{} // ImageID → digest+version (one inspect per image)
+	infoCache := map[string]imageInfo{} // by ImageID
 	for _, dc := range raw {
 		repo, tag, pinnedDigest := splitImageRef(dc.Image)
 		info, ok := infoCache[dc.ImageID]
@@ -123,10 +109,6 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			info = c.inspectImage(ctx, dc.ImageID, repo)
 			infoCache[dc.ImageID] = info
 		}
-		// Source = the OCI label if present, else derived from a ghcr.io image
-		// (ghcr.io/owner/repo IS github.com/owner/repo) so the changelog resolves
-		// even when the image sets no source label. Prefer the container's own
-		// label set (cheap, in the list response); fall back to the image config.
 		source := dc.Labels[sourceLabel]
 		if source == "" {
 			source = ghcrSource(repo)
@@ -150,8 +132,8 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	return out, nil
 }
 
-// ghcrSource maps a ghcr.io image repo to its GitHub source URL (ghcr packages
-// live under github.com/<owner>/<repo>). Returns "" for non-ghcr repos.
+// ghcrSource maps ghcr.io/owner/repo to github.com/owner/repo, so an image
+// without a source label still gets a changelog.
 func ghcrSource(repo string) string {
 	const prefix = "ghcr.io/"
 	if !strings.HasPrefix(repo, prefix) {
@@ -164,10 +146,8 @@ func ghcrSource(repo string) string {
 	return "https://github.com/" + parts[0] + "/" + parts[1]
 }
 
-// inspectImage inspects an image once and returns its registry manifest digest
-// ("sha256:…") plus the version the image declares about itself. A zero imageInfo
-// is returned on any error (e.g. built locally, never pulled), in which case the
-// engine simply won't claim a digest update nor a label version.
+// inspectImage returns a zero imageInfo on any error, so the engine claims
+// neither a digest update nor a label version for that image.
 func (c *Client) inspectImage(ctx context.Context, imageID, repo string) imageInfo {
 	if imageID == "" {
 		return imageInfo{}
@@ -196,7 +176,6 @@ func (c *Client) inspectImage(ctx context.Context, imageID, repo string) imageIn
 	}
 }
 
-// allDigests extracts the digest part of every RepoDigests entry.
 func allDigests(repoDigests []string) []string {
 	var out []string
 	for _, rd := range repoDigests {
@@ -207,10 +186,8 @@ func allDigests(repoDigests []string) []string {
 	return out
 }
 
-// imageVersion reads the version the image declares about itself: the OCI
-// version label, falling back to the revision label. Config.Labels is the modern
-// location; ContainerConfig.Labels is the legacy one. Returns "" when neither
-// label is present.
+// imageVersion prefers the version label over the revision label, checking the
+// current Config before the legacy ContainerConfig.
 func imageVersion(img dockerImage) string {
 	for _, labels := range []map[string]string{img.Config.Labels, img.ContainerConfig.Labels} {
 		if v := labels[versionLabel]; v != "" {
@@ -223,9 +200,7 @@ func imageVersion(img dockerImage) string {
 	return ""
 }
 
-// pickDigest returns the "@sha256:…" digest for repo from a RepoDigests list,
-// falling back to the first entry's digest (all entries of one image share the
-// same manifest digest).
+// pickDigest returns the RepoDigests digest for repo, else the first one.
 func pickDigest(repoDigests []string, repo string) string {
 	var first string
 	for _, rd := range repoDigests {
@@ -244,7 +219,6 @@ func pickDigest(repoDigests []string, repo string) string {
 	return first
 }
 
-// containerName returns the first name with its leading '/' stripped.
 func containerName(names []string) string {
 	if len(names) == 0 {
 		return ""
@@ -252,19 +226,11 @@ func containerName(names []string) string {
 	return strings.TrimPrefix(names[0], "/")
 }
 
-// splitImageRef splits a Docker image reference into a normalized repo, tag and
-// pinning digest.
-//
-// Bare/short names are normalized to their canonical Docker Hub form
-// ("redis" -> "docker.io/library/redis", "user/app" -> "docker.io/user/app");
-// registry-qualified refs are kept as-is. A missing tag defaults to "latest".
-//
-// A digest suffix ("repo@sha256:…", optionally "repo:tag@sha256:…") pins the
-// image; it must be split off BEFORE tag detection or the colon inside
-// "sha256:…" would be mistaken for the tag separator. A digest-pinned ref
-// without an explicit tag has no tag at all (not "latest"). A ref that is a
-// bare image ID ("sha256:…" or the plain hex) names no repo whatsoever.
+// splitImageRef splits an image reference into a normalized repo, tag and
+// pinning digest. A missing tag means "latest" unless a digest pins the image;
+// a bare image ID names no repo.
 func splitImageRef(ref string) (repo, tag, pinnedDigest string) {
+	// The digest goes first, or the colon in "sha256:" would read as a tag.
 	if at := strings.LastIndex(ref, "@"); at >= 0 {
 		ref, pinnedDigest = ref[:at], ref[at+1:]
 	}
@@ -274,8 +240,7 @@ func splitImageRef(ref string) (repo, tag, pinnedDigest string) {
 
 	repo = ref
 
-	// Split off the tag. A ':' only delimits a tag when it appears after the
-	// last '/', otherwise it's a registry port (e.g. "registry:5000/app").
+	// A colon before the last slash is a registry port, as in "registry:5000/app".
 	if i := strings.LastIndex(ref, ":"); i >= 0 && !strings.Contains(ref[i+1:], "/") {
 		repo, tag = ref[:i], ref[i+1:]
 	} else if pinnedDigest == "" {
@@ -285,30 +250,22 @@ func splitImageRef(ref string) (repo, tag, pinnedDigest string) {
 	return normalizeRepo(repo), tag, pinnedDigest
 }
 
-// imageIDRe matches a bare image ID reference: 64 hex chars, optionally with
-// the "sha256:" prefix.
 var imageIDRe = regexp.MustCompile(`^(sha256:)?[0-9a-f]{64}$`)
 
-// isImageID reports whether ref references an image by ID instead of by name.
 func isImageID(ref string) bool { return imageIDRe.MatchString(ref) }
 
-// normalizeRepo expands a Docker Hub short name to its fully-qualified form and
-// leaves any already registry-qualified reference untouched.
+// normalizeRepo expands a Docker Hub short name such as "redis" or "user/app"
+// and leaves a registry-qualified reference alone.
 func normalizeRepo(repo string) string {
 	slash := strings.IndexByte(repo, '/')
-
-	// No slash: a single-segment name like "redis" -> docker.io/library/redis.
 	if slash < 0 {
 		return "docker.io/library/" + repo
 	}
 
-	// The first path segment is a registry only if it looks like a hostname
-	// (contains '.' or ':') or is the special "localhost".
+	// The first segment is a registry only when it looks like a hostname.
 	first := repo[:slash]
 	if strings.ContainsAny(first, ".:") || first == "localhost" {
 		return repo
 	}
-
-	// Otherwise it's a Docker Hub "user/app" short form.
 	return "docker.io/" + repo
 }

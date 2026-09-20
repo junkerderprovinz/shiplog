@@ -16,9 +16,6 @@ const (
 	redisManifest  = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 )
 
-// cannedContainersJSON is a trimmed but realistic /containers/json?all=1 body
-// from a modern engine: Labels are present in the list response, so a single
-// GET is enough to resolve everything we need.
 const cannedContainersJSON = `[
   {
     "Id": "a1b2c3d4immich",
@@ -48,8 +45,7 @@ func TestListOverUnixSocket(t *testing.T) {
 
 	ln, err := net.Listen("unix", sock)
 	if err != nil {
-		// Go 1.26 on Windows supports AF_UNIX, but a host may still deny it;
-		// skip so CI on Linux still exercises this test.
+		// Some Windows hosts deny AF_UNIX; CI on Linux still runs the test.
 		t.Skipf("AF_UNIX unavailable on this host (net.Listen unix failed): %v", err)
 	}
 
@@ -62,9 +58,7 @@ func TestListOverUnixSocket(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(cannedContainersJSON))
 	})
-	// Image inspect supplies the registry manifest digest (RepoDigests) and the
-	// image's own OCI labels (Config.Labels) — immich declares its version, redis
-	// declares none.
+	// Only immich declares a version label.
 	mux.HandleFunc("/v1.43/images/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(r.URL.Path, "1111") {
@@ -80,7 +74,6 @@ func TestListOverUnixSocket(t *testing.T) {
 	t.Cleanup(func() { _ = srv.Close() })
 
 	c := New(sock)
-	c.baseURL = "http://docker/v1.43" // default, made explicit for clarity
 
 	got, err := c.List(context.Background())
 	if err != nil {
@@ -101,7 +94,6 @@ func TestListOverUnixSocket(t *testing.T) {
 		t.Fatalf("List() returned %d containers, want 2", len(got))
 	}
 
-	// Find by name so we don't depend on slice order.
 	byName := map[string]model.Container{}
 	for _, ctr := range got {
 		byName[ctr.Name] = ctr
@@ -251,9 +243,7 @@ func TestSplitImageRef(t *testing.T) {
 		{"localhost:5000/foo:bar", "localhost:5000/foo", "bar", ""},
 		{"docker.io/library/redis", "docker.io/library/redis", "latest", ""},
 
-		// Digest-pinned refs: the digest must be split off BEFORE tag detection
-		// (the colon inside "sha256:…" is not a tag separator), and a pin without
-		// an explicit tag has NO tag, not "latest".
+		// A digest pin without an explicit tag has no tag, not "latest".
 		{"redis@" + dig, "docker.io/library/redis", "", dig},
 		{"ghcr.io/x/y@" + dig, "ghcr.io/x/y", "", dig},
 		{"ghcr.io/x/y:1.2.3@" + dig, "ghcr.io/x/y", "1.2.3", dig},
