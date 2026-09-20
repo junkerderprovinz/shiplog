@@ -19,7 +19,6 @@ func TestProjectPages(t *testing.T) {
 		`<?xml version="1.0"?><Container version="2"><Name>Dozzle</Name><Project>https://github.com/amir20/dozzle</Project></Container>`)
 	write(t, dir, "my-Plex.xml",
 		`<?xml version="1.0"?><Container version="2"><Name>plex</Name><Project>https://www.plex.tv/</Project></Container>`)
-	// Malformed, missing fields and non-XML entries must be skipped silently.
 	write(t, dir, "my-Broken.xml", `<Container><Name>Broken`)
 	write(t, dir, "my-NoProject.xml", `<Container version="2"><Name>NoProject</Name></Container>`)
 	write(t, dir, "notes.txt", `not a template`)
@@ -49,7 +48,6 @@ func TestTemplateURLs(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "my-OpenCloud.xml",
 		`<?xml version="1.0"?><Container version="2"><Name>OpenCloud</Name><TemplateURL>https://raw.githubusercontent.com/junkerderprovinz/unraid-apps/main/opencloud/opencloud.xml</TemplateURL></Container>`)
-	// A manually-created container carries no <TemplateURL> and must be skipped.
 	write(t, dir, "my-Manual.xml", `<Container version="2"><Name>Manual</Name></Container>`)
 	write(t, dir, "my-Broken.xml", `<Container><Name>Broken`)
 
