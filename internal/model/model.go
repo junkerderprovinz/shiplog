@@ -13,29 +13,23 @@ type Container struct {
 	Digest string `json:"digest"` // running image digest, "sha256:..."
 	// Digests lists every manifest digest from the image's RepoDigests. An image
 	// pulled through a mirror and retagged carries one entry per registry; a
-	// remote digest matching ANY of them means "same image".
+	// remote digest matching any of them means "same image".
 	Digests []string `json:"digests,omitempty"`
 	// PinnedDigest is the "sha256:…" digest when the container references its
 	// image digest-pinned ("repo@sha256:…"). Such a container updates only when
 	// the pin is changed, never by a registry move.
 	PinnedDigest string `json:"pinned_digest,omitempty"`
-	// IsLocal marks an image without any registry counterpart (built locally,
-	// never pushed): RepoDigests was empty on a successful inspect. Resolving it
-	// upstream would at best waste a roundtrip and at worst match a FOREIGN
-	// repository that happens to share the name.
+	// IsLocal marks an image that was built locally and never pushed. Resolving
+	// it upstream could match an unrelated repository that shares the name.
 	IsLocal bool   `json:"is_local,omitempty"`
 	Source  string `json:"source"` // org.opencontainers.image.source label, may be ""
 	State   string `json:"state"`  // "running" / "exited" / ...
 	// Managed is true when the container carries Unraid's net.unraid.docker.managed
-	// label (created from an Unraid template). It is false for third-party
-	// containers (Docker Compose / Dockhand / plain `docker run`); the "ignore
-	// third-party containers" setting filters the sweep on it.
+	// label, i.e. it was created from an Unraid template.
 	Managed bool `json:"managed"`
-	// ImageVersion is the version the running image declares about itself via the
-	// OCI label org.opencontainers.image.version (fallback .revision), read from
-	// the image config. "" when the image carries no such label. It lets a
-	// rolling (":latest") container report its version immediately, without
-	// waiting for ShipLog to first witness an update.
+	// ImageVersion is the image's org.opencontainers.image.version label (or
+	// .revision), so a rolling ":latest" container can show its version before
+	// ShipLog has seen it update.
 	ImageVersion string `json:"image_version"`
 }
 
@@ -71,36 +65,29 @@ const (
 // UpdateStatus is the per-container result the engine stores and serves.
 type UpdateStatus struct {
 	Container Container `json:"container"`
-	// RunningVersion is the version label we believe is currently running. For a
-	// pinned tag it's the tag itself; for a rolling tag (":latest") it's resolved
-	// when the running image is the registry's current one, then REMEMBERED across
-	// sweeps so a later update shows a real "prev -> new" jump.
+	// RunningVersion is the version believed to be running. For a pinned tag it
+	// is the tag itself; for a rolling tag it is resolved while the running image
+	// is the registry's current one and remembered across sweeps, so a later
+	// update shows a real "prev -> new" jump.
 	RunningVersion string    `json:"running_version"`
 	NewestTag      string    `json:"newest_tag"`
 	NewestDigest   string    `json:"newest_digest"`
 	Kind           Kind      `json:"kind"`
 	Risk           RiskLevel `json:"risk"`
 	RiskReason     string    `json:"risk_reason"`
-	// Unmaintained flags an installed app that has reached a dead end, on a
-	// separate axis from the update Risk (an app can be up to date AND
-	// unmaintained): its Unraid template was removed from Community Applications,
-	// its image is gone from the registry, or its source repository was archived.
+	// Unmaintained flags an app at a dead end: its template was removed from
+	// Community Applications, its image is gone from the registry, or its source
+	// repository was archived. It is independent of Risk, since an app can be up
+	// to date and unmaintained at once.
 	Unmaintained bool `json:"unmaintained,omitempty"`
-	// UnmaintainedReason is a short human label for why (e.g. "Removed from
-	// Community Applications"). Empty when Unmaintained is false.
+	// UnmaintainedReason is a short label for why, e.g. "Removed from Community
+	// Applications".
 	UnmaintainedReason string `json:"unmaintained_reason,omitempty"`
-	// CADeprecated flags an app editorially demoted in Community Applications
-	// (hidden from CA's default search, a moderator comment usually points at a
-	// better-maintained alternative) WITHOUT being pulled from the feed — unlike
-	// Unmaintained, the app is still installable and still very much receives
-	// registry updates, so this is informational, never a substitute for a real
-	// changelog. Independent of Unmaintained; both can be false, and in practice
-	// Unmaintained (a genuine dead end) always takes precedence when both would
-	// apply.
+	// CADeprecated flags an app that Community Applications demoted but still
+	// lists. It stays installable and keeps receiving updates, so the flag is
+	// informational; Unmaintained takes precedence when both apply.
 	CADeprecated bool `json:"ca_deprecated,omitempty"`
-	// CADeprecatedNote is the moderator's stated reason (e.g. "A better supported
-	// and more up to date app is available from DJoss"). Empty when CADeprecated
-	// is false.
+	// CADeprecatedNote is the moderator's stated reason.
 	CADeprecatedNote string     `json:"ca_deprecated_note,omitempty"`
 	Changelog        *Changelog `json:"changelog,omitempty"`
 	CheckedAt        time.Time  `json:"checked_at"`
@@ -134,14 +121,13 @@ type Changelog struct {
 	SkippedCount int            `json:"skipped_count"`
 	Entries      []ReleaseEntry `json:"entries"` // newest first
 	Raw          string         `json:"raw"`
-	Summary      *AISummary     `json:"summary,omitempty"` // P1 (Ollama)
-	Source       string         `json:"source"`            // human label, e.g. "GitHub releases via OCI label"
-	URL          string         `json:"url"`               // releases/compare link
-	Provider     string         `json:"provider"`          // "github" / "fallback" / ...
-	Deprecated   bool           `json:"deprecated"`        // upstream repo is archived (EOL)
-	// RateLimited is set when the changelog could not be resolved because the
-	// upstream API (GitHub's anonymous 60 req/h, shared per IP) was exhausted.
-	// The UI shows an honest "rate limited, try later" note instead of a blank.
+	Summary      *AISummary     `json:"summary,omitempty"`
+	Source       string         `json:"source"`     // human label, e.g. "GitHub releases via OCI label"
+	URL          string         `json:"url"`        // releases/compare link
+	Provider     string         `json:"provider"`   // "github" / "fallback" / ...
+	Deprecated   bool           `json:"deprecated"` // upstream repo is archived (EOL)
+	// RateLimited is set when the upstream API limit (GitHub allows 60 anonymous
+	// requests per hour and IP) kept the changelog from resolving.
 	RateLimited bool `json:"rate_limited"`
 	// Recent marks that Entries are the repo's latest releases (a digest/rolling
 	// update, or no release matched toTag exactly), not an exact match for toTag.
@@ -156,7 +142,7 @@ type ReleaseEntry struct {
 	PublishedAt time.Time `json:"published_at"`
 }
 
-// AISummary is populated only when Ollama is configured (P1).
+// AISummary is populated only when Ollama is configured.
 type AISummary struct {
 	Bullets  []string `json:"bullets"`
 	Breaking []string `json:"breaking"`
