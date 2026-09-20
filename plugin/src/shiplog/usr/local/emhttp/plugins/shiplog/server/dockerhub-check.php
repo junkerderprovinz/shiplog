@@ -1,9 +1,7 @@
 <?php
-/* ShipLog — live Docker Hub credential check for the settings page. Tests the
- * username + token the user just typed (before Apply) by asking Docker Hub's
- * registry auth endpoint for a token with HTTP Basic auth — the exact mechanism
- * the resolver uses. Valid creds → 200 + token; bad creds → 401. Returns
- * {"ok":bool,"message":string}. */
+/* Checks the Docker Hub credentials typed on the settings page, before Apply,
+ * the same way the resolver uses them: a token request with Basic auth.
+ * Returns {"ok":bool,"message":string}. */
 
 header('Content-Type: application/json');
 

@@ -1,7 +1,6 @@
 <?php
-/* ShipLog — live Matrix check for the settings page. Tests the homeserver +
- * token (whoami) and, if the room is an #alias, that it resolves. Straight from
- * PHP so there's no CORS. Returns {"ok":bool,"message":string}. */
+/* Checks the Matrix homeserver and token typed on the settings page, and that a
+ * room #alias resolves. Returns {"ok":bool,"message":string}. */
 
 header('Content-Type: application/json');
 
@@ -45,7 +44,7 @@ if ($code !== 200) {
 $who  = json_decode($body, true);
 $user = (is_array($who) && isset($who['user_id'])) ? $who['user_id'] : '(unknown user)';
 
-// If the room is an alias, confirm it resolves (room ids can't be checked cheaply).
+// A room id cannot be checked cheaply, an alias can.
 if ($room !== '' && $room[0] === '#') {
     $ch = curl_init($hs . '/_matrix/client/v3/directory/room/' . rawurlencode($room));
     curl_setopt_array($ch, [
@@ -62,4 +61,4 @@ if ($room !== '' && $room[0] === '#') {
     }
 }
 
-echo json_encode(['ok' => true, 'message' => 'Token OK — ' . $user]);
+echo json_encode(['ok' => true, 'message' => 'Token OK: ' . $user]);

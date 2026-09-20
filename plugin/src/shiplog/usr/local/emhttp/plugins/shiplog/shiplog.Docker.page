@@ -3,15 +3,13 @@ Icon="anchor"
 Tag="anchor"
 ---
 <?php
-/* ShipLog — injected into Unraid's native Docker tab.
-   This page renders no visible panel; it only loads the styles + the script
-   that adds the per-container "Changelog" control and bubble. Data comes from
-   the same-origin proxy (server/status.php → the local engine daemon). */
+/* Renders no panel of its own; it loads the script that adds the changelog
+   control to each container in the Docker tab. */
 $slcfg     = parse_plugin_cfg("shiplog");
 $slConfirm = (!isset($slcfg['CONFIRM_UPDATE']) || $slcfg['CONFIRM_UPDATE'] !== 'false'); // default on
 $slSilent  = (isset($slcfg['SILENT_UPDATE'])  && $slcfg['SILENT_UPDATE']  === 'true');   // default off
 $slLang    = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2)); // Unraid's configured language
-/* Bubble strings for the active language (English base + overlay; only the d_* keys). */
+/* The d_* strings for the active language, over the English ones. */
 $slLangDir = '/usr/local/emhttp/plugins/shiplog/lang';
 $slAll     = json_decode(@file_get_contents("$slLangDir/en.json"), true) ?: array();
 if ($slLang !== 'en' && is_file("$slLangDir/$slLang.json")) {

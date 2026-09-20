@@ -1,7 +1,5 @@
 #!/bin/bash
-# ShipLog engine daemon control (start/stop/restart/status).
-# The engine is the same Go binary as the container image; here it runs as a
-# plain host daemon started by the plugin. Read-only Docker socket; never writes.
+# Controls the ShipLog engine, which the plugin runs as a host daemon.
 
 NAME="shiplog"
 BIN="/usr/local/emhttp/plugins/${NAME}/bin/${NAME}"
@@ -9,7 +7,7 @@ CFG="/boot/config/plugins/${NAME}/${NAME}.cfg"
 PIDFILE="/var/run/${NAME}.pid"
 LOG="/var/log/${NAME}.log"
 
-# Defaults — overridden by the cfg (written by the settings page as KEY="value").
+# Defaults, overridden by the cfg the settings page writes as KEY="value".
 ENABLE="true"
 PORT="8484"
 DATA_DIR="/mnt/user/appdata/shiplog"
@@ -38,20 +36,17 @@ is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/d
 start() {
   if [ "$ENABLE" = "false" ]; then echo "shiplog: disabled in settings"; return 0; fi
   if is_running; then echo "shiplog: already running (pid $(cat "$PIDFILE"))"; return 0; fi
-  # Do NOT start until DATA_DIR sits on a real, mounted filesystem. At boot the
-  # plugin installs (and the .plg runs this) BEFORE the array/pools are mounted,
-  # so DATA_DIR would resolve to the root tmpfs: the SQLite version-memory gets
-  # wiped on every reboot, and pre-creating /mnt/user/... can even stop the
-  # user-share (shfs) from mounting. Defer — event/started restarts us once the
-  # array is up and DATA_DIR is on its real (non-root) filesystem.
+  # The plugin installs before the array is mounted. Starting then would put
+  # the database on the root tmpfs, wiped at every reboot, and creating
+  # /mnt/user/... early can keep the user shares from mounting. event/started
+  # starts the daemon once the array is up.
   probe="$DATA_DIR"
   while [ ! -e "$probe" ] && [ "$probe" != "/" ]; do probe=$(dirname "$probe"); done
   if [ "$(stat -c %d "$probe" 2>/dev/null)" = "$(stat -c %d / 2>/dev/null)" ]; then
-    echo "shiplog: $DATA_DIR still on the root filesystem (array/pool not mounted yet) — deferring until array-start"
+    echo "shiplog: $DATA_DIR still on the root filesystem (array/pool not mounted yet); deferring until array-start"
     return 0
   fi
-  # The package may arrive without the exec bit (e.g. built on a filesystem with
-  # no Unix mode bits) — enforce it here so the daemon is independent of that.
+  # A package built on a filesystem without mode bits lacks the exec bit.
   [ -f "$BIN" ] && chmod +x "$BIN" 2>/dev/null
   if [ ! -x "$BIN" ]; then echo "shiplog: binary missing or not executable at $BIN"; return 1; fi
   mkdir -p "$DATA_DIR"
@@ -62,9 +57,8 @@ start() {
          AUTOUPDATE_EXCLUDE_WORDS
   setsid "$BIN" >>"$LOG" 2>&1 &
   echo $! >"$PIDFILE"
-  # log the start line to the daemon log only, NOT stdout: Unraid mirrors an rc script's stdout
-  # during the array-start event into the native footer status bar, where "shiplog: started …"
-  # cluttered the strip (user call — remove it at the source). Errors above still surface.
+  # Unraid shows an rc script's stdout during array start in the footer, so the
+  # start line goes to the daemon log only.
   echo "shiplog: started (pid $(cat "$PIDFILE"), port $PORT)" >>"$LOG"
 }
 
@@ -73,14 +67,13 @@ stop() {
   [ -f "$PIDFILE" ] && pid=$(cat "$PIDFILE" 2>/dev/null)
   [ -n "$pid" ] && kill "$pid" 2>/dev/null
   pkill -f "$BIN" 2>/dev/null
-  # The engine shuts down gracefully (can take a few seconds); wait until it is
-  # really gone so a following start can bind the port — a fixed sleep raced the
-  # graceful shutdown and left the new instance unable to listen.
+  # A graceful shutdown takes a few seconds, and a following start needs the
+  # port free.
   for _ in $(seq 1 20); do
     pgrep -f "$BIN" >/dev/null 2>&1 || break
     sleep 0.5
   done
-  pkill -9 -f "$BIN" 2>/dev/null  # last resort if it didn't exit in time
+  pkill -9 -f "$BIN" 2>/dev/null
   rm -f "$PIDFILE"
   echo "shiplog: stopped"
 }

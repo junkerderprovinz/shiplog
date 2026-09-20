@@ -1,11 +1,6 @@
-/* ShipLog — Docker-tab injection.
- *
- * Loaded by shiplog.Docker.page into Unraid's native Docker tab. For each
- * container row it fetches the engine's verdict via the same-origin PHP proxy
- * and, when an update is available, adds a discreet control in the update
- * column: a log glyph · "Changelog" · a risk traffic-light dot. Clicking opens
- * the changelog bubble. If the engine is unreachable, it stays silent (the
- * Docker tab is untouched) — set DEMO=true below to preview without the engine.
+/* Adds a changelog control with a risk dot to the update column of each
+ * container in Unraid's Docker tab, fed by the engine through the same-origin
+ * proxy. Without the engine the tab stays untouched; DEMO previews the control.
  */
 (function () {
   "use strict";
@@ -13,14 +8,13 @@
   const PROXY = "/plugins/shiplog/server/status.php";
   const MARK = "data-shiplog";
   const TAG = "[ShipLog]";
-  const DEMO = false; // true → show demo data even without the engine
+  const DEMO = false;
 
-  // Update behaviour, set by shiplog.Docker.page from the plugin cfg:
-  //   confirmUpdate — ask before triggering the update (default on)
-  //   silentUpdate  — suppress Unraid's pop-up download-log window (default off)
+  // Set by shiplog.Docker.page from the plugin cfg. silentUpdate hides Unraid's
+  // download log window.
   const PREFS = (window.shiplogPrefs && typeof window.shiplogPrefs === "object") ? window.shiplogPrefs : {};
-  const confirmUpdate = PREFS.confirmUpdate !== false; // default on
-  const silentUpdate = PREFS.silentUpdate === true;    // default off
+  const confirmUpdate = PREFS.confirmUpdate !== false;
+  const silentUpdate = PREFS.silentUpdate === true;
 
   const UPDATE_PHRASES = [
     "aktualisierung anwenden", "auf dem neu", "nicht verfügbar", "wird geprüft",
@@ -34,19 +28,14 @@
     '<line x1="5.4" y1="5.5" x2="10.6" y2="5.5"/><line x1="5.4" y1="8" x2="10.6" y2="8"/>' +
     '<line x1="5.4" y1="10.5" x2="9" y2="10.5"/></svg>';
 
-  // Warning triangle for the "not maintained" state (replaces the log glyph).
   const WARN_ICON =
     '<svg class="sl-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
     '<path d="M12 2 1 21h22L12 2zm0 6a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1zm0 9.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5z"/></svg>';
 
-  // risk → css suffix used by both the chip dot and the bubble pill
   const RISK_CLASS = { low: "low", medium: "mid", high: "high", critical: "crit", unknown: "grey" };
 
-  // ──────────────────────────────────────────────────────── i18n
-  // The bubble text follows Unraid's CONFIGURED language: shiplog.Docker.page selects
-  // the active locale server-side and injects its strings as window.shiplogI18n (d_*
-  // keys) from the plugin's locale files, for all ~26 locales. The engine-generated
-  // risk reason stays English for now. EN below is the offline fallback (unprefixed).
+  // shiplog.Docker.page injects the d_* strings of Unraid's language as
+  // window.shiplogI18n; EN is the fallback. The engine's risk reason is English.
   const EN = {
     changelog: "Changelog", clickHint: "click for the changelog", update: "Update",
     skips: "skips %n releases", newest: "newest %d",
@@ -66,8 +55,7 @@
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
   function T(k) { return I18N["d_" + k] || EN[k] || k; }
 
-  // Light vs dark: detect from the page background luminance so the bubble
-  // matches whatever Unraid theme is active (white/azure → light; black/gray → dark).
+  // The page background's luminance tells a light Unraid theme from a dark one.
   function isLightBg() {
     try {
       const m = /(\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(document.body).backgroundColor);
@@ -76,7 +64,6 @@
     } catch (e) { return false; }
   }
 
-  // ──────────────────────────────────────────────────────── helpers
   function el(tag, cls, html) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -87,12 +74,9 @@
     return String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   }
 
-  // Minimal, SAFE markdown for release bodies (btTeddy: raw markdown with
-  // literal &nbsp; entities was barely readable). The input is first DECODED
-  // (bodies often carry literal "&nbsp;" and <samp> tags), then FULLY escaped,
-  // then a small pattern set is rebuilt as HTML — no upstream HTML ever
-  // reaches innerHTML, and URLs exclude quote characters so they can't break
-  // out of the href attribute.
+  // renderMd escapes the whole release body before it rebuilds a few markdown
+  // patterns as HTML, so no upstream HTML reaches innerHTML. URLs exclude quotes,
+  // so they cannot break out of the href attribute.
   function renderMd(md) {
     const decoded = String(md)
       .replace(/&nbsp;/gi, " ")
@@ -133,11 +117,9 @@
   }
   function riskClass(st) { return RISK_CLASS[st && st.risk] || "grey"; }
 
-  // Unraid's OWN update verdict for a container, read from its page-global docker[]
-  // array (d.update: 1 = update available, 0 = up to date). This is the SAME digest-
-  // based signal the Docker tab shows, and it's live — so ShipLog's verdict follows
-  // it and can never contradict what Unraid displays. ShipLog's engine (version +
-  // changelog + risk) then only enriches the detail. Returns "update"|"current"|"unknown".
+  // unraidVerdict reads Unraid's own live verdict from its global docker[] array,
+  // so ShipLog never contradicts what the Docker tab shows. Returns "update",
+  // "current" or "unknown".
   function unraidVerdict(name) {
     try {
       const list = window.docker;
@@ -148,12 +130,11 @@
       const u = Number(d.update);
       if (u === 1) return "update";
       if (u === 0) return "current";
-      return "unknown"; // -1 / not-yet-checked → let ShipLog's own verdict stand
+      return "unknown";
     } catch (e) { return "unknown"; }
   }
 
-  // Reconcile ShipLog's engine verdict with Unraid's live one: Unraid wins the
-  // update/up-to-date decision when it has an opinion, else ShipLog's own stands.
+  // Unraid's verdict wins when it has one.
   function isUpdate(st) {
     const uv = unraidVerdict(st && st.container && st.container.name);
     if (uv === "update") return true;
@@ -161,9 +142,8 @@
     return hasUpdate(st);
   }
 
-  // Containers without an upstream to check (digest-pinned, image-ID-referenced,
-  // locally built) must not look like an affirmed "up to date": neutral grey
-  // dot + an honest label instead of the green pill.
+  // A container without an upstream to check gets a grey dot and its own label
+  // instead of a green "up to date".
   function noUpstream(st) {
     const c = (st && st.container) || {};
     return !!(c.pinned_digest || c.is_local || !c.repo);
@@ -173,7 +153,7 @@
     return c.is_local ? T("localimg") : T("pinned");
   }
 
-  // Build a short human label from kind + skipped count, e.g. "MAJOR", "2× MINOR".
+  // kindLabel returns labels such as "MAJOR" or "2× MINOR".
   function kindLabel(st) {
     const k = (st.kind || "unknown").toUpperCase();
     const cl = st.changelog;
@@ -181,8 +161,7 @@
     return skipped + k;
   }
 
-  // ──────────────────────────────────────────────────────── data
-  let byName = {}; // lower(name) → UpdateStatus
+  let byName = {}; // lower-cased name -> UpdateStatus
 
   function index(list) {
     byName = {};
@@ -207,24 +186,16 @@
     }
   }
 
-  // ──────────────────────────────────────────────────────── rows
-  // A folder-header row is NOT a container — skip it. The "Folder View" plugin
-  // (v3 and the older docker.folder) groups containers into collapsible folder
-  // rows; the header carries .folder / .folder-id-* and its update cell is the
-  // folder's own .folder-update aggregate, never a real container verdict.
+  // A Folder View header row is not a container; its update cell aggregates the
+  // folder.
   function isFolderHeader(tr) {
     return !!(tr.classList.contains("folder") ||
       tr.querySelector(":scope > td.folder-name, :scope > td.folder-update"));
   }
 
   function findRows() {
-    // Canonical Unraid Docker tab: tbody#docker_list inside table#docker_containers.
-    // A plain container row is tr.sortable; under Folder View v3 an *expanded*
-    // folder's members are re-emitted as tr.folder-element siblings (collapsed
-    // members live inside the folder's .folder-storage and have no rendered
-    // update cell, so they're correctly invisible to us until expanded — the
-    // MutationObserver re-tags them when they appear). Both carry td.ct-name +
-    // td.updatecolumn, so one selector covers native AND Folder View.
+    // Folder View re-emits the members of an expanded folder as tr.folder-element;
+    // collapsed members have no update cell and get tagged once they appear.
     const candidates = [
       "#docker_list tr.sortable, #docker_list tr.folder-element",
       "#docker_list > tr",
@@ -236,8 +207,7 @@
     for (const sel of candidates) {
       const rows = Array.from(document.querySelectorAll(sel)).filter((tr) =>
         !isFolderHeader(tr) &&
-        // real container row: either Unraid's name/update cells, or (unknown
-        // skin fallback) an icon image with some text.
+        // An unknown skin still shows an icon image and some text.
         (tr.querySelector("td.ct-name, td.updatecolumn") ||
           (tr.querySelector("img") && tr.textContent.trim().length > 1)));
       if (rows.length) return rows;
@@ -245,10 +215,8 @@
     return [];
   }
   function rowName(tr) {
-    // Prefer Unraid's own name cell (stable across native + Folder View).
     const appname = tr.querySelector("td.ct-name .appname");
     if (appname && appname.textContent.trim()) return appname.textContent.trim().slice(0, 60);
-    // Unraid (and Folder View) tag each container row id="ct-<name>".
     const id = tr.id || "";
     if (/^ct-/.test(id)) return id.slice(3).slice(0, 60);
     const img = tr.querySelector("img");
@@ -260,9 +228,6 @@
     return name.slice(0, 60);
   }
   function findUpdateCell(tr) {
-    // Unraid's update-status cell carries .updatecolumn (native + Folder View
-    // container rows alike). Never a folder's .folder-update — folder headers
-    // are already filtered out of findRows().
     const direct = tr.querySelector("td.updatecolumn:not(.folder-update)");
     if (direct) return direct;
     const cells = Array.from(tr.querySelectorAll("td"));
@@ -272,13 +237,12 @@
     return cells[cells.length - 1] || tr;
   }
 
-  // ──────────────────────────────────────────────────────── bubble
   let open = null;
   const SZ_KEY = "shiplog.bubbleSize";
   function close() {
     if (open) {
       if (open._ro) { try { open._ro.disconnect(); } catch (e) {} }
-      if (open._backdrop) { try { open._backdrop.remove(); } catch (e) {} } // #8: tear down the CC-popup backdrop
+      if (open._backdrop) { try { open._backdrop.remove(); } catch (e) {} }
       open.remove();
       open = null;
     }
@@ -287,29 +251,21 @@
   function bubbleHTML(st) {
     const c = st.container || {};
     const cl = st.changelog || {};
-    const upd = isUpdate(st);       // Unraid's live verdict wins the update/current call
-    const seUpd = hasUpdate(st);    // ShipLog engine's own opinion (drives the risk detail)
-    // up to date → green pill; no upstream to check → neutral grey, not green. When
-    // Unraid flags an update ShipLog didn't grade (a rebuild / stale engine data), use low.
+    const upd = isUpdate(st);
+    const seUpd = hasUpdate(st); // the engine's view, which carries the risk detail
+    // An update Unraid flags but the engine did not grade, such as a rebuild,
+    // counts as low.
     const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
-    // changelog from/to are the image TAGS ("latest"/"7dtd"), not versions —
-    // show a real version when we have one. Newest release tag comes from the
-    // resolved release entries; current is the running tag if it looks like a
-    // version, else the short digest (a :latest digest can't be mapped to a tag).
     const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
     const entries = Array.isArray(cl.entries) ? cl.entries : [];
     const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
-    // Current version to show. The engine REMEMBERS the running version per
-    // container (running_version) — for a pinned tag it's the tag, for a
-    // ":latest" it's resolved when the running image is the registry's current
-    // one and then carried forward, so a later update shows a real "1.7 -> 1.8".
-    // Fall back to the running tag, then (when up to date) the newest release,
-    // then the tag — never the cryptic digest hash.
+    // A tag like "latest" is not a version, so the running version the engine
+    // remembers comes first.
     const shortDig = (d) => (d ? d.replace(/^sha256:/, "").slice(0, 12) : "");
     const cur = (verLike(st.running_version) ? st.running_version : "")
       || (verLike(c.tag) ? c.tag : "")
       || (!upd && verLike(newestRel) ? newestRel : "")
-      // A digest-pinned ref without a tag has NO tag — show the pin, not "latest".
+      // A digest pin without a tag shows the pin, not "latest".
       || (c.tag || shortDig(c.pinned_digest) || "latest");
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
       || (verLike(newestRel) ? newestRel : "")
@@ -319,8 +275,7 @@
       return m ? `${m[3]}.${m[2]}.${m[1]}` : ""; // DD.MM.YYYY
     };
     const relDate = entries[0] ? fmtDate(entries[0].published_at) : "";
-    // Only surface ShipLog's version-jump reason when we're actually flagging an
-    // update (so an "up to date" per Unraid never carries a stray "minor bump" line).
+    // An up-to-date container carries no version jump line.
     let jump = upd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "")) : "";
     if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
@@ -335,13 +290,8 @@
 
     let raw = "";
     if (cl.rate_limited) {
-      // Honest empty state: the anonymous GitHub API limit (60/h, shared per IP)
-      // was hit — the usual reason a github-sourced container shows no changelog.
-      // The token field already lives in ShipLog's settings, so point the user at it.
       raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("rateLimited"))}</div></div>`;
     } else if (cl.recent && entries.length) {
-      // Rolling / digest update (e.g. ":latest"): no single target release, so show
-      // the repo's most recent releases, newest first, each with its tag + date.
       const secs = entries.map((e) => {
         const d = fmtDate(e.published_at);
         const meta = d ? ` <span class="sl-reld">${esc(d)}</span>` : "";
@@ -355,10 +305,8 @@
       raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("none"))}</div></div>`;
     }
 
-    // Link to the repo's MAIN page. We don't use the engine's changelog URL
-    // verbatim (it's a .../compare/from...to link, broken for :latest), but its
-    // repo ROOT is good — so take the root from the OCI source, else from the
-    // changelog URL, else derive it from a ghcr image path.
+    // The button links to the repo root, because the engine's compare URL is
+    // broken for :latest.
     const ghFromImage = (r) => {
       const m = /^ghcr\.io\/([^/]+)\/([^/:@]+)/.exec(r || "");
       return m ? "https://github.com/" + m[1] + "/" + m[2] : "";
@@ -373,17 +321,14 @@
       : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
-    // Only show a "cur → next" jump when there's a real, different target version;
-    // an Unraid-flagged rebuild (same version, new digest) shows just the version.
+    // A rebuild of the same version shows just the version.
     const haveNext = verLike(next) && next !== "?" && norm(next) !== norm(cur);
     const verHdr = (upd && haveNext) ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
     const pillTxt = upd
       ? esc(seUpd ? kindLabel(st) : T("update"))
       : esc(noUpstream(st) ? noUpstreamLabel(st) : T("uptodate"));
 
-    // #47: a critical pill already carries the warning glyph — the plain risk dot
-    // next to it is a second, redundant "pay attention" signal. Show one or the
-    // other, never both.
+    // A critical pill shows the warning glyph instead of the dot.
     const dotOrWarn = rc === "crit" ? "⚠ " : '<span class="sl-dot"></span>';
     return `
       <div class="sl-bh">
@@ -400,33 +345,11 @@
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
 
-  // "Update now" keeps ShipLog read-only: it never touches the Docker socket — it runs
-  // Unraid's OWN per-container update, the same one the Docker tab exposes. Two executors,
-  // chosen by the Ask-before-updating pref, plus a proven fallback:
-  //
-  //   • runNativeUpdateNoConfirm (Ask OFF) — runs the real update with NO confirm dialog.
-  //     It calls Unraid's global openDocker() with EXACTLY the command Unraid's own
-  //     "Yes, update it!" callback runs (webgui dynamix.docker.manager/javascript/docker.js:110
-  //     -> openDocker('update_container '+encodeURIComponent(name),'Updating the container','',
-  //     'loadlist')). openDocker POSTs to /webGui/include/StartCommand.php via jQuery (so
-  //     Unraid's csrf_token is auto-appended by its global $.ajaxPrefilter — HeadInlineJS.php:
-  //     539-545), which launches the DETACHED updater (nohup ... & — StartCommand.php:46-49),
-  //     tails it in Unraid's progress log, and refreshes the row via loadlist. There is NO
-  //     confirm swal, so there is nothing to auto-click and nothing to race — this alone
-  //     removes the whole freeze/auto-confirm class of bug. If openDocker is unavailable it
-  //     falls back to clicking the row's native "apply update" anchor so the update STILL runs.
-  //
-  //   • runNativeUpdateWithConfirm (Ask ON) — runs Unraid's fully native flow, untouched:
-  //     updateContainer(name) shows "Are you sure?" (docker.js:106) and calls openDocker on
-  //     confirm. The USER clicks confirm — ShipLog never programmatically clicks it.
-  //
-  //   • clickNativeAnchor — the proven fallback: find the row's native update anchor + click.
-  //
-  // No auto-confirm exists anywhere in this design: Ask ON = the user confirms; Ask OFF =
-  // there is no confirm to click. So an unrelated dialog (delete/remove/stop/OS-update) can
-  // never be auto-accepted.
+  // "Update now" runs Unraid's own update path and never touches the Docker
+  // socket. Without the confirmation it hands openDocker() the command Unraid's
+  // own confirm callback runs, so no dialog is ever clicked programmatically.
 
-  // Click the row's native "apply update"/"rebuild ready" anchor. Returns false if absent.
+  // clickNativeAnchor clicks the row's own "apply update" or "rebuild ready" link.
   function clickNativeAnchor(name) {
     if (!name) return false;
     for (const tr of findRows()) {
@@ -444,8 +367,8 @@
     return false;
   }
 
-  // Read a container name from a native update anchor: its updateContainer('<name>') onclick,
-  // else its row's name. Lets the Ask-OFF path route native clicks to the no-confirm executor.
+  // anchorName reads the name from a native update link's updateContainer('<name>')
+  // call, else from its row.
   function anchorName(a) {
     const oc = a.getAttribute("onclick") || "";
     const m = /updateContainer\(\s*['"]([^'"]+)['"]/i.exec(oc);
@@ -454,21 +377,17 @@
     return tr ? rowName(tr) : "";
   }
 
-  // Run Unraid's real update with NO confirm. Prefer the native openDocker global (identical
-  // to Unraid's own "Yes, update it!" callback); fall back to the proven native anchor click.
   function runNativeUpdateNoConfirm(name) {
     if (!name) return false;
     if (typeof window.openDocker === "function") {
       try {
         window.openDocker("update_container " + encodeURIComponent(name), T("updatingOne"), "", "loadlist");
         return true;
-      } catch (e) { /* fall through to the proven native click */ }
+      } catch (e) { /* fall back to the native link */ }
     }
     return clickNativeAnchor(name);
   }
 
-  // Run Unraid's native update WITH its own "Are you sure?" confirm (untouched). Prefer the
-  // updateContainer global; fall back to clicking the native anchor (which invokes the same).
   function runNativeUpdateWithConfirm(name) {
     if (!name) return false;
     if (typeof window.updateContainer === "function") {
@@ -477,51 +396,27 @@
     return clickNativeAnchor(name);
   }
 
-  // Silent update: hide ONLY Unraid's live progress log (the reused SweetAlert node while it
-  // carries `.nchan`) and its shared backdrop, and free the page scroll-lock — then dismiss the
-  // log for the user the instant the DETACHED job finishes. This can NEVER freeze the page and
-  // can NEVER block the update:
-  //   • It touches nothing until a `.sweet-alert.nchan` actually exists, so a confirm dialog
-  //     (Ask ON) keeps its backdrop and stays fully interactive (fixes the old "confirm loses
-  //     its overlay" bug where hiding was armed before the confirm even existed).
-  //   • While the log is up it hides it + the overlay (body.sl-hide-nchan CSS) and clears
-  //     `stop-scrolling`, so the page stays usable — no dark, click-eating, scroll-locked backdrop.
-  //   • openDocker DISABLES the log's confirm button during the run; openDone RE-ENABLES it ONLY
-  //     on completion (_DONE_ — HeadInlineJS.php:324-338). We latch on that disabled->enabled
-  //     transition and click the now-"Done" button, which runs Unraid's OWN teardown (removes the
-  //     overlay, clears the scroll-lock, stops nchan, runs loadlist). Locale-proof (no text match)
-  //     and safe: only ever the finished `.nchan` log's Done button — never a confirm-to-proceed
-  //     or a delete/remove dialog.
-  //   • Writes NO inline style/dataset onto the shared swal node (only a body class it removes on
-  //     stop), so the 2nd/3rd update inherits a clean node. A safety cap reveals the log if the
-  //     job never reports done, so the user is never left staring at a hidden, stuck modal.
-  // ─────────────────────────────────────────────── silent-update spinner
-  // A SILENT update shows no log (armSilentLogHide hides Unraid's .nchan window), so the row
-  // gives no feedback. We overlay a CSS spinner on the container's row logo/icon for the LIFE
-  // of that hidden log: painted the instant the `.nchan` progress log actually appears (so a
-  // cancelled Ask-before confirm — no log — never leaves a stuck spinner) and cleared when
-  // armSilentLogHide's stop() fires (done) or its safety cap. Purely decorative
-  // (pointer-events:none, never touches the Docker socket) and self-cleaning: the spinner lives
-  // inside the row, so Unraid's wholesale #docker_list re-render drops it — we re-apply it on
-  // every mutation for names still updating, and clear the set on stop().
-  const updatingNames = new Set(); // lower(name) → its row shows a spinner
-  let spinLive = false;            // true once the hidden log exists → painting active
-  function armSpin(names) {         // queue names; painting waits for the log to appear
+  // With a silent update, the row logo shows a spinner while the hidden log is up.
+  // It is painted only once the log exists, so a cancelled confirm leaves none
+  // behind. Unraid's re-render of the table drops it, so every mutation paints it
+  // again for the names still updating.
+  const updatingNames = new Set(); // lower-cased names
+  let spinLive = false;            // the hidden log exists
+  function armSpin(names) {
     const arr = Array.isArray(names) ? names : (names ? [names] : []);
     for (const nm of arr) { const n = norm(nm); if (n) updatingNames.add(n); }
-    if (spinLive) refreshSpinners(); // a later arm during a live log paints at once
+    if (spinLive) refreshSpinners();
   }
-  // The container logo sits in td.ct-name inside span.hand (the icon = Unraid's start/stop
-  // context-menu trigger). Overlay the img's own box; fall back to the hand span, then the cell.
+  // The logo in td.ct-name is also Unraid's start/stop menu trigger.
   function rowIconHost(tr) {
     const cell = tr.querySelector("td.ct-name");
     if (!cell) return null;
     const img = cell.querySelector("img");
-    if (img && img.parentElement) return img.parentElement; // span.hand / .hoverable
+    if (img && img.parentElement) return img.parentElement;
     return cell.querySelector("span.hand") || cell;
   }
   function applySpinner(host) {
-    if (!host || host.querySelector(":scope > .sl-spin")) return; // no host / already on
+    if (!host || host.querySelector(":scope > .sl-spin")) return;
     try { if (getComputedStyle(host).position === "static") host.classList.add("sl-spinhost"); }
     catch (e) { host.classList.add("sl-spinhost"); }
     const ov = el("span", "sl-spin", '<span class="sl-spin-ring"></span>');
@@ -534,7 +429,7 @@
     if (ov) ov.remove();
     host.classList.remove("sl-spinhost");
   }
-  function refreshSpinners() { // paint updating rows, strip stray spinners; no-op until log is live
+  function refreshSpinners() {
     if (!spinLive || !updatingNames.size) return;
     for (const tr of findRows()) {
       const host = rowIconHost(tr);
@@ -549,7 +444,7 @@
     document.querySelectorAll(".sl-spin").forEach((n) => n.remove());
     document.querySelectorAll(".sl-spinhost").forEach((n) => n.classList.remove("sl-spinhost"));
   }
-  // Names Unraid's bulk update acts on (update===1) — the set a SILENT "Update all" must cover.
+  // The containers Unraid's bulk update acts on.
   function pendingUpdateNames() {
     try {
       const list = window.docker;
@@ -558,51 +453,52 @@
     } catch (e) { return []; }
   }
 
+  // armSilentLogHide hides Unraid's progress log for a silent update and frees the
+  // scroll lock. It acts only once the log exists, so a confirm dialog keeps its
+  // backdrop. Unraid enables the log's Done button only on completion; clicking
+  // it then runs Unraid's own teardown and reload, without any text match. The
+  // shared dialog node gets no inline style, and a cap reveals a log that never
+  // finishes.
   let silentArm = null;
   function armSilentLogHide(names) {
-    armSpin(names);        // queue the updating row(s); the spinner paints when the log appears
-    if (silentArm) return; // already watching this flow
+    armSpin(names);
+    if (silentArm) return;
     let obs = null, poll = 0, cap = 0, armedBody = false, sawDisabled = false;
     const stop = () => {
       try { obs && obs.disconnect(); } catch (e) {}
       clearInterval(poll); clearTimeout(cap);
       document.body.classList.remove("sl-hide-nchan");
-      clearSpinners();     // update finished (or safety cap) → clear the row spinner(s)
+      clearSpinners();
       silentArm = null;
     };
     const tick = () => {
-      // The progress log is the reused SweetAlert node while it carries `.nchan` AND holds the
-      // log body `#swaltext`. Gating on #swaltext distinguishes it from a confirm dialog that
-      // could momentarily reuse the same node — so we NEVER hide or auto-dismiss a confirm
-      // (this closes the only path that could resurrect an unwanted auto-confirm).
+      // #swaltext tells the log from a confirm dialog that reuses the same node,
+      // so a confirm is never hidden or dismissed.
       const log = document.querySelector(".sweet-alert.nchan");
-      if (!log || !log.querySelector("#swaltext")) return; // confirm phase / nothing yet → touch nothing
+      if (!log || !log.querySelector("#swaltext")) return;
       if (!armedBody) { document.body.classList.add("sl-hide-nchan"); armedBody = true; }
-      spinLogAppeared(); // the hidden log now exists → start painting the row spinner(s)
-      // idempotent: only touch the class when present, so this write can't re-feed an observer
+      spinLogAppeared();
+      // Only a real change touches the class, so this cannot feed an observer.
       if (document.body.classList.contains("stop-scrolling")) document.body.classList.remove("stop-scrolling");
       const done = log.querySelector("button.confirm");
       if (!done) return;
-      if (done.disabled) { sawDisabled = true; return; }  // running
-      if (sawDisabled) { done.click(); stop(); }          // finished → Unraid's own teardown + loadlist
+      if (done.disabled) { sawDisabled = true; return; }
+      if (sawDisabled) { done.click(); stop(); }
     };
     silentArm = { stop };
     try {
       obs = new MutationObserver(tick);
-      // childList catches the `.nchan` log node appearing; the 400ms poll catches openDone
-      // flipping the Done button's `disabled` attribute. Deliberately NOT watching attributes,
-      // so writing our own body class inside tick() can never re-feed this observer.
+      // Attributes are not observed, so the body class written in tick() cannot
+      // feed the observer; the poll catches the Done button's disabled flag.
       obs.observe(document.body, { childList: true, subtree: true });
     } catch (e) {}
-    poll = setInterval(tick, 400);          // robust re-poll: openDone flips attrs, not just class
-    cap = setTimeout(stop, 15 * 60 * 1000); // reveal the log if the job never reports done
+    poll = setInterval(tick, 400);
+    cap = setTimeout(stop, 15 * 60 * 1000);
     tick();
   }
 
-  // #46 (user asked for a real marquee, not truncation): only ever built when the text actually
-  // overflows its box AND the user hasn't asked for reduced motion — everything else stays the plain
-  // text node docker.css already ellipsis-clips as a safe fallback. Two IDENTICAL copies back to back,
-  // scrolled exactly one copy-width via translateX(-50%), loop seamlessly (no jump/reset visible).
+  // armJumpMarquee scrolls the jump line only when it overflows and motion is
+  // allowed. Two identical copies moved by translateX(-50%) loop seamlessly.
   function armJumpMarquee(bubble) {
     try {
       const jumpEl = bubble.querySelector(".sl-jump");
@@ -618,52 +514,41 @@
       jumpEl.textContent = "";
       jumpEl.appendChild(track);
       jumpEl.classList.add("sl-jump-marquee");
-      // Slower for longer text so the reading speed stays roughly constant either way.
+      // Longer text scrolls longer, so the reading speed stays about the same.
       track.style.animationDuration = Math.max(6, Math.min(24, full.length / 8)) + "s";
     } catch (e) {}
   }
 
   function openFor(anchor, st) {
     close();
-    // #8: CC-popup design — a blurred+dimmed backdrop behind a CENTERED window (styled via CC tokens with
-    // standalone fallbacks in docker.css). The backdrop goes in FIRST so it paints behind the window; a click
-    // on it closes (the document-level outside-click listener would too, but a direct handler is clearer).
+    // The backdrop goes in first so it paints behind the window.
     const bd = el("div", "sl-backdrop");
     if (isLightBg()) bd.classList.add("sl-light");
     bd.addEventListener("click", () => close());
     document.body.appendChild(bd);
     const b = el("div", "sl-bubble", bubbleHTML(st));
-    if (isLightBg()) b.classList.add("sl-light"); // match Unraid's light themes
+    if (isLightBg()) b.classList.add("sl-light");
     document.body.appendChild(b);
     b._backdrop = bd;
-    // restore the user's saved size (the window is resizable, drag the corner).
-    // The stored w/h are offsetWidth/offsetHeight (border-box); .sl-bubble is
-    // box-sizing:border-box so writing them back to style.width/height is a fixed
-    // point. Do NOT drop that box-sizing — under content-box this round-trip would
-    // re-add the border every open and grow the popup a few px per click.
+    // The stored size is the border-box size, which round-trips only because
+    // .sl-bubble uses box-sizing:border-box; otherwise it would grow on every open.
     try {
       const s = JSON.parse(localStorage.getItem(SZ_KEY) || "null");
       if (s && s.w) b.style.width = s.w + "px";
       if (s && s.h) b.style.height = s.h + "px";
     } catch (e) {}
-    armJumpMarquee(b); // #46: now that the bubble has its real (possibly restored) width, see if it needs to scroll
-    // The window is centered by CSS (position:fixed, translate(-50%,-50%)) like every other CC popup — no
-    // anchor math. `anchor` stays in the signature only so the caller need not change.
+    armJumpMarquee(b); // needs the restored width
+    // CSS centres the window, so `anchor` goes unused.
     b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); close(); });
     const updBtn = b.querySelector(".sl-upd");
     if (updBtn) updBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation();
       const cname = st.container && st.container.name;
-      // Arm the silent log-hider BEFORE the log appears; it is a no-op until `.nchan` exists,
-      // so it never touches the Ask-ON confirm dialog. Pass the name → spinner on this row.
       if (silentUpdate) armSilentLogHide(cname);
-      // Ask ON  → Unraid's own "Are you sure?" IS the confirmation (native, user clicks it).
-      // Ask OFF → run Unraid's real update directly — no confirm dialog to race or auto-click.
       const ok = confirmUpdate ? runNativeUpdateWithConfirm(cname) : runNativeUpdateNoConfirm(cname);
       if (ok) close();
       else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
     });
-    // persist size whenever the user drags the resize handle
     try {
       const ro = new ResizeObserver(() => {
         try { localStorage.setItem(SZ_KEY, JSON.stringify({ w: b.offsetWidth, h: b.offsetHeight })); } catch (e) {}
@@ -674,13 +559,9 @@
     open = b;
   }
 
-  // ─────────────────────────────────────────────── update-all button
-  // A ShipLog-placed trigger for Unraid's OWN bulk update: count comes from the
-  // page-global `docker` array (exactly the set native updateAll() acts on) and
-  // the click calls native updateAll() — ShipLog stays read-only. Injected left
-  // of the Basic/Advanced toggle; visible only while at least one update is
-  // pending. Writes are change-guarded so the MutationObserver that drives this
-  // never feeds on our own DOM writes.
+  // The update-all button calls Unraid's own updateAll() and counts the same
+  // containers it acts on. It shows only while an update is pending, and writes
+  // only on change, so the MutationObserver does not feed on it.
   function pendingUpdateCount() {
     try {
       const list = window.docker;
@@ -717,19 +598,17 @@
           e.preventDefault(); e.stopPropagation();
           const n = pendingUpdateCount();
           if (n === 0) return;
-          // native updateAll() has no confirm dialog of its own, so ShipLog owns the ask
+          // updateAll() has no confirm dialog of its own.
           if (confirmUpdate && !window.confirm(T("confirmAll").replace("%n", n))) return;
-          if (silentUpdate) armSilentLogHide(pendingUpdateNames()); // hide the log + spin every updating row
+          if (silentUpdate) armSilentLogHide(pendingUpdateNames());
           fireNativeUpdateAll();
         });
-        // .ToggleViewMode is a full-width flex row with justify-content:flex-end —
-        // as its FIRST child the button packs to the right, directly LEFT of the
-        // toggle (inserting before the div would flow to the far left instead).
+        // .ToggleViewMode is a right-aligned flex row, so its first child sits
+        // directly left of the toggle.
         toggle.insertBefore(btn, toggle.firstChild);
       }
 
       const n = nativeUpdateAllAvailable() ? pendingUpdateCount() : 0;
-      // change-guarded writes: identical values must not touch the DOM
       if (btn.dataset.slN !== String(n)) {
         btn.dataset.slN = String(n);
         btn.textContent = `${T("updateAll")} (${n})`;
@@ -739,35 +618,28 @@
     } catch (e) {}
   }
 
-  // ──────────────────────────────────────────────────────── inject
   function tagRows() {
     let n = 0;
     for (const tr of findRows()) {
       const st = byName[norm(rowName(tr))];
-      if (!st) continue; // no engine data for this row → leave it untouched
+      if (!st) continue;
       const cell = findUpdateCell(tr);
       if (!cell || cell.getAttribute(MARK)) continue;
-      const upd = isUpdate(st), seUpd = hasUpdate(st); // Unraid's live verdict wins
+      const upd = isUpdate(st), seUpd = hasUpdate(st);
       let chip;
+      // An unmaintained or demoted app gets a warning chip in place of the
+      // changelog chip; it still opens the window with the reason.
       if (st.unmaintained) {
-        // Dead-end app (template pulled from CA, image gone, or repo archived): the
-        // red button REPLACES the changelog chip. Still clickable → the bubble shows
-        // the reason (and the last changelog, if any).
         chip = el("a", "sl-chip sl-unmaint", `${WARN_ICON}<span>${esc(T("unmaintained"))}</span>`);
         chip.title = `ShipLog: ${st.unmaintained_reason || T("unmaintained")}`;
       } else if (st.ca_deprecated) {
-        // Editorially demoted in Community Applications (hidden from default search,
-        // usually a maintained alternative exists) — same REPLACE-the-chip treatment
-        // as Unmaintained above (jdp: "soll den changelog badge ersetzen, wie bei dem
-        // not maintained badge"), just its own amber colour since the app is still
-        // listed and still genuinely updated, not a dead end.
         chip = el("a", "sl-chip sl-dep", `${WARN_ICON}<span>${esc(T("deprecated"))}</span>`);
         chip.title = `ShipLog: ${st.ca_deprecated_note || T("deprecated")}`;
       } else {
         const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
         const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
         chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
-        chip.title = `ShipLog: ${label} — ${T("clickHint")}`;
+        chip.title = `ShipLog: ${label} · ${T("clickHint")}`;
       }
       chip.href = "#";
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, st); });
@@ -780,56 +652,45 @@
     return n;
   }
 
-  // ──────────────────────────────────────────────────────── run
   document.addEventListener("click", (e) => {
     if (open && !open.contains(e.target) && !e.target.closest(".sl-chip")) close();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 
-  // Extend the "ask before updating" / "silent update" prefs to Unraid's OWN native
-  // per-container update controls (not just ShipLog's bubble button). Capture phase so we
-  // act BEFORE Unraid's onclick opens the dialog. Scoped STRICTLY to update controls, so
-  // unrelated confirm dialogs (remove/stop/OS-update) are never touched — and note there is
-  // no auto-confirm here at all: Ask OFF skips the confirm by running openDocker directly.
+  // The confirm and silent preferences also apply to Unraid's own update links.
+  // The capture phase acts before their onclick opens a dialog, and the match
+  // covers update links only, so remove or stop dialogs stay untouched.
   document.addEventListener("click", (e) => {
     try {
       const a = e.target && e.target.closest ? e.target.closest("a[onclick], a.exec, [onclick]") : null;
       if (!a || a.closest(".sl-chip") || a.closest(".sl-chiprow") || a.closest(".sl-bubble")) return;
       const blob = norm(a.textContent) + " " + norm(a.getAttribute("onclick") || "");
-      // strictly update controls — never delete/remove/stop/pause/etc.
       if (!/updatecontainer|apply update|aktualisierung anwenden|force update|update erzwingen|rebuild ready|installupdate/.test(blob)) return;
-      if (silentUpdate) armSilentLogHide(anchorName(a)); // hide the log + spin this row (both Ask modes)
+      if (silentUpdate) armSilentLogHide(anchorName(a));
       if (!confirmUpdate) {
-        // Ask OFF → skip Unraid's confirm entirely: run the real update directly. Only prevent
-        // the native handler when we can actually take over via openDocker — otherwise re-clicking
-        // this same anchor would loop. Without a name/openDocker, let native run (with its confirm).
+        // Without openDocker the native handler runs with its confirm, since
+        // clicking the same link again would loop.
         const name = anchorName(a);
         if (name && typeof window.openDocker === "function") {
           e.preventDefault(); e.stopPropagation();
-          close(); // our stopPropagation suppresses the bubble-close listener — close it ourselves
+          close(); // stopPropagation keeps the outside-click listener from closing it
           try { window.openDocker("update_container " + encodeURIComponent(name), T("updatingOne"), "", "loadlist"); }
           catch (err) {
             if (typeof window.updateContainer === "function") window.updateContainer(name);
-            else clickNativeAnchor(name); // last resort: the update still runs
+            else clickNativeAnchor(name);
           }
         }
       }
-      // Ask ON → do nothing else; Unraid's native confirm+update runs untouched.
     } catch (err) {}
   }, true);
 
   async function boot() {
-    // Native-data feature first: the update-all button works without the engine.
+    // The update-all button needs no engine.
     injectUpdateAllButton();
-    // Unraid re-renders the table on its auto-refresh — re-tag new rows and keep
-    // the update-all counter current. tagRows() is a no-op while byName is empty.
-    // A native container update streams its nchan log into .sweet-alert as hundreds
-    // of individual DOM mutations/sec; each one is its own MutationObserver callback,
-    // and each callback re-scans the whole document (findRows() -> multiple
-    // querySelectorAll/querySelector passes). Undebounced, that saturates the main
-    // thread for the length of the update and freezes the tab until it drains. Ignore
-    // mutations that originate inside our own or Unraid's dialog chrome, and coalesce
-    // any real burst into one leading pass + one trailing pass.
+    // Unraid re-renders the table on its auto-refresh. An update streams its log
+    // as hundreds of mutations a second, and a full rescan per mutation freezes
+    // the tab, so mutations inside dialogs are ignored and bursts coalesce into a
+    // leading and a trailing pass.
     let moT = null, moTrail = false;
     const moPass = () => {
       moTrail = false;
@@ -844,19 +705,18 @@
         relevant = true;
       }
       if (!relevant) return;
-      if (moT) { moTrail = true; return; } // in cooldown — fold into the trailing pass
-      moPass(); // leading edge: tag in the same frame the rows appear
+      if (moT) { moTrail = true; return; }
+      moPass();
     });
     try { mo.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
     const ok = await load();
-    if (!ok) return; // engine unreachable → chips stay off, the button still works
+    if (!ok) return;
     const n = tagRows();
     console.log(`${TAG} tagged ${n} container(s) with updates`);
   }
   boot();
 
-  // ──────────────────────────────────────────────────────── demo
   const DEMO_DATA = [
     { container: { name: "Immich", image: "ghcr.io/imagegenius/immich", tag: "v1.122.0" },
       newest_tag: "v1.124.2", kind: "minor", risk: "medium", risk_reason: "2 minor versions",

@@ -1,7 +1,6 @@
 <?php
-/* ShipLog same-origin proxy: the browser on the Docker tab calls this PHP, and
- * this PHP calls the local engine daemon on 127.0.0.1 — so the browser never
- * makes a cross-origin request (no CORS) and any token stays server-side.
+/* Same-origin proxy to the engine on 127.0.0.1, so the Docker tab needs no
+ * cross-origin request and no token reaches the browser.
  *
  *   GET status.php            -> engine /api/containers   (the whole fleet)
  *   GET status.php?id=<name>  -> engine /api/container/{id}

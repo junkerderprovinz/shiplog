@@ -1,15 +1,12 @@
 <?php
-/* ShipLog — Ollama autodetect for the settings page. Finds a reachable Ollama
- * from the Unraid host: first the common host ports, then — crucially — it asks
- * the Docker socket for a running container whose image is "ollama" and probes
- * its real address (host-published port AND its per-network container IP), so it
- * works when Ollama runs on a custom/br0 bridge with its own IP and nothing is
- * published to the host. Server-side (no CORS).
+/* Finds a reachable Ollama for the settings page: the common host ports first,
+ * then the published ports and network IPs of a running ollama container, which
+ * covers a container on br0 with its own IP and nothing published.
  * Returns {"ok":bool,"url":string,"models":[...],"message":string}. */
 
 header('Content-Type: application/json');
 
-/* GET <base>/api/tags; returns the model-name array on HTTP 200, else null. */
+/* Returns the model names at <base>/api/tags, or null. */
 function ollamaTags($base)
 {
     $ch = curl_init($base . '/api/tags');
@@ -37,7 +34,7 @@ function ollamaTags($base)
     return $names;
 }
 
-/* GET <path> from the Docker Engine over its unix socket (read-only use here). */
+/* GETs <path> from the Docker Engine over its unix socket. */
 function dockerSock($path)
 {
     $ch = curl_init('http://localhost' . $path);
@@ -57,7 +54,6 @@ $hint   = isset($_GET['url']) ? trim($_GET['url']) : '';
 $cands  = [];
 $addr   = !empty($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '';
 
-// 1) Cheap host-port guesses first.
 if ($hint !== '' && preg_match('#^https?://#i', $hint)) {
     $cands[] = rtrim($hint, '/');
 }
@@ -68,7 +64,6 @@ if ($addr !== '') {
 }
 $cands[] = 'http://172.17.0.1:11434'; // docker0 gateway
 
-// 2) Ask Docker for a running "ollama" container and add its real addresses.
 $dockerSeen = false;
 $list = dockerSock('/containers/json');
 if (is_array($list)) {
@@ -78,7 +73,6 @@ if (is_array($list)) {
             continue;
         }
         $dockerSeen = true;
-        // host-published mapping of the Ollama port
         if (!empty($c['Ports'])) {
             foreach ($c['Ports'] as $p) {
                 if (isset($p['PrivatePort']) && (int) $p['PrivatePort'] === 11434 && !empty($p['PublicPort'])) {
@@ -90,7 +84,6 @@ if (is_array($list)) {
                 }
             }
         }
-        // the container's own IP on each network it is attached to
         if (!empty($c['NetworkSettings']['Networks']) && is_array($c['NetworkSettings']['Networks'])) {
             foreach ($c['NetworkSettings']['Networks'] as $net) {
                 if (!empty($net['IPAddress'])) {
@@ -101,7 +94,6 @@ if (is_array($list)) {
     }
 }
 
-// Probe candidates in order, first reachable wins.
 $seen = [];
 foreach ($cands as $base) {
     if (isset($seen[$base])) {
@@ -116,12 +108,12 @@ foreach ($cands as $base) {
         'ok'      => true,
         'url'     => $base,
         'models'  => $names,
-        'message' => 'Found Ollama at ' . $base . ($names ? ' — ' . count($names) . ' model(s).' : ' — reachable, no models pulled yet.'),
+        'message' => 'Found Ollama at ' . $base . ($names ? ', ' . count($names) . ' model(s).' : ', reachable, no models pulled yet.'),
     ]);
     exit;
 }
 
 $msg = $dockerSeen
-    ? 'Found an Ollama container but could not reach its API on port 11434 — is the model server listening, and can Unraid route to its IP?'
+    ? 'Found an Ollama container but could not reach its API on port 11434. Is the model server listening, and can Unraid route to its IP?'
     : 'No Ollama found (tried host ports and the Docker socket). Enter the URL manually.';
 echo json_encode(['ok' => false, 'url' => '', 'models' => [], 'message' => $msg]);

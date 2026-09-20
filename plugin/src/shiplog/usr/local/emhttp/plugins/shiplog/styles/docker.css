@@ -1,24 +1,20 @@
-/* ShipLog — Docker-tab control + bubble. Discreet, Unraid-native. */
+/* ShipLog control and changelog window in the Docker tab. */
 
-/* own line below the status text — a block wrapper keeps the status line as its
-   own last line (so Unraid's justify doesn't stretch "Auf dem neusten Stand"). */
+/* A block of its own keeps the status text its own last line, so Unraid's
+   justify does not stretch it. */
 .sl-chiprow{display:block;width:fit-content;margin-top:3px}
 .sl-chip{display:inline-flex;align-items:center;gap:6px;
   font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none;text-align:left}
 .sl-chip:hover{color:#3c8ac0}
 .sl-ico{width:13px;height:13px;opacity:.85;flex:none}
 .sl-amp{width:8px;height:8px;border-radius:50%;flex:none}
-/* Traffic light. green = nothing to worry about (up to date OR a low-risk/patch/
-   digest update); orange = minor; red = major; grey = could not resolve a version
-   (e.g. an anonymous rate limit) → set a GitHub token to grade it. "ok" (up to
-   date) is GREEN, not a dead grey, so a healthy box reads as a wall of green and
-   grey is reserved for a genuine unknown. */
+/* Up to date is green like a low-risk update, so a healthy host reads as a wall
+   of green; grey is reserved for a version that could not be resolved. */
 .sl-amp.sl-low {background:#3fae6a}
 .sl-amp.sl-mid {background:#d6a243}
 .sl-amp.sl-high{background:#d9534f}
-/* crit = the release notes flag a breaking change (a required migration, a
-   removed extension); a brighter, pulsing red so it stands apart from a plain
-   major bump. Pulse is dropped for reduced-motion users. */
+/* A breaking change in the release notes pulses, to stand apart from a plain
+   major bump. */
 .sl-amp.sl-crit{background:#ff3b30;animation:sl-pulse 1.6s ease-in-out infinite}
 .sl-amp.sl-grey{background:#8a8a8a}
 .sl-amp.sl-ok  {background:#3fae6a}
@@ -31,50 +27,35 @@
 .sl-pill.sl-low {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-low  .sl-dot{background:#3fae6a}
 .sl-pill.sl-mid {color:#d6a243;border-color:#7a6028} .sl-pill.sl-mid  .sl-dot{background:#d6a243}
 .sl-pill.sl-high{color:#d9534f;border-color:#7a3331} .sl-pill.sl-high .sl-dot{background:#d9534f}
-/* crit pill is FILLED (not outlined) so a breaking-change verdict pops out from
-   the outlined low/mid/high pills at a glance. */
 .sl-pill.sl-crit{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-crit .sl-dot{background:#fff}
 .sl-pill.sl-grey{color:#9a9a9a;border-color:#444}    .sl-pill.sl-grey .sl-dot{background:#8a8a8a}
 .sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
-/* GlimStone (CC installed): CC badges are a SOLID tinted fill, never an outline of any kind (a
-   box-shadow ring is still visually a border line, just drawn differently — see the .sl-bubble
-   card block below for the same lesson at section scale). 18% tint matches CC's own neutral-chip
-   convention (rgba(128,128,128,.18) throughout Header.css). */
+/* With CannonadeCommand installed, badges are a solid 18% tint without any
+   outline, like CC's own chips. */
 html.cc-header-on .sl-pill{border:none;background:color-mix(in srgb, currentColor 18%, transparent)}
 html.cc-header-on .sl-pill.sl-low {background:color-mix(in srgb, #3fae6a 18%, transparent)}
 html.cc-header-on .sl-pill.sl-mid {background:color-mix(in srgb, #d6a243 18%, transparent)}
 html.cc-header-on .sl-pill.sl-high{background:color-mix(in srgb, #d9534f 18%, transparent)}
 html.cc-header-on .sl-pill.sl-grey{background:color-mix(in srgb, #9a9a9a 18%, transparent)}
 html.cc-header-on .sl-pill.sl-ok  {background:color-mix(in srgb, #3fae6a 18%, transparent)}
-/* #47/#48/#50 (user, live-verified): sl-crit/sl-unmaint/sl-dep are a PERSISTENT problem state, not
-   a routine risk level - the general currentColor-tint rule above was meant to skip them (see the
-   old comment removed here: "already a solid fill natively, need no change"), but nothing here
-   actually excluded them, so their white/dark text mixed down to a near-invisible 18% wash instead
-   of staying the solid red/amber they render as without CC. Keep their solid native fill explicitly;
-   more specific than the plain .sl-pill rule above, so it wins regardless of source order. */
+/* The problem states keep their solid fill; the tint rule above would wash
+   their white or dark text out. */
 html.cc-header-on .sl-pill.sl-crit,
 html.cc-header-on .sl-pill.sl-unmaint{background:#c81e28}
 html.cc-header-on .sl-pill.sl-dep{background:#d6a243}
 
-/* "Not maintained" state — an app that has reached a dead end (template pulled
-   from Community Applications, image gone, or upstream repo archived). This is a
-   separate axis from update risk, so it gets its own filled-red marker (ShipLog's
-   "severe" red #c81e28) that reads as a real problem. STATIC — no motion. NOT
-   gated on CannonadeCommand, so the colour shows on a plain Unraid too. */
+/* An unmaintained app is a problem independent of update risk, so it gets a
+   static filled red marker, with or without CannonadeCommand. */
 .sl-chip.sl-unmaint{color:#fff;background:#c81e28;border-radius:6px;padding:0 9px;font-weight:600}
 .sl-chip.sl-unmaint:hover{color:#fff;background:#b31b24}
 .sl-chip.sl-unmaint .sl-ico{opacity:1;width:13px;height:13px}
 .sl-pill.sl-unmaint{color:#fff;background:#c81e28;border-color:#c81e28} .sl-pill.sl-unmaint .sl-dot{background:#fff}
-html.cc-header-on .sl-pill.sl-unmaint{border:none}   /* already a solid fill natively - just drop the border */
+html.cc-header-on .sl-pill.sl-unmaint{border:none}
 .sl-unmaint-note{margin:8px 0 2px;padding:8px 10px;border-radius:6px;
   background:rgba(200,30,40,.12);color:#e5645f;font:13px/1.45 inherit}
 
-/* "Editorially deprecated in Community Applications" — same REPLACE-the-chip
-   treatment as Not-maintained above, own amber colour: the app is still
-   listed and still genuinely receiving updates (an editorial demotion, not a
-   dead end), so it must read as a lesser warning, never the same severity as
-   a real dead end. Dark text on the amber fill for contrast (unlike
-   sl-unmaint's white-on-red, amber is too light for white to read well). */
+/* An app demoted in Community Applications is still listed and updated, so its
+   amber marker reads as a lesser warning. White text would not read on amber. */
 .sl-chip.sl-dep{color:#1a1a1a;background:#d6a243;border-radius:6px;padding:0 9px;font-weight:600}
 .sl-chip.sl-dep:hover{color:#1a1a1a;background:#c4923a}
 .sl-chip.sl-dep .sl-ico{opacity:1;width:13px;height:13px}
@@ -82,10 +63,9 @@ html.cc-header-on .sl-pill.sl-unmaint{border:none}   /* already a solid fill nat
 html.cc-header-on .sl-pill.sl-dep{border:none}
 .sl-dep-note{background:rgba(214,162,67,.15);color:#d6a243}
 
-/* CC-popup design: a blurred + dimmed backdrop behind a CENTERED window. The backdrop dim/blur, the window
-   surface and the corner radius READ CannonadeCommand's theme tokens when CC is installed (so ShipLog's
-   changelog window matches every other CC popup — same dim, same shape, same surface), and fall back to
-   standalone values when it isn't. docker.js inserts .sl-backdrop in openFor() and removes it in close(). */
+/* The backdrop and window read CannonadeCommand's theme tokens when it is
+   installed, so the window matches its other popups, and fall back to plain
+   values otherwise. */
 .sl-backdrop{position:fixed;inset:0;z-index:99998;
   background:var(--cc-backdrop-dim,rgba(0,0,0,.55));
   -webkit-backdrop-filter:var(--cc-backdrop-blur,blur(5px));backdrop-filter:var(--cc-backdrop-blur,blur(5px));
@@ -93,20 +73,14 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
 @keyframes sl-bd-in{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.sl-backdrop{animation:none}}
 
-/* The window adapts to Unraid's theme: defaults are dark; .sl-light is applied by docker.js when the page
-   background is light (detected by luminance). Base = a plain 1px border (native Unraid dialog look, no
-   CC installed). WITH CannonadeCommand (html.cc-header-on below), the border is replaced by shade + shadow
-   only, matching every other CC popup - never an outer border line. */
+/* Dark by default; docker.js adds .sl-light on a light page. */
 .sl-bubble{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;box-sizing:border-box;
   width:640px;max-width:95vw;min-width:340px;min-height:200px;max-height:88vh;resize:both;overflow:auto;
   --sl-bg:var(--cc-surface-window,#242424); --sl-bg2:var(--cc-surface-4,#161616); --sl-txt:var(--cc-text,#e6e6e6);
   --sl-dim:#9a9a9a; --sl-dim2:#6f6f6f;
   --sl-line:var(--cc-shade-line,rgba(128,128,128,.14)); --sl-line2:rgba(128,128,128,.28); --sl-edge:#525252;
   --sl-link:#8ab4f8;
-  /* #(user: "dunkles Fenster mit hellen cards, style wie zb das Docker updatefenster") - the locked update-
-     window template (Header.css: html.cc-popups-on .sweet-alert.nchan fieldset) is a dark #1a1a1a/#161616
-     frame holding LIGHT #2e2e2e step cards, explicit values, not a token-driven +2 shade. --sl-card matches
-     that literally in dark mode; in light mode the analogous lift is already what --cc-surface-4 gives. */
+  /* The cards of Unraid's update window, a literal value rather than a token. */
   --sl-card:#2e2e2e;
   background:var(--sl-bg);color:var(--sl-txt);border:1px solid var(--sl-edge);border-radius:min(var(--cc-b-radius,14px),14px);
   box-shadow:0 18px 50px rgba(0,0,0,.6);font:14px/1.5 "Segoe UI",system-ui,sans-serif;text-align:left}
@@ -115,24 +89,17 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
   --sl-line:rgba(90,90,90,.18); --sl-line2:rgba(90,90,90,.30); --sl-edge:#bcbcbc; --sl-link:#1a56db;
   --sl-card:var(--cc-surface-4,#f3f3f3);
   box-shadow:0 18px 50px rgba(0,0,0,.28)}
-/* #44 (user, live-verified twice): forcing the button row onto its own line (first attempt) kept it
-   stable but moved it away from where the user actually wants it - inline, top-right, "their original
-   position". The real fix is the other direction: never wrap the header row at all, and make the ONE
-   genuinely-optional element (.sl-jump) the sole shrink/overflow target. .sl-ver and every .sl-pill
-   get flex-shrink:0 so they're never squeezed illegibly; .sl-bh-right gets flex-shrink:0 too so it
-   never moves from the far right regardless of what .sl-jump is doing. */
+/* The header row never wraps, so the buttons stay top right; only .sl-jump
+   shrinks. */
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;
   padding:12px 16px;border-bottom:1px solid var(--sl-line);
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
 .sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim);flex-shrink:0}
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
 .sl-bubble .sl-pill{flex-shrink:0}
-/* #46 (user: "kein Lauftext, Text ist abgeschnitten" - the ellipsis-only first attempt wasn't what was
-   asked for): a real marquee. docker.js measures whether the text actually overflows and, only then,
-   duplicates it into a two-copy track and adds .sl-jump-marquee; translateX(-50%) over two IDENTICAL
-   copies loops seamlessly (the second copy lands exactly where the first started). Text that already
-   fits, or a reduced-motion preference, never gets the marquee DOM at all - plain text + this base
-   rule's own ellipsis is the fallback in both cases. */
+/* docker.js turns overflowing text into a marquee of two identical copies, so
+   translateX(-50%) loops seamlessly. Text that fits, or reduced motion, keeps
+   the plain ellipsis. */
 .sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;flex:1 1 auto;min-width:40px;overflow:hidden;
   white-space:nowrap;text-overflow:ellipsis;position:relative}
 .sl-bubble .sl-jump.sl-jump-marquee{text-overflow:clip}
@@ -140,7 +107,6 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
 .sl-bubble .sl-jump-txt{padding-right:40px}
 @keyframes sl-jump-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .sl-bubble .sl-bh-right{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
-/* Unraid-orange action buttons: outlined in the Unraid accent, filled on hover. */
 .sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
   padding:5px 11px;text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
 .sl-bubble .sl-upd{font-weight:600}
@@ -156,7 +122,7 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
   padding:2px 6px;color:var(--sl-dim2);text-transform:none;letter-spacing:0}
 .sl-bubble ul{list-style:none;margin:0;padding:0}
 .sl-bubble li{padding:3px 0 3px 18px;position:relative}
-.sl-bubble li:before{content:"–";position:absolute;left:2px;color:var(--sl-dim2)}
+.sl-bubble li:before{content:"\2013";position:absolute;left:2px;color:var(--sl-dim2)}
 .sl-bubble li.sl-warn:before{content:"\26A0";color:#d6a243;font-size:12px}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
   border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
@@ -166,84 +132,41 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
 .sl-bubble .sl-raw ul{margin:4px 0;padding-left:14px}
 .sl-bubble .sl-raw .sp{height:6px}
 .sl-bubble .sl-raw code{background:var(--sl-bg);border:1px solid var(--sl-line);border-radius:4px;padding:0 4px}
-/* ── GlimStone (CannonadeCommand installed): CARDS, never dividing lines. A box-shadow ring is
-   STILL a line, just drawn with a different property — the actual CC convention (see
-   CannonadeCommand.Tokens.css li.cc-card-in: "one continuous SHADE block ... never a border
-   line") is a lifted background block with rounded corners, separated from its neighbours by
-   MARGIN, not by a 1px rule of any kind. Applied here: .sl-bh gets a real drop-shadow (it's
-   sticky, so it still needs to visually separate from content scrolling under it - that's
-   elevation, not a divider); every .sl-sec becomes its own card; .sl-raw sits one shade
-   further in as a nested block, same recipe, no ring. */
-/* #35a (user: "Fensterhintergrundfarbe ist heller als bei dem Container-Update-Fenster"): the base --sl-bg
-   fallback above (var(--cc-surface-window,#242424)) assumed CC's generic surface-window token equals the
-   update window's own frame - it doesn't, that dialog hardcodes #1a1a1a directly (Header.css .sweet-alert.nchan).
-   Override the token itself here so every rule that reads var(--sl-bg) picks up the exact reference shade,
-   same "explicit literal, not token-driven" call already made for --sl-card below. Native (no CC) keeps its
-   own #242424 fallback untouched - this only fires once CC is actually installed. */
+/* With CannonadeCommand, sections are lifted cards separated by margin, never
+   by a line, and the window uses the #1a1a1a frame of Unraid's update window.
+   The colour change between header and card separates them without a shadow. */
 html.cc-header-on .sl-bubble{border:none;--sl-bg:#1a1a1a}
-/* #67 (user, live-caught on a Discontinued container: "der Kopfabschnitt hat immer noch einen
-   Schlagschatten"): the #52 fix only ever dropped this shadow for the ONE pairing it was written
-   against (header directly above a plain .sl-sec, back when that first section blended into --sl-bg -
-   see #65 below for why that premise itself is gone now) - .sl-unmaint-note was never plain .sl-sec, so
-   :has(+ .sl-sec) never matched it and the shadow stayed on every Discontinued/deprecated bubble. Now
-   that every section, first or not, is a --sl-card-coloured lifted card (#65), the colour boundary
-   itself separates the header from whatever comes after it - the shadow was only ever compensating for
-   cases where that boundary was missing, so drop it unconditionally instead of re-deriving which
-   sibling still "needs" it. */
 html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:none}
-/* buttons: the update-window reference never outlines a button either (Header.css button.confirm/.cancel -
-   border:none, box-shadow:none, solid fill). .sl-upd (the primary action) takes the same accent-vs-neutral
-   split confirm/cancel uses; .sl-gh (an external link, secondary) gets the neutral --sl-card fill so it
-   doesn't compete with the primary action, keeping its orange text for brand identity. */
+/* Like the update window, buttons get no outline: the primary action is filled
+   with the accent, the external link with the neutral card colour. */
 html.cc-header-on .sl-bubble .sl-gh,html.cc-header-on .sl-bubble .sl-upd{border:none;box-shadow:none;background:var(--sl-card)}
 html.cc-header-on .sl-bubble .sl-upd{background:#ff8c2f;color:#1a1207}
-/* re-pin each button's OWN fill on hover (same colour, no swap) - the base (native-mode) hover rule just
-   above still says background:#ff8c2f, which would otherwise beat .sl-gh's grey fill by turning it orange
-   on hover; matching Header.css's own button hover (filter:brightness(1.14) only, background untouched). */
+/* The hover keeps each button's fill, which the base hover rule would turn
+   orange. */
 html.cc-header-on .sl-bubble .sl-gh:hover{background:var(--sl-card);filter:brightness(1.14)}
 html.cc-header-on .sl-bubble .sl-upd:hover{background:#ff8c2f;filter:brightness(1.14)}
 html.cc-header-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:none;background:var(--sl-card);color:var(--sl-dim)}
-/* #60 (user: "Cards zu nah, Badge liegt auf der oberen Card auf" - live-measured: the second card's
-   badge started at y422.8 while the first card still ran to y423.5, a dead-on overlap): each badge
-   straddles UPWARD from its OWN card's top edge by half its rendered height (~10-11px) - with only
-   10px of margin between cards (and vertical margins COLLAPSING between block siblings, so two 10px
-   margins facing each other never actually summed to 20px), the badge had nowhere to sit but on top of
-   the card above. margin-bottom:0 makes each card's OWN top margin the sole, uncollapsed determinant of
-   the gap above it - 18px comfortably clears the badge's overhang with room to spare. */
+/* Each badge overhangs its card's top edge by half its height. Vertical margins
+   between siblings collapse, so only the top margin sets the gap, and 18px
+   clears the overhang. */
 html.cc-header-on .sl-bubble .sl-sec{
   border-bottom:none;background:var(--sl-card);border-radius:min(var(--cc-b-radius,10px),10px);
   margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
-  position:relative;   /* #35c: positioning context for the straddling h4 badge below */
+  position:relative;
 }
-/* #65 (user, live-caught: "die Zusammenfassungscard hat keinen hellen Hintergrund mehr" - the #52 fix
-   below made the TOPMOST section blend into --sl-bg unconditionally, reasoning it was always the same
-   deprecated/unmaintained note #52 was tested against; in practice the AI summary is just as often the
-   first section, and blending IT into the window background silently dropped its card too): removed -
-   every .sl-sec, first or not, keeps the normal --sl-card lift from the base rule above. #67 (a few
-   rules up) removes the header's own shadow instead, so the header-to-card colour boundary alone still
-   reads as a clean separation without needing a first-section special case to manufacture one. */
-/* section badge (user: "cards mit Abschnittsbadge machen wie im updatefenster") - a filled accent pill.
-   #35c (user: "halb auf der card liegend"): a REAL <legend> inside a <fieldset> straddles its border
-   natively (Header.css's fieldset>legend rule needs no position/margin trick at all for that reason) -
-   .sl-sec/h4 are a plain div+h4, no such native behaviour, so the straddle has to be built by hand:
-   pin the badge's top to the card's own top edge (position:relative on .sl-sec above) and pull it up by
-   EXACTLY half its own rendered height via translateY, the same visual result a native legend gets for
-   free, self-adjusting if the badge's padding/font ever changes. .sl-sec's padding-top grew (12px -> 24px)
-   so the card's own content clears the badge instead of colliding with it. */
+/* The section badge straddles the card's top edge like a fieldset legend; the
+   translate keeps it centred on the edge whatever its size. */
 html.cc-header-on .sl-bubble h4{
   display:inline-flex;background:var(--cc-rbaccent,var(--cc-hdr-accent,#2f6feb));color:var(--cc-rbaccent-text,var(--cc-hdr-accent-text,#fff));
   border-radius:var(--cc-b-radius,999px);padding:3px 12px;
   position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
 }
 html.cc-header-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
-/* #49 (user, "als Titelbadge wie im Container-Update-Fenster"): the Unmaintained/CADeprecated note
-   gets the SAME straddling-badge card as every .sl-sec above, kept as its OWN rule (not just adding
-   the .sl-sec class to the div) so the native red/amber note two rules up is never touched by this -
-   that native styling is exactly right without CC and must stay that way. */
+/* A rule of its own, so the native note styling above stays untouched. */
 html.cc-header-on .sl-bubble .sl-unmaint-note{
   background:var(--sl-card);color:var(--sl-txt);border-radius:min(var(--cc-b-radius,10px),10px);
   margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35));
-  position:relative;   /* #60: margin-bottom:0, see the matching .sl-sec rule's comment */
+  position:relative;
 }
 html.cc-header-on .sl-bubble .sl-unmaint-note h4{
   display:inline-flex;background:var(--cc-err,#d9433f);color:#fff;
@@ -251,11 +174,7 @@ html.cc-header-on .sl-bubble .sl-unmaint-note h4{
   position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
 }
 html.cc-header-on .sl-bubble .sl-dep-note h4{background:var(--cc-warn,#e0912a);color:#1a1207}
-/* #35b (user: "jetzt haben wir drei ebenen ... soll nur zwei ebenen sein"): this used to re-paint the
-   window's own dark --sl-bg INSIDE the light --sl-card section - a third, visually distinct shade the
-   locked reference never has (frame + card, nothing nested a third tone). Let it blend into its parent
-   card instead; .sl-raw code below still gets its own --sl-card highlight, which now reads as the only
-   nested accent, same role the fieldset legend badge plays elsewhere - not a competing background layer. */
+/* Two shades only, frame and card: raw notes blend into their card. */
 html.cc-header-on .sl-bubble .sl-raw{border:none;background:transparent}
 html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
 .sl-bubble .sl-rel + .sl-rel{margin-top:12px}
@@ -264,11 +183,10 @@ html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
 .sl-bubble .sl-relx{color:var(--sl-link);text-decoration:none;font-size:12px;margin-left:auto}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
-/* #60 follow-up: the last card's own margin-bottom is now 0 (see .sl-sec), so the footer needs its
-   OWN top margin to keep the same breathing room the collapsed margin used to provide accidentally. */
+/* The last card has no bottom margin, so the footer brings its own. */
 html.cc-header-on .sl-bubble .sl-bf{margin-top:8px}
 
-/* ── update-all button (left of the Basic/Advanced toggle) ─────────────── */
+/* Update-all button, left of the Basic/Advanced toggle. */
 a.sl-updall {
   display: inline-block;
   margin-right: 6px; /* on top of .ToggleViewMode's flex gap */
@@ -283,16 +201,11 @@ a.sl-updall {
 }
 a.sl-updall:hover { border-color: rgba(128, 128, 128, 0.95); }
 
-/* Silent update: hide ONLY Unraid's live download-log window (the reused SweetAlert node
-   while it carries `.nchan` — openDocker adds it; the confirm dialog never has `.nchan`, so
-   this can NEVER hide the "are you sure?" prompt) AND its shared backdrop, and release the
-   page scroll-lock so the page stays fully usable during the update. docker.js adds
-   body.sl-hide-nchan ONLY once the `.nchan` log actually exists (never during the confirm
-   dialog, which keeps its backdrop) and removes it the instant the log is dismissed. Nodes
-   stay in layout (visibility, not display:none) so docker.js can detect the log's Done button
-   flipping enabled on completion and click it → Unraid's own teardown removes overlay +
-   scroll-lock + runs loadlist. No inline style is written to Unraid's reused node, so nothing
-   is left stuck for the next dialog / the 2nd, 3rd update. */
+/* A silent update hides Unraid's download log and its backdrop and releases the
+   scroll lock. Only the log carries .nchan, so the confirm prompt is never
+   hidden. The nodes stay in layout, so docker.js can see the Done button enable
+   and click it, which lets Unraid tear down the overlay itself; no inline style
+   is left on the node Unraid reuses for the next dialog. */
 body.sl-hide-nchan .sweet-alert.nchan {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -304,20 +217,16 @@ body.sl-hide-nchan .sweet-overlay {
   pointer-events: none !important;
 }
 body.sl-hide-nchan {
-  overflow: auto !important; /* belt-and-suspenders: never leave the page scroll-locked */
+  overflow: auto !important;
 }
 
-/* ── silent-update spinner ──────────────────────────────────────────────
-   A SILENT update hides Unraid's progress log (body.sl-hide-nchan), so the row gives
-   no feedback. docker.js overlays this spinner on the updating container's logo
-   (td.ct-name span.hand > img) for the life of that hidden log — painted when the
-   .nchan log appears, removed when it finishes / on re-render. Decorative + inert
-   (pointer-events:none, never eats the icon's start/stop click). */
+/* With the log hidden, a spinner over the container's logo is the only sign of
+   a running update. It ignores clicks, so the icon's start/stop menu still works. */
 .sl-spinhost { position: relative; }
 .sl-spin {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, 0.75); border-radius: 6px; /* white veil over the logo — clearly visible */
+  background: rgba(255, 255, 255, 0.75); border-radius: 6px;
   pointer-events: none; z-index: 3;
   animation: sl-spin-fade 0.12s ease both;
 }
@@ -325,7 +234,7 @@ body.sl-hide-nchan {
   box-sizing: border-box;
   width: 66%; height: 66%; min-width: 16px; min-height: 16px; max-width: 30px; max-height: 30px;
   border-radius: 50%;
-  border: 3px solid rgba(0, 0, 0, 0.18); border-top-color: #ff8c2f; /* orange head over a dark track — reads on the white veil */
+  border: 3px solid rgba(0, 0, 0, 0.18); border-top-color: #ff8c2f;
   animation: sl-spin-rot 0.7s linear infinite;
 }
 @keyframes sl-spin-rot { to { transform: rotate(360deg); } }

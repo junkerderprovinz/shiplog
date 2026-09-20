@@ -1,3 +1,3 @@
 #!/bin/bash
-# Unraid fires this while stopping the array — stop the daemon before /mnt goes away.
+# Unraid runs this while stopping the array, before /mnt goes away.
 /usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog stop
