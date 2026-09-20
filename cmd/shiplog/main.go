@@ -38,8 +38,6 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
-	// Collaborators. The changelog chain tries GitHub (via the OCI source label)
-	// then always-succeeds with the fallback.
 	eng := engine.New(
 		dockercli.New(cfg.DockerSocket),
 		resolver.New().
@@ -50,40 +48,29 @@ func main() {
 		cfg.PollInterval,
 	)
 
-	// Drop third-party (non-Unraid-template) containers from the sweep when the
-	// user turns on "ignore third-party containers" (default off = track all).
 	eng.WithIgnoreUnmanaged(cfg.IgnoreUnmanaged)
-
-	// Real Community Applications catalog corroboration (absent/deprecated/
-	// blacklisted), cached alongside the SQLite DB. Always on, like the raw-URL
-	// proxy and archived-repo checks it complements.
 	eng.WithCAFeed(cfg.DataDir)
 
-	// Optional AI summaries (Ollama). nil when unconfigured → silently skipped.
-	// Ping once at startup so the log says plainly whether summaries will work.
+	// Optional integrations are pinged once, so the log says whether they work.
 	if sum := summarize.New(cfg.OllamaURL, cfg.OllamaModel); sum != nil {
 		eng.WithSummarizer(sum)
 		pingCtx, cancelPing := context.WithTimeout(context.Background(), 10*time.Second)
 		if perr := sum.Ping(pingCtx); perr != nil {
-			log.Printf("shiplog: Ollama configured (%s, model %s) but NOT working: %v", cfg.OllamaURL, cfg.OllamaModel, perr)
+			log.Printf("shiplog: Ollama configured (%s, model %s) but not working: %v", cfg.OllamaURL, cfg.OllamaModel, perr)
 		} else {
-			log.Printf("shiplog: Ollama OK — AI summaries enabled (%s, model %s)", cfg.OllamaURL, cfg.OllamaModel)
+			log.Printf("shiplog: Ollama OK, AI summaries enabled (%s, model %s)", cfg.OllamaURL, cfg.OllamaModel)
 		}
 		cancelPing()
 	}
 
-	// Notification channels: optional Matrix + optional native Unraid
-	// notifications, fanned out through one Fanout so a new update reaches every
-	// configured channel. Each channel logs at startup so the log says plainly
-	// which ones will work.
 	var sinks []notify.Sink
 	if m := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom); m != nil {
 		sinks = append(sinks, m)
 		whoCtx, cancelWho := context.WithTimeout(context.Background(), 10*time.Second)
 		if werr := m.Whoami(whoCtx); werr != nil {
-			log.Printf("shiplog: Matrix configured (%s) but NOT working: %v", cfg.MatrixHomeserver, werr)
+			log.Printf("shiplog: Matrix configured (%s) but not working: %v", cfg.MatrixHomeserver, werr)
 		} else {
-			log.Printf("shiplog: Matrix OK — notifications enabled (%s, room %s)", cfg.MatrixHomeserver, cfg.MatrixRoom)
+			log.Printf("shiplog: Matrix OK, notifications enabled (%s, room %s)", cfg.MatrixHomeserver, cfg.MatrixRoom)
 		}
 		cancelWho()
 	}
@@ -91,30 +78,27 @@ func main() {
 		sinks = append(sinks, u)
 		log.Printf("shiplog: native Unraid notifications enabled")
 	} else if cfg.UnraidNotify {
-		log.Printf("shiplog: Unraid notifications requested but the notify tool (%s) was not found — skipping (Unraid host only)", notify.UnraidScriptPath)
+		log.Printf("shiplog: Unraid notifications requested but the notify tool (%s) was not found; skipping (Unraid host only)", notify.UnraidScriptPath)
 	}
 	notifier := notify.NewFanout(sinks...)
 	if notifier != nil {
 		eng.WithNotifier(notifier)
 	}
 
-	// Cancel everything on SIGTERM/SIGINT (the binary is PID 1 in the container).
+	// The binary is PID 1 in the container.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
 	go eng.Run(ctx)
 
-	// Scheduled SemVer-gated auto-update (Unraid plugin only; off unless enabled).
-	// It reads the engine's already-classified statuses from the store and applies
-	// only what the policy allows, on the configured cadence.
 	if cfg.AutoUpdate.Enabled {
 		upd := updater.Unraid{}
 		if !upd.Supported() {
-			log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir) — skipping")
+			log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir); skipping")
 		} else {
 			exec := autoupdate.NewExecutor(db, upd)
 			go runAutoUpdate(ctx, cfg.AutoUpdate, exec, db, notifier)
-			log.Printf("shiplog: auto-update ON (level=%s, digest=%v, schedule=%s, dry-run=%v)",
+			log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
 				cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
 		}
 	}
@@ -142,11 +126,8 @@ func main() {
 	_ = srv.Shutdown(shutdownCtx)
 }
 
-// runAutoUpdate drives the scheduled auto-update loop: every minute it asks the
-// schedule whether a run is due, and when it is, applies the policy over the
-// store's classified statuses, records each real action, and sends a run
-// summary. It waits one tick before the first check so the initial sweep has
-// populated the store (matters for the "boot" schedule).
+// runAutoUpdate checks every minute whether a run is due. The first check waits
+// one tick, so the initial sweep has filled the store before a "boot" run.
 func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Fanout) {
 	sched := autoupdate.Schedule{Mode: cfg.SchedMode, Time: cfg.SchedTime, Every: cfg.SchedEvery}
 	policy := autoupdate.Policy{
@@ -157,9 +138,8 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 	var last time.Time
-	// Rehydrate the last run time across restarts so a reboot does not re-trigger
-	// an off-schedule run for the daily/hours/days cadences. "boot" is left zero on
-	// purpose — it is meant to fire once per process start.
+	// The stored last run keeps a restart from triggering an extra run; "boot"
+	// is meant to run once per process start.
 	if cfg.SchedMode != "boot" {
 		if v, err := st.GetMeta(lastRunKey); err == nil && v != "" {
 			if u, perr := strconv.ParseInt(v, 10, 64); perr == nil {
@@ -183,7 +163,7 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 		if !res.DryRun {
 			for _, o := range res.Outcomes {
 				if o.Blocked {
-					continue // never applied — not an action, so not part of the audit log
+					continue
 				}
 				errStr := ""
 				if o.Err != nil {
@@ -195,9 +175,8 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 				})
 			}
 		}
-		// Always log the itemised run summary so the plan is visible even without
-		// Matrix (matters for dry-run — the whole point is to SEE what would update);
-		// then also push it to Matrix when configured. Empty when nothing was eligible.
+		// The summary also goes to the log, so a dry run shows its plan without any
+		// notification channel.
 		if text, html := autoupdate.RenderSummary(res); text != "" {
 			log.Printf("shiplog: %s", text)
 			if notifier != nil {
@@ -209,6 +188,5 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 	}
 }
 
-// lastRunKey is the meta store key holding the unix time of the last scheduled
-// auto-update run, so the cadence survives a daemon restart.
+// lastRunKey holds the unix time of the last scheduled auto-update run.
 const lastRunKey = "autoupdate_last_run"
