@@ -1,4 +1,3 @@
-# ShipLog task runner — run `just` to list recipes.
 # Recipes use sh (Git Bash on Windows).
 
 # List available recipes
@@ -17,7 +16,7 @@ test:
 fmt:
     gofmt -w .
 
-# Format check + vet + race tests + lint + Dockerfile lint (full pre-push chain)
+# Format check, vet, race tests, lint and Dockerfile lint before a push
 check:
     gofmt -l . | (! grep .) || (echo "gofmt: run 'just fmt'"; exit 1)
     go vet ./...
@@ -29,7 +28,7 @@ check:
 image:
     docker build -t shiplog:dev .
 
-# Build the Unraid plugin package (.txz) — e.g. `just pkg 2.6.0`
+# Build the Unraid plugin package (.txz), e.g. `just pkg 2.6.0`
 pkg version="":
     bash plugin/pkg_build.sh {{version}}
 
