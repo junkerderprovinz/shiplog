@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Flood-fill the border-connected background colour of a PNG to transparent,
-in place. Keeps any region enclosed by a different colour (e.g. the white
-disk inside a dark ring/frame) opaque, since it's never border-connected.
+"""Make the background of a PNG transparent in place, starting from the border.
+A region enclosed by another colour, such as the disk inside a ring, stays.
 
 Usage: python3 flood-transparent.py <path-to-png>
 """
