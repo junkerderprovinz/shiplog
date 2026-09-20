@@ -1,6 +1,4 @@
 // Package summarize turns a raw changelog into a short AI summary via Ollama.
-// It is optional: when OLLAMA_URL/OLLAMA_MODEL are unset New returns nil and the
-// engine simply skips summarisation, falling back to the raw changelog.
 package summarize
 
 import (
@@ -26,7 +24,7 @@ type Ollama struct {
 	client *http.Client
 }
 
-// New returns an Ollama summariser, or nil if url or model is empty (feature off).
+// New returns nil when url or model is empty, which turns summaries off.
 func New(url, model string) *Ollama {
 	url, model = strings.TrimSpace(url), strings.TrimSpace(model)
 	if url == "" || model == "" {
@@ -39,8 +37,8 @@ func New(url, model string) *Ollama {
 	}
 }
 
-// Ping checks the server is reachable and the model is present, so startup can
-// log plainly whether AI summaries will work. nil receiver → not configured.
+// Ping checks that the server answers and has the model, so startup can log
+// whether summaries will work.
 func (o *Ollama) Ping(ctx context.Context) error {
 	if o == nil {
 		return fmt.Errorf("ollama not configured")
@@ -73,8 +71,8 @@ func (o *Ollama) Ping(ctx context.Context) error {
 	return fmt.Errorf("model %q not found on the Ollama server (pull it first)", o.model)
 }
 
-// Summarize asks Ollama to condense raw into bullets/breaking/risk. Returns
-// (nil,false) on any error so the engine falls back to the raw changelog.
+// Summarize asks Ollama to condense raw into bullets, breaking changes and a
+// risk line. On any error the engine shows the raw changelog instead.
 func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTag, raw string) (*model.AISummary, bool) {
 	if o == nil || strings.TrimSpace(raw) == "" {
 		return nil, false
@@ -130,11 +128,11 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 		Risk     string   `json:"risk"`
 	}
 	if err := json.Unmarshal([]byte(r), &out); err != nil {
-		log.Printf("shiplog: ollama %s: model output is not the expected JSON: %v — got: %s", c.Name, err, snippet(r))
+		log.Printf("shiplog: ollama %s: model output is not the expected JSON: %v; got: %s", c.Name, err, snippet(r))
 		return nil, false
 	}
 	if len(out.Bullets) == 0 && len(out.Breaking) == 0 && out.Risk == "" {
-		log.Printf("shiplog: ollama %s: parsed JSON but bullets/breaking/risk are all empty — got: %s", c.Name, snippet(r))
+		log.Printf("shiplog: ollama %s: parsed JSON but bullets/breaking/risk are all empty; got: %s", c.Name, snippet(r))
 		return nil, false
 	}
 	return &model.AISummary{
@@ -145,7 +143,7 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 	}, true
 }
 
-// snippet collapses whitespace and caps a string for a single-line log message.
+// snippet fits a string on one log line.
 func snippet(s string) string {
 	s = strings.Join(strings.Fields(s), " ")
 	if len(s) > 240 {

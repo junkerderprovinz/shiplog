@@ -29,7 +29,7 @@ func TestSummarize_ParsesOllamaJSON(t *testing.T) {
 			return
 		}
 		// Ollama wraps the model's JSON answer in {"response": "..."}.
-		inner := `{"bullets":["new UI","faster scan"],"breaking":["needs PostgreSQL 15"],"risk":"medium — DB migration"}`
+		inner := `{"bullets":["new UI","faster scan"],"breaking":["needs PostgreSQL 15"],"risk":"medium, DB migration"}`
 		_ = json.NewEncoder(w).Encode(map[string]any{"response": inner, "done": true})
 	}))
 	defer srv.Close()
