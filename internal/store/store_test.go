@@ -67,13 +67,6 @@ func TestPinnedAndLocalRoundTrip(t *testing.T) {
 	}
 }
 
-// Managed must round-trip through Get()/List() — every consumer of the served
-// status (the JSON API, the status page) reads it back from the store, not
-// from the in-memory struct the sweep computed it into. (This column existed
-// on the model for several releases without ever being wired into the
-// schema/selectCols/scanStatus at all, which is exactly this bug: every
-// served container read back managed=false regardless of its real
-// net.unraid.docker.managed label.)
 func TestManagedRoundTrip(t *testing.T) {
 	s := newTestStore(t)
 	st := model.UpdateStatus{
@@ -92,13 +85,8 @@ func TestManagedRoundTrip(t *testing.T) {
 	}
 }
 
-// Unmaintained/UnmaintainedReason and CADeprecated/CADeprecatedNote must round-trip
-// through Get() — engine.maybeNotifyUnmaintained's dedup ("if prior.Unmaintained {
-// return }") only ever sees a real value via Store.Get, never the in-memory struct
-// directly, so a silent gap here means a container flagged unmaintained gets a fresh
-// notification on EVERY sweep forever instead of once on the transition into the
-// state. (These columns existed on the schema and the model for several releases
-// without ever being wired into selectCols/scanStatus, which is exactly this bug.)
+// The unmaintained notification is sent once per transition only if Get
+// returns the stored flag.
 func TestUnmaintainedAndCADeprecatedRoundTrip(t *testing.T) {
 	s := newTestStore(t)
 	st := model.UpdateStatus{
@@ -117,7 +105,7 @@ func TestUnmaintainedAndCADeprecatedRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !got.Unmaintained {
-		t.Error("Unmaintained did not round-trip (this is the notify-spam bug: prior.Unmaintained would always read false)")
+		t.Error("Unmaintained did not round-trip")
 	}
 	if got.UnmaintainedReason != "Removed from Community Applications" {
 		t.Errorf("UnmaintainedReason did not round-trip: %q", got.UnmaintainedReason)
@@ -129,7 +117,6 @@ func TestUnmaintainedAndCADeprecatedRoundTrip(t *testing.T) {
 		t.Errorf("CADeprecatedNote did not round-trip: %q", got.CADeprecatedNote)
 	}
 
-	// A healthy row must round-trip as explicitly false/empty, not just "unset".
 	st2 := model.UpdateStatus{Container: model.Container{ID: "fine", Name: "fine"}, Kind: model.KindNone, Risk: model.RiskNone, CheckedAt: time.Now()}
 	if err := s.Upsert(st2); err != nil {
 		t.Fatal(err)
@@ -180,22 +167,17 @@ func TestRunningVersionRoundTrip(t *testing.T) {
 	}
 }
 
-// For a :latest container the tag never changes, so history must key off the
-// remembered running version — and must NOT record a row the first time we
-// learn it (prior running version empty).
+// Learning the first running version of a :latest container is not a change.
 func TestHistoryOnLatestRunningVersionChange(t *testing.T) {
 	s := newTestStore(t)
 	st := model.UpdateStatus{Container: model.Container{ID: "oh", Name: "openhands", Tag: "latest"}, CheckedAt: time.Now()}
 
-	// First sight: version unknown → no history.
 	_ = s.Upsert(st)
-	// We learn the version (e.g. running == :latest) → still no history (just learning).
 	st.RunningVersion = "1.7.0"
 	_ = s.Upsert(st)
 	if h, _ := s.History("oh"); len(h) != 0 {
 		t.Fatalf("learning the first version must not create history, got %d rows", len(h))
 	}
-	// User updates: 1.7.0 -> 1.8.0, tag still "latest" → one history row.
 	st.RunningVersion = "1.8.0"
 	_ = s.Upsert(st)
 	h, _ := s.History("oh")
@@ -207,16 +189,13 @@ func TestHistoryOnLatestRunningVersionChange(t *testing.T) {
 	}
 }
 
-// A row migrated from a DB that predates running_version has the column
-// backfilled NULL. Upsert must tolerate that (COALESCE) instead of erroring on
-// the NULL->string scan and aborting the whole update.
+// A row migrated from a database without running_version holds NULL there.
 func TestUpsertToleratesNullRunningVersion(t *testing.T) {
 	s := newTestStore(t)
 	st := model.UpdateStatus{Container: model.Container{ID: "old", Name: "legacy", Tag: "latest"}, RunningVersion: "1.0.0", CheckedAt: time.Now()}
 	if err := s.Upsert(st); err != nil {
 		t.Fatal(err)
 	}
-	// Simulate the post-migration state: existing row with running_version NULL.
 	if _, err := s.db.Exec(`UPDATE status SET running_version = NULL WHERE container_id = 'old'`); err != nil {
 		t.Fatal(err)
 	}
@@ -310,7 +289,6 @@ func TestSourceOverridesRoundTrip(t *testing.T) {
 	if err := s.SetSourceOverride("lscr.io/linuxserver/radarr", "https://github.com/Radarr/Radarr"); err != nil {
 		t.Fatal(err)
 	}
-	// Upsert: a second set for the same repo replaces, not duplicates.
 	if err := s.SetSourceOverride("lscr.io/linuxserver/radarr", "https://github.com/me/fork"); err != nil {
 		t.Fatal(err)
 	}
@@ -327,7 +305,6 @@ func TestSourceOverridesRoundTrip(t *testing.T) {
 	if err := s.DeleteSourceOverride("lscr.io/linuxserver/radarr"); err != nil {
 		t.Fatal(err)
 	}
-	// Deleting an absent repo is a no-op, not an error.
 	if err := s.DeleteSourceOverride("does/not-exist"); err != nil {
 		t.Fatalf("delete absent: %v", err)
 	}
@@ -345,7 +322,6 @@ func TestSuppressedUnmaintainedRoundTrip(t *testing.T) {
 	if err := s.SuppressUnmaintained("ghcr.io/x/myapp"); err != nil {
 		t.Fatal(err)
 	}
-	// Upsert: suppressing an already-suppressed repo is a harmless no-op.
 	if err := s.SuppressUnmaintained("ghcr.io/x/myapp"); err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +338,6 @@ func TestSuppressedUnmaintainedRoundTrip(t *testing.T) {
 	if err := s.UnsuppressUnmaintained("ghcr.io/x/myapp"); err != nil {
 		t.Fatal(err)
 	}
-	// Unsuppressing an absent repo is a no-op, not an error.
 	if err := s.UnsuppressUnmaintained("does/not-exist"); err != nil {
 		t.Fatalf("unsuppress absent: %v", err)
 	}

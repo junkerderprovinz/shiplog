@@ -28,7 +28,6 @@ func TestAutoUpdateLog(t *testing.T) {
 	if len(hist) != 2 {
 		t.Fatalf("want 2 records, got %d", len(hist))
 	}
-	// newest first: at=200 (radarr), a failure with its reason preserved.
 	if hist[0].Name != "radarr" || hist[0].Success || hist[0].Err != "pull error" || hist[0].Level != "minor" {
 		t.Fatalf("newest record wrong: %+v", hist[0])
 	}
@@ -44,7 +43,6 @@ func TestMetaRoundTrip(t *testing.T) {
 	}
 	defer func() { _ = s.Close() }()
 
-	// an absent key returns "" and no error (so a first-ever start reads no last run).
 	if v, err := s.GetMeta("autoupdate_last_run"); err != nil || v != "" {
 		t.Fatalf("absent key: got (%q, %v), want (\"\", nil)", v, err)
 	}
@@ -54,7 +52,6 @@ func TestMetaRoundTrip(t *testing.T) {
 	if v, err := s.GetMeta("autoupdate_last_run"); err != nil || v != "1700000000" {
 		t.Fatalf("after set: got (%q, %v)", v, err)
 	}
-	// upsert overwrites in place, not a second row.
 	if err := s.SetMeta("autoupdate_last_run", "1700009999"); err != nil {
 		t.Fatal(err)
 	}
