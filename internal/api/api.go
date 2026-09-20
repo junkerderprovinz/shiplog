@@ -19,9 +19,8 @@ import (
 //go:embed status.html
 var statusHTML string
 
-// logoSVG is the ShipLog mark — a gold anchor in a white ring (the shiplog-hell
-// variant), so it reads on the dark Carbon status page. Embedded so the standalone
-// binary serves it self-contained.
+// logoSVG is the light variant of the ShipLog mark, which reads on the dark
+// status page.
 //
 //go:embed logo.svg
 var logoSVG []byte
@@ -55,15 +54,13 @@ type API struct {
 	src StatusSource
 	ovr OverrideStore
 	ref Refresher
-	// verify reports whether a normalised github source repo exists (exists) and
-	// whether the check was conclusive (checked). Injectable so tests don't hit
-	// the network; the default calls the GitHub API.
+	// verify reports whether a GitHub source repo exists and whether the check
+	// was conclusive.
 	verify func(ctx context.Context, source string) (exists, checked bool)
 }
 
-// New builds the API over a status source, an override store and a refresher.
-// ghToken (optional) is used to verify a manual source repo against the GitHub
-// API when the user saves an override.
+// New builds the API. ghToken, if set, is used to check a manual source repo
+// against the GitHub API.
 func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *API {
 	a := &API{src: src, ovr: ovr, ref: ref}
 	a.verify = func(ctx context.Context, source string) (bool, bool) {
@@ -72,10 +69,9 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 	return a
 }
 
-// verifyGitHubRepo GETs api.github.com/repos/owner/repo to check a source exists.
-// Returns (exists, checked): checked is false on a transport error or a
-// rate-limit/other non-200/404 status, so an inconclusive check never blocks a
-// save. source must be the normalised "https://github.com/owner/repo" form.
+// verifyGitHubRepo checks a normalized "https://github.com/owner/repo" source.
+// Anything but a 200 or 404 leaves checked false, so a rate limit or network
+// error does not block a save.
 func verifyGitHubRepo(ctx context.Context, token, source string) (exists, checked bool) {
 	path := strings.TrimPrefix(source, "https://github.com/")
 	parts := strings.Split(path, "/")
@@ -103,7 +99,7 @@ func verifyGitHubRepo(ctx context.Context, token, source string) (exists, checke
 	case http.StatusNotFound:
 		return false, true
 	default:
-		return false, false // rate limit / transient → don't block the save
+		return false, false
 	}
 }
 
@@ -124,7 +120,6 @@ func (a *API) Handler() http.Handler {
 	return mux
 }
 
-// logo serves the embedded ShipLog mark for the status page header.
 func (a *API) logo(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.Header().Set("Cache-Control", "public, max-age=86400")
@@ -159,7 +154,6 @@ func (a *API) refresh(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte(`{"status":"sweep triggered"}`))
 }
 
-// listOverrides returns the repo→source override map.
 func (a *API) listOverrides(w http.ResponseWriter, _ *http.Request) {
 	m, err := a.ovr.SourceOverrides()
 	if err != nil {
@@ -177,10 +171,8 @@ type overrideReq struct {
 	Source string `json:"source"`
 }
 
-// setOverride records a manual changelog source for an image repo. The source
-// is normalised to a canonical github.com/owner/repo URL; a non-GitHub or
-// malformed value is rejected. A successful change triggers a refresh so the
-// corrected changelog appears without waiting for the poll interval.
+// setOverride records a manual GitHub changelog source for an image repo and
+// refreshes, so the changelog does not wait for the poll interval.
 func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 	var req overrideReq
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
@@ -197,11 +189,10 @@ func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "source must be a GitHub repo, e.g. owner/repo or https://github.com/owner/repo", http.StatusBadRequest)
 		return
 	}
-	// Verify the repo exists (best-effort): reject a clear 404 so a typo is caught
-	// at save time, but never block on an inconclusive check (rate limit, offline).
+	// A clear 404 catches a typo at save time.
 	if a.verify != nil {
 		if exists, checked := a.verify(r.Context(), source); checked && !exists {
-			http.Error(w, "that GitHub repo was not found — check the owner/repo", http.StatusBadRequest)
+			http.Error(w, "that GitHub repo was not found, check the owner/repo", http.StatusBadRequest)
 			return
 		}
 	}
@@ -213,8 +204,7 @@ func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"repo": repo, "source": source})
 }
 
-// deleteOverride removes the override for a repo (given as ?repo= or a JSON
-// body) and triggers a refresh so the default source resolves again.
+// deleteOverride takes the repo from ?repo= or a JSON body.
 func (a *API) deleteOverride(w http.ResponseWriter, r *http.Request) {
 	repo := strings.TrimSpace(r.URL.Query().Get("repo"))
 	if repo == "" {
@@ -235,8 +225,6 @@ func (a *API) deleteOverride(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`{"status":"override cleared"}`))
 }
 
-// listSuppressions returns the set of repos with an active manual
-// unmaintained-suppression, as a repo→true map.
 func (a *API) listSuppressions(w http.ResponseWriter, _ *http.Request) {
 	m, err := a.ovr.SuppressedUnmaintained()
 	if err != nil {
@@ -253,9 +241,7 @@ type suppressionReq struct {
 	Repo string `json:"repo"`
 }
 
-// setSuppression silences every Unmaintained trigger for an image repo. A
-// successful change triggers a refresh so the badge disappears without
-// waiting for the poll interval.
+// setSuppression silences the Unmaintained verdict for an image repo.
 func (a *API) setSuppression(w http.ResponseWriter, r *http.Request) {
 	var req suppressionReq
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
@@ -275,8 +261,7 @@ func (a *API) setSuppression(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"repo": repo})
 }
 
-// deleteSuppression removes a prior suppression for a repo (given as ?repo=
-// or a JSON body) and triggers a refresh so Unmaintained detection resumes.
+// deleteSuppression takes the repo from ?repo= or a JSON body.
 func (a *API) deleteSuppression(w http.ResponseWriter, r *http.Request) {
 	repo := strings.TrimSpace(r.URL.Query().Get("repo"))
 	if repo == "" {
@@ -305,7 +290,7 @@ type pageData struct {
 }
 
 func (a *API) statusPage(w http.ResponseWriter, r *http.Request) {
-	// "/" only — the catch-all pattern also matches unknown paths.
+	// The catch-all pattern also matches unknown paths.
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
