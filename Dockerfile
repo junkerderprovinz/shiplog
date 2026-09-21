@@ -1,10 +1,10 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 # ShipLog engine, a read-only update advisor for Docker hosts.
 # https://github.com/junkerderprovinz/shiplog, AGPL-3.0-only
 #
 # The build image has to satisfy the go directive in go.mod, which
 # modernc.org/sqlite raises to 1.25.
-FROM golang:1.27-bookworm AS build
+FROM golang:1.27-bookworm@sha256:69a7b9788769bec032d238959b61854e9ae87f57be9029ec04e9885fabf99195 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
