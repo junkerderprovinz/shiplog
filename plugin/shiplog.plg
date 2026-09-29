@@ -33,9 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
-### 3.4.1
+### 3.5.0
 ✨ **Added**
-- A version line at the bottom of the settings page (ShipLog vX.Y.Z · GlimStone vX.Y.Z), matching the same convention applied across every other GlimStone-adopting app.
+- A changelog file can be the changelog source. Some projects never publish GitHub releases and keep a CHANGELOG.md or History.txt instead, Domoticz's beta channel for one. Click **source** on the status page and paste the file's URL; a link to GitHub's file view works too. If the file has version headings, the bubble shows the sections between your running and the newest version, or the newest section when ShipLog can't place your version. A file without version headings shows its first 40 lines. Thanks to reinv for the idea.
+- A version line at the bottom of the settings page (ShipLog vX.Y.Z · GlimStone vX.Y.Z), as in the other GlimStone apps.
 
 ### 3.4.0
 ✨ **Added**
