@@ -31,6 +31,9 @@ type Container struct {
 	// .revision), so a rolling ":latest" container can show its version before
 	// ShipLog has seen it update.
 	ImageVersion string `json:"image_version"`
+	// ChangelogFile is the URL of a changelog file the user set as the source,
+	// read instead of the repo's releases.
+	ChangelogFile string `json:"changelog_file,omitempty"`
 }
 
 // RiskLevel is the severity verdict for an available update.

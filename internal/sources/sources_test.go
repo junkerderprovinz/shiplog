@@ -123,3 +123,37 @@ func TestResolve_ProjectPage(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeSource(t *testing.T) {
+	tests := []struct {
+		in, want string
+		file     bool
+	}{
+		{"Radarr/Radarr", "https://github.com/Radarr/Radarr", false},
+		{"https://github.com/Prowlarr/Prowlarr/releases", "https://github.com/Prowlarr/Prowlarr", false},
+		{"https://github.com/domoticz/domoticz/blob/development/History.txt", "https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt", true},
+		{"https://github.com/o/r/raw/main/docs/CHANGELOG.md", "https://raw.githubusercontent.com/o/r/main/docs/CHANGELOG.md", true},
+		{"https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt", "https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt", true},
+		{"  https://example.org/news/CHANGES.md#top ", "https://example.org/news/CHANGES.md", true},
+		{"http://192.168.1.5:8080/changelog.txt", "http://192.168.1.5:8080/changelog.txt", true},
+	}
+	for _, tt := range tests {
+		got, file, ok := NormalizeSource(tt.in)
+		if !ok || got != tt.want || file != tt.file {
+			t.Errorf("NormalizeSource(%q) = (%q,%v,%v); want (%q,%v,true)", tt.in, got, file, ok, tt.want, tt.file)
+		}
+	}
+	for _, in := range []string{"", "gitlab.com/x/y", "https://example.org", "https://example.org/", "https://", "https://github.com/onlyowner"} {
+		if got, _, ok := NormalizeSource(in); ok {
+			t.Errorf("NormalizeSource(%q) = %q; want invalid", in, got)
+		}
+	}
+}
+
+func TestResolveFileOverride(t *testing.T) {
+	ov := map[string]string{"domoticz/domoticz": "https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt"}
+	src, kind := Resolve("domoticz/domoticz", "", ov, "")
+	if src != ov["domoticz/domoticz"] || kind != KindFile {
+		t.Fatalf("Resolve = (%q,%q); want the file URL as %q", src, kind, KindFile)
+	}
+}

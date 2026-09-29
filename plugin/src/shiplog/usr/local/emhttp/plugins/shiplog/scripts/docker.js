@@ -272,7 +272,8 @@
       || newestRel || st.newest_tag || "?";
     const fmtDate = (iso) => {
       const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
-      return m ? `${m[3]}.${m[2]}.${m[1]}` : ""; // DD.MM.YYYY
+      // A changelog file section without a date carries Go's zero time.
+      return m && m[1] !== "0001" ? `${m[3]}.${m[2]}.${m[1]}` : ""; // DD.MM.YYYY
     };
     const relDate = entries[0] ? fmtDate(entries[0].published_at) : "";
     // An up-to-date container carries no version jump line.
@@ -316,9 +317,13 @@
       return m ? m[1].replace(/\.git$/, "") : "";
     };
     const href = repoRoot(c.source) || repoRoot(cl.url) || ghFromImage(c.repo || c.image);
-    const gh = href
-      ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">Repository ↗</a>`
-      : "";
+    // A changelog file is linked as it is, since its repo root may not exist
+    // on a raw host.
+    const gh = cl.provider === "file" && cl.url
+      ? `<a class="sl-gh" href="${esc(cl.url).replace(/"/g, "&quot;")}" target="_blank" rel="noopener">Changelog ↗</a>`
+      : href
+        ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">Repository ↗</a>`
+        : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
     // A rebuild of the same version shows just the version.

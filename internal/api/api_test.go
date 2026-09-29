@@ -126,6 +126,27 @@ func TestOverrideEndpoints(t *testing.T) {
 	if _, ok := ovr.m["x/y"]; ok {
 		t.Fatalf("nonexistent repo should not be stored")
 	}
+	// A changelog file is stored by URL; a GitHub file view becomes the raw URL.
+	a.verifyFile = func(context.Context, string) string { return "" }
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/override", strings.NewReader(`{"repo":"domoticz/domoticz","source":"https://github.com/domoticz/domoticz/blob/development/History.txt"}`)))
+	if rr.Code != 200 {
+		t.Fatalf("file source: got %d (%s)", rr.Code, rr.Body.String())
+	}
+	if got := ovr.m["domoticz/domoticz"]; got != "https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt" {
+		t.Fatalf("stored file source = %q", got)
+	}
+	// A file the check finds wrong is rejected with its reason.
+	a.verifyFile = func(context.Context, string) string { return "that file was not found, check the URL" }
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/override", strings.NewReader(`{"repo":"a/b","source":"https://example.org/CHANGES.md"}`)))
+	if rr.Code != 400 || !strings.Contains(rr.Body.String(), "not found") {
+		t.Fatalf("missing file: want 400 with the reason, got %d (%s)", rr.Code, rr.Body.String())
+	}
+	if _, ok := ovr.m["a/b"]; ok {
+		t.Fatalf("missing file should not be stored")
+	}
+
 	// An inconclusive check does not block the save.
 	a.verify = func(context.Context, string) (bool, bool) { return false, false }
 	rr = httptest.NewRecorder()
@@ -277,5 +298,35 @@ func TestUnknownPath404(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/nope", nil))
 	if rr.Code != 404 {
 		t.Fatalf("unknown path: want 404, got %d", rr.Code)
+	}
+}
+
+func TestVerifyChangelogFile(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/History.txt":
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			_, _ = w.Write([]byte("Version 1.0\n"))
+		case "/page":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte("<html></html>"))
+		case "/busy":
+			w.WriteHeader(http.StatusServiceUnavailable)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	for path, want := range map[string]string{
+		"/History.txt": "",
+		"/busy":        "",
+		"/page":        "web page",
+		"/gone":        "not found",
+	} {
+		got := verifyChangelogFile(context.Background(), srv.URL+path)
+		if (want == "") != (got == "") || !strings.Contains(got, want) {
+			t.Errorf("%s: got %q, want %q", path, got, want)
+		}
 	}
 }
