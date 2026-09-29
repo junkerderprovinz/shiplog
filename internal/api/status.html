@@ -79,7 +79,7 @@
             <span class="supmsg"></span>
           </div>
           <div class="srcbox" hidden>
-            <input type="text" class="srcin" placeholder="owner/repo or https://github.com/owner/repo" spellcheck="false" autocapitalize="off">
+            <input type="text" class="srcin" placeholder="owner/repo, or the URL of a changelog file" spellcheck="false" autocapitalize="off">
             <button type="button" class="srcsave">save</button>
             <button type="button" class="srcreset">reset</button>
             <span class="srcmsg"></span>
@@ -94,7 +94,7 @@
   <div class="empty">No containers yet. The first poll is running, refresh in a moment.</div>
 {{end}}
 </main>
-<footer>ShipLog is read-only; apply updates in Unraid as usual. Risk is derived from the version jump; changelog summaries (when configured) are AI-generated and marked as such. Wrong or missing changelog link? Click <b>source</b> on a row to point it at the right GitHub repo.</footer>
+<footer>ShipLog is read-only; apply updates in Unraid as usual. Risk is derived from the version jump; changelog summaries (when configured) are AI-generated and marked as such. Wrong or missing changelog link? Click <b>source</b> on a row to point it at the right GitHub repo, or at a changelog file such as CHANGELOG.md.</footer>
 <script>
 // Per-image changelog source override and unmaintained mute.
 (function(){
@@ -106,7 +106,10 @@
     document.querySelectorAll("td.clog[data-repo]").forEach(function(td){
       var repo = td.getAttribute("data-repo"); if(!repo || !m[repo]) return;
       var cur = td.querySelector(".srccur"), inp = td.querySelector(".srcin");
-      if(cur){ cur.textContent = "→ " + m[repo].replace("https://github.com/","") + " (manual)"; }
+      var shown = m[repo].indexOf("https://github.com/") === 0
+        ? m[repo].replace("https://github.com/","") + " (manual)"
+        : m[repo].replace(/[?#].*$/,"").split("/").pop() + " (manual file)";
+      if(cur){ cur.textContent = "→ " + shown; }
       if(inp){ inp.value = m[repo]; }
     });
   }).catch(function(){});
@@ -130,7 +133,7 @@
     } else if(t.classList.contains("srcsave")){
       var repo = td.getAttribute("data-repo"), inp = td.querySelector(".srcin");
       var src = inp ? inp.value.trim() : "";
-      if(!src){ msg(td,"enter a repo, e.g. owner/repo"); return; }
+      if(!src){ msg(td,"enter a repo, e.g. owner/repo, or a changelog file URL"); return; }
       fetch("/api/override",{method:"PUT",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({repo:repo,source:src})}).then(function(r){
           if(r.ok){ reloadSoon(td,"saved, refreshing…"); }

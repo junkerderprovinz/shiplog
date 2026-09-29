@@ -1,10 +1,14 @@
-// Package sources decides which GitHub repo a container's changelog comes from.
-// The image's OCI source label is often a packaging wrapper, inherited from a
-// base image, or missing, so a user override, a curated table and the
-// template's project page take precedence over it, in that order.
+// Package sources decides where a container's changelog comes from: a GitHub
+// repo, or a changelog file the user points at. The image's OCI source label is
+// often a packaging wrapper, inherited from a base image, or missing, so a user
+// override, a curated table and the template's project page take precedence
+// over it, in that order.
 package sources
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
 // curated maps an image repo without its registry host to the upstream GitHub
 // repo that publishes real releases. It stays small and verified, because a
@@ -38,6 +42,8 @@ const (
 	KindCurated  = "curated"
 	KindOverride = "override"
 	KindProject  = "project"
+	// KindFile is an override that points at a changelog file, not a repo.
+	KindFile = "file"
 )
 
 // Resolve returns the effective changelog source for an image repo and which
@@ -46,6 +52,9 @@ const (
 func Resolve(repo, ociSource string, overrides map[string]string, projectPage string) (source, kind string) {
 	if repo != "" {
 		if ov, ok := overrides[repo]; ok && strings.TrimSpace(ov) != "" {
+			if _, file, ok := NormalizeSource(ov); ok && file {
+				return ov, KindFile
+			}
 			return ov, KindOverride
 		}
 		if up, ok := curatedUpstream(repo); ok {
@@ -71,6 +80,38 @@ func curatedUpstream(repo string) (string, bool) {
 	}
 	up, ok := curated[path]
 	return up, ok
+}
+
+// NormalizeSource accepts what NormalizeGitHubSource accepts, and besides that
+// the http(s) URL of a changelog file on any host. A github.com link to a file
+// view (/blob/ or /raw/) becomes its raw.githubusercontent.com URL, since that
+// is what people copy from the browser. file reports a changelog file.
+func NormalizeSource(in string) (source string, file, ok bool) {
+	s := strings.TrimSpace(in)
+	lower := strings.ToLower(s)
+	if !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {
+		source, ok = NormalizeGitHubSource(s)
+		return source, false, ok
+	}
+	u, err := url.Parse(s)
+	if err != nil || u.Host == "" {
+		return "", false, false
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "github.com" || host == "www.github.com" {
+		// owner/repo/blob/ref/path...
+		parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+		if len(parts) >= 5 && (parts[2] == "blob" || parts[2] == "raw") {
+			return "https://raw.githubusercontent.com/" + parts[0] + "/" + parts[1] + "/" + strings.Join(parts[3:], "/"), true, true
+		}
+		source, ok = NormalizeGitHubSource(s)
+		return source, false, ok
+	}
+	if strings.Trim(u.Path, "/") == "" {
+		return "", false, false
+	}
+	u.Fragment = ""
+	return u.String(), true, true
 }
 
 // NormalizeGitHubSource turns "owner/repo", a github.com URL (with or without a

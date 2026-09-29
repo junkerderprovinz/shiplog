@@ -6,11 +6,13 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/junkerderprovinz/shiplog/internal/changelog"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
 	"github.com/junkerderprovinz/shiplog/internal/store"
@@ -57,6 +59,9 @@ type API struct {
 	// verify reports whether a GitHub source repo exists and whether the check
 	// was conclusive.
 	verify func(ctx context.Context, source string) (exists, checked bool)
+	// verifyFile names what is wrong with a changelog file URL, or returns ""
+	// when the file reads fine or the check was inconclusive.
+	verifyFile func(ctx context.Context, url string) (problem string)
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -66,7 +71,35 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 	a.verify = func(ctx context.Context, source string) (bool, bool) {
 		return verifyGitHubRepo(ctx, ghToken, source)
 	}
+	a.verifyFile = verifyChangelogFile
 	return a
+}
+
+// verifyChangelogFile fetches the file once. A server error, a rate limit or a
+// network failure does not block a save.
+func verifyChangelogFile(ctx context.Context, url string) string {
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = resp.Body.Close() }()
+	switch {
+	case resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone:
+		return "that file was not found, check the URL"
+	case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500:
+		return ""
+	case resp.StatusCode != http.StatusOK:
+		return fmt.Sprintf("that file could not be read (HTTP %d)", resp.StatusCode)
+	case changelog.IsWebPage(resp.Header.Get("Content-Type")):
+		return "that URL returns a web page, not the file itself; use the link to the raw file"
+	}
+	return ""
 }
 
 // verifyGitHubRepo checks a normalized "https://github.com/owner/repo" source.
@@ -171,8 +204,9 @@ type overrideReq struct {
 	Source string `json:"source"`
 }
 
-// setOverride records a manual GitHub changelog source for an image repo and
-// refreshes, so the changelog does not wait for the poll interval.
+// setOverride records a manual changelog source, a GitHub repo or a file, for
+// an image repo and refreshes, so the changelog does not wait for the poll
+// interval.
 func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 	var req overrideReq
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
@@ -184,13 +218,20 @@ func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "repo is required", http.StatusBadRequest)
 		return
 	}
-	source, ok := sources.NormalizeGitHubSource(req.Source)
+	source, file, ok := sources.NormalizeSource(req.Source)
 	if !ok {
-		http.Error(w, "source must be a GitHub repo, e.g. owner/repo or https://github.com/owner/repo", http.StatusBadRequest)
+		http.Error(w, "source must be a GitHub repo (owner/repo) or the URL of a changelog file", http.StatusBadRequest)
 		return
 	}
 	// A clear 404 catches a typo at save time.
-	if a.verify != nil {
+	if file {
+		if a.verifyFile != nil {
+			if problem := a.verifyFile(r.Context(), source); problem != "" {
+				http.Error(w, problem, http.StatusBadRequest)
+				return
+			}
+		}
+	} else if a.verify != nil {
 		if exists, checked := a.verify(r.Context(), source); checked && !exists {
 			http.Error(w, "that GitHub repo was not found, check the owner/repo", http.StatusBadRequest)
 			return

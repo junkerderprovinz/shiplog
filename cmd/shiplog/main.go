@@ -43,7 +43,7 @@ func main() {
 		resolver.New().
 			WithDockerHubAuth(cfg.DockerHubUser, cfg.DockerHubToken).
 			WithGitHubToken(cfg.GithubToken),
-		changelog.Chain{changelog.New(cfg.GithubToken), changelog.Fallback{}},
+		changelog.Chain{changelog.NewFile(), changelog.New(cfg.GithubToken), changelog.Fallback{}},
 		db,
 		cfg.PollInterval,
 	)

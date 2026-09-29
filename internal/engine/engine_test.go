@@ -417,6 +417,23 @@ func TestSweepSourceOverrideExemptsFromUnmaintained(t *testing.T) {
 	}
 }
 
+func TestSweepFileOverrideSetsChangelogFileAndKeepsLabel(t *testing.T) {
+	const file = "https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt"
+	col := fakeCollector{list: []model.Container{
+		{ID: "dz", Name: "Domoticz", Repo: "domoticz/domoticz", Tag: "latest", Digest: "sha256:a", Source: "https://github.com/x/label"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"domoticz/domoticz": {tag: "latest", dig: "sha256:a"}}}
+	st := &fakeStore{overrides: map[string]string{"domoticz/domoticz": file}}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	c := st.rows["dz"].Container
+	if c.ChangelogFile != file || c.Source != "https://github.com/x/label" {
+		t.Fatalf("changelog file %q, source %q", c.ChangelogFile, c.Source)
+	}
+}
+
 func TestSweepFlagsUnmaintainedViaCAFeedBlacklisted(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
 		{ID: "bl", Name: "BadApp", Repo: "x/bad", Tag: "1.0.0", Digest: "sha256:b", Managed: true},

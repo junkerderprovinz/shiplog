@@ -280,7 +280,11 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	// template too.
 	silenced := suppressed[c.Repo]
 	src, srcKind := sources.Resolve(c.Repo, c.Source, overrides, projects[strings.ToLower(c.Name)])
-	c.Source = src
+	if srcKind == sources.KindFile {
+		c.ChangelogFile = src
+	} else {
+		c.Source = src
+	}
 
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
 
