@@ -103,6 +103,13 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 	out := make([]model.Container, 0, len(raw))
 	infoCache := map[string]imageInfo{} // by ImageID
 	for _, dc := range raw {
+		// Once a newer pull moves the container's tag, the list reports only the
+		// old image ID, while the container's config still names the repo.
+		if isImageID(dc.Image) {
+			if ref := c.configImage(ctx, dc.ID); ref != "" {
+				dc.Image = ref
+			}
+		}
 		repo, tag, pinnedDigest := splitImageRef(dc.Image)
 		info, ok := infoCache[dc.ImageID]
 		if !ok {
@@ -148,6 +155,32 @@ func ghcrSource(repo string) string {
 
 // inspectImage returns a zero imageInfo on any error, so the engine claims
 // neither a digest update nor a label version for that image.
+// configImage returns the image reference the container was created from, or ""
+// when the inspect fails.
+func (c *Client) configImage(ctx context.Context, id string) string {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/containers/"+id+"/json", nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+	var ct struct {
+		Config struct {
+			Image string `json:"Image"`
+		} `json:"Config"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&ct); err != nil {
+		return ""
+	}
+	return ct.Config.Image
+}
+
 func (c *Client) inspectImage(ctx context.Context, imageID, repo string) imageInfo {
 	if imageID == "" {
 		return imageInfo{}

@@ -147,3 +147,44 @@ func TestExecutorNoExcludeWordsConfiguredUpdatesNormally(t *testing.T) {
 		t.Fatal("must not be marked Blocked when no exclude words are configured")
 	}
 }
+
+type fakeInspector struct{ cs []model.Container }
+
+func (f fakeInspector) List(context.Context) ([]model.Container, error) { return f.cs, nil }
+
+func stWithDigest(name, newest string) model.UpdateStatus {
+	s := stNamed(name, model.KindDigest)
+	s.NewestDigest = newest
+	return s
+}
+
+func TestExecutorConfirmsUpdateAgainstRunningDigest(t *testing.T) {
+	sts := []model.UpdateStatus{stWithDigest("new", "sha256:b"), stWithDigest("old", "sha256:b"), stWithDigest("gone", "sha256:b")}
+	insp := fakeInspector{cs: []model.Container{
+		{Name: "new", Digest: "sha256:x", Digests: []string{"sha256:x", "sha256:b"}},
+		{Name: "old", Digest: "sha256:a"},
+	}}
+	e := NewExecutor(fakeLister{sts: sts}, &fakeUpdater{sup: true}).WithInspector(insp)
+	res := e.Run(context.Background(), Policy{Digest: true}, false)
+	if len(res.Outcomes) != 3 {
+		t.Fatalf("outcomes %+v", res.Outcomes)
+	}
+	if o := res.Outcomes[0]; !o.Updated || o.Err != nil {
+		t.Errorf("container on the newest digest (mirror entry) = %+v, want Updated", o)
+	}
+	if o := res.Outcomes[1]; o.Updated || o.Err == nil {
+		t.Errorf("container still on its old digest = %+v, want a failure", o)
+	}
+	if o := res.Outcomes[2]; o.Updated || o.Err == nil {
+		t.Errorf("container missing after the update = %+v, want a failure", o)
+	}
+}
+
+func TestExecutorSkipsConfirmationOnUpdateError(t *testing.T) {
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{stWithDigest("a", "sha256:b")}}, &fakeUpdater{sup: true, failOn: "a"}).
+		WithInspector(fakeInspector{cs: []model.Container{{Name: "a", Digest: "sha256:b"}}})
+	res := e.Run(context.Background(), Policy{Digest: true}, false)
+	if o := res.Outcomes[0]; o.Updated || o.Err == nil || o.Err.Error() != "boom" {
+		t.Fatalf("outcome = %+v, want the updater's own error", o)
+	}
+}

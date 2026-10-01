@@ -4,6 +4,7 @@
  *
  *   GET status.php            -> engine /api/containers   (the whole fleet)
  *   GET status.php?id=<name>  -> engine /api/container/{id}
+ *   GET status.php?applied=<name>&digest=<sha256:...>  -> engine /api/applied
  */
 
 header('Content-Type: application/json');
@@ -18,8 +19,16 @@ if (is_file($cfg)) {
     }
 }
 
-$id   = isset($_GET['id']) ? preg_replace('/[^A-Za-z0-9_.\-]/', '', $_GET['id']) : '';
-$path = $id !== '' ? '/api/container/' . rawurlencode($id) : '/api/containers';
+$id      = isset($_GET['id']) ? preg_replace('/[^A-Za-z0-9_.\-]/', '', $_GET['id']) : '';
+$applied = isset($_GET['applied']) ? preg_replace('/[^A-Za-z0-9_.\-]/', '', $_GET['applied']) : '';
+$digest  = isset($_GET['digest']) ? preg_replace('/[^a-z0-9:]/', '', $_GET['digest']) : '';
+if ($applied !== '') {
+    $path = '/api/applied?' . http_build_query(['name' => $applied, 'digest' => $digest]);
+} elseif ($id !== '') {
+    $path = '/api/container/' . rawurlencode($id);
+} else {
+    $path = '/api/containers';
+}
 $url  = "http://127.0.0.1:$port$path";
 
 $ch = curl_init($url);
