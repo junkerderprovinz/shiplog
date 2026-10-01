@@ -51,11 +51,23 @@ type OverrideStore interface {
 	UnsuppressUnmaintained(repo string) error
 }
 
+// ContainerLister reads the containers as Docker sees them (the Docker client).
+type ContainerLister interface {
+	List(ctx context.Context) ([]model.Container, error)
+}
+
+// Messenger delivers a message to the configured notification channels.
+type Messenger interface {
+	SendMessage(ctx context.Context, text, html string) error
+}
+
 // API bundles the HTTP handlers.
 type API struct {
-	src StatusSource
-	ovr OverrideStore
-	ref Refresher
+	src    StatusSource
+	ovr    OverrideStore
+	ref    Refresher
+	docker ContainerLister
+	msg    Messenger
 	// verify reports whether a GitHub source repo exists and whether the check
 	// was conclusive.
 	verify func(ctx context.Context, source string) (exists, checked bool)
@@ -72,6 +84,13 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 		return verifyGitHubRepo(ctx, ghToken, source)
 	}
 	a.verifyFile = verifyChangelogFile
+	return a
+}
+
+// WithUpdateCheck enables /api/applied, which reads the containers from docker
+// and reports an update that did not take through msg.
+func (a *API) WithUpdateCheck(docker ContainerLister, msg Messenger) *API {
+	a.docker, a.msg = docker, msg
 	return a
 }
 
@@ -142,6 +161,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/containers", a.listJSON)
 	mux.HandleFunc("GET /api/container/{id}", a.oneJSON)
 	mux.HandleFunc("POST /api/refresh", a.refresh)
+	mux.HandleFunc("GET /api/applied", a.applied)
 	mux.HandleFunc("GET /api/overrides", a.listOverrides)
 	mux.HandleFunc("PUT /api/override", a.setOverride)
 	mux.HandleFunc("DELETE /api/override", a.deleteOverride)
@@ -185,6 +205,40 @@ func (a *API) refresh(w http.ResponseWriter, _ *http.Request) {
 	a.ref.Refresh()
 	w.WriteHeader(http.StatusAccepted)
 	_, _ = w.Write([]byte(`{"status":"sweep triggered"}`))
+}
+
+// applied reports whether the named container runs digest. The Docker tab asks
+// once Unraid's update window is done, because Unraid's update script exits 0
+// even when the pull fails or the container is not recreated.
+func (a *API) applied(w http.ResponseWriter, r *http.Request) {
+	if a.docker == nil {
+		http.Error(w, "update check not available", http.StatusNotImplemented)
+		return
+	}
+	name, digest := r.URL.Query().Get("name"), r.URL.Query().Get("digest")
+	if name == "" || digest == "" {
+		http.Error(w, "name and digest are required", http.StatusBadRequest)
+		return
+	}
+	cs, err := a.docker.List(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	ok := false
+	for _, c := range cs {
+		if c.Name == name && c.HasDigest(digest) {
+			ok = true
+			break
+		}
+	}
+	a.ref.Refresh()
+	if !ok && a.msg != nil {
+		text := fmt.Sprintf("🚢 ShipLog · %s: the update did not apply, the container still runs the old image", name)
+		html := fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: the update did not apply, the container still runs the old image", template.HTMLEscapeString(name))
+		_ = a.msg.SendMessage(r.Context(), text, html)
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"applied": ok})
 }
 
 func (a *API) listOverrides(w http.ResponseWriter, _ *http.Request) {

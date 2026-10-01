@@ -330,3 +330,49 @@ func TestVerifyChangelogFile(t *testing.T) {
 		}
 	}
 }
+
+type fakeDocker struct{ cs []model.Container }
+
+func (f fakeDocker) List(context.Context) ([]model.Container, error) { return f.cs, nil }
+
+type fakeMessenger struct{ texts []string }
+
+func (f *fakeMessenger) SendMessage(_ context.Context, text, _ string) error {
+	f.texts = append(f.texts, text)
+	return nil
+}
+
+func TestAppliedComparesRunningDigest(t *testing.T) {
+	ref, msg := &fakeRefresher{}, &fakeMessenger{}
+	h := New(fakeSource{}, &fakeOverrides{}, ref, "").WithUpdateCheck(fakeDocker{cs: []model.Container{
+		{Name: "Matrix", Digest: "sha256:new"},
+		{Name: "Nextcloud", Digest: "sha256:old"},
+	}}, msg).Handler()
+
+	for _, tc := range []struct {
+		name string
+		want bool
+	}{{"Matrix", true}, {"Nextcloud", false}, {"Gone", false}} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/applied?name="+tc.name+"&digest=sha256:new", nil))
+		var got map[string]bool
+		if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &got) != nil || got["applied"] != tc.want {
+			t.Errorf("%s: status %d body %s, want applied=%v", tc.name, rec.Code, rec.Body.String(), tc.want)
+		}
+	}
+	if ref.called != 3 {
+		t.Errorf("refresh called %d times, want once per check", ref.called)
+	}
+	if len(msg.texts) != 2 || !strings.Contains(msg.texts[0], "Nextcloud") || !strings.Contains(msg.texts[1], "Gone") {
+		t.Errorf("notifications %q, want one for each container left on the old image", msg.texts)
+	}
+}
+
+func TestAppliedNeedsNameAndDigest(t *testing.T) {
+	h := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithUpdateCheck(fakeDocker{}, nil).Handler()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/applied?name=Matrix", nil))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status %d, want 400", rec.Code)
+	}
+}

@@ -273,3 +273,34 @@ func TestAllDigests(t *testing.T) {
 		t.Errorf("allDigests = %v, want %v", got, want)
 	}
 }
+
+func TestListResolvesImageIDFromContainerConfig(t *testing.T) {
+	sock := filepath.Join(t.TempDir(), "d.sock")
+	ln, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Skipf("AF_UNIX unavailable on this host (net.Listen unix failed): %v", err)
+	}
+	const oldID = "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/containers/json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[{"Id":"nc1","Names":["/Nextcloud"],"Image":"` + oldID + `","ImageID":"` + oldID + `","State":"running"}]`))
+	})
+	mux.HandleFunc("/v1.43/containers/nc1/json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"Config":{"Image":"lscr.io/linuxserver/nextcloud"}}`))
+	})
+	mux.HandleFunc("/v1.43/images/", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"RepoDigests":["lscr.io/linuxserver/nextcloud@` + redisManifest + `"]}`))
+	})
+	srv := &http.Server{Handler: mux}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	got, err := New(sock).List(context.Background())
+	if err != nil || len(got) != 1 {
+		t.Fatalf("List() = %v, %v", got, err)
+	}
+	nc := got[0]
+	if nc.Repo != "lscr.io/linuxserver/nextcloud" || nc.Tag != "latest" || nc.Digest != redisManifest {
+		t.Errorf("container on a superseded image = repo %q tag %q digest %q, want the configured repo with its old digest", nc.Repo, nc.Tag, nc.Digest)
+	}
+}

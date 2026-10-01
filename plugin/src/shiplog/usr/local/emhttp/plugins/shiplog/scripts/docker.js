@@ -502,6 +502,64 @@
     tick();
   }
 
+  // markCurrent redraws a row's chip as up to date without waiting for the
+  // engine's next sweep.
+  function markCurrent(name) {
+    const st = byName[norm(name)];
+    if (!st) return;
+    st.kind = "none";
+    for (const tr of findRows()) {
+      if (norm(rowName(tr)) !== norm(name)) continue;
+      const cell = findUpdateCell(tr);
+      if (!cell) continue;
+      cell.querySelectorAll(".sl-chiprow").forEach((n) => n.remove());
+      cell.removeAttribute(MARK);
+    }
+    tagRows();
+  }
+
+  // armUpdateCheck asks the engine, once Unraid's update log is done, whether each
+  // container runs the digest ShipLog offered, since Unraid reports done even
+  // when the pull failed. The engine sends a notification for a miss.
+  const checking = new Set(); // lower-cased names with a check armed
+  function armUpdateCheck(names) {
+    const arr = Array.isArray(names) ? names : (names ? [names] : []);
+    const targets = arr.map((nm) => {
+      const st = byName[norm(nm)];
+      if (!st || !st.newest_digest || checking.has(norm(nm))) return null;
+      return { name: st.container.name, digest: st.newest_digest };
+    }).filter(Boolean);
+    if (!targets.length) return;
+    targets.forEach((t) => checking.add(norm(t.name)));
+    let sawDisabled = false;
+    const release = () => {
+      clearInterval(poll); clearTimeout(cap);
+      targets.forEach((t) => checking.delete(norm(t.name)));
+    };
+    const fire = () => {
+      release();
+      targets.forEach(async (t) => {
+        try {
+          const q = `?applied=${encodeURIComponent(t.name)}&digest=${encodeURIComponent(t.digest)}`;
+          const res = await fetch(PROXY + q, { headers: { Accept: "application/json" } });
+          const data = res.ok ? await res.json() : null;
+          if (data && data.applied) markCurrent(t.name);
+        } catch (e) {}
+      });
+    };
+    // The Done button turning from disabled to enabled marks the end in both the
+    // visible and the silent log; #swaltext tells the log from a confirm dialog.
+    const tick = () => {
+      const log = document.querySelector(".sweet-alert.nchan");
+      const done = log && log.querySelector("#swaltext") ? log.querySelector("button.confirm") : null;
+      if (!done) return;
+      if (done.disabled) sawDisabled = true;
+      else if (sawDisabled) fire();
+    };
+    const poll = setInterval(tick, 500);
+    const cap = setTimeout(release, 15 * 60 * 1000);
+  }
+
   // armJumpMarquee scrolls the jump line only when it overflows and motion is
   // allowed. Two identical copies moved by translateX(-50%) loop seamlessly.
   function armJumpMarquee(bubble) {
@@ -550,6 +608,7 @@
       e.preventDefault(); e.stopPropagation();
       const cname = st.container && st.container.name;
       if (silentUpdate) armSilentLogHide(cname);
+      armUpdateCheck(cname);
       const ok = confirmUpdate ? runNativeUpdateWithConfirm(cname) : runNativeUpdateNoConfirm(cname);
       if (ok) close();
       else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
@@ -606,6 +665,7 @@
           // updateAll() has no confirm dialog of its own.
           if (confirmUpdate && !window.confirm(T("confirmAll").replace("%n", n))) return;
           if (silentUpdate) armSilentLogHide(pendingUpdateNames());
+          armUpdateCheck(pendingUpdateNames());
           fireNativeUpdateAll();
         });
         // .ToggleViewMode is a right-aligned flex row, so its first child sits
@@ -672,6 +732,7 @@
       const blob = norm(a.textContent) + " " + norm(a.getAttribute("onclick") || "");
       if (!/updatecontainer|apply update|aktualisierung anwenden|force update|update erzwingen|rebuild ready|installupdate/.test(blob)) return;
       if (silentUpdate) armSilentLogHide(anchorName(a));
+      armUpdateCheck(anchorName(a));
       if (!confirmUpdate) {
         // Without openDocker the native handler runs with its confirm, since
         // clicking the same link again would loop.

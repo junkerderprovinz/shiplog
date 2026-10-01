@@ -44,13 +44,13 @@ func (u *Unraid) Notify(ctx context.Context, st model.UpdateStatus) error {
 	return u.run(ctx, updateArgs(st))
 }
 
-// SendMessage sends the auto-update run summary. The HTML form is dropped
-// because Unraid notifications are plain text.
+// SendMessage sends an auto-update run summary or the result of a manual
+// update. The HTML form is dropped because Unraid notifications are plain text.
 func (u *Unraid) SendMessage(ctx context.Context, text, _ string) error {
 	if u == nil {
 		return nil
 	}
-	return u.run(ctx, []string{"-e", "ShipLog", "-s", "ShipLog auto-update", "-d", text, "-i", "normal"})
+	return u.run(ctx, []string{"-e", "ShipLog", "-s", "ShipLog update", "-d", text, "-i", "normal"})
 }
 
 func (u *Unraid) run(ctx context.Context, args []string) error {

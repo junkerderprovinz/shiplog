@@ -38,8 +38,9 @@ func main() {
 	}
 	defer func() { _ = db.Close() }()
 
+	docker := dockercli.New(cfg.DockerSocket)
 	eng := engine.New(
-		dockercli.New(cfg.DockerSocket),
+		docker,
 		resolver.New().
 			WithDockerHubAuth(cfg.DockerHubUser, cfg.DockerHubToken).
 			WithGitHubToken(cfg.GithubToken),
@@ -96,7 +97,7 @@ func main() {
 		if !upd.Supported() {
 			log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir); skipping")
 		} else {
-			exec := autoupdate.NewExecutor(db, upd)
+			exec := autoupdate.NewExecutor(db, upd).WithInspector(docker)
 			go runAutoUpdate(ctx, cfg.AutoUpdate, exec, db, notifier)
 			log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
 				cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
@@ -104,7 +105,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Handler:           api.New(db, db, eng, cfg.GithubToken).Handler(),
+		Handler:           api.New(db, db, eng, cfg.GithubToken).WithUpdateCheck(docker, notifier).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
