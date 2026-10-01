@@ -33,6 +33,12 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama) and Matrix alerts.
 
+### 3.5.1
+🐛 **Fixed**
+- An update could count as done while the container kept running the old image. Unraid's update script ends without an error even when the pull fails or the container is not recreated, so auto-update reported the same container as updated night after night. Auto-update now checks the running image afterwards and reports a miss as failed.
+- The same check runs after an update started from the Docker tab. Once Unraid's update window is done, ShipLog asks whether the container runs the new image: if it doesn't, you get a notification and the row keeps its update badge, and if it does, the badge switches to up to date right away.
+- A container whose newer image was already pulled but not applied lost its update badge, because Docker then lists it by image ID only. ShipLog now reads the image name from the container's own settings.
+
 ### 3.5.0
 ✨ **Added**
 - A changelog file can be the changelog source. Some projects never publish GitHub releases and keep a CHANGELOG.md or History.txt instead, Domoticz's beta channel for one. Click **source** on the status page and paste the file's URL; a link to GitHub's file view works too. If the file has version headings, the bubble shows the sections between your running and the newest version, or the newest section when ShipLog can't place your version. A file without version headings shows its first 40 lines. Thanks to reinv for the idea.
