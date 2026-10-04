@@ -10,7 +10,7 @@ REPO = "shiplog"
 # ShipLog ships as an Unraid plugin; its container image only carries the engine
 # for other Docker hosts, so there is no Docker button.
 BUTTONS = {
-    "unraid": "https://ca.unraid.net/apps/shiplog-1lpuit5150ztw5",
+    "unraid-plugin": "https://ca.unraid.net/apps/shiplog-1lpuit5150ztw5",
     # A release's "Source code (zip)" is the whole repository at that tag, and
     # GitHub gives the newest one no fixed address, so this leads to the release
     # that lists it.
