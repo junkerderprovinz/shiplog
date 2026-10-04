@@ -34,6 +34,9 @@ what changed from your running image to the newest, with a risk badge. Read-only
 optional AI summaries (Ollama) and Matrix alerts.
 
 ### 3.5.1
+🎨 **Design**
+- The README is shorter and shows the changelog window and the status page in new pictures, with buttons to install ShipLog from Community Applications or download the source.
+
 🐛 **Fixed**
 - An update could count as done while the container kept running the old image. Unraid's update script ends without an error even when the pull fails or the container is not recreated, so auto-update reported the same container as updated night after night. Auto-update now checks the running image afterwards and reports a miss as failed.
 - The same check runs after an update started from the Docker tab. Once Unraid's update window is done, ShipLog asks whether the container runs the new image: if it doesn't, you get a notification and the row keeps its update badge, and if it does, the badge switches to up to date right away.
