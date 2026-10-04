@@ -11,7 +11,7 @@
   <a href="https://hub.docker.com/r/junkerderprovinz/shiplog"><img src="https://img.shields.io/docker/pulls/junkerderprovinz/shiplog?style=for-the-badge&logo=docker&logoColor=white&label=Pulls&color=1d99f3" alt="Docker Pulls" height="36"></a>&nbsp;
   <a href="https://hub.docker.com/r/junkerderprovinz/shiplog"><img src="https://img.shields.io/docker/image-size/junkerderprovinz/shiplog/latest?style=for-the-badge&logo=docker&logoColor=white&label=Size&color=1d99f3" alt="Image Size" height="36"></a>&nbsp;
   <a href="https://github.com/junkerderprovinz/shiplog/pkgs/container/shiplog"><img src="https://img.shields.io/badge/Arch-amd64%20%7C%20arm64-success?style=for-the-badge&logo=linux&logoColor=white" alt="Arch" height="36"></a>&nbsp;
-  <a href="https://unraid.net"><img src="https://img.shields.io/badge/Unraid-Plugin-f15a2c?style=for-the-badge&logo=unraid&logoColor=white" alt="Unraid" height="36"></a>&nbsp;
+  <a href="https://ca.unraid.net/apps/shiplog-1lpuit5150ztw5"><img src="https://img.shields.io/badge/Unraid-Plugin-f15a2c?style=for-the-badge&logo=unraid&logoColor=white" alt="Unraid" height="36"></a>&nbsp;
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge&logo=gnu&logoColor=white" alt="License: AGPL-3.0" height="36"></a>
 </p>
 
@@ -23,6 +23,16 @@
 <b>Read-only</b>: it never pulls, recreates or stops anything. Optional: AI changelog summaries via a local Ollama, and Matrix notifications.
 </p>
 
+<!-- download-buttons: written by scripts/gen_download_buttons.py -->
+<p align="center">
+  <a href="https://ca.unraid.net/apps/shiplog-1lpuit5150ztw5"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(0,0,841.9,245.3))" alt="Install from Unraid&#x27;s Community Applications" width="160" height="46.618"></a>
+  &nbsp;
+  <a href="https://github.com/junkerderprovinz/shiplog/releases/latest"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(866,0,841.9,245.3))" alt="Download the source archive" width="160" height="46.618"></a>
+</p>
+<!-- /download-buttons -->
+
+<br>
+
 <p align="center">
 A one-knight job: I build it, keep it running, work through the issues and add what people ask for, until nothing is missing. It is free, with no accounts, no telemetry, no ads and no paid tier. No asterisk anywhere. Nothing readable ever leaves your own walls. Forged on evenings and weekends, with heart and stubbornness.
 </p>
@@ -31,145 +41,81 @@ A one-knight job: I build it, keep it running, work through the issues and add w
 If it has earned a place on your server or computer, toss a coin to your knight: it helps cover the costs and keeps the project alive. It also makes this knight's heart beat a little faster. Three ways below, whichever suits you.
 </p>
 
-<br>
-
+<!-- give-buttons: written by scripts/gen_download_buttons.py -->
 <p align="center">
-  <a href="https://buymeacoffee.com/junkerderprovinz"><img src="https://raw.githubusercontent.com/junkerderprovinz/junkerderprovinz/main/donate/buttons/give.svg#svgView(viewBox(0,0,841.9,245.3))" alt="Buy me a coffee" width="160" height="46.62"></a>
+  <a href="https://buymeacoffee.com/junkerderprovinz"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(1732,0,841.9,245.3))" alt="Buy me a coffee" width="160" height="46.618"></a>
   &nbsp;
-  <a href="https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS"><img src="https://raw.githubusercontent.com/junkerderprovinz/junkerderprovinz/main/donate/buttons/give.svg#svgView(viewBox(841.9,0,841.9,245.3))" alt="PayPal" width="160" height="46.62"></a>
+  <a href="https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(2598,0,841.9,245.3))" alt="PayPal" width="160" height="46.618"></a>
   &nbsp;
-  <a href="https://junkerderprovinz.github.io/junkerderprovinz/"><img src="https://raw.githubusercontent.com/junkerderprovinz/junkerderprovinz/main/donate/buttons/give.svg#svgView(viewBox(1683.8,0,841.9,245.3))" alt="Donate with crypto" width="160" height="46.62"></a>
+  <a href="https://junkerderprovinz.github.io/junkerderprovinz/"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(3464,0,841.9,245.3))" alt="Donate with crypto" width="160" height="46.618"></a>
 </p>
+<!-- /give-buttons -->
 
 <br>
 
 ## Table of Contents
 
-1. [What is this?](#1-what-is-this)
-2. [Screenshots](#2-screenshots)
-3. [Features](#3-features)
-4. [Install on Unraid](#4-install-on-unraid)
-5. [Configuration](#5-configuration)
-6. [How it works](#6-how-it-works)
-7. [Security](#7-security)
-8. [License](#8-license)
-9. [How AI is used here](#9-how-ai-is-used-here)
-10. [Support this project](#10-support-this-project)
+1. [What it looks like](#1-what-it-looks-like)
+2. [What it does](#2-what-it-does)
+3. [Getting started](#3-getting-started)
+4. [How AI is used here](#4-how-ai-is-used-here)
+5. [Support this project](#5-support-this-project)
 
-## 1. What is this?
+<br>
 
-A single static Go binary on a distroless image (~tens of MB, low idle RAM) that polls the read-only Docker socket, resolves which images have updates, fetches the changelog for the version span, classifies the risk, and serves it on a small status page and JSON API. The changelog bubble next to each container in Unraid's Docker tab ships as a companion Unraid plugin; this engine is the brain and works on any Docker host via its status page.
+## 1. What it looks like
 
-## 2. Screenshots
+The containers in these pictures run public images at older versions in a test sandbox; the release notes are the real ones.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/changelog-bubble.png" alt="ShipLog changelog bubble in Unraid's Docker tab" width="90%">
-  <br><em>Click the Changelog chip on any container. The bubble shows the version jump, a risk badge, the release notes, an optional AI summary, and a read-only Update-now button, right in Unraid's Docker tab.</em>
+  <img src=".github/assets/screenshots/shiplog-1.png" alt="The ShipLog changelog window for traefik: v3.2.0 to 3.7.13, a minor badge, and the release notes with the security advisories and bug fixes" width="100%">
+  <br><em>The changelog window opens from the chip ShipLog adds to every container in the Docker tab</em>
+</p>
+
+<p align="center">
+  <img src=".github/assets/screenshots/shiplog-2.png" alt="The ShipLog status page listing seven containers with their running and newest version, a risk badge and the changelog source" width="100%">
+  <br><em>The engine's status page on port 8484, the same data without Unraid</em>
 </p>
 
 <br>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/docker-tab.png" alt="A Changelog chip on every container in the Docker tab" width="34%">
-  <br><em>A Changelog chip sits on every container: a coloured dot when an update is waiting, grey when you're up to date.</em>
-</p>
+## 2. What it does
+
+- **What changed, not just "update available".** A Changelog chip sits on every container in the Docker tab. Its window shows the release notes between your running tag and the newest, with the real version jump.
+- **A risk badge you can trust.** Patch is low, minor medium, major high. A release note in the span that flags a breaking change, such as a required migration, raises it to critical and sends an alert.
+- **Honest when it does not know.** If no changelog can be found, it says so and shows what it does know. Digest-pinned and locally built images are labelled as such instead of showing a bogus update.
+- **Fix a wrong changelog source.** Point any image at the right GitHub repository or at a changelog file such as `CHANGELOG.md`; the choice survives container recreation.
+- **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one.
+- **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog checks afterwards that the new image really runs. The engine itself never writes to the Docker socket.
+- **Optional extras, off by default.** Changelog summaries from a local Ollama, Matrix messages and Unraid notifications.
+- **26 languages**, following Unraid's own setting.
 
 <br>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/screenshots/settings.png" alt="ShipLog settings page" width="62%">
-  <br><em>Settings: poll interval, a live engine-status line, optional GitHub / Docker Hub tokens for more changelogs, Ollama (with autodetect) for AI summaries, and Matrix alerts.</em>
-</p>
+## 3. Getting started
 
-<br>
-
-## 3. Features
-
-<details>
-<summary><b>Feature list</b></summary>
-
-- **What changed, not just "update available"**: changelog between your running tag and the newest, newest-first, with a link to the full release notes.
-- **Deterministic risk badge**: digest/patch = low, minor = medium, major = high, non-semver = unknown (with a reason). Colour by default, with a colour ⇄ monochrome toggle.
-- **Breaking-change escalation**: when a release note in the update span flags a breaking change (a required database migration, a removed extension, a dropped API), the badge is bumped to **critical** and raises an Unraid alert, so a rolling `:latest` digest move that would otherwise read as a harmless "low" no longer slips past.
-- **Honest degradation**: when no changelog is machine-findable, ShipLog says so and shows what it does know.
-- **Fix a wrong changelog source**: an image's OCI source label often points at the packaging wrapper (LinuxServer's `docker-<app>`), is wrong (inherited from a base image), or is missing. Click **source** on any row of the status page and point it at the correct GitHub repo; the override sticks to the image and survives container recreation. Common LinuxServer apps (Radarr, Sonarr, Lidarr, Prowlarr, Readarr, Whisparr, Bazarr) resolve to their upstream project out of the box.
-- **Changelog files as a source**: some projects never publish GitHub releases and keep a `CHANGELOG.md` or `History.txt` instead (Domoticz's beta channel is one). Paste the file's URL into **source**, either the raw link or GitHub's file view. If the file has version headings, ShipLog shows the sections between your running and the newest version, or the newest section when it can't place your version. A file without version headings shows its first 40 lines.
-- **Read-only by construction**: never writes to the Docker socket.
-- **Registry-friendly by construction**: manifest checks are `HEAD` requests, which do not count against Docker Hub's pull rate limit. Bearer tokens are cached, duplicate images share one lookup per sweep, and a rate-limiting registry is backed off host-wide instead of hammered.
-- **Knows what has no upstream**: digest-pinned containers (`image@sha256:…`) and locally built images are labelled as such instead of producing bogus updates or permanent errors.
-- **Flags a dead-end app**: when a container's Unraid template has been pulled from Community Applications, its image is gone, or its source repo is archived, the changelog chip is replaced with a red **Unmaintained** badge. Still clickable: the bubble explains why, and shows the last changelog it ever found. Self-built containers (no Unraid template, or a hand-authored one) and anything with a manual source override are exempt automatically, since those were never in Community Applications to begin with. For anything else that gets flagged wrongly, click **mute unmaintained** on the status page to silence it for that container, permanently.
-- **Flags an editorially demoted app**: Community Applications can also just hide an app from its default search while it stays fully listed, installable and updated by its own maintainer (CA's own "Deprecated" flag, distinct from the dead end above). ShipLog checks the same feed CA's own plugin reads, replaces the chip with an amber **Deprecated** badge, and surfaces the moderator's own note when there is one (often naming a better-maintained alternative).
-- **Update all in one click**: a counter button next to the Basic/Advanced toggle triggers Unraid's own bulk update for every container with a pending update (ShipLog itself stays read-only).
-- **Update controls**: optional confirmation before an update, and an optional silent update that skips Unraid's pop-up download-log window (Settings → Updates).
-- **Scheduled auto-update, gated by SemVer level** *(Unraid plugin only)*: optionally let ShipLog apply updates on a schedule, but only up to a level you choose: patch, minor or major. Unknown / non-versioned tags are never auto-applied, and `:latest` / digest-only moves have their own separate toggle. Runs daily, at boot, or every N hours / days, with a dry-run mode that only reports what *would* update, to the ShipLog log and to Matrix if configured. It hands the work to Unraid's own container-update path, so containers come back identical to a manual update. The engine itself still never writes to the Docker socket.
-- **Localised**: the settings page and the changelog bubble follow Unraid's configured language across 26 languages.
-- **Optional, off by default:** AI changelog summaries via a local **Ollama**; enriched **Matrix** notifications.
-- **Tiny and multi-arch** (amd64, arm64), pure-Go (no cgo), boot-smoke-gated CI.
-
-</details>
-
-## 4. Install on Unraid
-
-The Community Applications template is published in the [unraid-apps](https://github.com/junkerderprovinz/unraid-apps) feed (search **ShipLog** in the Apps tab once it lands). The only required mount is the Docker socket, read-only:
+On Unraid, install ShipLog from [Community Applications](https://ca.unraid.net/apps/shiplog-1lpuit5150ztw5). It is a plugin, not a container. You can also paste this address under **Plugins → Install Plugin**:
 
 ```
--v /var/run/docker.sock:/var/run/docker.sock:ro
--v /mnt/user/appdata/shiplog:/config
--p 8484:8484
+https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin/shiplog.plg
 ```
 
-Open the WebUI on port **8484**.
+The chips appear in the Docker tab after the first check. The settings are under **Settings → ShipLog**, where a GitHub token raises the rate limit for release notes and the auto-update is switched on.
 
-## 5. Configuration
+On any other Docker host the engine runs on its own and serves the status page, without the Docker tab and without updates:
 
-On the Unraid plugin the settings page groups these into tabs (**General**, **Updates**, **Notifications**, **Sources**), so it stays tidy as it grows. The `AUTOUPDATE_*` keys below are Unraid-plugin only (the generic container image stays a read-only advisor).
+```sh
+docker run -d --name shiplog -p 8484:8484 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /path/to/config:/config \
+  junkerderprovinz/shiplog:latest
+```
 
-| Variable | Default | Notes |
-|---|---|---|
-| `PORT` | `8484` | engine API and status page |
-| `DOCKER_SOCKET` | `/var/run/docker.sock` | mounted read-only |
-| `DATA_DIR` | `/config` | SQLite database and curated-mapping override |
-| `POLL_INTERVAL` | `6h` | how often to re-check (e.g. `1h`, `12h`, `24h`) |
-| `IGNORE_UNMANAGED` | `false` | skip third-party containers not created from an Unraid template (Docker Compose, Dockhand, plain `docker run`); only Unraid-managed containers are tracked |
-| `GITHUB_TOKEN` | *(none)* | optional; raises the anonymous GitHub API limit for changelog fetching |
-| `OLLAMA_URL` / `OLLAMA_MODEL` | *(none)* | optional AI summaries |
-| `MATRIX_HOMESERVER` / `MATRIX_TOKEN` / `MATRIX_ROOM` | *(none)* | optional enriched notifications |
-| `UNRAID_NOTIFY` | `false` | *(plugin only)* also send update alerts through Unraid's own notification system (the notification centre and every agent you configured: email, Discord, Telegram, ...) |
-| `CONFIRM_UPDATE` | `true` | ask for confirmation before "Update now" triggers Unraid's update |
-| `SILENT_UPDATE` | `false` | run the update without Unraid's pop-up download-log window (it still runs in the background) |
-| `AUTOUPDATE_ENABLED` | `false` | *(plugin only)* master switch for scheduled auto-update |
-| `AUTOUPDATE_LEVEL` | `off` | highest bump to auto-apply: `off` / `patch` / `minor` / `major` |
-| `AUTOUPDATE_DIGEST` | `false` | also auto-apply `:latest` / digest-only moves (they carry no SemVer level) |
-| `AUTOUPDATE_DRYRUN` | `false` | report what *would* update (ShipLog log and Matrix if set), apply nothing |
-| `AUTOUPDATE_SCHED_MODE` | `off` | `off` / `daily` / `boot` / `hours` / `days` |
-| `AUTOUPDATE_SCHED_TIME` | `04:00` | run time for `daily` |
-| `AUTOUPDATE_SCHED_EVERY` | `6` | interval for `hours` / `days` |
-| `AUTOUPDATE_EXCLUDE_WORDS` | *(empty)* | comma-separated words; block an otherwise-eligible update whose changelog text contains any of them, case-insensitive (e.g. `breaking, migration required`). Catches a release that names its own danger even at a minor/patch bump |
+The status page has no login, so keep port 8484 inside your network.
 
-## 6. How it works
+<br>
 
-Every `POLL_INTERVAL`, for each container:
-
-1. **Discover** via the read-only Docker socket (image ref, digest, OCI labels). Digest-pinned (`image@sha256:…`), image-ID-referenced and locally built containers are recognised here and honestly labelled: they have no upstream to check, so no registry call is made for them.
-2. **Resolve** the newest tag and same-tag digest from the registry (Docker Hub / GHCR / generic OCI v2, anonymous). Manifest checks are `HEAD`-only and don't consume Docker Hub's pull rate limit; the `tags/list` call is subject only to generic throttling, which ShipLog meets with per-request retries (honouring `Retry-After`), a per-host request gate, bearer-token caching, one lookup per distinct image per sweep, and a host-wide backoff after a hard 429.
-3. **Changelog** via a layered provider chain, first hit wins: the image's `org.opencontainers.image.source` label → GitHub releases between the tags; otherwise a version-delta fallback with a compare link.
-4. **Risk** is a deterministic function of the version delta, then escalated to **critical** if a release note in the update span flags a breaking change (required migration, removed extension, dropped API).
-5. **CA status**: for containers installed from an Unraid template, cross-check Community Applications' own feed for a pulled listing (dead end) or an editorial "Deprecated" flag (still maintained, just hidden from default search), replacing the changelog chip with the matching badge when either applies.
-6. **Store** in SQLite (status and a small per-container version history) and surface on the API and status page.
-
-## 7. Security
-
-ShipLog mounts the Docker socket **read-only** and never issues a write call over it. The engine itself cannot start, stop, recreate, or pull anything directly. Update actions (the one-click bulk update, and on the Unraid plugin the opt-in scheduled auto-update) are handed to **Unraid's own** container-update tooling, which performs the pull and recreate; ShipLog only triggers it, and only for a container it has already classified as having an eligible update. The generic container image has no update path at all and stays a pure read-only advisor. v1 has no authentication and is intended for a trusted LAN; do not expose port 8484 to the internet. It makes outbound HTTPS calls to image registries and (for changelogs) GitHub.
-
-## 8. License
-
-**Copyright (C) 2026 Junker der Provinz.**
-
-ShipLog is free software under the **GNU Affero General Public License v3.0** (AGPL-3.0); see [LICENSE](LICENSE). You may run, study, share and modify it. If you distribute it, or run a modified version as a network service, you must release your source under the same AGPL-3.0 terms and keep the existing copyright and attribution notices intact.
-
-**Name and branding are not licensed.** The AGPL covers the source code only. "ShipLog", its logo and its branding remain reserved: a fork or derivative must use its own distinct name and branding, and may not present itself as ShipLog. This keeps it unambiguous which project is the original.
-
-## 9. How AI is used here
+## 4. How AI is used here
 
 One knight builds this, and AI is one of the tools I work with, the same way I work with an editor or a compiler. It helps me write code and documentation and it checks my work, and that saves me a good many evenings. It does not make the decisions, though. I read and understand everything before it ships, and if something here breaks, that is on me and not on the tool.
 
@@ -177,7 +123,7 @@ You do not have to take my word for it. The code is open and every release note 
 
 <br>
 
-## 10. Support this project
+## 5. Support this project
 
 Questions? Check the [support thread](https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/). Bugs, ideas or feature requests? Please [open a GitHub issue](https://github.com/junkerderprovinz/shiplog/issues).
 
@@ -185,10 +131,14 @@ A one-knight job: I build it, keep it running, work through the issues and add w
 
 If it has earned a place on your server or computer, toss a coin to your knight: it helps cover the costs and keeps the project alive. It also makes this knight's heart beat a little faster. Three ways below, whichever suits you.
 
+<!-- give-buttons: written by scripts/gen_download_buttons.py -->
 <p align="center">
-  <a href="https://buymeacoffee.com/junkerderprovinz"><img src="https://raw.githubusercontent.com/junkerderprovinz/junkerderprovinz/main/donate/buttons/give.svg#svgView(viewBox(0,0,841.9,245.3))" alt="Buy me a coffee" width="160" height="46.62"></a>
+  <a href="https://buymeacoffee.com/junkerderprovinz"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(1732,0,841.9,245.3))" alt="Buy me a coffee" width="160" height="46.618"></a>
   &nbsp;
-  <a href="https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS"><img src="https://raw.githubusercontent.com/junkerderprovinz/junkerderprovinz/main/donate/buttons/give.svg#svgView(viewBox(841.9,0,841.9,245.3))" alt="PayPal" width="160" height="46.62"></a>
+  <a href="https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(2598,0,841.9,245.3))" alt="PayPal" width="160" height="46.618"></a>
   &nbsp;
-  <a href="https://junkerderprovinz.github.io/junkerderprovinz/"><img src="https://raw.githubusercontent.com/junkerderprovinz/junkerderprovinz/main/donate/buttons/give.svg#svgView(viewBox(1683.8,0,841.9,245.3))" alt="Donate with crypto" width="160" height="46.62"></a>
+  <a href="https://junkerderprovinz.github.io/junkerderprovinz/"><img src="https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/.github/assets/download-buttons/buttons.svg?v=c23666bc5e01#svgView(viewBox(3464,0,841.9,245.3))" alt="Donate with crypto" width="160" height="46.618"></a>
 </p>
+<!-- /give-buttons -->
+
+<sub>ShipLog is licensed under the AGPL-3.0, which covers the code only: the name "ShipLog" and its logo are reserved, so a fork needs its own name and branding.</sub>
