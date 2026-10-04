@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 4330 245.3">
-<svg x="0" y="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.9 245.3" width="841.9" height="245.3" role="img" aria-label="Install from Unraid&#x27;s Community Applications">
-  <title>Install from Unraid&#x27;s Community Applications</title>
+<svg x="0" y="0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.9 245.3" width="841.9" height="245.3" role="img" aria-label="Install the plugin from Unraid&#x27;s Community Applications">
+  <title>Install the plugin from Unraid&#x27;s Community Applications</title>
   <defs>
     <clipPath id="b0-edge">
       <path d="M38.2,0 H803.7 A38.2,38.2 0 0 1 841.9,38.2 V207.1 A38.2,38.2 0 0 1 803.7,245.3 H38.2 A38.2,38.2 0 0 1 0,207.1 V38.2 A38.2,38.2 0 0 1 38.2,0 Z"/>
@@ -29,7 +29,7 @@
     <path d="M243.3 181.9h24.9v147.8h-24.9zM24.9 329.7H0V181.9h24.9zm96.8 17.6h24.9v56.4h-24.9zM60.6 284h24.9v91.3H60.6zm121.7 0h24.9v91.3h-24.9zm304.8-102.1H512v147.8h-24.9zm-96.8-17.2h-24.9v-56.4h24.9zm61.1 62.9h-24.9v-91h24.9zm-122.1 0h-24.9v-91h24.9z"/>
   </g>
   <text x="300" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="82" font-weight="700" fill="#ffffff">Unraid</text>
-  <text x="302" y="186" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="64" font-weight="400" fill="#ffffff" fill-opacity="0.9">Template</text>
+  <text x="302" y="186" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="64" font-weight="400" fill="#ffffff" fill-opacity="0.9">Plugin</text>
   <g clip-path="url(#b0-edge)">
     <g class="b0-band">
       <rect x="0" y="-60" width="173.6" height="365.3"
