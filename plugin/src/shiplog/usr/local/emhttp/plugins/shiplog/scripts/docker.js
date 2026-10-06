@@ -75,6 +75,10 @@
     autoFailed: "Couldn't save. Reload the page and try again.",
     autoOffBadge: "Auto-update off",
     autoOffBadgeHint: "Left out of ShipLog's scheduled auto-update. Click to change.",
+    newerPill: "pinned · newer %v",
+    newerChipHint: "Newer version %v available. The tag is pinned, so change it to update.",
+    newerNote: "Version %v is available. Change the tag to update.",
+    newerWhy: "This container is pinned to %v, so pulling it again changes nothing and ShipLog never auto-updates it.",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
   function T(k) { return I18N["d_" + k] || EN[k] || k; }
@@ -223,6 +227,15 @@
     const k = st && st.kind;
     return k && k !== "none";
   }
+  // newerVersion returns the version a pinned container could move to by
+  // changing its tag. Unraid's own verdict still wins when it sees an update.
+  function newerVersion(st) {
+    if (!st || typeof st.newer_version !== "string" || isUpdate(st)) return "";
+    return st.newer_version.trim();
+  }
+  // A function replacement keeps a "$&" in a version from expanding.
+  function fillV(s, v) { return String(s).replace("%v", () => v); }
+
   function riskClass(st) { return RISK_CLASS[st && st.risk] || "grey"; }
 
   // unraidVerdict reads Unraid's own live verdict from its global docker[] array,
@@ -363,7 +376,8 @@
     const seUpd = hasUpdate(st); // the engine's view, which carries the risk detail
     // An update Unraid flags but the engine did not grade, such as a rebuild,
     // counts as low.
-    const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
+    const nv = newerVersion(st);
+    const rc = upd ? (seUpd ? riskClass(st) : "low") : (nv ? "info" : (noUpstream(st) ? "grey" : "ok"));
     const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
     const entries = Array.isArray(cl.entries) ? cl.entries : [];
     const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
@@ -439,7 +453,7 @@
     const verHdr = (upd && haveNext) ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
     const pillTxt = upd
       ? esc(seUpd ? kindLabel(st) : T("update"))
-      : esc(noUpstream(st) ? noUpstreamLabel(st) : T("uptodate"));
+      : esc(nv ? fillV(T("newerPill"), nv) : (noUpstream(st) ? noUpstreamLabel(st) : T("uptodate")));
 
     // A critical pill shows the warning glyph instead of the dot.
     const dotOrWarn = rc === "crit" ? "⚠ " : '<span class="sl-dot"></span>';
@@ -454,6 +468,7 @@
       </div>
       ${st.unmaintained ? `<div class="sl-unmaint-note"><h4>⚠ ${esc(T("unmaintained"))}</h4>${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
       ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>⚠ ${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
+      ${nv ? `<div class="sl-unmaint-note sl-newer-note"><h4>${esc(T("pinned"))}</h4><div>${esc(fillV(T("newerNote"), nv))}</div><div class="sl-newer-why">${esc(fillV(T("newerWhy"), cur))}</div></div>` : ""}
       ${autoHTML(st)}${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
@@ -810,10 +825,11 @@
         chip = el("a", "sl-chip sl-dep", `${WARN_ICON}<span>${esc(T("deprecated"))}</span>`);
         chip.title = `ShipLog: ${st.ca_deprecated_note || T("deprecated")}`;
       } else {
-        const rc = upd ? (seUpd ? riskClass(st) : "low") : (noUpstream(st) ? "grey" : "ok");
+        const nv = newerVersion(st);
+        const rc = upd ? (seUpd ? riskClass(st) : "low") : (nv ? "info" : (noUpstream(st) ? "grey" : "ok"));
         const label = upd ? (seUpd ? kindLabel(st) : T("update")) : T("uptodate");
         chip = el("a", "sl-chip", `${LOG_ICON}<span>${esc(T("changelog"))}</span><span class="sl-amp sl-${rc}"></span>`);
-        chip.title = `ShipLog: ${label} · ${T("clickHint")}`;
+        chip.title = nv ? `ShipLog: ${fillV(T("newerChipHint"), nv)}` : `ShipLog: ${label} · ${T("clickHint")}`;
       }
       chip.href = "#";
       chip.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(chip, st); });

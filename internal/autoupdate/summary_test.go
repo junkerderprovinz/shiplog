@@ -86,3 +86,30 @@ func TestRenderSummary_Skipped(t *testing.T) {
 		t.Errorf("a skipped-only dry run must not claim anything would be updated: %s", dry)
 	}
 }
+
+func TestRenderSummary_UpToDate(t *testing.T) {
+	res := Result{Outcomes: []Outcome{
+		{Name: "plex", From: "1.2.3", To: "1.2.4", Level: "patch", Updated: true},
+		{Name: "sonarr", From: "4.0.20", To: "latest", Level: "major", UpToDate: true},
+		{Name: "nzbget", Level: "major", UpToDate: true},
+	}}
+	text, html := RenderSummary(res)
+	for _, want := range []string{"Auto-updated 1: plex", "2 already up to date: sonarr, nzbget"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text missing %q: %s", want, text)
+		}
+	}
+	if !strings.Contains(html, "2 already up to date: sonarr, nzbget") {
+		t.Errorf("html missing the up-to-date clause: %s", html)
+	}
+	for _, bad := range []string{"failed", "blocked", "skipped", "sonarr 4.0.20"} {
+		if strings.Contains(text, bad) {
+			t.Errorf("an up-to-date outcome must not read as %q: %s", bad, text)
+		}
+	}
+
+	dry, _ := RenderSummary(Result{DryRun: true, Outcomes: []Outcome{{Name: "sonarr", Level: "major", UpToDate: true}}})
+	if strings.Contains(dry, "Would auto-update") || !strings.Contains(dry, "1 already up to date: sonarr") {
+		t.Errorf("dry run with nothing to do reads wrong: %s", dry)
+	}
+}

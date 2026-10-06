@@ -119,5 +119,11 @@
   "d_autoSaving": "Lagrer og starter ShipLog på nytt…",
   "d_autoFailed": "Kunne ikke lagre. Last inn siden på nytt og prøv igjen.",
   "d_autoOffBadge": "Auto-oppdatering av",
-  "d_autoOffBadgeHint": "Holdt utenfor ShipLogs planlagte auto-oppdatering. Klikk for å endre."
+  "d_autoOffBadgeHint": "Holdt utenfor ShipLogs planlagte auto-oppdatering. Klikk for å endre.",
+  "s_au_pinned_desc": "En container som er festet til en versjonstag (for eksempel :1.4.2), blir aldri auto-oppdatert, fordi det ikke endrer noe å hente samme tag på nytt. En nyere versjon vises bare som et tips; endre taggen selv for å oppdatere.",
+  "s_au_ct_newer": "festet · nyere %v tilgjengelig",
+  "d_newerPill": "festet · nyere %v",
+  "d_newerChipHint": "Nyere versjon %v tilgjengelig. Taggen er festet, så endre den for å oppdatere.",
+  "d_newerNote": "Versjon %v er tilgjengelig. Endre taggen for å oppdatere.",
+  "d_newerWhy": "Denne containeren er festet til %v, så å hente den på nytt endrer ingenting, og ShipLog auto-oppdaterer den aldri."
 }

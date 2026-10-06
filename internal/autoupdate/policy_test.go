@@ -25,6 +25,7 @@ func TestEligible(t *testing.T) {
 		{"digest on", st(model.KindDigest), Policy{Level: LevelOff, Digest: true}, true},
 		{"unknown never", st(model.KindUnknown), Policy{Level: LevelMajor, Digest: true}, false},
 		{"none never", st(model.KindNone), Policy{Level: LevelMajor, Digest: true}, false},
+		{"pinned advisory never", model.UpdateStatus{Kind: model.KindNone, NewerVersion: "0.7.0"}, Policy{Level: LevelMajor, Digest: true}, false},
 		{"off nothing", st(model.KindPatch), Policy{Level: LevelOff}, false},
 	}
 	for _, c := range cases {

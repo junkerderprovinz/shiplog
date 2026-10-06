@@ -119,5 +119,11 @@
   "d_autoSaving": "Gemmer og genstarter ShipLog…",
   "d_autoFailed": "Kunne ikke gemme. Genindlæs siden, og prøv igen.",
   "d_autoOffBadge": "Auto-opdatering fra",
-  "d_autoOffBadgeHint": "Udeladt af ShipLogs planlagte auto-opdatering. Klik for at ændre."
+  "d_autoOffBadgeHint": "Udeladt af ShipLogs planlagte auto-opdatering. Klik for at ændre.",
+  "s_au_pinned_desc": "En container, der er fastgjort til et versionstag (fx :1.4.2), bliver aldrig auto-opdateret, fordi det ikke ændrer noget at hente samme tag igen. En nyere version vises kun som et tip; skift selv tagget for at opdatere.",
+  "s_au_ct_newer": "fastgjort · nyere %v tilgængelig",
+  "d_newerPill": "fastgjort · nyere %v",
+  "d_newerChipHint": "Nyere version %v tilgængelig. Tagget er fastgjort, så skift det for at opdatere.",
+  "d_newerNote": "Version %v er tilgængelig. Skift tagget for at opdatere.",
+  "d_newerWhy": "Denne container er fastgjort til %v, så det ændrer intet at hente den igen, og ShipLog auto-opdaterer den aldrig."
 }

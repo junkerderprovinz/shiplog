@@ -119,5 +119,11 @@
   "d_autoSaving": "Đang lưu và khởi động lại ShipLog…",
   "d_autoFailed": "Không lưu được. Hãy tải lại trang rồi thử lại.",
   "d_autoOffBadge": "Tự động cập nhật: tắt",
-  "d_autoOffBadgeHint": "Nằm ngoài lịch tự động cập nhật của ShipLog. Nhấp để thay đổi."
+  "d_autoOffBadgeHint": "Nằm ngoài lịch tự động cập nhật của ShipLog. Nhấp để thay đổi.",
+  "s_au_pinned_desc": "Container được ghim vào một thẻ phiên bản (ví dụ :1.4.2) không bao giờ được tự động cập nhật, vì kéo lại cùng một thẻ không thay đổi gì. Phiên bản mới hơn chỉ hiện dưới dạng gợi ý; hãy tự đổi thẻ để cập nhật.",
+  "s_au_ct_newer": "đã ghim · có bản mới hơn %v",
+  "d_newerPill": "đã ghim · mới hơn %v",
+  "d_newerChipHint": "Có phiên bản mới hơn %v. Thẻ đang được ghim, hãy đổi thẻ để cập nhật.",
+  "d_newerNote": "Đã có phiên bản %v. Hãy đổi thẻ để cập nhật.",
+  "d_newerWhy": "Container này được ghim vào %v, nên kéo lại không thay đổi gì và ShipLog không bao giờ tự động cập nhật nó."
 }

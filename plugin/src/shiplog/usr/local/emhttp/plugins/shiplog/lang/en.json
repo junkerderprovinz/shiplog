@@ -119,5 +119,11 @@
   "d_autoSaving": "Saving and restarting ShipLog…",
   "d_autoFailed": "Couldn't save. Reload the page and try again.",
   "d_autoOffBadge": "Auto-update off",
-  "d_autoOffBadgeHint": "Left out of ShipLog's scheduled auto-update. Click to change."
+  "d_autoOffBadgeHint": "Left out of ShipLog's scheduled auto-update. Click to change.",
+  "s_au_pinned_desc": "A container pinned to a version tag (for example :1.4.2) is never auto-updated, because pulling the same tag again changes nothing. A newer version only shows up as a hint; change the tag yourself to update.",
+  "s_au_ct_newer": "pinned · newer %v available",
+  "d_newerPill": "pinned · newer %v",
+  "d_newerChipHint": "Newer version %v available. The tag is pinned, so change it to update.",
+  "d_newerNote": "Version %v is available. Change the tag to update.",
+  "d_newerWhy": "This container is pinned to %v, so pulling it again changes nothing and ShipLog never auto-updates it."
 }

@@ -119,5 +119,11 @@
   "d_autoSaving": "Sparar och startar om ShipLog…",
   "d_autoFailed": "Det gick inte att spara. Ladda om sidan och försök igen.",
   "d_autoOffBadge": "Automatisk uppdatering av",
-  "d_autoOffBadgeHint": "Utesluten från ShipLogs schemalagda automatiska uppdatering. Klicka för att ändra."
+  "d_autoOffBadgeHint": "Utesluten från ShipLogs schemalagda automatiska uppdatering. Klicka för att ändra.",
+  "s_au_pinned_desc": "En container som är fäst vid en versionstagg (till exempel :1.4.2) uppdateras aldrig automatiskt, eftersom det inte ändrar något att hämta samma tagg igen. En nyare version visas bara som ett tips; ändra taggen själv för att uppdatera.",
+  "s_au_ct_newer": "fäst · nyare %v tillgänglig",
+  "d_newerPill": "fäst · nyare %v",
+  "d_newerChipHint": "Nyare version %v tillgänglig. Taggen är fäst, så ändra den för att uppdatera.",
+  "d_newerNote": "Version %v är tillgänglig. Ändra taggen för att uppdatera.",
+  "d_newerWhy": "Den här containern är fäst vid %v, så en ny hämtning ändrar ingenting och ShipLog uppdaterar den aldrig automatiskt."
 }

@@ -406,3 +406,78 @@ func TestEveryPooledConnectionWaitsOnALock(t *testing.T) {
 		_ = c.Close()
 	}
 }
+
+func TestNewerVersionRoundTripsAndClears(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{
+		Container: model.Container{ID: "wyo", Name: "wyoming-openai", Repo: "ghcr.io/roryeckel/wyoming_openai", Tag: "0.6.1"},
+		NewestTag: "0.7.0",
+		Kind:      model.KindNone, Risk: model.RiskNone, CheckedAt: time.Now(),
+		NewerVersion: "0.7.0",
+	}
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("wyo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.NewerVersion != "0.7.0" || got.HasUpdate() {
+		t.Fatalf("advisory did not round-trip: newer=%q hasUpdate=%v", got.NewerVersion, got.HasUpdate())
+	}
+	rows, err := s.List()
+	if err != nil || len(rows) != 1 || rows[0].NewerVersion != "0.7.0" {
+		t.Fatalf("List must carry the advisory too: %+v, %v", rows, err)
+	}
+
+	st.NewerVersion = ""
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	if got, err = s.Get("wyo"); err != nil || got.NewerVersion != "" {
+		t.Fatalf("a sweep without the advisory must clear it, got %q, %v", got.NewerVersion, err)
+	}
+}
+
+func TestOpenMigratesDatabaseWithoutNewerVersion(t *testing.T) {
+	path := t.TempDir() + "/shiplog.db"
+	old, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := old.Exec(`CREATE TABLE status (
+		container_id TEXT PRIMARY KEY, name TEXT, repo TEXT, image TEXT, tag TEXT, digest TEXT,
+		pinned_digest TEXT, is_local INTEGER, managed INTEGER, running_version TEXT,
+		newest_tag TEXT, newest_digest TEXT, kind TEXT, risk TEXT, risk_reason TEXT,
+		changelog_json TEXT, checked_at TEXT, error TEXT,
+		unmaintained INTEGER, unmaintained_reason TEXT, ca_deprecated INTEGER, ca_deprecated_note TEXT)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := old.Exec(`INSERT INTO status (container_id, name, repo, image, tag, digest, newest_tag, newest_digest, kind, risk, risk_reason, changelog_json, checked_at, error)
+		VALUES ('sonarr', 'sonarr', 'lscr.io/linuxserver/sonarr', 'lscr.io/linuxserver/sonarr:latest', 'latest', 'sha256:f247', 'latest', 'sha256:f247', 'major', 'high', 'stale', '', '2026-10-02T08:53:00Z', '')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := old.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("an older database must still open: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+	got, err := s.Get("sonarr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Kind != model.KindMajor || got.NewerVersion != "" {
+		t.Fatalf("an older row reads back unchanged without an advisory, got kind=%s newer=%q", got.Kind, got.NewerVersion)
+	}
+	got.Kind, got.Risk, got.NewerVersion = model.KindNone, model.RiskNone, "5.0"
+	if err := s.Upsert(got); err != nil {
+		t.Fatalf("upsert into the migrated table: %v", err)
+	}
+	if again, err := s.Get("sonarr"); err != nil || again.NewerVersion != "5.0" || again.Kind != model.KindNone {
+		t.Fatalf("the migrated table did not take the new column: %+v, %v", again, err)
+	}
+}

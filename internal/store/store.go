@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS status (
 	unmaintained        INTEGER,
 	unmaintained_reason TEXT,
 	ca_deprecated       INTEGER,
-	ca_deprecated_note  TEXT
+	ca_deprecated_note  TEXT,
+	newer_version       TEXT
 );
 CREATE TABLE IF NOT EXISTS history (
 	id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,6 +128,7 @@ func Open(path string) (*Store, error) {
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN unmaintained_reason TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated INTEGER`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated_note TEXT`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN newer_version TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN managed INTEGER`)
 	return &Store{db: db}, nil
 }
@@ -171,8 +173,8 @@ INSERT INTO status (
 	container_id, name, repo, image, tag, digest, pinned_digest, is_local, managed, running_version,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error,
-	unmaintained, unmaintained_reason, ca_deprecated, ca_deprecated_note
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	unmaintained, unmaintained_reason, ca_deprecated, ca_deprecated_note, newer_version
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(container_id) DO UPDATE SET
 	name                = excluded.name,
 	repo                = excluded.repo,
@@ -194,11 +196,12 @@ ON CONFLICT(container_id) DO UPDATE SET
 	unmaintained        = excluded.unmaintained,
 	unmaintained_reason = excluded.unmaintained_reason,
 	ca_deprecated       = excluded.ca_deprecated,
-	ca_deprecated_note  = excluded.ca_deprecated_note`,
+	ca_deprecated_note  = excluded.ca_deprecated_note,
+	newer_version       = excluded.newer_version`,
 		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.Container.PinnedDigest, st.Container.IsLocal, st.Container.Managed, st.RunningVersion,
 		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
 		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
-		st.Unmaintained, st.UnmaintainedReason, st.CADeprecated, st.CADeprecatedNote,
+		st.Unmaintained, st.UnmaintainedReason, st.CADeprecated, st.CADeprecatedNote, st.NewerVersion,
 	)
 	if err != nil {
 		return fmt.Errorf("store: upsert status: %w", err)
@@ -223,7 +226,7 @@ SELECT container_id, name, repo, image, tag, digest,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error,
 	COALESCE(unmaintained, 0), COALESCE(unmaintained_reason, ''),
-	COALESCE(ca_deprecated, 0), COALESCE(ca_deprecated_note, '')
+	COALESCE(ca_deprecated, 0), COALESCE(ca_deprecated_note, ''), COALESCE(newer_version, '')
 FROM status`
 
 // List returns all status rows ordered by risk severity then name.
@@ -456,7 +459,7 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		&st.Container.PinnedDigest, &isLocal, &managed, &st.RunningVersion,
 		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
 		&changelogJSON, &checkedAt, &st.Error,
-		&unmaintained, &st.UnmaintainedReason, &caDeprecated, &st.CADeprecatedNote,
+		&unmaintained, &st.UnmaintainedReason, &caDeprecated, &st.CADeprecatedNote, &st.NewerVersion,
 	)
 	if err != nil {
 		return model.UpdateStatus{}, err

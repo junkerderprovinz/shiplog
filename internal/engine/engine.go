@@ -5,6 +5,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -30,7 +31,8 @@ type (
 		List(ctx context.Context) ([]model.Container, error)
 	}
 	// Resolver finds the newest tags and digests of an image, as
-	// resolver.Resolver does.
+	// resolver.Resolver does. The newest version tag is only the highest one;
+	// it names what a rolling tag serves only when its digest matches.
 	Resolver interface {
 		Resolve(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error)
 	}
@@ -353,31 +355,22 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	st.NewestDigest = newestDigest
 	st.RunningVersion = decideRunningVersion(c, newestVerTag, newestVerDigest, prior, hasPrior)
 
-	// A mirror pull carries one digest per registry, and matching any of them
-	// means the image is current.
-	curDigest := c.Digest
-	if c.HasDigest(newestDigest) {
-		curDigest = newestDigest
+	v := classify(c, st.RunningVersion, newestTag, newestDigest, newestVerTag, newestVerDigest)
+	st.Kind, st.Risk, st.RiskReason, st.NewerVersion = v.kind, v.risk, v.reason, v.newer
+	if v.newest != "" {
+		st.NewestTag = v.newest
 	}
-	kind, level, reason := risk.Classify(c.Tag, newestTag, curDigest, newestDigest)
-	// "latest" against "latest" reads as a low-risk digest move, so two resolved
-	// versions classify the real jump instead.
-	if isVersion(st.RunningVersion) && isVersion(newestVerTag) {
-		if vk, vl, vr := risk.Classify(st.RunningVersion, newestVerTag, "", ""); vk != model.KindUnknown && vk != model.KindNone {
-			kind, level, reason = vk, vl, vr
-		}
-	}
-	st.Kind, st.Risk, st.RiskReason = kind, level, reason
 
 	// Every container gets a changelog, the running version's notes when it is up
 	// to date. Resolved versions replace rolling tags, so the span includes the
-	// intermediate releases where breaking notes tend to hide.
+	// intermediate releases where breaking notes tend to hide; classify only
+	// names an end version it can vouch for.
 	clFrom, clTo := c.Tag, newestTag
 	if isVersion(st.RunningVersion) {
 		clFrom = st.RunningVersion
 	}
-	if isVersion(newestVerTag) {
-		clTo = newestVerTag
+	if v.to != "" {
+		clTo = v.to
 	}
 	if cl, ok := e.changelog.Get(ctx, c, clFrom, clTo); ok {
 		st.Changelog = cl
@@ -514,6 +507,78 @@ func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest strin
 }
 
 func isVersion(tag string) bool { return versionLike.MatchString(tag) }
+
+// verdict is what pulling a container's own tag would deliver.
+type verdict struct {
+	kind   model.Kind
+	risk   model.RiskLevel
+	reason string
+	newer  string // advisory for a pinned tag; set only with KindNone
+	newest string // replaces the resolved newest tag when set
+	to     string // end of the changelog span; empty means the newest tag
+}
+
+// classify lets only the digest behind the container's own tag decide whether
+// there is an update, because that is all a pull can fetch. Versions only size
+// a real move or advise about a newer tag: the registry's highest version tag
+// is often an old date tag or another release channel.
+func classify(c model.Container, running, newestTag, newestDigest, newestVerTag, newestVerDigest string) verdict {
+	// A mirror pull carries one digest per registry, and matching any of them
+	// means the image is current.
+	curDigest := c.Digest
+	if c.HasDigest(newestDigest) {
+		curDigest = newestDigest
+	}
+	kind, level, reason := risk.Classify(c.Tag, newestTag, curDigest, newestDigest)
+	v := verdict{kind: kind, risk: level, reason: reason}
+
+	switch kind {
+	case model.KindNone:
+		if isVersion(running) {
+			v.to = running
+		}
+
+	case model.KindDigest:
+		// A rolling tag moved. Its size is known only when the newest version
+		// tag is the very image the rolling tag now serves.
+		if trusted := trustedVersion(newestDigest, newestVerTag, newestVerDigest); trusted != "" {
+			v.to = trusted
+			if isVersion(running) {
+				if vk, vl, vr := risk.Classify(running, trusted, "", ""); vk != model.KindUnknown && vk != model.KindNone {
+					v.kind, v.risk, v.reason = vk, vl, vr
+				}
+			}
+		}
+
+	case model.KindPatch, model.KindMinor, model.KindMajor:
+		// The container is pinned to a version tag and a newer one exists, but a
+		// pull of the pinned tag cannot reach it.
+		if tagMoved(c, newestDigest) {
+			v.kind, v.risk, v.reason = model.KindDigest, model.RiskLow, "same tag, new image digest"
+			v.newest, v.to = c.Tag, c.Tag
+			break
+		}
+		v.kind, v.risk = model.KindNone, model.RiskNone
+		v.reason = fmt.Sprintf("pinned to %s; newer version %s available, change the tag to update", c.Tag, newestTag)
+		v.newer = newestTag
+	}
+	return v
+}
+
+// trustedVersion returns the newest version tag when it serves the same image
+// as the rolling tag, else "".
+func trustedVersion(newestDigest, newestVerTag, newestVerDigest string) string {
+	if newestVerTag != "" && newestVerDigest != "" && newestVerDigest == newestDigest {
+		return newestVerTag
+	}
+	return ""
+}
+
+// tagMoved reports whether the container's own tag now serves another image
+// than the one running. With either digest unknown it claims nothing.
+func tagMoved(c model.Container, tagDigest string) bool {
+	return c.Digest != "" && tagDigest != "" && !c.HasDigest(tagDigest)
+}
 
 // maybeNotify notifies when a known container gets an update target it did not
 // have before. The first sighting only seeds the row.

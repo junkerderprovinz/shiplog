@@ -376,3 +376,34 @@ func TestAppliedNeedsNameAndDigest(t *testing.T) {
 		t.Fatalf("status %d, want 400", rec.Code)
 	}
 }
+
+func TestPinnedAdvisoryIsNotCountedAsUpdate(t *testing.T) {
+	src := fakeSource{rows: []model.UpdateStatus{
+		{Container: model.Container{ID: "w", Name: "wyoming-openai", Repo: "ghcr.io/roryeckel/wyoming_openai", Tag: "0.6.1"},
+			RunningVersion: "0.6.1", NewestTag: "0.7.0", Kind: model.KindNone, Risk: model.RiskNone, NewerVersion: "0.7.0"},
+		{Container: model.Container{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "1.2.0"},
+			NewestTag: "1.4.0", Kind: model.KindMinor, Risk: model.RiskMedium},
+	}}
+	h := New(src, &fakeOverrides{}, &fakeRefresher{}, "").Handler()
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+	body := rr.Body.String()
+	if !strings.Contains(body, "2 containers &middot; 1 with updates") {
+		t.Errorf("only the real update counts, page was: %.300s", body)
+	}
+	if !strings.Contains(body, "pinned, <span class=\"new\">0.7.0</span> available") {
+		t.Errorf("the page must name the newer version of the pinned container")
+	}
+
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/container/w", nil))
+	if !strings.Contains(rr.Body.String(), `"newer_version":"0.7.0"`) {
+		t.Errorf("the Docker tab and the settings page read newer_version: %s", rr.Body.String())
+	}
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/container/a", nil))
+	if strings.Contains(rr.Body.String(), "newer_version") {
+		t.Errorf("newer_version is omitted when empty: %s", rr.Body.String())
+	}
+}

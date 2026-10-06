@@ -119,5 +119,11 @@
   "d_autoSaving": "Se salvează și se repornește ShipLog…",
   "d_autoFailed": "Salvarea a eșuat. Reîncarcă pagina și încearcă din nou.",
   "d_autoOffBadge": "Actualizare automată oprită",
-  "d_autoOffBadgeHint": "Lăsat în afara actualizării automate programate a ShipLog. Fă clic pentru a schimba."
+  "d_autoOffBadgeHint": "Lăsat în afara actualizării automate programate a ShipLog. Fă clic pentru a schimba.",
+  "s_au_pinned_desc": "Un container fixat pe o etichetă de versiune (de exemplu :1.4.2) nu este niciodată actualizat automat, pentru că descărcarea din nou a aceleiași etichete nu schimbă nimic. O versiune mai nouă apare doar ca sugestie; schimbă tu eticheta pentru a actualiza.",
+  "s_au_ct_newer": "fixat · mai nouă %v disponibilă",
+  "d_newerPill": "fixat · mai nouă %v",
+  "d_newerChipHint": "Versiune mai nouă %v disponibilă. Eticheta este fixată, așa că schimb-o pentru a actualiza.",
+  "d_newerNote": "Versiunea %v este disponibilă. Schimbă eticheta pentru a actualiza.",
+  "d_newerWhy": "Acest container este fixat pe %v, așa că descărcarea lui din nou nu schimbă nimic și ShipLog nu îl actualizează niciodată automat."
 }

@@ -573,12 +573,12 @@ func TestUnmaintainedNotifiesOnce(t *testing.T) {
 
 func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
-		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "1.2.0", Digest: "sha256:o", Source: "https://github.com/x/immich"},
+		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:o", ImageVersion: "1.2.0", Source: "https://github.com/x/immich"},
 		{ID: "b", Name: "redis", Repo: "docker.io/library/redis", Tag: "7.2.0", Digest: "sha256:r"},
 		{ID: "c", Name: "caddy", Repo: "docker.io/library/caddy", Tag: "2.7.0", Digest: "sha256:c", Source: "https://github.com/caddyserver/caddy"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
-		"ghcr.io/x/immich":        {tag: "1.4.0", dig: "sha256:n"},
+		"ghcr.io/x/immich":        {tag: "latest", dig: "sha256:n", verTag: "1.4.0", verDig: "sha256:n"},
 		"docker.io/library/redis": {err: errors.New("registry timeout")},
 		"docker.io/library/caddy": {tag: "2.7.0", dig: "sha256:c"},
 	}}
@@ -594,8 +594,8 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	if immich.Kind != model.KindMinor || immich.Risk != model.RiskMedium {
 		t.Fatalf("immich: want minor/medium, got %s/%s", immich.Kind, immich.Risk)
 	}
-	if immich.NewestTag != "1.4.0" || immich.Changelog == nil {
-		t.Fatalf("immich: expected newest tag + changelog, got %q / %v", immich.NewestTag, immich.Changelog)
+	if immich.Changelog == nil || immich.Changelog.ToTag != "1.4.0" {
+		t.Fatalf("immich: expected a changelog up to 1.4.0, got %+v", immich.Changelog)
 	}
 	// redis fails to resolve and never reaches the changelog step.
 	if cl.called != 2 {
@@ -649,10 +649,10 @@ func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 
 func TestSweepBenignChangelogKeepsVersionRisk(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
-		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "1.2.0", Digest: "sha256:o", Source: "https://github.com/x/immich"},
+		{ID: "a", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:o", ImageVersion: "1.2.0", Source: "https://github.com/x/immich"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
-		"ghcr.io/x/immich": {tag: "1.3.0", dig: "sha256:n"},
+		"ghcr.io/x/immich": {tag: "latest", dig: "sha256:n", verTag: "1.3.0", verDig: "sha256:n"},
 	}}
 	cl := &fakeChangelog{entries: []model.ReleaseEntry{
 		{Tag: "v1.3.0", Body: "Quality of life improvements and another round of bug fixes."},
@@ -710,7 +710,7 @@ func TestSweepRollingTagUsesVersionDeltaForRisk(t *testing.T) {
 		{ID: "oc", Name: "opencloud", Repo: "ghcr.io/o/opencloud", Tag: "latest", Digest: "sha256:run", ImageVersion: "7.1.0"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
-		"ghcr.io/o/opencloud": {tag: "latest", dig: "sha256:new", verTag: "7.2.0", verDig: "sha256:v72"},
+		"ghcr.io/o/opencloud": {tag: "latest", dig: "sha256:new", verTag: "7.2.0", verDig: "sha256:new"},
 	}}
 	st := &fakeStore{}
 	e := New(col, res, &fakeChangelog{}, st, time.Hour)

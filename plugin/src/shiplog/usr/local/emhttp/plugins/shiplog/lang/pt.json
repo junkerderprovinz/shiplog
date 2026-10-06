@@ -119,5 +119,11 @@
   "d_autoSaving": "Salvando e reiniciando o ShipLog…",
   "d_autoFailed": "Não foi possível salvar. Recarregue a página e tente novamente.",
   "d_autoOffBadge": "Atualização automática desativada",
-  "d_autoOffBadgeHint": "Fora da atualização automática agendada do ShipLog. Clique para alterar."
+  "d_autoOffBadgeHint": "Fora da atualização automática agendada do ShipLog. Clique para alterar.",
+  "s_au_pinned_desc": "Um contêiner fixado em uma tag de versão (por exemplo :1.4.2) nunca é atualizado automaticamente, porque baixar a mesma tag de novo não muda nada. Uma versão mais recente aparece só como dica; para atualizar, altere a tag você mesmo.",
+  "s_au_ct_newer": "fixado · versão mais recente %v disponível",
+  "d_newerPill": "fixado · mais recente %v",
+  "d_newerChipHint": "Versão mais recente %v disponível. A tag está fixada, então altere-a para atualizar.",
+  "d_newerNote": "A versão %v está disponível. Altere a tag para atualizar.",
+  "d_newerWhy": "Este contêiner está fixado em %v, então baixá-lo de novo não muda nada e o ShipLog nunca o atualiza automaticamente."
 }
