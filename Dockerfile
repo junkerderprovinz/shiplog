@@ -4,7 +4,7 @@
 #
 # The build image has to satisfy the go directive in go.mod, which
 # modernc.org/sqlite raises to 1.25.
-FROM golang:1.27-bookworm@sha256:69a7b9788769bec032d238959b61854e9ae87f57be9029ec04e9885fabf99195 AS build
+FROM golang:1.27-bookworm@sha256:8d48e12ec56735e9358640898b9d9b9fcca110612ed8a5567438c0a1baa24e66 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
