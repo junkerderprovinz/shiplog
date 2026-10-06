@@ -12,7 +12,11 @@ import (
 
 func feedFrom(entries []Entry, blacklisted map[string]string, previous *Feed) *Feed {
 	byName, byRepo, byTemplateURL := indexEntries(entries)
-	return &Feed{byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL, blacklisted: blacklisted, previous: previous}
+	return &Feed{
+		byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL,
+		templateRepos: indexTemplateRepos(entries, nil),
+		blacklisted:   blacklisted, previous: previous,
+	}
 }
 
 func TestLookupListedAndHealthy(t *testing.T) {
@@ -57,12 +61,33 @@ func TestLookupAbsentPresentInPreviousCrawlIsInconclusive(t *testing.T) {
 	}
 }
 
+// A sibling template from the same repository is still listed, so CA crawls
+// it and an app missing from both crawls really was pulled.
 func TestLookupAbsentConfirmedAcrossTwoCrawls(t *testing.T) {
-	prev := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, nil)
-	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
-	res, ok := cur.Lookup("TrulyGoneApp", "x/gone", "")
+	sibling := Entry{Name: "OtherApp", Repository: "x/y", TemplateURL: "https://raw.githubusercontent.com/x/tpl/main/other.xml"}
+	prev := feedFrom([]Entry{sibling}, nil, nil)
+	cur := feedFrom([]Entry{sibling}, nil, prev)
+	res, ok := cur.Lookup("TrulyGoneApp", "x/gone", "https://raw.githubusercontent.com/x/tpl/main/gone.xml")
 	if !ok || res.Listed {
 		t.Fatalf("absent from both crawls must be confirmed not-listed, got %+v ok=%v", res, ok)
+	}
+}
+
+// An app whose template lives in a repository CA never crawled is absent by
+// nature, so its absence proves nothing.
+func TestLookupAbsentFromUncrawledTemplateRepoIsInconclusive(t *testing.T) {
+	sibling := Entry{Name: "OtherApp", Repository: "x/y", TemplateURL: "https://raw.githubusercontent.com/x/tpl/main/other.xml"}
+	prev := feedFrom([]Entry{sibling}, nil, nil)
+	cur := feedFrom([]Entry{sibling}, nil, prev)
+	for _, tmpl := range []string{
+		"https://raw.githubusercontent.com/me/own-app/main/unraid/own-app.xml", // own public repo
+		"https://raw.githubusercontent.com/me/private-templates/main/x.xml",    // own private repo
+		"https://git.example.org/me/app/raw/branch/main/app.xml",               // not a host CA crawls
+		"", // hand-authored template, no TemplateURL
+	} {
+		if res, ok := cur.Lookup("OwnApp", "ghcr.io/me/own-app", tmpl); ok {
+			t.Errorf("template %q: absent from a repo CA never crawled must be inconclusive, got %+v", tmpl, res)
+		}
 	}
 }
 
@@ -175,9 +200,10 @@ func TestLookupZeroNameMatchRescuedByTemplateURL(t *testing.T) {
 }
 
 func TestLookupZeroNameMatchStillAbsentWhenRepoAlsoMisses(t *testing.T) {
-	prev := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, nil)
-	cur := feedFrom([]Entry{{Name: "OtherApp", Repository: "x/y"}}, nil, prev)
-	res, ok := cur.Lookup("TrulyGoneApp", "x/gone-for-real", "")
+	sibling := Entry{Name: "OtherApp", Repository: "x/y", TemplateURL: "https://raw.githubusercontent.com/x/tpl/main/other.xml"}
+	prev := feedFrom([]Entry{sibling}, nil, nil)
+	cur := feedFrom([]Entry{sibling}, nil, prev)
+	res, ok := cur.Lookup("TrulyGoneApp", "x/gone-for-real", "https://raw.githubusercontent.com/x/tpl/main/gone.xml")
 	if !ok || res.Listed {
 		t.Fatalf("absent by name and repository from both crawls must be confirmed not-listed, got %+v ok=%v", res, ok)
 	}
@@ -189,6 +215,118 @@ func TestLookupZeroNameMatchRepoPresentLastCrawlIsInconclusive(t *testing.T) {
 	_, ok := cur.Lookup("RenamedFlakyApp", "x/flaky", "")
 	if ok {
 		t.Fatal("present last crawl by repository and absent in this one must be inconclusive")
+	}
+}
+
+func TestTemplateRepoKey(t *testing.T) {
+	cases := map[string]string{
+		"https://raw.githubusercontent.com/Owner/Repo/main/dir/app.xml":        "github.com/owner/repo",
+		"https://raw.githubusercontent.com/o/r/refs/heads/main/app.xml":        "github.com/o/r",
+		"https://github.com/o/r/blob/master/untelegraf.xml":                    "github.com/o/r", // a blob URL some installs store as TemplateURL
+		"https://github.com/o/r":                                               "github.com/o/r",
+		"https://github.com/o/r.git":                                           "github.com/o/r",
+		"https://www.github.com/o/r/":                                          "github.com/o/r",
+		"http://raw.githubusercontent.com/o/r/main/a.xml?x=1#frag":             "github.com/o/r",
+		"https://gitlab.com/yaya/unraid-templates/-/raw/main/yaya/frigate.xml": "gitlab.com/yaya/unraid-templates",
+		"https://gitlab.com/group/sub/proj/-/raw/master/docker/unraid.xml":     "gitlab.com/group/sub/proj", // nested group
+		"https://gitlab.com/owner/repo/raw/master/app.xml":                     "gitlab.com/owner/repo",     // pre-"/-/" raw URL
+		"https://gitlab.com/group/sub/proj":                                    "gitlab.com/group/sub/proj", // a bare project URL, as the repositories list stores it
+		"https://gitlab.com/group/sub/proj/":                                   "gitlab.com/group/sub/proj",
+		"https://gitlab.com/owner/repo/blob/main/dir/app.xml":                  "gitlab.com/owner/repo",
+		"https://gitlab.com/owner/repo.git":                                    "gitlab.com/owner/repo",
+		"https://raw.githubusercontent.com/onlyowner":                          "",
+		"https://git.example.org/me/app/raw/branch/main/app.xml":               "", // not a host CA crawls
+		"https://gist.githubusercontent.com/me/abc123/raw/app.xml":             "",
+		"ftp://github.com/o/r":                                                 "",
+		"not a url":                                                            "",
+		"":                                                                     "",
+	}
+	for in, want := range cases {
+		got, ok := templateRepoKey(in)
+		if want == "" {
+			if ok {
+				t.Errorf("templateRepoKey(%q) = %q, want no repository", in, got)
+			}
+			continue
+		}
+		if !ok || got != want {
+			t.Errorf("templateRepoKey(%q) = %q,%v want %q", in, got, ok, want)
+		}
+	}
+}
+
+// realisticFeed has a repositories list plus apps that point into it.
+const realisticFeed = `{
+  "applist": [
+    {"Name":"actual-server","Repository":"actualbudget/actual-server","TemplateURL":"https://raw.githubusercontent.com/hofq/docker-templates/main/actual-server.xml"},
+    {"Name":"frigate","Repository":"ghcr.io/blakeblackshear/frigate","TemplateURL":"https://gitlab.com/yayitazale/unraid-templates/-/raw/main/yayitazale/frigate.xml"}
+  ],
+  "repositories": {
+    "hofq's Repository": {"url":"https://github.com/hofq/docker-templates","bio":"x"},
+    "Empty Repo":        {"url":"https://github.com/someone/emptied-repo"},
+    "yayitazale":        {"url":"https://gitlab.com/yayitazale/unraid-templates"},
+    "Nested":            {"url":"https://gitlab.com/group/sub/proj"}
+  },
+  "blacklisted": {"x/bad":"Repository no longer exists on dockerHub"},
+  "last_updated_timestamp": 5
+}`
+
+func TestCrawlsTemplate(t *testing.T) {
+	f := parseOne([]byte(realisticFeed))
+	if f == nil {
+		t.Fatal("realistic feed must parse")
+	}
+	cases := []struct {
+		name, url string
+		want      bool
+	}{
+		{"another template in a listed repo", "https://raw.githubusercontent.com/hofq/docker-templates/main/other-app.xml", true},
+		{"repo listed by name, case differs", "https://raw.githubusercontent.com/HOFQ/Docker-Templates/main/a.xml", true},
+		{"repo in the repositories list with no app left in the feed", "https://raw.githubusercontent.com/someone/emptied-repo/main/a.xml", true},
+		{"gitlab repo", "https://gitlab.com/yayitazale/unraid-templates/-/raw/main/yayitazale/other.xml", true},
+		{"nested gitlab project listed only in the repositories list", "https://gitlab.com/group/sub/proj/-/raw/main/app.xml", true},
+		{"the user's own repo, never submitted to CA", "https://raw.githubusercontent.com/me/own-app/main/unraid/own-app.xml", false},
+		{"a lookalike owner", "https://raw.githubusercontent.com/hofq/docker-templates-fork/main/a.xml", false},
+		{"a host CA does not crawl", "https://git.example.org/hofq/docker-templates/raw/branch/main/a.xml", false},
+		{"no TemplateURL at all", "", false},
+	}
+	for _, c := range cases {
+		if got := f.CrawlsTemplate(c.url); got != c.want {
+			t.Errorf("%s: CrawlsTemplate(%q) = %v, want %v", c.name, c.url, got, c.want)
+		}
+	}
+}
+
+// A reshaped repositories list costs only that list; the apps' own template
+// URLs still mark their repositories as crawled.
+func TestParseOneSurvivesReshapedRepositories(t *testing.T) {
+	f := parseOne([]byte(`{"applist":[{"Name":"A","Repository":"x/a","TemplateURL":"https://raw.githubusercontent.com/hofq/docker-templates/main/a.xml"}],"repositories":["not","a","map"],"last_updated_timestamp":1}`))
+	if f == nil {
+		t.Fatal("a reshaped repositories field must not make the whole feed unparseable")
+	}
+	if !f.CrawlsTemplate("https://raw.githubusercontent.com/hofq/docker-templates/main/b.xml") {
+		t.Error("the repository behind a listed app's TemplateURL must still count as crawled")
+	}
+	if res, ok := f.Lookup("A", "x/a", ""); !ok || !res.Listed {
+		t.Errorf("a listed app must still resolve, got %+v ok=%v", res, ok)
+	}
+}
+
+func TestRealisticFeedRemovedVersusNeverListed(t *testing.T) {
+	prev := parseOne([]byte(realisticFeed))
+	cur := parseOne([]byte(realisticFeed))
+	cur.previous = prev
+
+	res, ok := cur.Lookup("GoneApp", "docker.io/gone/app", "https://raw.githubusercontent.com/hofq/docker-templates/main/gone-app.xml")
+	if !ok || res.Listed {
+		t.Errorf("an app from a crawled repo, absent from both crawls, must read removed; got %+v ok=%v", res, ok)
+	}
+	if res, ok = cur.Lookup("OwnApp", "ghcr.io/me/own-app", "https://raw.githubusercontent.com/me/own-app/main/unraid/own-app.xml"); ok {
+		t.Errorf("a user's own app must never get a verdict from the feed; got %+v", res)
+	}
+	cur.previous = nil
+	if res, ok = cur.Lookup("GoneApp", "docker.io/gone/app", "https://raw.githubusercontent.com/hofq/docker-templates/main/gone-app.xml"); ok {
+		t.Errorf("with no previous crawl an absence must stay inconclusive; got %+v", res)
 	}
 }
 

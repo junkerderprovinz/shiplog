@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -29,5 +30,17 @@ func TestBadDurationFallsBack(t *testing.T) {
 	t.Setenv("POLL_INTERVAL", "not-a-duration")
 	if Load().PollInterval != 6*time.Hour {
 		t.Fatal("invalid POLL_INTERVAL should fall back to 6h")
+	}
+}
+
+func TestLoadDockerConfigDir(t *testing.T) {
+	t.Setenv("DOCKER_CONFIG", "/custom/dockercfg")
+	if got := Load().DockerConfigDir; got != "/custom/dockercfg" {
+		t.Fatalf("DOCKER_CONFIG: got %q", got)
+	}
+	t.Setenv("DOCKER_CONFIG", "")
+	t.Setenv("HOME", "/home/someone")
+	if got, want := Load().DockerConfigDir, filepath.Join("/home/someone", ".docker"); got != want {
+		t.Fatalf("with HOME set: got %q, want %q", got, want)
 	}
 }

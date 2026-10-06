@@ -40,11 +40,19 @@ func main() {
 	defer func() { _ = db.Close() }()
 
 	docker := dockercli.New(cfg.DockerSocket)
+	// The logins in Docker's config.json are the ones Unraid's own update check
+	// uses, so private images resolve for ShipLog too.
+	dockerCfg := filepath.Join(cfg.DockerConfigDir, "config.json")
+	reg := resolver.New().
+		WithDockerHubAuth(cfg.DockerHubUser, cfg.DockerHubToken).
+		WithGitHubToken(cfg.GithubToken).
+		WithDockerConfig(dockerCfg)
+	if n := reg.DockerLogins(); n > 0 {
+		log.Printf("shiplog: %d registry login(s) from %s", n, dockerCfg)
+	}
 	eng := engine.New(
 		docker,
-		resolver.New().
-			WithDockerHubAuth(cfg.DockerHubUser, cfg.DockerHubToken).
-			WithGitHubToken(cfg.GithubToken),
+		reg,
 		changelog.Chain{changelog.NewFile(), changelog.New(cfg.GithubToken), changelog.Fallback{}},
 		db,
 		cfg.PollInterval,

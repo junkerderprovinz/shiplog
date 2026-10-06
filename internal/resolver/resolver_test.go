@@ -3,9 +3,11 @@ package resolver
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -491,6 +493,339 @@ func TestResolve_GitHubTokenNotLeakedToOtherRegistries(t *testing.T) {
 	}
 	if gotTokenAuth != "" {
 		t.Errorf("token request to quay.io carried Authorization %q, want none", gotTokenAuth)
+	}
+}
+
+// tokenRegistry is a fake registry that demands a bearer token for o/app and
+// records the Authorization header of every token request and of every /v2/
+// request, so tests can prove where a credential did and did not travel.
+type tokenRegistry struct {
+	*httptest.Server
+	mu        sync.Mutex
+	tokenAuth []string
+	v2Auth    []string
+}
+
+// newTokenRegistry starts the fake registry. The Bearer challenge points at
+// realmBase+"/token"; an empty realmBase means the registry's own URL.
+func newTokenRegistry(t *testing.T, realmBase string) *tokenRegistry {
+	t.Helper()
+	reg := &tokenRegistry{}
+	reg.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/token":
+			reg.mu.Lock()
+			reg.tokenAuth = append(reg.tokenAuth, r.Header.Get("Authorization"))
+			reg.mu.Unlock()
+			_, _ = w.Write([]byte(`{"token":"tok"}`))
+		case strings.HasPrefix(r.URL.Path, "/v2/o/app/"):
+			reg.mu.Lock()
+			reg.v2Auth = append(reg.v2Auth, r.Header.Get("Authorization"))
+			reg.mu.Unlock()
+			if r.Header.Get("Authorization") != "Bearer tok" {
+				base := realmBase
+				if base == "" {
+					base = reg.URL
+				}
+				w.Header().Set("WWW-Authenticate", `Bearer realm="`+base+`/token",service="reg",scope="repository:o/app:pull"`)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			if strings.HasSuffix(r.URL.Path, "/tags/list") {
+				_, _ = w.Write([]byte(`{"tags":["1.0.0","latest"]}`))
+				return
+			}
+			w.Header().Set("Docker-Content-Digest", "sha256:Z")
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(reg.Close)
+	return reg
+}
+
+func (reg *tokenRegistry) tokenAuths() []string {
+	reg.mu.Lock()
+	defer reg.mu.Unlock()
+	return append([]string(nil), reg.tokenAuth...)
+}
+
+// noBasicOnV2 fails the test if any /v2/ request ever carried Basic credentials:
+// stored logins belong on the token request only.
+func (reg *tokenRegistry) noBasicOnV2(t *testing.T) {
+	t.Helper()
+	reg.mu.Lock()
+	defer reg.mu.Unlock()
+	for _, a := range reg.v2Auth {
+		if strings.HasPrefix(a, "Basic ") {
+			t.Errorf("/v2/ request carried Basic credentials")
+		}
+	}
+}
+
+func basicHeader(userPass string) string {
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(userPass))
+}
+
+// A docker-config login for a self-hosted registry is sent as Basic on that
+// registry's own token request (and nowhere else).
+func TestResolve_DockerConfigLoginBasicOnOwnRealm(t *testing.T) {
+	reg := newTokenRegistry(t, "")
+	cfg := writeDockerConfig(t, `{"auths":{"git.example.org":{"auth":"`+
+		base64.StdEncoding.EncodeToString([]byte("alice:s3cret"))+`"}}}`)
+
+	r := newResolverFor(reg.Server).WithDockerConfig(cfg)
+	if _, _, _, _, err := r.Resolve(context.Background(), "git.example.org/o/app", "latest", ""); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	got := reg.tokenAuths()
+	if len(got) == 0 || got[0] != basicHeader("alice:s3cret") {
+		t.Errorf("token request Authorization = %q, want %q", got, basicHeader("alice:s3cret"))
+	}
+	reg.noBasicOnV2(t)
+}
+
+// A login stored for host A must not be sent when resolving host B.
+func TestResolve_DockerConfigLoginNotSentToOtherHost(t *testing.T) {
+	reg := newTokenRegistry(t, "")
+	cfg := writeDockerConfig(t, `{"auths":{"a.example.org":{"username":"alice","password":"s3cret"}}}`)
+
+	r := newResolverFor(reg.Server).WithDockerConfig(cfg)
+	if _, _, _, _, err := r.Resolve(context.Background(), "b.example.org/o/app", "latest", ""); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	for _, a := range reg.tokenAuths() {
+		if a != "" {
+			t.Errorf("token request for b.example.org carried Authorization (a.example.org's login leaked)")
+		}
+	}
+}
+
+// A login must not be sent when the challenge points the token request at a
+// host other than the registry itself, even for the login's own registry.
+func TestResolve_DockerConfigLoginNotSentToForeignRealm(t *testing.T) {
+	foreign := newTokenRegistry(t, "")
+	reg := newTokenRegistry(t, foreign.URL)
+	cfg := writeDockerConfig(t, `{"auths":{"git.example.org":{"username":"alice","password":"s3cret"}}}`)
+
+	r := newResolverFor(reg.Server).WithDockerConfig(cfg)
+	if _, _, _, _, err := r.Resolve(context.Background(), "git.example.org/o/app", "latest", ""); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	got := foreign.tokenAuths()
+	if len(got) == 0 {
+		t.Fatal("foreign realm was never contacted; test does not exercise the realm check")
+	}
+	for _, a := range got {
+		if a != "" {
+			t.Errorf("foreign realm received Authorization (login leaked off-host)")
+		}
+	}
+}
+
+// A login the realm rejects (expired token, rotated password) gets one
+// anonymous retry: a public image still resolves, a private one fails with an
+// ordinary error and never reads as removed.
+func TestResolve_StaleDockerConfigLoginFallsBackToAnonymous(t *testing.T) {
+	for _, public := range []bool{true, false} {
+		var mu sync.Mutex
+		var tokenAuth []string
+		srv := httptest.NewServer(nil)
+		srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch {
+			case r.URL.Path == "/token":
+				mu.Lock()
+				tokenAuth = append(tokenAuth, r.Header.Get("Authorization"))
+				mu.Unlock()
+				if r.Header.Get("Authorization") != "" || !public {
+					w.WriteHeader(http.StatusUnauthorized) // stale login rejected; a private image offers no anonymous token
+					return
+				}
+				_, _ = w.Write([]byte(`{"token":"tok"}`))
+			case r.Header.Get("Authorization") != "Bearer tok":
+				w.Header().Set("WWW-Authenticate", `Bearer realm="`+srv.URL+`/token",service="reg"`)
+				w.WriteHeader(http.StatusUnauthorized)
+			case strings.HasSuffix(r.URL.Path, "/tags/list"):
+				_, _ = w.Write([]byte(`{"tags":["1.0.0","latest"]}`))
+			default:
+				w.Header().Set("Docker-Content-Digest", "sha256:Z")
+			}
+		})
+		cfg := writeDockerConfig(t, `{"auths":{"git.example.org":{"username":"alice","password":"expired"}}}`)
+
+		r := newResolverFor(srv).WithDockerConfig(cfg)
+		_, digest, _, _, err := r.Resolve(context.Background(), "git.example.org/o/app", "latest", "")
+		srv.Close()
+
+		mu.Lock()
+		got := append([]string(nil), tokenAuth...)
+		mu.Unlock()
+		if len(got) != 2 || got[0] != basicHeader("alice:expired") || got[1] != "" {
+			t.Errorf("public=%v: token requests = %q, want the stored login first, then one anonymous retry", public, got)
+		}
+		if public {
+			if err != nil || digest != "sha256:Z" {
+				t.Errorf("a public image must still resolve past a stale login, got digest=%q err=%v", digest, err)
+			}
+			continue
+		}
+		if err == nil {
+			t.Error("a private image with a stale login must fail")
+		} else if errors.Is(err, ErrRepoNotFound) {
+			t.Errorf("an unauthorized answer must never read as repository-not-found: %v", err)
+		}
+	}
+}
+
+// Two loopback servers share a host name, which is the case Go would forward
+// Authorization for on a redirect.
+func TestResolve_CredentialedTokenRequestNeverFollowsRedirect(t *testing.T) {
+	cases := []struct {
+		name  string
+		image string
+		set   func(r *Resolver, cfg string) *Resolver
+	}{
+		{"docker-config login", "git.example.org/o/app", func(r *Resolver, cfg string) *Resolver { return r.WithDockerConfig(cfg) }},
+		{"explicit GitHub token", "ghcr.io/o/app", func(r *Resolver, _ string) *Resolver { return r.WithGitHubToken("ghp_secret") }},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			target := newTokenRegistry(t, "")
+			registry := httptest.NewServer(nil)
+			defer registry.Close()
+			registry.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/token" {
+					http.Redirect(w, r, target.URL+"/token", http.StatusFound)
+					return
+				}
+				w.Header().Set("WWW-Authenticate", `Bearer realm="`+registry.URL+`/token",service="reg"`)
+				w.WriteHeader(http.StatusUnauthorized)
+			})
+			cfg := writeDockerConfig(t, `{"auths":{"git.example.org":{"username":"alice","password":"s3cret"}}}`)
+
+			r := c.set(newResolverFor(registry), cfg)
+			_, _, _, _, err := r.Resolve(context.Background(), c.image, "latest", "")
+			if err == nil {
+				t.Fatal("a redirecting token realm must fail the lookup, not succeed through the redirect")
+			}
+			if errors.Is(err, ErrRepoNotFound) {
+				t.Errorf("a redirect must never read as repository-not-found: %v", err)
+			}
+			if got := target.tokenAuths(); len(got) != 0 {
+				t.Errorf("the redirect target was contacted with Authorization %q; the login must never follow a redirect", got)
+			}
+		})
+	}
+}
+
+// Precedence on ghcr.io: an explicit GITHUB_TOKEN beats the docker-config login,
+// which in turn is used when no explicit token is set.
+func TestResolve_DockerConfigLoginPrecedenceOnGHCR(t *testing.T) {
+	cfgJSON := `{"auths":{"ghcr.io":{"username":"dockeruser","password":"dockerpass"}}}`
+	cases := []struct {
+		name    string
+		ghToken string
+		want    string
+	}{
+		{"explicit GitHub token wins", "ghp_secret", basicHeader("x:ghp_secret")},
+		{"docker-config login when no token", "", basicHeader("dockeruser:dockerpass")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			reg := newTokenRegistry(t, "")
+			r := newResolverFor(reg.Server).WithDockerConfig(writeDockerConfig(t, cfgJSON)).WithGitHubToken(tc.ghToken)
+			if _, _, _, _, err := r.Resolve(context.Background(), "ghcr.io/o/app", "latest", ""); err != nil {
+				t.Fatalf("Resolve: %v", err)
+			}
+			got := reg.tokenAuths()
+			if len(got) == 0 || got[0] != tc.want {
+				t.Errorf("token request Authorization = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// The Docker Hub alias key https://index.docker.io/v1/ supplies the login for
+// docker.io images; explicit DOCKERHUB_* credentials still take precedence.
+func TestResolve_DockerConfigDockerHubAlias(t *testing.T) {
+	cfgJSON := `{"auths":{"https://index.docker.io/v1/":{"username":"hubuser","password":"hubpass"}}}`
+	cases := []struct {
+		name string
+		hub  [2]string
+		want string
+	}{
+		{"docker-config alias", [2]string{}, basicHeader("hubuser:hubpass")},
+		{"explicit Docker Hub creds win", [2]string{"envuser", "envtoken"}, basicHeader("envuser:envtoken")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			reg := newTokenRegistry(t, "")
+			r := newResolverFor(reg.Server).WithDockerConfig(writeDockerConfig(t, cfgJSON)).
+				WithDockerHubAuth(tc.hub[0], tc.hub[1])
+			if _, _, _, _, err := r.Resolve(context.Background(), "docker.io/o/app", "latest", ""); err != nil {
+				t.Fatalf("Resolve: %v", err)
+			}
+			got := reg.tokenAuths()
+			if len(got) == 0 || got[0] != tc.want {
+				t.Errorf("token request Authorization = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// Private, denied or inconclusive answers are ordinary errors, so a live image
+// is never flagged as removed from the registry.
+func TestResolve_ErrRepoNotFoundOnlyForNameUnknown(t *testing.T) {
+	const challenge = `Bearer realm="%s/token",service="reg",scope="repository:o/app:pull"`
+	cases := []struct {
+		name       string
+		challenge  bool // tags/list answers 401 + challenge until a bearer is presented
+		tokenCode  int
+		tagsCode   int
+		tagsBody   string
+		wantAbsent bool
+	}{
+		{"404 NAME_UNKNOWN", false, 200, 404, `{"errors":[{"code":"NAME_UNKNOWN","message":"repository name not known to registry"}]}`, true},
+		{"404 NAME_UNKNOWN empty message", false, 200, 404, `{"errors":[{"code":"NAME_UNKNOWN","message":""}]}`, true},
+		{"404 NAME_UNKNOWN after token exchange", true, 200, 404, `{"errors":[{"code":"NAME_UNKNOWN"}]}`, true},
+		{"bare 404", false, 200, 404, ``, false},
+		{"404 html", false, 200, 404, `<html>not found</html>`, false},
+		{"404 other code", false, 200, 404, `{"errors":[{"code":"MANIFEST_UNKNOWN"}]}`, false},
+		{"401 challenge then token realm 401", true, 401, 0, ``, false},
+		{"401 challenge then token realm 403", true, 403, 0, ``, false},
+		{"token realm 404", true, 404, 0, ``, false},
+		{"403 DENIED on tags/list", true, 200, 403, `{"errors":[{"code":"DENIED","message":"requested access to the resource is denied"}]}`, false},
+		{"500 on tags/list", false, 200, 500, ``, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(nil)
+			srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/token" {
+					w.WriteHeader(tc.tokenCode)
+					if tc.tokenCode == 200 {
+						_, _ = w.Write([]byte(`{"token":"tok"}`))
+					}
+					return
+				}
+				if tc.challenge && r.Header.Get("Authorization") == "" {
+					w.Header().Set("WWW-Authenticate", strings.Replace(challenge, "%s", srv.URL, 1))
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				w.WriteHeader(tc.tagsCode)
+				_, _ = w.Write([]byte(tc.tagsBody))
+			})
+			defer srv.Close()
+
+			_, _, _, _, err := newResolverFor(srv).Resolve(context.Background(), "quay.io/o/app", "latest", "")
+			if err == nil {
+				t.Fatal("Resolve succeeded, want an error")
+			}
+			if got := errors.Is(err, ErrRepoNotFound); got != tc.wantAbsent {
+				t.Errorf("errors.Is(err, ErrRepoNotFound) = %v, want %v (err: %v)", got, tc.wantAbsent, err)
+			}
+		})
 	}
 }
 
