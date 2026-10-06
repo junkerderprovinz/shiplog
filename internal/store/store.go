@@ -102,17 +102,17 @@ CREATE TABLE IF NOT EXISTS unmaintained_suppressions (
 // Open opens (creating if needed) the SQLite database at path, applies the
 // pragmas, and ensures the schema exists.
 func Open(path string) (*Store, error) {
-	db, err := sql.Open("sqlite", path)
+	// The busy timeout goes in the DSN so the driver sets it on every pooled
+	// connection before its first statement. A restart opens the store while
+	// the previous daemon may still hold a lock, and without a busy handler the
+	// first statement fails with SQLITE_BUSY and the new daemon exits.
+	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, err
 	}
 	if _, err := db.Exec(`PRAGMA journal_mode=WAL;`); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("store: set WAL: %w", err)
-	}
-	if _, err := db.Exec(`PRAGMA busy_timeout=5000;`); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("store: set busy_timeout: %w", err)
 	}
 	if _, err := db.Exec(schema); err != nil {
 		_ = db.Close()

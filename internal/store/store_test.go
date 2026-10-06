@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -344,5 +346,63 @@ func TestSuppressedUnmaintainedRoundTrip(t *testing.T) {
 	m, _ = s.SuppressedUnmaintained()
 	if len(m) != 1 || !m["ghcr.io/x/other"] {
 		t.Fatalf("after unsuppress = %v", m)
+	}
+}
+
+// A restart opens the store while the previous daemon may still hold a lock.
+func TestOpenWaitsOutABriefLock(t *testing.T) {
+	path := t.TempDir() + "/shiplog.db"
+	ctx := context.Background()
+
+	holder, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = holder.Close() })
+	conn, err := holder.Conn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+	for _, q := range []string{`CREATE TABLE lock_probe (x INTEGER)`, `BEGIN EXCLUSIVE`} {
+		if _, err := conn.ExecContext(ctx, q); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	const hold = 300 * time.Millisecond
+	release := time.AfterFunc(hold, func() { _, _ = conn.ExecContext(ctx, `COMMIT`) })
+	defer release.Stop()
+
+	start := time.Now()
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open failed while the database was briefly locked: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	if waited := time.Since(start); waited < hold/2 {
+		t.Fatalf("Open returned after %v, before the lock (held %v) was released, so the lock was never hit", waited, hold)
+	}
+}
+
+func TestEveryPooledConnectionWaitsOnALock(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	var conns []*sql.Conn
+	for range 3 {
+		c, err := s.db.Conn(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		conns = append(conns, c)
+	}
+	for i, c := range conns {
+		var ms int
+		if err := c.QueryRowContext(ctx, `PRAGMA busy_timeout`).Scan(&ms); err != nil {
+			t.Fatal(err)
+		}
+		if ms != 5000 {
+			t.Errorf("connection %d: busy_timeout = %d, want 5000", i, ms)
+		}
+		_ = c.Close()
 	}
 }
