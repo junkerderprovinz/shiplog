@@ -148,9 +148,48 @@ func TestExecutorNoExcludeWordsConfiguredUpdatesNormally(t *testing.T) {
 	}
 }
 
-type fakeInspector struct{ cs []model.Container }
+// fakeHost is the updater and the Docker view in one: an update leaves the
+// container on pulled[name], or keeps the old image when that is unset.
+type fakeHost struct {
+	fakeUpdater
+	live      map[string]model.Container
+	pulled    map[string][]string
+	listErr   error
+	errAfter  bool // List fails once an update ran
+	updatedAt int
+}
 
-func (f fakeInspector) List(context.Context) ([]model.Container, error) { return f.cs, nil }
+func (h *fakeHost) Update(ctx context.Context, name string) error {
+	if err := h.fakeUpdater.Update(ctx, name); err != nil {
+		return err
+	}
+	h.updatedAt++
+	if ds, ok := h.pulled[name]; ok {
+		c := h.live[name]
+		c.Digest, c.Digests = ds[0], ds
+		h.live[name] = c
+	}
+	return nil
+}
+
+func (h *fakeHost) List(context.Context) ([]model.Container, error) {
+	if h.listErr != nil || (h.errAfter && h.updatedAt > 0) {
+		return nil, errors.New("docker socket gone")
+	}
+	var out []model.Container
+	for _, c := range h.live {
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+func newHost(running map[string]string) *fakeHost {
+	h := &fakeHost{fakeUpdater: fakeUpdater{sup: true}, live: map[string]model.Container{}, pulled: map[string][]string{}}
+	for name, d := range running {
+		h.live[name] = model.Container{Name: name, Digest: d}
+	}
+	return h
+}
 
 func stWithDigest(name, newest string) model.UpdateStatus {
 	s := stNamed(name, model.KindDigest)
@@ -158,32 +197,103 @@ func stWithDigest(name, newest string) model.UpdateStatus {
 	return s
 }
 
+func runHost(h *fakeHost, dryRun bool, sts ...model.UpdateStatus) Result {
+	return NewExecutor(fakeLister{sts: sts}, h).WithInspector(h).Run(context.Background(), Policy{Digest: true}, dryRun)
+}
+
 func TestExecutorConfirmsUpdateAgainstRunningDigest(t *testing.T) {
-	sts := []model.UpdateStatus{stWithDigest("new", "sha256:b"), stWithDigest("old", "sha256:b"), stWithDigest("gone", "sha256:b")}
-	insp := fakeInspector{cs: []model.Container{
-		{Name: "new", Digest: "sha256:x", Digests: []string{"sha256:x", "sha256:b"}},
-		{Name: "old", Digest: "sha256:a"},
-	}}
-	e := NewExecutor(fakeLister{sts: sts}, &fakeUpdater{sup: true}).WithInspector(insp)
-	res := e.Run(context.Background(), Policy{Digest: true}, false)
-	if len(res.Outcomes) != 3 {
-		t.Fatalf("outcomes %+v", res.Outcomes)
-	}
+	h := newHost(map[string]string{"new": "sha256:a", "old": "sha256:a"})
+	h.pulled["new"] = []string{"sha256:x", "sha256:b"} // a mirror pull lists the newest digest second
+	res := runHost(h, false, stWithDigest("new", "sha256:b"), stWithDigest("old", "sha256:b"))
 	if o := res.Outcomes[0]; !o.Updated || o.Err != nil {
-		t.Errorf("container on the newest digest (mirror entry) = %+v, want Updated", o)
+		t.Errorf("container on the newest digest = %+v, want Updated", o)
 	}
-	if o := res.Outcomes[1]; o.Updated || o.Err == nil {
-		t.Errorf("container still on its old digest = %+v, want a failure", o)
+	if o := res.Outcomes[1]; o.Updated || !errors.Is(o.Err, ErrNoChange) {
+		t.Errorf("container still on its old image = %+v, want ErrNoChange", o)
 	}
-	if o := res.Outcomes[2]; o.Updated || o.Err == nil {
-		t.Errorf("container missing after the update = %+v, want a failure", o)
+}
+
+func TestExecutorReportsAContainerGoneAfterTheUpdate(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	upd := &goneAfterUpdate{h}
+	res := NewExecutor(fakeLister{sts: []model.UpdateStatus{stWithDigest("a", "sha256:b")}}, upd).WithInspector(h).
+		Run(context.Background(), Policy{Digest: true}, false)
+	if o := res.Outcomes[0]; o.Updated || o.Err == nil || o.Err.Error() != "container gone after the update" {
+		t.Fatalf("outcome = %+v, want the container reported gone", o)
+	}
+}
+
+type goneAfterUpdate struct{ h *fakeHost }
+
+func (g *goneAfterUpdate) Supported() bool { return true }
+func (g *goneAfterUpdate) Update(_ context.Context, name string) error {
+	delete(g.h.live, name)
+	return nil
+}
+
+func TestExecutorLeavesAContainerOnTheNewestImageAlone(t *testing.T) {
+	for _, dryRun := range []bool{false, true} {
+		h := newHost(map[string]string{"a": "sha256:b"})
+		res := runHost(h, dryRun, stWithDigest("a", "sha256:b"))
+		if len(h.calls) != 0 {
+			t.Fatalf("dryRun=%v: Update called for %v, want none", dryRun, h.calls)
+		}
+		if o := res.Outcomes[0]; !o.UpToDate || o.Updated || o.Err != nil {
+			t.Fatalf("dryRun=%v: outcome = %+v, want UpToDate", dryRun, o)
+		}
+		if res.Notable() {
+			t.Fatalf("dryRun=%v: a run with nothing to do is not worth a notification", dryRun)
+		}
+	}
+}
+
+func TestExecutorFailsAnUpdateToAnUnexpectedImage(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:c"}
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; o.Updated || o.Err == nil || errors.Is(o.Err, ErrNoChange) {
+		t.Fatalf("outcome = %+v, want a mismatch error", o)
+	}
+}
+
+func TestExecutorNeverUpdatesWhatItCannotInspect(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.listErr = errors.New("docker socket gone")
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if len(h.calls) != 0 {
+		t.Fatalf("Update called for %v, want none", h.calls)
+	}
+	if o := res.Outcomes[0]; o.Updated || o.Err == nil {
+		t.Fatalf("outcome = %+v, want a failure", o)
+	}
+}
+
+func TestExecutorReportsAnUpdateItCannotConfirm(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.errAfter = true
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; o.Updated || o.Err == nil {
+		t.Fatalf("outcome = %+v, want a failure", o)
+	}
+}
+
+func TestExecutorWithoutNewestDigestNeedsAnotherImage(t *testing.T) {
+	h := newHost(map[string]string{"same": "sha256:a", "moved": "sha256:a"})
+	h.pulled["moved"] = []string{"sha256:z"}
+	res := runHost(h, false, stWithDigest("same", ""), stWithDigest("moved", ""))
+	if o := res.Outcomes[0]; o.Updated || !errors.Is(o.Err, ErrNoChange) {
+		t.Errorf("unchanged image = %+v, want ErrNoChange", o)
+	}
+	if o := res.Outcomes[1]; !o.Updated || o.Err != nil {
+		t.Errorf("changed image = %+v, want Updated", o)
 	}
 }
 
 func TestExecutorSkipsConfirmationOnUpdateError(t *testing.T) {
-	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{stWithDigest("a", "sha256:b")}}, &fakeUpdater{sup: true, failOn: "a"}).
-		WithInspector(fakeInspector{cs: []model.Container{{Name: "a", Digest: "sha256:b"}}})
-	res := e.Run(context.Background(), Policy{Digest: true}, false)
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.failOn = "a"
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
 	if o := res.Outcomes[0]; o.Updated || o.Err == nil || o.Err.Error() != "boom" {
 		t.Fatalf("outcome = %+v, want the updater's own error", o)
 	}

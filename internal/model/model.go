@@ -78,6 +78,11 @@ type UpdateStatus struct {
 	Kind           Kind      `json:"kind"`
 	Risk           RiskLevel `json:"risk"`
 	RiskReason     string    `json:"risk_reason"`
+	// NewerVersion is the newest version tag when the container is pinned to an
+	// older version tag that the registry still serves unchanged. A pull of the
+	// pinned tag cannot reach it, so Kind stays none: never counted, notified
+	// or auto-applied.
+	NewerVersion string `json:"newer_version,omitempty"`
 	// Unmaintained flags an app at a dead end: its template was removed from
 	// Community Applications, its image is gone from the registry, or its source
 	// repository was archived. It is independent of Risk, since an app can be up

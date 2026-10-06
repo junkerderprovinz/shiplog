@@ -119,5 +119,11 @@
   "d_autoSaving": "正在保存并重启 ShipLog…",
   "d_autoFailed": "保存失败。请刷新页面后重试。",
   "d_autoOffBadge": "自动更新已关闭",
-  "d_autoOffBadgeHint": "不在 ShipLog 的定时自动更新范围内。点击可更改。"
+  "d_autoOffBadgeHint": "不在 ShipLog 的定时自动更新范围内。点击可更改。",
+  "s_au_pinned_desc": "固定在版本标签（例如 :1.4.2）上的容器永远不会被自动更新，因为重新拉取同一标签不会带来任何变化。更新的版本只会作为提示显示；如需更新，请自行修改标签。",
+  "s_au_ct_newer": "已固定 · 有更新版本 %v",
+  "d_newerPill": "已固定 · 新版本 %v",
+  "d_newerChipHint": "有更新版本 %v。标签已固定，请修改标签以更新。",
+  "d_newerNote": "版本 %v 可用。请修改标签以更新。",
+  "d_newerWhy": "此容器已固定在 %v，因此重新拉取不会有任何变化，ShipLog 也永远不会自动更新它。"
 }

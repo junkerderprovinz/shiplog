@@ -119,5 +119,11 @@
   "d_autoSaving": "Ukládání a restart ShipLogu…",
   "d_autoFailed": "Uložení se nezdařilo. Načtěte stránku znovu a zkuste to ještě jednou.",
   "d_autoOffBadge": "Automatická aktualizace vypnuta",
-  "d_autoOffBadgeHint": "Vynechán z plánované automatické aktualizace ShipLogu. Kliknutím změníte."
+  "d_autoOffBadgeHint": "Vynechán z plánované automatické aktualizace ShipLogu. Kliknutím změníte.",
+  "s_au_pinned_desc": "Kontejner připnutý na značku verze (například :1.4.2) se nikdy neaktualizuje automaticky, protože opětovné stažení stejné značky nic nezmění. Novější verze se zobrazí jen jako nápověda; pro aktualizaci změňte značku sami.",
+  "s_au_ct_newer": "připnuto · novější %v k dispozici",
+  "d_newerPill": "připnuto · novější %v",
+  "d_newerChipHint": "Novější verze %v je k dispozici. Značka je připnutá, pro aktualizaci ji změňte.",
+  "d_newerNote": "Verze %v je k dispozici. Pro aktualizaci změňte značku.",
+  "d_newerWhy": "Tento kontejner je připnutý na %v, takže jeho opětovné stažení nic nezmění a ShipLog ho nikdy automaticky neaktualizuje."
 }

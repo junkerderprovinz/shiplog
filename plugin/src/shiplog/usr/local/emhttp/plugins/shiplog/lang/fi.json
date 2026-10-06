@@ -119,5 +119,11 @@
   "d_autoSaving": "Tallennetaan ja käynnistetään ShipLog uudelleen…",
   "d_autoFailed": "Tallennus epäonnistui. Lataa sivu uudelleen ja yritä uudestaan.",
   "d_autoOffBadge": "Automaattipäivitys pois",
-  "d_autoOffBadgeHint": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Muuta napsauttamalla."
+  "d_autoOffBadgeHint": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Muuta napsauttamalla.",
+  "s_au_pinned_desc": "Versiotunnisteeseen kiinnitettyä konttia (esimerkiksi :1.4.2) ei koskaan päivitetä automaattisesti, koska saman tunnisteen hakeminen uudelleen ei muuta mitään. Uudempi versio näkyy vain vihjeenä; päivitä vaihtamalla tunniste itse.",
+  "s_au_ct_newer": "kiinnitetty · uudempi %v saatavilla",
+  "d_newerPill": "kiinnitetty · uudempi %v",
+  "d_newerChipHint": "Uudempi versio %v saatavilla. Tunniste on kiinnitetty, joten päivitä vaihtamalla se.",
+  "d_newerNote": "Versio %v on saatavilla. Päivitä vaihtamalla tunniste.",
+  "d_newerWhy": "Tämä kontti on kiinnitetty versioon %v, joten sen hakeminen uudelleen ei muuta mitään eikä ShipLog koskaan päivitä sitä automaattisesti."
 }

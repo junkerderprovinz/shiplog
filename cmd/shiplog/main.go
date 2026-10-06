@@ -165,7 +165,7 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 		res := exec.Run(ctx, policy, cfg.DryRun)
 		if !res.DryRun {
 			for _, o := range res.Outcomes {
-				if o.Blocked || o.Skipped {
+				if o.Blocked || o.Skipped || o.UpToDate {
 					continue
 				}
 				errStr := ""

@@ -153,6 +153,8 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-ct .sl-ct-item{min-height:30px;min-width:0}
   .sl-ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sl-ct-item small{flex:none;color:var(--dim2);font-size:11.5px}
+  .sl-ct-item.sl-ct-pin{flex-wrap:wrap;row-gap:0;padding:3px 0}
+  .sl-ct-item small.sl-ct-newer{color:var(--cc-info,#4f8fd6);flex:0 0 100%;padding-left:21px;margin-top:-3px;line-height:1.35}
   .sl-ct[data-disabled="1"]{opacity:.45}
   .sl-ct[data-disabled="1"] .sl-ct-item{cursor:default}
 
@@ -283,7 +285,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
           <div class="sl-ct" id="sl-au-ct" role="group" aria-label="<?=htmlspecialchars($L['s_au_containers'])?>"></div>
           <input type="hidden" name="AUTOUPDATE_EXCLUDE_CONTAINERS" id="sl-au-skip" value="<?=htmlspecialchars($auSkip)?>">
         </div>
-        <div class="sl-desc"><?=$L['s_au_containers_desc']?></div></div>
+        <div class="sl-desc"><?=$L['s_au_containers_desc']?> <?=$L['s_au_pinned_desc']?></div></div>
       <div class="sl-row"><label><?=$L['s_au_digest']?></label>
         <div class="sl-in">
           <label class="sl-switch">
@@ -434,7 +436,9 @@ var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
         var n = res.d.length;
         a.innerHTML = '<span class="sl-res ok">' + SLT.s_running.replace('%n', n) + '</span>' +
           ' <span class="sl-hint">' + SLT.s_statuspage + ' <a href="http://' + host + ':' + port + '/" target="_blank" rel="noopener">' + SLT.s_open + '</a></span>';
-        slAuLoaded(res.d.map(function (s) { return s && s.container && s.container.name; }));
+        var nv = Object.create(null);
+        res.d.forEach(function (s) { var n = s && s.container && s.container.name; if (n && s.newer_version) nv[n] = String(s.newer_version); });
+        slAuLoaded(res.d.map(function (s) { return s && s.container && s.container.name; }), nv);
       } else {
         a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span> <span class="sl-hint">' + SLT.s_unreachable_hint + '</span>';
         slAuLoaded(null);
@@ -538,19 +542,21 @@ slAuMode();
 // container behind it right now, so Apply never drops an exclusion.
 var SL_AU_SKIP = [];
 var SL_AU_NAMES = null; // null until the engine answered, or when it is down
+var SL_AU_NEWER = Object.create(null); // name -> newer version of a pinned container
 var SL_AU_LOAD = 'loading';
 var SL_AU_NAME_OK = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/; // Docker's name rule keeps the cfg value safe
 function slAuKey(s) { return String(s).toLowerCase(); }
-function slAuLoaded(names) {
+function slAuLoaded(names, newer) {
   var seen = {};
   SL_AU_NAMES = Array.isArray(names) ? names.filter(function (n) {
     if (!n || !SL_AU_NAME_OK.test(n) || seen[n]) return false;
     seen[n] = true; return true;
   }) : null;
   SL_AU_LOAD = SL_AU_NAMES ? 'ok' : 'down';
+  SL_AU_NEWER = (SL_AU_NAMES && newer) ? newer : Object.create(null);
   slAuRender();
 }
-function slAuItem(name, on, gone) {
+function slAuItem(name, on, gone, newer) {
   var l = document.createElement('label'); l.className = 'sl-switch sl-ct-item';
   var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = on;
   cb.setAttribute('data-name', name); cb.setAttribute('data-gone', gone ? '1' : '0');
@@ -559,6 +565,12 @@ function slAuItem(name, on, gone) {
   var t = document.createElement('span'); t.className = 'sl-ct-name'; t.textContent = name;
   l.appendChild(cb); l.appendChild(tr); l.appendChild(t);
   if (gone) { var g = document.createElement('small'); g.textContent = SLT.s_au_ct_gone; l.appendChild(g); }
+  if (newer) {
+    l.className += ' sl-ct-pin';
+    var nw = document.createElement('small'); nw.className = 'sl-ct-newer';
+    nw.textContent = SLT.s_au_ct_newer.replace('%v', function () { return newer; });
+    l.appendChild(nw);
+  }
   return l;
 }
 // Excluded containers come first, so none hides below the fold.
@@ -570,7 +582,7 @@ function slAuRender() {
   SL_AU_SKIP.forEach(function (n) { if (!have[slAuKey(n)]) rows.push({ name: n, off: true, gone: SL_AU_NAMES !== null }); });
   rows.sort(function (a, b) { return (b.off - a.off) || slAuKey(a.name).localeCompare(slAuKey(b.name)); });
   box.textContent = '';
-  rows.forEach(function (r) { box.appendChild(slAuItem(r.name, !r.off, r.gone)); });
+  rows.forEach(function (r) { box.appendChild(slAuItem(r.name, !r.off, r.gone, r.gone ? '' : SL_AU_NEWER[r.name])); });
   slAuState();
 }
 function slAuSync(changed) {
