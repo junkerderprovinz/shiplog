@@ -60,6 +60,7 @@ type (
 	// caFeedLookuper lets tests fake a *cafeed.Feed.
 	caFeedLookuper interface {
 		Lookup(name, repo, templateURL string) (cafeed.Result, bool)
+		CrawlsTemplate(templateURL string) bool
 	}
 )
 
@@ -184,7 +185,8 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	if e.templateURLs != nil {
 		templateURLs = e.templateURLs()
 	}
-	// Without the feed this sweep skips the CA check; the other signals still run.
+	// Without the feed nothing tells a CA app from the user's own, so this sweep
+	// gives no CA verdict at all; the archived-repo check still runs.
 	var caFeed caFeedLookuper
 	if e.caFeed != nil {
 		caFeed, _ = e.caFeed(ctx)
@@ -415,11 +417,13 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 			// A conclusive feed answer beats the template URL probe, because a
 			// template file also disappears when its repo or branch moves while
 			// the app stays listed. Both checks apply only to apps that came from
-			// CA: one without a template URL, or with a source override, is the
-			// user's own and would otherwise always read as removed.
+			// CA. An app without a template URL, with a source override, or with
+			// a template in a repository CA does not crawl is the user's own and
+			// would otherwise always read as removed.
 			_, selfSourced := overrides[c.Repo]
+			caApp := c.Managed && u != "" && !selfSourced && caFeed != nil && caFeed.CrawlsTemplate(u)
 			feedConclusive := false
-			if c.Managed && caFeed != nil && u != "" && !selfSourced {
+			if caApp {
 				if res, ok := caFeed.Lookup(c.Name, c.Repo, u); ok {
 					feedConclusive = true
 					switch {
@@ -432,7 +436,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 					}
 				}
 			}
-			if !feedConclusive && c.Managed && u != "" && !selfSourced && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
+			if caApp && !feedConclusive && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
 				st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
 			}
 		}

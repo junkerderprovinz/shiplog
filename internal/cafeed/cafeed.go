@@ -7,6 +7,10 @@
 // when it changed. The feed is crawled and can briefly miss a moved template,
 // so an app counts as absent only when the previous crawl lacks it too. With
 // nothing cached, every lookup is inconclusive.
+//
+// Absence means "removed" only for an app CA once carried. A template from a
+// repository CA does not crawl, such as the user's own, is absent by nature,
+// so CrawlsTemplate gates every verdict.
 package cafeed
 
 import (
@@ -17,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -38,9 +43,12 @@ type Entry struct {
 }
 
 type rawFeed struct {
-	AppList              []Entry           `json:"applist"`
-	Blacklisted          map[string]string `json:"blacklisted"`
-	LastUpdatedTimestamp int64             `json:"last_updated_timestamp"`
+	AppList     []Entry           `json:"applist"`
+	Blacklisted map[string]string `json:"blacklisted"`
+	// Repositories stays raw, so a change in its shape loses only this list
+	// and not the whole feed.
+	Repositories         json.RawMessage `json:"repositories"`
+	LastUpdatedTimestamp int64           `json:"last_updated_timestamp"`
 }
 
 type rawLastUpdated struct {
@@ -52,8 +60,9 @@ type Feed struct {
 	byName        map[string][]Entry
 	byRepo        map[string][]Entry // normalized "owner/repo"; several templates can wrap one image
 	byTemplateURL map[string]Entry
-	blacklisted   map[string]string // normalized "owner/repo" -> reason
-	previous      *Feed             // the crawl before this one, if cached
+	templateRepos map[string]struct{} // templateRepoKey of every repository CA crawls
+	blacklisted   map[string]string   // normalized "owner/repo" -> reason
+	previous      *Feed               // the crawl before this one, if cached
 }
 
 // Result is what the feed says about one container, after cross-crawl
@@ -170,7 +179,11 @@ func parseOne(b []byte) *Feed {
 	for repo, reason := range raw.Blacklisted {
 		blacklisted[normalizeRepo(repo)] = reason
 	}
-	return &Feed{byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL, blacklisted: blacklisted}
+	return &Feed{
+		byName: byName, byRepo: byRepo, byTemplateURL: byTemplateURL,
+		templateRepos: indexTemplateRepos(raw.AppList, raw.Repositories),
+		blacklisted:   blacklisted,
+	}
 }
 
 func indexEntries(entries []Entry) (byName, byRepo map[string][]Entry, byTemplateURL map[string]Entry) {
@@ -192,8 +205,9 @@ func indexEntries(entries []Entry) (byName, byRepo map[string][]Entry, byTemplat
 }
 
 // Lookup reports what the feed says about a container. ok=false means
-// inconclusive, such as an ambiguous name or an absence the previous crawl
-// cannot confirm yet; callers then leave the container's CA state alone.
+// inconclusive, such as an ambiguous name, an absence the previous crawl
+// cannot confirm yet or an absence from a repository CA does not crawl;
+// callers then leave the container's CA state alone.
 func (f *Feed) Lookup(name, repo, templateURL string) (Result, bool) {
 	n := normalizeName(name)
 	matches := f.byName[n]
@@ -213,6 +227,9 @@ func (f *Feed) Lookup(name, repo, templateURL string) (Result, bool) {
 			if _, prevFound := f.previous.matchByIdentity(repo, templateURL); prevFound {
 				return Result{}, false
 			}
+			if !f.CrawlsTemplate(templateURL) {
+				return Result{}, false
+			}
 			return Result{Listed: false}, true
 		}
 	case 1:
@@ -228,6 +245,85 @@ func (f *Feed) Lookup(name, repo, templateURL string) (Result, bool) {
 		return Result{Listed: false, Note: reason}, true
 	}
 	return Result{Listed: true, Deprecated: e.Deprecated, Note: e.ModeratorComment}, true
+}
+
+// indexTemplateRepos collects the repositories CA crawls from both the
+// repositories list and the template URLs of the listed apps, so either source
+// alone is enough.
+func indexTemplateRepos(entries []Entry, repositories json.RawMessage) map[string]struct{} {
+	repos := make(map[string]struct{}, 2048)
+	for _, e := range entries {
+		if k, ok := templateRepoKey(e.TemplateURL); ok {
+			repos[k] = struct{}{}
+		}
+	}
+	var listed map[string]struct {
+		URL string `json:"url"`
+	}
+	if json.Unmarshal(repositories, &listed) == nil {
+		for _, r := range listed {
+			if k, ok := templateRepoKey(r.URL); ok {
+				repos[k] = struct{}{}
+			}
+		}
+	}
+	return repos
+}
+
+// templateRepoKey reduces a template or repository URL on GitHub or GitLab, the
+// two hosts CA crawls, to the lower-cased "host/owner/repo" it lives in. A
+// GitLab project path may nest groups; it ends at the "/-/" marker, at a
+// raw/blob/tree segment in older URLs, or at the end of a bare project URL.
+func templateRepoKey(raw string) (string, bool) {
+	s := strings.TrimSpace(raw)
+	switch {
+	case strings.HasPrefix(s, "https://"):
+		s = s[len("https://"):]
+	case strings.HasPrefix(s, "http://"):
+		s = s[len("http://"):]
+	default:
+		return "", false
+	}
+	if i := strings.IndexAny(s, "?#"); i >= 0 {
+		s = s[:i]
+	}
+	host, path, _ := strings.Cut(s, "/")
+	host = strings.TrimPrefix(strings.ToLower(host), "www.")
+	segs := strings.FieldsFunc(strings.ToLower(path), func(r rune) bool { return r == '/' })
+	switch host {
+	case "raw.githubusercontent.com", "github.com":
+		host = "github.com"
+		segs = segs[:min(len(segs), 2)]
+	case "gitlab.com":
+		end := len(segs)
+		if i := slices.Index(segs, "-"); i >= 0 {
+			end = i
+		} else if i := slices.IndexFunc(segs[min(len(segs), 2):], func(p string) bool {
+			return p == "raw" || p == "blob" || p == "tree"
+		}); i >= 0 {
+			end = i + 2
+		}
+		segs = segs[:end]
+	default:
+		return "", false
+	}
+	if len(segs) < 2 {
+		return "", false
+	}
+	segs[len(segs)-1] = strings.TrimSuffix(segs[len(segs)-1], ".git")
+	return host + "/" + strings.Join(segs, "/"), true
+}
+
+// CrawlsTemplate reports whether CA crawls the repository templateURL lives
+// in, judged on the current crawl so the answer cannot flap between crawls.
+// Without it no CA verdict about the app holds.
+func (f *Feed) CrawlsTemplate(templateURL string) bool {
+	key, ok := templateRepoKey(templateURL)
+	if !ok {
+		return false
+	}
+	_, crawled := f.templateRepos[key]
+	return crawled
 }
 
 // matchByIdentity finds an entry by repository, then by exact template URL.

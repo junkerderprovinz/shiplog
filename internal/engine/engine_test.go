@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,15 +14,27 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 )
 
-// fakeCAFeed answers every lookup with the same result.
+// fakeCAFeed answers every lookup with the same result. personal marks a
+// template CA does not crawl, and lookups counts the lookups made anyway.
 type fakeCAFeed struct {
-	result cafeed.Result
-	ok     bool
+	result   cafeed.Result
+	ok       bool
+	personal bool
+	lookups  *atomic.Int32
 }
 
 func (f fakeCAFeed) Lookup(name, repo, templateURL string) (cafeed.Result, bool) {
+	if f.lookups != nil {
+		f.lookups.Add(1)
+	}
 	return f.result, f.ok
 }
+
+func (f fakeCAFeed) CrawlsTemplate(string) bool { return !f.personal }
+
+// caCrawlsNoVerdict crawls every template but stays inconclusive, which leaves
+// the template URL probe to confirm a removal.
+func caCrawlsNoVerdict(context.Context) (caFeedLookuper, error) { return fakeCAFeed{}, nil }
 
 type fakeCollector struct{ list []model.Container }
 
@@ -160,6 +173,7 @@ func TestSweepFlagsUnmaintained(t *testing.T) {
 		}
 		return 200
 	}
+	e.caFeed = caCrawlsNoVerdict
 	if err := e.Sweep(context.Background()); err != nil {
 		t.Fatalf("sweep: %v", err)
 	}
@@ -206,6 +220,7 @@ func TestSweepGithubRawURLRotIsNotFlaggedUnmaintained(t *testing.T) {
 		t.Fatalf("unexpected checkURL call: %s", url)
 		return 0
 	}
+	e.caFeed = caCrawlsNoVerdict
 	if err := e.Sweep(context.Background()); err != nil {
 		t.Fatalf("sweep: %v", err)
 	}
@@ -257,6 +272,7 @@ func TestSweepAmbiguousCorroborationIsNotFlaggedUnmaintained(t *testing.T) {
 		t.Fatalf("unexpected checkURL call: %s", url)
 		return 0
 	}
+	e.caFeed = caCrawlsNoVerdict
 	if err := e.Sweep(context.Background()); err != nil {
 		t.Fatalf("sweep: %v", err)
 	}
@@ -417,6 +433,114 @@ func TestSweepSourceOverrideExemptsFromUnmaintained(t *testing.T) {
 	}
 }
 
+// The user's own apps have a template URL into their own repository, public or
+// private, and no source override. A lookup by name may even hit an unrelated,
+// deprecated CA app; none of it is a verdict about these apps.
+func TestSweepOwnAppWithTemplateURLIsNeverFlaggedByCA(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "pub", Name: "OwnPublic", Repo: "ghcr.io/me/own-public", Tag: "latest", Digest: "sha256:a", Managed: true},
+		{ID: "priv", Name: "OwnPrivate", Repo: "ghcr.io/me/own-private", Tag: "latest", Digest: "sha256:b", Managed: true},
+		{ID: "dup", Name: "SharesNameWithCAApp", Repo: "ghcr.io/me/shares-name", Tag: "latest", Digest: "sha256:c", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/me/own-public":  {tag: "latest", dig: "sha256:a"},
+		"ghcr.io/me/own-private": {tag: "latest", dig: "sha256:b"},
+		"ghcr.io/me/shares-name": {tag: "latest", dig: "sha256:c"},
+	}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{
+			"ownpublic":           "https://raw.githubusercontent.com/me/own-public/main/unraid/own-public.xml",
+			"ownprivate":          "https://raw.githubusercontent.com/me/own-private/main/unraid/own-private.xml",
+			"sharesnamewithcaapp": "https://raw.githubusercontent.com/me/shares-name/main/unraid/x.xml",
+		}
+	}
+	var probes atomic.Int32
+	e.checkURL = func(context.Context, string) int { probes.Add(1); return 404 } // private repo: raw URL and repo page both 404
+	var lookups atomic.Int32
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		// What a lookup would answer if asked: not listed, with a deprecated
+		// namesake's note.
+		return fakeCAFeed{personal: true, ok: true, lookups: &lookups,
+			result: cafeed.Result{Listed: false, Deprecated: true, Note: "an unrelated CA app with the same name"}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	for id, row := range st.rows {
+		if row.Unmaintained || row.CADeprecated {
+			t.Errorf("%s: an app whose template CA does not crawl must never get a CA verdict, got unmaintained=%v (%q) deprecated=%v",
+				id, row.Unmaintained, row.UnmaintainedReason, row.CADeprecated)
+		}
+	}
+	if n := lookups.Load(); n != 0 {
+		t.Errorf("the feed was asked for a verdict %d times about apps it does not carry; want 0", n)
+	}
+	if n := probes.Load(); n != 0 {
+		t.Errorf("the raw-URL probe ran %d times for templates CA does not crawl; want 0", n)
+	}
+}
+
+// A stored "Removed from Community Applications" on the user's own app clears
+// on the next sweep without an alert.
+func TestSweepClearsStoredFalseCAFlagOnOwnApp(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "own", Name: "OwnApp", Repo: "ghcr.io/me/own-app", Tag: "latest", Digest: "sha256:a", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/me/own-app": {tag: "latest", dig: "sha256:a"}}}
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"own": {
+			Container: model.Container{ID: "own", Name: "OwnApp", Digest: "sha256:a"}, Kind: model.KindNone, RunningVersion: "1.0.0",
+			Unmaintained: true, UnmaintainedReason: "Removed from Community Applications",
+		},
+	}}
+	nf := &fakeNotifier{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour).WithNotifier(nf)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"ownapp": "https://raw.githubusercontent.com/me/own-app/main/unraid/own-app.xml"}
+	}
+	e.checkURL = func(context.Context, string) int { return 200 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) {
+		return fakeCAFeed{personal: true, ok: true, result: cafeed.Result{Listed: false}}, nil
+	}
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if row := st.rows["own"]; row.Unmaintained || row.UnmaintainedReason != "" {
+		t.Fatalf("the stored false flag must clear on the next sweep, got %v/%q", row.Unmaintained, row.UnmaintainedReason)
+	}
+	if nf.count() != 0 {
+		t.Errorf("clearing a flag must not notify, got %d", nf.count())
+	}
+}
+
+// Without a feed nothing shows the app came from CA, and the template URL probe
+// alone cannot tell a deleted repository from a private one.
+func TestSweepNoCAFeedMakesNoCAClaim(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "x", Name: "SomeApp", Repo: "ghcr.io/x/some", Tag: "1.0.0", Digest: "sha256:s", Managed: true},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/some": {tag: "1.0.0", dig: "sha256:s"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.templateURLs = func() map[string]string {
+		return map[string]string{"someapp": "https://raw.githubusercontent.com/x/private-repo/main/app.xml"}
+	}
+	var probes atomic.Int32
+	e.checkURL = func(context.Context, string) int { probes.Add(1); return 404 }
+	e.caFeed = func(context.Context) (caFeedLookuper, error) { return nil, errors.New("offline, nothing cached") }
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if row := st.rows["x"]; row.Unmaintained {
+		t.Fatalf("no feed, no claim: got unmaintained %q", row.UnmaintainedReason)
+	}
+	if n := probes.Load(); n != 0 {
+		t.Errorf("the raw-URL probe ran %d times with no feed to establish CA origin; want 0", n)
+	}
+}
+
 func TestSweepFileOverrideSetsChangelogFileAndKeepsLabel(t *testing.T) {
 	const file = "https://raw.githubusercontent.com/domoticz/domoticz/development/History.txt"
 	col := fakeCollector{list: []model.Container{
@@ -556,6 +680,7 @@ func TestUnmaintainedNotifiesOnce(t *testing.T) {
 	e := New(col, res, &fakeChangelog{}, st, time.Hour).WithNotifier(nf)
 	e.templateURLs = func() map[string]string { return map[string]string{"removedapp": "http://ca/removed.xml"} }
 	e.checkURL = func(context.Context, string) int { return 404 }
+	e.caFeed = caCrawlsNoVerdict
 
 	if err := e.Sweep(context.Background()); err != nil {
 		t.Fatalf("sweep 1: %v", err)

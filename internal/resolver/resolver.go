@@ -9,16 +9,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-// ErrRepoNotFound means the registry answered 404 for the repository, so the
-// image was deleted upstream rather than failing transiently.
+// ErrRepoNotFound means the registry answered the tags list with 404 and the
+// OCI error code NAME_UNKNOWN, so the image was deleted upstream. A private
+// package answers 401 or 403, and a bare 404 can come from a proxy or a
+// misrouted realm, so neither proves the image is gone.
 var ErrRepoNotFound = errors.New("image repository not found in the registry")
 
 // acceptManifests covers OCI and Docker indexes and manifests. Without it,
@@ -56,6 +60,10 @@ type Resolver struct {
 	dhUser  string
 	dhToken string
 	ghToken string
+
+	// dockerLogins are the inline logins from Docker's config.json, keyed by
+	// registry host. They rank below the explicit credentials above.
+	dockerLogins map[string]registryLogin
 
 	gate *hostGate
 
@@ -114,6 +122,36 @@ func (r *Resolver) WithDockerHubAuth(user, token string) *Resolver {
 func (r *Resolver) WithGitHubToken(token string) *Resolver {
 	r.ghToken = token
 	return r
+}
+
+// WithDockerConfig reuses the registry logins stored inline in the Docker CLI
+// config.json at path, the file Unraid's own update check reads.
+func (r *Resolver) WithDockerConfig(path string) *Resolver {
+	r.dockerLogins = loadDockerConfig(path)
+	return r
+}
+
+// DockerLogins reports how many logins WithDockerConfig loaded.
+func (r *Resolver) DockerLogins() int {
+	return len(r.dockerLogins)
+}
+
+// loginRealmOK reports whether a stored login for host may go to realm. The
+// realm comes from the registry's challenge, so a long-lived login only goes to
+// the registry's own host, or to auth.docker.io for Docker Hub.
+func (r *Resolver) loginRealmOK(host, realm string) bool {
+	ru, err := url.Parse(realm)
+	if err != nil || ru.Host == "" {
+		return false
+	}
+	if host == dockerHubRegistry && ru.Scheme == "https" && strings.EqualFold(ru.Host, "auth.docker.io") {
+		return true
+	}
+	bu, err := url.Parse(r.baseURL(host))
+	if err != nil || bu.Host == "" {
+		return false
+	}
+	return ru.Scheme == bu.Scheme && strings.EqualFold(ru.Host, bu.Host)
 }
 
 // hostGate keeps a minimum gap between requests to the same registry host.
@@ -264,8 +302,9 @@ func (r *Resolver) fetchTags(ctx context.Context, base, host, pathRepo string) (
 		}
 		r.noteHostOutcome(host, resp.StatusCode)
 		if resp.StatusCode != http.StatusOK {
+			unknown := resp.StatusCode == http.StatusNotFound && bodyHasNameUnknown(resp.Body)
 			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusNotFound {
+			if unknown {
 				return nil, ErrRepoNotFound
 			}
 			if resp.StatusCode == http.StatusTooManyRequests {
@@ -393,6 +432,18 @@ func (r *Resolver) dropToken(key string) {
 // do retries 429 and 503 with backoff that honours Retry-After, and returns
 // the last response even when it is still one of them.
 func (r *Resolver) do(ctx context.Context, method, url, host, token string, extra ...header) (*http.Response, error) {
+	// Go forwards Authorization on a redirect to the same host even after a
+	// downgrade to http, and to subdomains, so a request carrying credentials
+	// never follows one; the 3xx comes back as an ordinary failure.
+	client := r.httpClient
+	for _, h := range extra {
+		if h.key == "Authorization" {
+			c := *r.httpClient
+			c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+			client = &c
+			break
+		}
+	}
 	var resp *http.Response
 	for attempt := 0; ; attempt++ {
 		r.gate.wait(ctx, host)
@@ -406,7 +457,7 @@ func (r *Resolver) do(ctx context.Context, method, url, host, token string, extr
 		if token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
-		resp, err = r.httpClient.Do(req)
+		resp, err = client.Do(req)
 		if err != nil {
 			return nil, err
 		}
@@ -467,7 +518,8 @@ func clampWait(d time.Duration) time.Duration {
 // fetchToken answers a Bearer challenge with a pull-scoped token request and
 // returns the token and its lifetime (0 when none is advertised). Credentials go
 // only to the host they belong to: Docker Hub's to registry-1.docker.io, the
-// GitHub token to ghcr.io and lscr.io.
+// GitHub token to ghcr.io and lscr.io, and a login from config.json to its own
+// registry's realm (see loginRealmOK). None of them goes out on /v2/ requests.
 func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host string) (string, time.Duration, error) {
 	params := parseChallenge(challenge)
 	realm := params["realm"]
@@ -483,6 +535,7 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 		"&scope=" + queryEscape("repository:"+pathRepo+":pull")
 
 	var extra []header
+	loginUsed := false
 	switch {
 	case host == dockerHubRegistry && r.dhUser != "" && r.dhToken != "":
 		cred := base64.StdEncoding.EncodeToString([]byte(r.dhUser + ":" + r.dhToken))
@@ -491,17 +544,28 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 		// ghcr.io accepts the PAT as the password with any username.
 		cred := base64.StdEncoding.EncodeToString([]byte("x:" + r.ghToken))
 		extra = append(extra, header{"Authorization", "Basic " + cred})
+	default:
+		if l, ok := r.dockerLogins[host]; ok && r.loginRealmOK(host, realm) {
+			cred := base64.StdEncoding.EncodeToString([]byte(l.user + ":" + l.secret))
+			extra = append(extra, header{"Authorization", "Basic " + cred})
+			loginUsed = true
+		}
 	}
 
 	resp, err := r.do(ctx, http.MethodGet, url, host, "", extra...)
 	if err != nil {
 		return "", 0, err
 	}
+	// A stale stored login must not make a public image unreadable, so a realm
+	// that rejects it gets one anonymous try.
+	if loginUsed && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
+		_ = resp.Body.Close()
+		if resp, err = r.do(ctx, http.MethodGet, url, host, ""); err != nil {
+			return "", 0, err
+		}
+	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNotFound {
-			return "", 0, ErrRepoNotFound
-		}
 		// Token throttling is the most common source of 429s, so it trips the
 		// registry's breaker as well.
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -525,6 +589,24 @@ func (r *Resolver) fetchToken(ctx context.Context, challenge, pathRepo, host str
 		return body.AccessToken, ttl, nil
 	}
 	return "", 0, fmt.Errorf("token: empty token from realm %s", realm)
+}
+
+// bodyHasNameUnknown reports whether an OCI error body lists NAME_UNKNOWN.
+func bodyHasNameUnknown(body io.Reader) bool {
+	var e struct {
+		Errors []struct {
+			Code string `json:"code"`
+		} `json:"errors"`
+	}
+	if err := json.NewDecoder(io.LimitReader(body, 4<<10)).Decode(&e); err != nil {
+		return false
+	}
+	for _, x := range e.Errors {
+		if x.Code == "NAME_UNKNOWN" {
+			return true
+		}
+	}
+	return false
 }
 
 // parseChallenge reads the key="value" pairs of a challenge such as
