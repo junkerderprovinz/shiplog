@@ -27,6 +27,8 @@ type Config struct {
 
 	OllamaURL        string // OLLAMA_URL
 	OllamaModel      string // OLLAMA_MODEL
+	LlamaSwapURL     string // LLAMASWAP_URL, used instead of Ollama when set
+	LlamaSwapModel   string // LLAMASWAP_MODEL
 	MatrixHomeserver string // MATRIX_HOMESERVER
 	MatrixToken      string // MATRIX_TOKEN
 	MatrixRoom       string // MATRIX_ROOM
@@ -67,6 +69,8 @@ func Load() Config {
 		DockerHubToken:   os.Getenv("DOCKERHUB_TOKEN"),
 		OllamaURL:        os.Getenv("OLLAMA_URL"),
 		OllamaModel:      os.Getenv("OLLAMA_MODEL"),
+		LlamaSwapURL:     os.Getenv("LLAMASWAP_URL"),
+		LlamaSwapModel:   os.Getenv("LLAMASWAP_MODEL"),
 		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),
 		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),

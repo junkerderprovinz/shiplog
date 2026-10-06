@@ -53,15 +53,12 @@ func main() {
 	eng.WithCAFeed(cfg.DataDir)
 
 	// Optional integrations are pinged once, so the log says whether they work.
-	if sum := summarize.New(cfg.OllamaURL, cfg.OllamaModel); sum != nil {
-		eng.WithSummarizer(sum)
-		pingCtx, cancelPing := context.WithTimeout(context.Background(), 10*time.Second)
-		if perr := sum.Ping(pingCtx); perr != nil {
-			log.Printf("shiplog: Ollama configured (%s, model %s) but not working: %v", cfg.OllamaURL, cfg.OllamaModel, perr)
-		} else {
-			log.Printf("shiplog: Ollama OK, AI summaries enabled (%s, model %s)", cfg.OllamaURL, cfg.OllamaModel)
-		}
-		cancelPing()
+	if ls := summarize.NewLlamaSwap(cfg.LlamaSwapURL, cfg.LlamaSwapModel); ls != nil {
+		eng.WithSummarizer(ls)
+		logSummarizerPing("llama-swap", cfg.LlamaSwapURL, cfg.LlamaSwapModel, ls.Ping)
+	} else if o := summarize.New(cfg.OllamaURL, cfg.OllamaModel); o != nil {
+		eng.WithSummarizer(o)
+		logSummarizerPing("Ollama", cfg.OllamaURL, cfg.OllamaModel, o.Ping)
 	}
 
 	var sinks []notify.Sink
@@ -191,3 +188,13 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 
 // lastRunKey holds the unix time of the last scheduled auto-update run.
 const lastRunKey = "autoupdate_last_run"
+
+func logSummarizerPing(name, url, model string, ping func(context.Context) error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := ping(ctx); err != nil {
+		log.Printf("shiplog: %s configured (%s, model %s) but not working: %v", name, url, model, err)
+		return
+	}
+	log.Printf("shiplog: %s OK, AI summaries enabled (%s, model %s)", name, url, model)
+}

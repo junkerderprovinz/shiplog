@@ -24,7 +24,7 @@
   "s_dh_token": "Docker Hubトークン",
   "s_dh_hint": "<code>docker.io</code>イメージの最新バージョンとdigestを確認します。匿名のDocker HubはIPごとにレート制限されます：イメージが多いと制限され、バージョン番号なしで更新が表示されます。無料の<a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">Docker Hubアクセストークン</a>（読み取り専用）で制限が解除されます。ユーザー + トークン、両方必要です。",
   "s_ai": "AI要約",
-  "s_ai_sub": "任意：Ollamaが各変更履歴を「変更点 / Breaking / リスク」に凝縮します。",
+  "s_ai_sub": "任意：ローカルモデル（Ollamaまたはllama-swap）が各変更履歴を「変更点 / Breaking / リスク」に凝縮します。",
   "s_ollama_url": "Ollama URL",
   "s_ollama_url_hint": "一般的なローカルのOllamaポートを調べてここに入力します。",
   "s_ollama_model": "Ollamaモデル",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "ドライラン",
   "s_au_dryrun_desc": "実際には何も適用せず、更新される予定の内容を通知するだけです。実際の更新を有効にする前に、まずこれで計画を確認してください。",
   "s_au_unit_hours": "時間",
-  "s_au_unit_days": "日"
+  "s_au_unit_days": "日",
+  "s_llamaswap_url": "llama-swap URL",
+  "s_llamaswap_url_hint": "llama-swap、LM Studio、vLLMなど、OpenAI互換のサーバーで使えます。設定すると、ShipLogはOllamaの代わりにこちらを使います。",
+  "s_llamaswap_model": "llama-swapモデル"
 }

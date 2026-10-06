@@ -24,7 +24,7 @@
   "s_dh_token": "Docker Hub token",
   "s_dh_hint": "<code>docker.io</code> imajlarının en yeni sürümünü + digest'ini kontrol eder. Anonim Docker Hub IP başına sınırlıdır: çok sayıda imajla bu kısılır, o zaman sürüm numarası olmadan bir güncelleme gösterirler. Ücretsiz bir <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">Docker Hub erişim token'ı</a> (salt okunur) sınırı kaldırır. Kullanıcı + token, ikisi de gerekli.",
   "s_ai": "Yapay zekâ özetleri",
-  "s_ai_sub": "İsteğe bağlı: Ollama her changelog'u “ne değişiyor / Breaking / risk” olarak yoğunlaştırır.",
+  "s_ai_sub": "İsteğe bağlı: yerel bir model (Ollama veya llama-swap) her changelog'u “ne değişiyor / Breaking / risk” olarak yoğunlaştırır.",
   "s_ollama_url": "Ollama URL'si",
   "s_ollama_url_hint": "Yaygın yerel Ollama portlarını yoklar ve bunu doldurur.",
   "s_ollama_model": "Ollama modeli",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "Deneme çalıştırması",
   "s_au_dryrun_desc": "Hiçbir şey uygulamaz, yalnızca nelerin güncelleneceğine dair bir bildirim gönderir. Gerçek güncellemeleri devreye almadan önce planı görmek için önce bunu kullan.",
   "s_au_unit_hours": "saat",
-  "s_au_unit_days": "gün"
+  "s_au_unit_days": "gün",
+  "s_llamaswap_url": "llama-swap URL'si",
+  "s_llamaswap_url_hint": "llama-swap, LM Studio veya vLLM gibi OpenAI uyumlu her sunucuyla çalışır. Ayarlandığında ShipLog, Ollama yerine bunu kullanır.",
+  "s_llamaswap_model": "llama-swap modeli"
 }

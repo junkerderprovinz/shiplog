@@ -24,7 +24,7 @@
   "s_dh_token": "Token Docker Hub",
   "s_dh_hint": "Kontroluje nejnovější verzi + digest obrazů <code>docker.io</code>. Anonymní Docker Hub je omezený podle IP: u mnoha obrazů to škrtí, takže ukazují aktualizaci bez čísla verze. Bezplatný <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">přístupový token Docker Hub</a> (pouze pro čtení) limit odstraní. Uživatel + token, obojí povinné.",
   "s_ai": "Souhrny s AI",
-  "s_ai_sub": "Volitelné: Ollama zhustí každý changelog do „co se mění / Breaking / riziko“.",
+  "s_ai_sub": "Volitelné: lokální model (Ollama nebo llama-swap) zhustí každý changelog do „co se mění / Breaking / riziko“.",
   "s_ollama_url": "URL Ollama",
   "s_ollama_url_hint": "Prohledá běžné místní porty Ollama a doplní to sem.",
   "s_ollama_model": "Model Ollama",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "Zkušební běh",
   "s_au_dryrun_desc": "Nic nepoužije, jen odešle oznámení o tom, co by se aktualizovalo. Nejprve použijte toto, abyste viděli plán, než zapnete skutečné aktualizace.",
   "s_au_unit_hours": "hodin",
-  "s_au_unit_days": "dní"
+  "s_au_unit_days": "dní",
+  "s_llamaswap_url": "URL llama-swap",
+  "s_llamaswap_url_hint": "Funguje s jakýmkoli serverem kompatibilním s OpenAI, například llama-swap, LM Studio nebo vLLM. Pokud je nastavena, ShipLog ji použije místo Ollama.",
+  "s_llamaswap_model": "Model llama-swap"
 }
