@@ -34,6 +34,7 @@ $auMode  = !empty($cfg['AUTOUPDATE_SCHED_MODE'])  ? $cfg['AUTOUPDATE_SCHED_MODE'
 $auTime  = !empty($cfg['AUTOUPDATE_SCHED_TIME'])  ? $cfg['AUTOUPDATE_SCHED_TIME']  : '04:00';
 $auEvery = !empty($cfg['AUTOUPDATE_SCHED_EVERY']) ? $cfg['AUTOUPDATE_SCHED_EVERY'] : '6';
 $auExclude = isset($cfg['AUTOUPDATE_EXCLUDE_WORDS']) ? $cfg['AUTOUPDATE_EXCLUDE_WORDS'] : '';
+$auSkip    = isset($cfg['AUTOUPDATE_EXCLUDE_CONTAINERS']) ? $cfg['AUTOUPDATE_EXCLUDE_CONTAINERS'] : '';
 /* CA Auto Update coexistence: warn so the user doesn't run both. */
 $caPresent = is_dir('/usr/local/emhttp/plugins/ca.update.applications') || is_dir('/boot/config/plugins/ca.update.applications');
 
@@ -144,6 +145,16 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-state{color:inherit}
   .sl-cfg .sl-tab.active{background:var(--accent)!important;background-image:none!important;color:#fff!important}
   .sl-warn{background:rgba(241,194,27,.12);border-radius:4px;color:#f1c21b;padding:10px 12px;margin:2px 0 12px;font-size:12.5px;line-height:1.45}
+  .sl-row.sl-top{align-items:start}
+  .sl-row.sl-top > label{padding-top:5px}
+  .sl-ct{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 14px;width:100%;
+    max-height:280px;overflow-y:auto;padding:4px 8px;border:1px solid rgba(128,128,128,.35);border-radius:4px}
+  .sl-ct:empty{display:none}
+  .sl-ct .sl-ct-item{min-height:30px;min-width:0}
+  .sl-ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sl-ct-item small{flex:none;color:var(--dim2);font-size:11.5px}
+  .sl-ct[data-disabled="1"]{opacity:.45}
+  .sl-ct[data-disabled="1"] .sl-ct-item{cursor:default}
 
   /* GlimStone look, only with CannonadeCommand. */
   html.cc-header-on .sl-cfg{color:var(--txt)}
@@ -180,6 +191,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   html.cc-header-on .sl-cfg .sl-tab:hover{color:var(--txt);background:var(--chip)}
   html.cc-header-on .sl-cfg .sl-tab.active{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)!important;font-weight:600}
   html.cc-header-on .sl-warn{background:var(--cc-badge-bg,#3a2a12);color:#f1c21b}
+  html.cc-header-on .sl-ct{background:var(--well);border:none;border-radius:var(--rad);padding:6px 10px}
 </style>
 
 <div class="sl-cfg">
@@ -243,7 +255,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
       <div class="sl-row"><label><?=$L['s_au_enable']?></label>
         <div class="sl-in">
           <label class="sl-switch">
-            <input type="checkbox" id="sl-au-en-cb" <?=$auEn?'checked':''?> onchange="slSwitch(this,'sl-au-en','sl-au-en-state')">
+            <input type="checkbox" id="sl-au-en-cb" <?=$auEn?'checked':''?> onchange="slSwitch(this,'sl-au-en','sl-au-en-state');slAuState()">
             <span class="sl-track"></span>
             <span class="sl-state" id="sl-au-en-state"><?=htmlspecialchars($auEn?$onTxt:$offTxt)?></span>
           </label>
@@ -265,6 +277,13 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
           <input type="text" name="AUTOUPDATE_EXCLUDE_WORDS" value="<?=htmlspecialchars($auExclude)?>" placeholder="breaking, migration required">
         </div>
         <div class="sl-desc"><?=$L['s_au_exclude_desc']?></div></div>
+      <div class="sl-row sl-top"><label><?=$L['s_au_containers']?></label>
+        <div class="sl-in sl-stack">
+          <span class="sl-hint" id="sl-au-ct-hint"></span>
+          <div class="sl-ct" id="sl-au-ct" role="group" aria-label="<?=htmlspecialchars($L['s_au_containers'])?>"></div>
+          <input type="hidden" name="AUTOUPDATE_EXCLUDE_CONTAINERS" id="sl-au-skip" value="<?=htmlspecialchars($auSkip)?>">
+        </div>
+        <div class="sl-desc"><?=$L['s_au_containers_desc']?></div></div>
       <div class="sl-row"><label><?=$L['s_au_digest']?></label>
         <div class="sl-in">
           <label class="sl-switch">
@@ -415,11 +434,13 @@ var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
         var n = res.d.length;
         a.innerHTML = '<span class="sl-res ok">' + SLT.s_running.replace('%n', n) + '</span>' +
           ' <span class="sl-hint">' + SLT.s_statuspage + ' <a href="http://' + host + ':' + port + '/" target="_blank" rel="noopener">' + SLT.s_open + '</a></span>';
+        slAuLoaded(res.d.map(function (s) { return s && s.container && s.container.name; }));
       } else {
         a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span> <span class="sl-hint">' + SLT.s_unreachable_hint + '</span>';
+        slAuLoaded(null);
       }
     })
-    .catch(function () { a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span>'; });
+    .catch(function () { a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span>'; slAuLoaded(null); });
 })();
 function slEnable(cb) {
   document.getElementById('sl-enable').value = cb.checked ? 'true' : 'false';
@@ -512,6 +533,78 @@ function slAuMode() {
   if (u) u.textContent = m === 'hours' ? (SLT.s_au_unit_hours || '') : (m === 'days' ? (SLT.s_au_unit_days || '') : '');
 }
 slAuMode();
+// One switch per container the engine tracks; on means auto-update may update
+// it. The hidden field holds the names switched off, including one with no
+// container behind it right now, so Apply never drops an exclusion.
+var SL_AU_SKIP = [];
+var SL_AU_NAMES = null; // null until the engine answered, or when it is down
+var SL_AU_LOAD = 'loading';
+var SL_AU_NAME_OK = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/; // Docker's name rule keeps the cfg value safe
+function slAuKey(s) { return String(s).toLowerCase(); }
+function slAuLoaded(names) {
+  var seen = {};
+  SL_AU_NAMES = Array.isArray(names) ? names.filter(function (n) {
+    if (!n || !SL_AU_NAME_OK.test(n) || seen[n]) return false;
+    seen[n] = true; return true;
+  }) : null;
+  SL_AU_LOAD = SL_AU_NAMES ? 'ok' : 'down';
+  slAuRender();
+}
+function slAuItem(name, on, gone) {
+  var l = document.createElement('label'); l.className = 'sl-switch sl-ct-item';
+  var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = on;
+  cb.setAttribute('data-name', name); cb.setAttribute('data-gone', gone ? '1' : '0');
+  cb.addEventListener('change', function () { slAuSync(cb); });
+  var tr = document.createElement('span'); tr.className = 'sl-track';
+  var t = document.createElement('span'); t.className = 'sl-ct-name'; t.textContent = name;
+  l.appendChild(cb); l.appendChild(tr); l.appendChild(t);
+  if (gone) { var g = document.createElement('small'); g.textContent = SLT.s_au_ct_gone; l.appendChild(g); }
+  return l;
+}
+// Excluded containers come first, so none hides below the fold.
+function slAuRender() {
+  var box = document.getElementById('sl-au-ct'); if (!box) return;
+  var skip = {}; SL_AU_SKIP.forEach(function (n) { skip[slAuKey(n)] = true; });
+  var have = {}, rows = [];
+  (SL_AU_NAMES || []).forEach(function (n) { have[slAuKey(n)] = true; rows.push({ name: n, off: !!skip[slAuKey(n)], gone: false }); });
+  SL_AU_SKIP.forEach(function (n) { if (!have[slAuKey(n)]) rows.push({ name: n, off: true, gone: SL_AU_NAMES !== null }); });
+  rows.sort(function (a, b) { return (b.off - a.off) || slAuKey(a.name).localeCompare(slAuKey(b.name)); });
+  box.textContent = '';
+  rows.forEach(function (r) { box.appendChild(slAuItem(r.name, !r.off, r.gone)); });
+  slAuState();
+}
+function slAuSync(changed) {
+  var box = document.getElementById('sl-au-ct'), out = [];
+  // Switching a stale exclusion back on simply drops it.
+  if (changed && changed.checked && changed.getAttribute('data-gone') === '1') changed.closest('.sl-ct-item').remove();
+  box.querySelectorAll('input[type=checkbox]').forEach(function (cb) { if (!cb.checked) out.push(cb.getAttribute('data-name')); });
+  SL_AU_SKIP = out;
+  var h = document.getElementById('sl-au-skip'); h.value = out.join(',');
+  slFire(h);
+  slAuState();
+}
+function slAuState() {
+  var box = document.getElementById('sl-au-ct'), hint = document.getElementById('sl-au-ct-hint');
+  if (!box || !hint) return;
+  var on = (document.getElementById('sl-au-en') || {}).value === 'true';
+  box.setAttribute('data-disabled', on ? '0' : '1');
+  box.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.disabled = !on; });
+  var msg = '';
+  if (!on) msg = SLT.s_au_ct_off;
+  else if (SL_AU_LOAD === 'loading') msg = SLT.s_au_ct_loading;
+  else if (SL_AU_LOAD === 'down') msg = SLT.s_unreachable + ' ' + SLT.s_unreachable_hint;
+  else if (!box.children.length) msg = SLT.s_au_ct_none;
+  hint.textContent = msg;
+  hint.style.display = msg ? '' : 'none';
+}
+(function () {
+  var h = document.getElementById('sl-au-skip'), seen = {};
+  SL_AU_SKIP = ((h && h.value) || '').split(',').map(function (s) { return s.trim(); }).filter(function (n) {
+    if (!n || seen[slAuKey(n)]) return false;
+    seen[slAuKey(n)] = true; return true;
+  });
+  slAuRender();
+})();
 // Moves each help text into an info icon next to its label. The bubble renders
 // the original HTML, so links stay clickable, and without this script the help
 // text simply stays visible.

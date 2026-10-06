@@ -105,5 +105,19 @@
   "s_au_unit_days": "päivää",
   "s_llamaswap_url": "llama-swap-URL",
   "s_llamaswap_url_hint": "Toimii minkä tahansa OpenAI-yhteensopivan palvelimen kanssa, kuten llama-swap, LM Studio tai vLLM. Kun se on asetettu, ShipLog käyttää sitä Ollaman sijaan.",
-  "s_llamaswap_model": "llama-swap-malli"
+  "s_llamaswap_model": "llama-swap-malli",
+  "s_au_containers": "Kontit",
+  "s_au_containers_desc": "Valitse, mitä kontteja automaattipäivitys saa päivittää. Jos kytket kontin pois, ShipLog ei koskaan päivitä sitä itse, vaan päivität sen käsin. Manuaaliset päivitykset, changelogit ja riskimerkit pysyvät ennallaan. Tallenna valitsemalla Käytä.",
+  "s_au_ct_off": "Automaattipäivitys on pois päältä. Ota se käyttöön yllä valitaksesi kontit.",
+  "s_au_ct_loading": "Ladataan kontteja…",
+  "s_au_ct_none": "Ei vielä kontteja. Ensimmäinen tarkistus voi olla vielä käynnissä.",
+  "s_au_ct_gone": "ei löytynyt",
+  "d_autoLabel": "Päivitä tämä kontti automaattisesti",
+  "d_autoHintOn": "Mukana ShipLogin ajastetussa automaattipäivityksessä.",
+  "d_autoHintOff": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Käsin päivittäminen toimii edelleen.",
+  "d_autoHintDisabled": "Ajastettu automaattipäivitys on pois päältä ShipLogin asetuksissa.",
+  "d_autoSaving": "Tallennetaan ja käynnistetään ShipLog uudelleen…",
+  "d_autoFailed": "Tallennus epäonnistui. Lataa sivu uudelleen ja yritä uudestaan.",
+  "d_autoOffBadge": "Automaattipäivitys pois",
+  "d_autoOffBadgeHint": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Muuta napsauttamalla."
 }

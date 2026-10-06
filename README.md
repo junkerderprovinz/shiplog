@@ -86,7 +86,7 @@ The containers in these pictures run public images at older versions in a test s
 - **Honest when it does not know.** If no changelog can be found, it says so and shows what it does know. Digest-pinned and locally built images are labelled as such instead of showing a bogus update.
 - **Fix a wrong changelog source.** Point any image at the right GitHub repository or at a changelog file such as `CHANGELOG.md`; the choice survives container recreation.
 - **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one.
-- **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog checks afterwards that the new image really runs. The engine itself never writes to the Docker socket.
+- **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself never writes to the Docker socket.
 - **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, Matrix messages and Unraid notifications.
 - **26 languages**, following Unraid's own setting.
 

@@ -105,5 +105,19 @@
   "s_au_unit_days": "Tage",
   "s_llamaswap_url": "llama-swap-URL",
   "s_llamaswap_url_hint": "Funktioniert mit jedem OpenAI-kompatiblen Server, etwa llama-swap, LM Studio oder vLLM. Ist sie gesetzt, nutzt ShipLog sie statt Ollama.",
-  "s_llamaswap_model": "llama-swap-Modell"
+  "s_llamaswap_model": "llama-swap-Modell",
+  "s_au_containers": "Container",
+  "s_au_containers_desc": "Wähle, welche Container das Auto-Update aktualisieren darf. Schaltest du einen aus, aktualisiert ShipLog ihn nie von selbst, dann aktualisierst du ihn von Hand. Manuelle Updates, Changelogs und Risiko-Badges bleiben, wie sie sind. Klicke zum Speichern auf Übernehmen.",
+  "s_au_ct_off": "Auto-Update ist aus. Schalte es oben ein, um Container auszuwählen.",
+  "s_au_ct_loading": "Container werden geladen…",
+  "s_au_ct_none": "Noch keine Container. Der erste Scan läuft vielleicht noch.",
+  "s_au_ct_gone": "nicht gefunden",
+  "d_autoLabel": "Diesen Container automatisch aktualisieren",
+  "d_autoHintOn": "Im geplanten Auto-Update von ShipLog enthalten.",
+  "d_autoHintOff": "Vom geplanten Auto-Update von ShipLog ausgenommen. Von Hand aktualisieren geht weiterhin.",
+  "d_autoHintDisabled": "Das geplante Auto-Update ist in den ShipLog-Einstellungen ausgeschaltet.",
+  "d_autoSaving": "Wird gespeichert, ShipLog startet neu…",
+  "d_autoFailed": "Speichern fehlgeschlagen. Lade die Seite neu und versuch es noch einmal.",
+  "d_autoOffBadge": "Auto-Update aus",
+  "d_autoOffBadgeHint": "Vom geplanten Auto-Update von ShipLog ausgenommen. Zum Ändern klicken."
 }

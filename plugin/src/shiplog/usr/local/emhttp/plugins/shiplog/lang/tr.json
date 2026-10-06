@@ -105,5 +105,19 @@
   "s_au_unit_days": "gün",
   "s_llamaswap_url": "llama-swap URL'si",
   "s_llamaswap_url_hint": "llama-swap, LM Studio veya vLLM gibi OpenAI uyumlu her sunucuyla çalışır. Ayarlandığında ShipLog, Ollama yerine bunu kullanır.",
-  "s_llamaswap_model": "llama-swap modeli"
+  "s_llamaswap_model": "llama-swap modeli",
+  "s_au_containers": "Konteynerler",
+  "s_au_containers_desc": "Otomatik güncellemenin hangi konteynerleri güncelleyebileceğini seç. Birini kapatırsan ShipLog onu asla kendiliğinden güncellemez, onu elle güncellersin. Elle güncellemeler, changelog'lar ve risk rozetleri olduğu gibi kalır. Kaydetmek için Uygula'ya tıkla.",
+  "s_au_ct_off": "Otomatik güncelleme kapalı. Konteyner seçmek için yukarıdan aç.",
+  "s_au_ct_loading": "Konteynerler yükleniyor…",
+  "s_au_ct_none": "Henüz konteyner yok. İlk tarama hâlâ sürüyor olabilir.",
+  "s_au_ct_gone": "bulunamadı",
+  "d_autoLabel": "Bu konteyneri otomatik güncelle",
+  "d_autoHintOn": "ShipLog'un zamanlanmış otomatik güncellemesine dahil.",
+  "d_autoHintOff": "ShipLog'un zamanlanmış otomatik güncellemesinin dışında. Elle güncellemek yine çalışır.",
+  "d_autoHintDisabled": "Zamanlanmış otomatik güncelleme ShipLog ayarlarında kapalı.",
+  "d_autoSaving": "Kaydediliyor ve ShipLog yeniden başlatılıyor…",
+  "d_autoFailed": "Kaydedilemedi. Sayfayı yeniden yükleyip tekrar dene.",
+  "d_autoOffBadge": "Otomatik güncelleme kapalı",
+  "d_autoOffBadgeHint": "ShipLog'un zamanlanmış otomatik güncellemesinin dışında. Değiştirmek için tıkla."
 }

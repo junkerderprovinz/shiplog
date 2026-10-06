@@ -105,5 +105,19 @@
   "s_au_unit_days": "ngày",
   "s_llamaswap_url": "URL llama-swap",
   "s_llamaswap_url_hint": "Hoạt động với mọi máy chủ tương thích OpenAI, như llama-swap, LM Studio hoặc vLLM. Khi được đặt, ShipLog dùng nó thay cho Ollama.",
-  "s_llamaswap_model": "Mô hình llama-swap"
+  "s_llamaswap_model": "Mô hình llama-swap",
+  "s_au_containers": "Container",
+  "s_au_containers_desc": "Chọn những container mà tự động cập nhật được phép cập nhật. Nếu tắt một container, ShipLog sẽ không bao giờ tự cập nhật nó, nên bạn cập nhật thủ công. Cập nhật thủ công, changelog và huy hiệu rủi ro vẫn giữ nguyên. Nhấn Áp dụng để lưu.",
+  "s_au_ct_off": "Tự động cập nhật đang tắt. Hãy bật ở trên để chọn container.",
+  "s_au_ct_loading": "Đang tải container…",
+  "s_au_ct_none": "Chưa có container nào. Lần quét đầu tiên có thể vẫn đang chạy.",
+  "s_au_ct_gone": "không tìm thấy",
+  "d_autoLabel": "Tự động cập nhật container này",
+  "d_autoHintOn": "Nằm trong lịch tự động cập nhật của ShipLog.",
+  "d_autoHintOff": "Nằm ngoài lịch tự động cập nhật của ShipLog. Cập nhật thủ công vẫn hoạt động.",
+  "d_autoHintDisabled": "Tự động cập nhật theo lịch đang tắt trong cài đặt của ShipLog.",
+  "d_autoSaving": "Đang lưu và khởi động lại ShipLog…",
+  "d_autoFailed": "Không lưu được. Hãy tải lại trang rồi thử lại.",
+  "d_autoOffBadge": "Tự động cập nhật: tắt",
+  "d_autoOffBadgeHint": "Nằm ngoài lịch tự động cập nhật của ShipLog. Nhấp để thay đổi."
 }

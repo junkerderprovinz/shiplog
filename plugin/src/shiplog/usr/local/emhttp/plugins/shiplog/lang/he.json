@@ -105,5 +105,19 @@
   "s_au_unit_days": "ימים",
   "s_llamaswap_url": "כתובת URL של llama-swap",
   "s_llamaswap_url_hint": "עובד עם כל שרת תואם OpenAI, כמו llama-swap, LM Studio או vLLM. כשהיא מוגדרת, ShipLog משתמש בה במקום ב-Ollama.",
-  "s_llamaswap_model": "מודל llama-swap"
+  "s_llamaswap_model": "מודל llama-swap",
+  "s_au_containers": "מכולות",
+  "s_au_containers_desc": "בחר אילו מכולות העדכון האוטומטי רשאי לעדכן. אם תכבה אחת, ShipLog לעולם לא יעדכן אותה בעצמו, ואתה מעדכן אותה ידנית. עדכונים ידניים, Changelog ותגי סיכון נשארים כפי שהם. לחץ על החל כדי לשמור.",
+  "s_au_ct_off": "העדכון האוטומטי כבוי. הפעל אותו למעלה כדי לבחור מכולות.",
+  "s_au_ct_loading": "טוען מכולות…",
+  "s_au_ct_none": "אין עדיין מכולות. ייתכן שהסריקה הראשונה עדיין רצה.",
+  "s_au_ct_gone": "לא נמצאה",
+  "d_autoLabel": "עדכן מכולה זו אוטומטית",
+  "d_autoHintOn": "נכללת בעדכון האוטומטי המתוזמן של ShipLog.",
+  "d_autoHintOff": "מחוץ לעדכון האוטומטי המתוזמן של ShipLog. עדכון ידני עדיין עובד.",
+  "d_autoHintDisabled": "העדכון האוטומטי המתוזמן כבוי בהגדרות של ShipLog.",
+  "d_autoSaving": "שומר ומפעיל מחדש את ShipLog…",
+  "d_autoFailed": "השמירה נכשלה. טען את העמוד מחדש ונסה שוב.",
+  "d_autoOffBadge": "עדכון אוטומטי כבוי",
+  "d_autoOffBadgeHint": "מחוץ לעדכון האוטומטי המתוזמן של ShipLog. לחץ לשינוי."
 }

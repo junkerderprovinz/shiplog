@@ -105,5 +105,19 @@
   "s_au_unit_days": "dage",
   "s_llamaswap_url": "llama-swap-URL",
   "s_llamaswap_url_hint": "Virker med enhver OpenAI-kompatibel server, fx llama-swap, LM Studio eller vLLM. Når den er sat, bruger ShipLog den i stedet for Ollama.",
-  "s_llamaswap_model": "llama-swap-model"
+  "s_llamaswap_model": "llama-swap-model",
+  "s_au_containers": "Containere",
+  "s_au_containers_desc": "Vælg, hvilke containere auto-opdatering må opdatere. Slår du en fra, opdaterer ShipLog den aldrig af sig selv, så du opdaterer den manuelt. Manuelle opdateringer, changelogs og risikomærker forbliver, som de er. Klik på Anvend for at gemme.",
+  "s_au_ct_off": "Auto-opdatering er slået fra. Slå den til ovenfor for at vælge containere.",
+  "s_au_ct_loading": "Indlæser containere…",
+  "s_au_ct_none": "Ingen containere endnu. Den første scanning kører måske stadig.",
+  "s_au_ct_gone": "ikke fundet",
+  "d_autoLabel": "Auto-opdater denne container",
+  "d_autoHintOn": "Med i ShipLogs planlagte auto-opdatering.",
+  "d_autoHintOff": "Udeladt af ShipLogs planlagte auto-opdatering. Manuel opdatering virker stadig.",
+  "d_autoHintDisabled": "Planlagt auto-opdatering er slået fra i ShipLogs indstillinger.",
+  "d_autoSaving": "Gemmer og genstarter ShipLog…",
+  "d_autoFailed": "Kunne ikke gemme. Genindlæs siden, og prøv igen.",
+  "d_autoOffBadge": "Auto-opdatering fra",
+  "d_autoOffBadgeHint": "Udeladt af ShipLogs planlagte auto-opdatering. Klik for at ændre."
 }

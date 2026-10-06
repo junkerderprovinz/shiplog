@@ -105,5 +105,19 @@
   "s_au_unit_days": "日",
   "s_llamaswap_url": "llama-swap URL",
   "s_llamaswap_url_hint": "llama-swap、LM Studio、vLLMなど、OpenAI互換のサーバーで使えます。設定すると、ShipLogはOllamaの代わりにこちらを使います。",
-  "s_llamaswap_model": "llama-swapモデル"
+  "s_llamaswap_model": "llama-swapモデル",
+  "s_au_containers": "コンテナ",
+  "s_au_containers_desc": "自動更新で更新してよいコンテナを選びます。オフにしたコンテナはShipLogが自動で更新することはないため、手動で更新します。手動更新、変更履歴、リスクバッジはそのままです。「適用」をクリックすると保存されます。",
+  "s_au_ct_off": "自動更新はオフです。コンテナを選ぶには上でオンにしてください。",
+  "s_au_ct_loading": "コンテナを読み込み中…",
+  "s_au_ct_none": "コンテナはまだありません。最初のスキャンがまだ実行中の可能性があります。",
+  "s_au_ct_gone": "見つかりません",
+  "d_autoLabel": "このコンテナを自動更新する",
+  "d_autoHintOn": "ShipLogのスケジュール自動更新の対象です。",
+  "d_autoHintOff": "ShipLogのスケジュール自動更新の対象外です。手動での更新は引き続き使えます。",
+  "d_autoHintDisabled": "スケジュール自動更新はShipLogの設定でオフになっています。",
+  "d_autoSaving": "保存してShipLogを再起動しています…",
+  "d_autoFailed": "保存できませんでした。ページを再読み込みして、もう一度お試しください。",
+  "d_autoOffBadge": "自動更新オフ",
+  "d_autoOffBadgeHint": "ShipLogのスケジュール自動更新の対象外です。クリックで変更できます。"
 }

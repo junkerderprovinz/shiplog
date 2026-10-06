@@ -105,5 +105,19 @@
   "s_au_unit_days": "أيام",
   "s_llamaswap_url": "عنوان URL لـ llama-swap",
   "s_llamaswap_url_hint": "يعمل مع أي خادم متوافق مع OpenAI، مثل llama-swap أو LM Studio أو vLLM. عند تعيينه يستخدمه ShipLog بدلًا من Ollama.",
-  "s_llamaswap_model": "نموذج llama-swap"
+  "s_llamaswap_model": "نموذج llama-swap",
+  "s_au_containers": "الحاويات",
+  "s_au_containers_desc": "اختر الحاويات التي يحق للتحديث التلقائي تحديثها. إذا أوقفت إحداها فلن يحدّثها ShipLog بنفسه أبدًا، وستحدّثها أنت يدويًا. التحديثات اليدوية وChangelog وشارات المخاطر تبقى كما هي. اضغط «تطبيق» للحفظ.",
+  "s_au_ct_off": "التحديث التلقائي متوقف. فعّله أعلاه لاختيار الحاويات.",
+  "s_au_ct_loading": "جارٍ تحميل الحاويات…",
+  "s_au_ct_none": "لا توجد حاويات بعد. ربما لا يزال الفحص الأول قيد التشغيل.",
+  "s_au_ct_gone": "غير موجودة",
+  "d_autoLabel": "تحديث هذه الحاوية تلقائيًا",
+  "d_autoHintOn": "مشمولة في التحديث التلقائي المجدول في ShipLog.",
+  "d_autoHintOff": "مستثناة من التحديث التلقائي المجدول في ShipLog. التحديث اليدوي لا يزال يعمل.",
+  "d_autoHintDisabled": "التحديث التلقائي المجدول متوقف في إعدادات ShipLog.",
+  "d_autoSaving": "جارٍ الحفظ وإعادة تشغيل ShipLog…",
+  "d_autoFailed": "تعذّر الحفظ. أعد تحميل الصفحة وحاول مجددًا.",
+  "d_autoOffBadge": "التحديث التلقائي متوقف",
+  "d_autoOffBadgeHint": "مستثناة من التحديث التلقائي المجدول في ShipLog. انقر للتغيير."
 }

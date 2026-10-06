@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -129,9 +130,13 @@ func main() {
 func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Fanout) {
 	sched := autoupdate.Schedule{Mode: cfg.SchedMode, Time: cfg.SchedTime, Every: cfg.SchedEvery}
 	policy := autoupdate.Policy{
-		Level:        autoupdate.ParseLevel(cfg.Level),
-		Digest:       cfg.Digest,
-		ExcludeWords: autoupdate.ParseExcludeWords(cfg.ExcludeWords),
+		Level:             autoupdate.ParseLevel(cfg.Level),
+		Digest:            cfg.Digest,
+		ExcludeWords:      autoupdate.ParseExcludeWords(cfg.ExcludeWords),
+		ExcludeContainers: autoupdate.ParseExcludeContainers(cfg.ExcludeContainers),
+	}
+	if len(policy.ExcludeContainers) > 0 {
+		log.Printf("shiplog: auto-update leaves these to manual updates: %s", strings.Join(policy.ExcludeContainers, ", "))
 	}
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
@@ -160,7 +165,7 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 		res := exec.Run(ctx, policy, cfg.DryRun)
 		if !res.DryRun {
 			for _, o := range res.Outcomes {
-				if o.Blocked {
+				if o.Blocked || o.Skipped {
 					continue
 				}
 				errStr := ""
@@ -174,10 +179,11 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 			}
 		}
 		// The summary also goes to the log, so a dry run shows its plan without any
-		// notification channel.
+		// notification channel. A run that only skipped excluded containers is
+		// not worth a message every night.
 		if text, html := autoupdate.RenderSummary(res); text != "" {
 			log.Printf("shiplog: %s", text)
-			if notifier != nil {
+			if notifier != nil && res.Notable() {
 				if nerr := notifier.SendMessage(ctx, text, html); nerr != nil {
 					log.Printf("shiplog: auto-update notify: %v", nerr)
 				}

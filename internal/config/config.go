@@ -54,6 +54,9 @@ type AutoUpdateConfig struct {
 	// update whose changelog contains one of the words, so "breaking" can hold
 	// back a patch release that calls out a breaking change.
 	ExcludeWords string
+	// ExcludeContainers (AUTOUPDATE_EXCLUDE_CONTAINERS, comma-separated names)
+	// are never auto-updated; the admin updates them by hand.
+	ExcludeContainers string
 }
 
 // Load reads the environment, applying the documented defaults.
@@ -76,14 +79,15 @@ func Load() Config {
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
 		UnraidNotify:     truthy("UNRAID_NOTIFY"),
 		AutoUpdate: AutoUpdateConfig{
-			Enabled:      truthy("AUTOUPDATE_ENABLED"),
-			Level:        levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
-			Digest:       truthy("AUTOUPDATE_DIGEST"),
-			DryRun:       truthy("AUTOUPDATE_DRYRUN"),
-			SchedMode:    env("AUTOUPDATE_SCHED_MODE", "off"),
-			SchedTime:    env("AUTOUPDATE_SCHED_TIME", "04:00"),
-			SchedEvery:   atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
-			ExcludeWords: os.Getenv("AUTOUPDATE_EXCLUDE_WORDS"),
+			Enabled:           truthy("AUTOUPDATE_ENABLED"),
+			Level:             levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
+			Digest:            truthy("AUTOUPDATE_DIGEST"),
+			DryRun:            truthy("AUTOUPDATE_DRYRUN"),
+			SchedMode:         env("AUTOUPDATE_SCHED_MODE", "off"),
+			SchedTime:         env("AUTOUPDATE_SCHED_TIME", "04:00"),
+			SchedEvery:        atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
+			ExcludeWords:      os.Getenv("AUTOUPDATE_EXCLUDE_WORDS"),
+			ExcludeContainers: os.Getenv("AUTOUPDATE_EXCLUDE_CONTAINERS"),
 		},
 	}
 }

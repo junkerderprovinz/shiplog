@@ -105,5 +105,19 @@
   "s_au_unit_days": "nap",
   "s_llamaswap_url": "llama-swap URL",
   "s_llamaswap_url_hint": "Bármely OpenAI-kompatibilis szerverrel működik, például llama-swap, LM Studio vagy vLLM. Ha meg van adva, a ShipLog ezt használja az Ollama helyett.",
-  "s_llamaswap_model": "llama-swap modell"
+  "s_llamaswap_model": "llama-swap modell",
+  "s_au_containers": "Konténerek",
+  "s_au_containers_desc": "Válaszd ki, mely konténereket frissítheti az automatikus frissítés. Ha egyet kikapcsolsz, a ShipLog sosem frissíti magától, így te frissíted kézzel. A kézi frissítések, a changelogok és a kockázati jelvények változatlanok maradnak. A mentéshez kattints az Alkalmaz gombra.",
+  "s_au_ct_off": "Az automatikus frissítés ki van kapcsolva. Kapcsold be fent a konténerek kiválasztásához.",
+  "s_au_ct_loading": "Konténerek betöltése…",
+  "s_au_ct_none": "Még nincsenek konténerek. Lehet, hogy az első vizsgálat még fut.",
+  "s_au_ct_gone": "nem található",
+  "d_autoLabel": "A konténer automatikus frissítése",
+  "d_autoHintOn": "Benne van a ShipLog ütemezett automatikus frissítésében.",
+  "d_autoHintOff": "Kimarad a ShipLog ütemezett automatikus frissítéséből. A kézi frissítés továbbra is működik.",
+  "d_autoHintDisabled": "Az ütemezett automatikus frissítés ki van kapcsolva a ShipLog beállításaiban.",
+  "d_autoSaving": "Mentés és a ShipLog újraindítása…",
+  "d_autoFailed": "A mentés nem sikerült. Töltsd újra az oldalt, és próbáld újra.",
+  "d_autoOffBadge": "Automatikus frissítés ki",
+  "d_autoOffBadgeHint": "Kimarad a ShipLog ütemezett automatikus frissítéséből. Kattints a módosításhoz."
 }

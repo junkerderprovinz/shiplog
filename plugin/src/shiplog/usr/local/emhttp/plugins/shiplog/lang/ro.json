@@ -105,5 +105,19 @@
   "s_au_unit_days": "zile",
   "s_llamaswap_url": "URL llama-swap",
   "s_llamaswap_url_hint": "Funcționează cu orice server compatibil OpenAI, de exemplu llama-swap, LM Studio sau vLLM. Când este setat, ShipLog îl folosește în locul Ollama.",
-  "s_llamaswap_model": "Model llama-swap"
+  "s_llamaswap_model": "Model llama-swap",
+  "s_au_containers": "Containere",
+  "s_au_containers_desc": "Alege ce containere poate actualiza actualizarea automată. Dacă oprești unul, ShipLog nu îl actualizează niciodată singur, așa că îl actualizezi manual. Actualizările manuale, changelogurile și insignele de risc rămân la fel. Apasă Aplică pentru a salva.",
+  "s_au_ct_off": "Actualizarea automată este oprită. Pornește-o mai sus pentru a alege containere.",
+  "s_au_ct_loading": "Se încarcă containerele…",
+  "s_au_ct_none": "Încă nu există containere. Prima scanare poate fi încă în desfășurare.",
+  "s_au_ct_gone": "negăsit",
+  "d_autoLabel": "Actualizează automat acest container",
+  "d_autoHintOn": "Inclus în actualizarea automată programată a ShipLog.",
+  "d_autoHintOff": "Lăsat în afara actualizării automate programate a ShipLog. Actualizarea manuală funcționează în continuare.",
+  "d_autoHintDisabled": "Actualizarea automată programată este oprită în setările ShipLog.",
+  "d_autoSaving": "Se salvează și se repornește ShipLog…",
+  "d_autoFailed": "Salvarea a eșuat. Reîncarcă pagina și încearcă din nou.",
+  "d_autoOffBadge": "Actualizare automată oprită",
+  "d_autoOffBadgeHint": "Lăsat în afara actualizării automate programate a ShipLog. Fă clic pentru a schimba."
 }
