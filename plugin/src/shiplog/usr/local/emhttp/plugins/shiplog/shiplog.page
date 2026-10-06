@@ -16,6 +16,8 @@ $dhuser = isset($cfg['DOCKERHUB_USERNAME']) ? $cfg['DOCKERHUB_USERNAME'] : '';
 $dhtok  = isset($cfg['DOCKERHUB_TOKEN'])    ? $cfg['DOCKERHUB_TOKEN']    : '';
 $ourl   = isset($cfg['OLLAMA_URL'])        ? $cfg['OLLAMA_URL']        : '';
 $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
+$lsurl  = isset($cfg['LLAMASWAP_URL'])     ? $cfg['LLAMASWAP_URL']     : '';
+$lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
 $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
@@ -351,6 +353,13 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
         <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>" placeholder="llama3.1">
         <button type="button" class="sl-btn" onclick="slCheckOllama()"><?=$L['s_check']?></button>
         <span id="sl-ollama-result" class="sl-res"></span></div></div>
+      <div class="sl-row"><label><?=$L['s_llamaswap_url']?></label><div class="sl-in">
+        <input type="text" name="LLAMASWAP_URL" value="<?=htmlspecialchars($lsurl)?>" placeholder="http://127.0.0.1:9292">
+        <span class="sl-hint sl-help"><?=$L['s_llamaswap_url_hint']?></span></div></div>
+      <div class="sl-row"><label><?=$L['s_llamaswap_model']?></label><div class="sl-in">
+        <input type="text" name="LLAMASWAP_MODEL" value="<?=htmlspecialchars($lsmodel)?>" placeholder="gemma4-e4b">
+        <button type="button" class="sl-btn" onclick="slCheckLlamaSwap()"><?=$L['s_check']?></button>
+        <span id="sl-llamaswap-result" class="sl-res"></span></div></div>
     </div>
 
     <div class="sl-card" data-tab="notify">
@@ -457,6 +466,10 @@ function slCheckDockerHub() {
 function slCheckOllama() {
   slCheck('sl-ollama-result', '/plugins/shiplog/server/ollama-check.php?url=' +
     encodeURIComponent(slVal('OLLAMA_URL')) + '&model=' + encodeURIComponent(slVal('OLLAMA_MODEL')));
+}
+function slCheckLlamaSwap() {
+  slCheck('sl-llamaswap-result', '/plugins/shiplog/server/llamaswap-check.php?url=' +
+    encodeURIComponent(slVal('LLAMASWAP_URL')) + '&model=' + encodeURIComponent(slVal('LLAMASWAP_MODEL')));
 }
 function slCheckMatrix() {
   slCheck('sl-matrix-result', '/plugins/shiplog/server/matrix-check.php?hs=' +

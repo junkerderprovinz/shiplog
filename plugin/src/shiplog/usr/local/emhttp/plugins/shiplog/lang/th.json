@@ -24,7 +24,7 @@
   "s_dh_token": "โทเคน Docker Hub",
   "s_dh_hint": "ตรวจสอบเวอร์ชันล่าสุด + digest ของอิมเมจ <code>docker.io</code> Docker Hub แบบไม่ระบุตัวตนถูกจำกัดอัตราต่อ IP: เมื่อมีอิมเมจจำนวนมากจะถูกจำกัด ดังนั้นจึงแสดงการอัปเดตโดยไม่มีหมายเลขเวอร์ชัน <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">Docker Hub access token</a> ฟรี (อ่านอย่างเดียว) จะยกเลิกขีดจำกัด ผู้ใช้ + โทเคน จำเป็นทั้งคู่",
   "s_ai": "สรุปด้วย AI",
-  "s_ai_sub": "ไม่บังคับ: Ollama ย่อแต่ละ Changelog เป็น “อะไรเปลี่ยน / Breaking / ความเสี่ยง”",
+  "s_ai_sub": "ไม่บังคับ: โมเดลในเครื่อง (Ollama หรือ llama-swap) ย่อแต่ละ Changelog เป็น “อะไรเปลี่ยน / Breaking / ความเสี่ยง”",
   "s_ollama_url": "URL ของ Ollama",
   "s_ollama_url_hint": "ตรวจหาพอร์ต Ollama ในเครื่องที่พบบ่อยและกรอกช่องนี้ให้",
   "s_ollama_model": "โมเดล Ollama",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "ทดลองรัน",
   "s_au_dryrun_desc": "ไม่ติดตั้งอะไรทั้งสิ้น เพียงส่งการแจ้งเตือนว่ามีอะไรที่จะถูกอัปเดต ใช้ตัวเลือกนี้ก่อนเพื่อดูแผนก่อนเปิดใช้อัปเดตจริง",
   "s_au_unit_hours": "ชั่วโมง",
-  "s_au_unit_days": "วัน"
+  "s_au_unit_days": "วัน",
+  "s_llamaswap_url": "URL ของ llama-swap",
+  "s_llamaswap_url_hint": "ใช้ได้กับเซิร์ฟเวอร์ที่เข้ากันได้กับ OpenAI ทุกตัว เช่น llama-swap, LM Studio หรือ vLLM เมื่อตั้งค่าไว้ ShipLog จะใช้แทน Ollama",
+  "s_llamaswap_model": "โมเดล llama-swap"
 }

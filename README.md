@@ -20,7 +20,7 @@
 <p align="center">
 ⚓ <b>ShipLog</b> reads the changelog before you update, right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major) and the real <b>version jump</b> (e.g. 1.7 → 1.8).<br>
 <br>
-<b>Read-only</b>: it never pulls, recreates or stops anything. Optional: AI changelog summaries via a local Ollama, and Matrix notifications.
+<b>Read-only</b>: it never pulls, recreates or stops anything. Optional: AI changelog summaries from a local Ollama or llama-swap, and Matrix notifications.
 </p>
 
 <!-- download-buttons: written by scripts/gen_download_buttons.py -->
@@ -87,7 +87,7 @@ The containers in these pictures run public images at older versions in a test s
 - **Fix a wrong changelog source.** Point any image at the right GitHub repository or at a changelog file such as `CHANGELOG.md`; the choice survives container recreation.
 - **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one.
 - **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog checks afterwards that the new image really runs. The engine itself never writes to the Docker socket.
-- **Optional extras, off by default.** Changelog summaries from a local Ollama, Matrix messages and Unraid notifications.
+- **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, Matrix messages and Unraid notifications.
 - **26 languages**, following Unraid's own setting.
 
 <br>

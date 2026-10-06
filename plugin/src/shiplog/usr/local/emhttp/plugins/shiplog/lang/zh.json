@@ -24,7 +24,7 @@
   "s_dh_token": "Docker Hub 令牌",
   "s_dh_hint": "检查 <code>docker.io</code> 镜像的最新版本和 digest。匿名 Docker Hub 按 IP 限速：镜像多时会受到限制，于是它们会显示没有版本号的更新。一个免费的 <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">Docker Hub 访问令牌</a>（只读）可解除限制。用户 + 令牌，两者都需要。",
   "s_ai": "AI 摘要",
-  "s_ai_sub": "可选：Ollama 将每个更新日志浓缩为“有何变化 / Breaking / 风险”。",
+  "s_ai_sub": "可选：本地模型（Ollama 或 llama-swap）将每个更新日志浓缩为“有何变化 / Breaking / 风险”。",
   "s_ollama_url": "Ollama URL",
   "s_ollama_url_hint": "探测常见的本地 Ollama 端口并填入此处。",
   "s_ollama_model": "Ollama 模型",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "试运行",
   "s_au_dryrun_desc": "不应用任何更新，只发送一条通知，告知哪些内容将会被更新。在正式启用真正的更新之前，先用它查看计划。",
   "s_au_unit_hours": "小时",
-  "s_au_unit_days": "天"
+  "s_au_unit_days": "天",
+  "s_llamaswap_url": "llama-swap URL",
+  "s_llamaswap_url_hint": "适用于任何兼容 OpenAI 的服务器，例如 llama-swap、LM Studio 或 vLLM。设置后，ShipLog 将用它代替 Ollama。",
+  "s_llamaswap_model": "llama-swap 模型"
 }

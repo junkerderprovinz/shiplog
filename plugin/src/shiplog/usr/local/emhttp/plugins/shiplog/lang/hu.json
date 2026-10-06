@@ -24,7 +24,7 @@
   "s_dh_token": "Docker Hub token",
   "s_dh_hint": "Ellenőrzi a <code>docker.io</code> képek legújabb verzióját + digestjét. Az anonim Docker Hub IP-nként korlátozott: sok képnél ez fojt, így verziószám nélkül mutatnak frissítést. Egy ingyenes <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">Docker Hub hozzáférési token</a> (csak olvasható) feloldja a korlátot. Felhasználó + token, mindkettő szükséges.",
   "s_ai": "MI-összefoglalók",
-  "s_ai_sub": "Opcionális: az Ollama minden changelogot „mi változik / Breaking / kockázat” formára sűrít.",
+  "s_ai_sub": "Opcionális: egy helyi modell (Ollama vagy llama-swap) minden changelogot „mi változik / Breaking / kockázat” formára sűrít.",
   "s_ollama_url": "Ollama URL",
   "s_ollama_url_hint": "Megvizsgálja a szokásos helyi Ollama-portokat és kitölti ezt.",
   "s_ollama_model": "Ollama modell",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "Próbafutás",
   "s_au_dryrun_desc": "Ne alkalmazzon semmit, csak küldjön értesítést arról, MI frissülne. Előbb ezt használd, hogy lásd a tervet, mielőtt élesíted a valódi frissítéseket.",
   "s_au_unit_hours": "óra",
-  "s_au_unit_days": "nap"
+  "s_au_unit_days": "nap",
+  "s_llamaswap_url": "llama-swap URL",
+  "s_llamaswap_url_hint": "Bármely OpenAI-kompatibilis szerverrel működik, például llama-swap, LM Studio vagy vLLM. Ha meg van adva, a ShipLog ezt használja az Ollama helyett.",
+  "s_llamaswap_model": "llama-swap modell"
 }

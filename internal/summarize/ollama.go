@@ -1,4 +1,3 @@
-// Package summarize turns a raw changelog into a short AI summary via Ollama.
 package summarize
 
 import (
@@ -14,8 +13,6 @@ import (
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
-
-const maxRawChars = 6000
 
 // Ollama summarises changelogs against an Ollama server's REST API.
 type Ollama struct {
@@ -77,18 +74,9 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 	if o == nil || strings.TrimSpace(raw) == "" {
 		return nil, false
 	}
-	if len(raw) > maxRawChars {
-		raw = raw[:maxRawChars]
-	}
-	prompt := "You summarise a Docker image changelog for a homelab admin. " +
-		"Image " + c.Repo + " from " + fromTag + " to " + toTag + ". " +
-		`Reply ONLY with JSON: {"bullets":[3-5 short strings of what changes],` +
-		`"breaking":[strings of breaking changes or required migration steps, empty if none],` +
-		`"risk":"one short sentence"}. Be concise and factual. Changelog:` + "\n" + raw
-
 	reqBody, _ := json.Marshal(map[string]any{
 		"model":  o.model,
-		"prompt": prompt,
+		"prompt": buildPrompt(c, fromTag, toTag, raw),
 		"stream": false,
 		"format": "json",
 	})
@@ -116,41 +104,16 @@ func (o *Ollama) Summarize(ctx context.Context, c model.Container, fromTag, toTa
 		log.Printf("shiplog: ollama %s: cannot decode /api/generate response: %v", c.Name, err)
 		return nil, false
 	}
-	r := strings.TrimSpace(gen.Response)
-	if r == "" {
+	// With format:"json" the model's answer is itself a JSON document in Response.
+	answer := strings.TrimSpace(gen.Response)
+	if answer == "" {
 		log.Printf("shiplog: ollama %s: empty model response (the model produced nothing)", c.Name)
 		return nil, false
 	}
-	// With format:"json" the model's answer is itself a JSON document in Response.
-	var out struct {
-		Bullets  []string `json:"bullets"`
-		Breaking []string `json:"breaking"`
-		Risk     string   `json:"risk"`
-	}
-	if err := json.Unmarshal([]byte(r), &out); err != nil {
-		log.Printf("shiplog: ollama %s: model output is not the expected JSON: %v; got: %s", c.Name, err, snippet(r))
+	sum, err := parseSummary(answer, o.model)
+	if err != nil {
+		log.Printf("shiplog: ollama %s: %v; got: %s", c.Name, err, snippet(answer))
 		return nil, false
 	}
-	if len(out.Bullets) == 0 && len(out.Breaking) == 0 && out.Risk == "" {
-		log.Printf("shiplog: ollama %s: parsed JSON but bullets/breaking/risk are all empty; got: %s", c.Name, snippet(r))
-		return nil, false
-	}
-	return &model.AISummary{
-		Bullets:  out.Bullets,
-		Breaking: out.Breaking,
-		Risk:     out.Risk,
-		Model:    o.model,
-	}, true
-}
-
-// snippet fits a string on one log line.
-func snippet(s string) string {
-	s = strings.Join(strings.Fields(s), " ")
-	if len(s) > 240 {
-		s = s[:240] + "…"
-	}
-	if s == "" {
-		s = "(empty)"
-	}
-	return s
+	return sum, true
 }

@@ -24,7 +24,7 @@
   "s_dh_token": "Token Docker Hub",
   "s_dh_hint": "Kiểm tra phiên bản mới nhất + digest của các image <code>docker.io</code>. Docker Hub ẩn danh bị giới hạn tốc độ theo IP: với nhiều image thì bị bóp, nên chúng hiển thị bản cập nhật mà không có số phiên bản. Một <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">token truy cập Docker Hub</a> miễn phí (chỉ đọc) gỡ bỏ giới hạn. Người dùng + token, cả hai đều bắt buộc.",
   "s_ai": "Tóm tắt bằng AI",
-  "s_ai_sub": "Tùy chọn: Ollama cô đọng mỗi changelog thành “có gì thay đổi / Breaking / rủi ro”.",
+  "s_ai_sub": "Tùy chọn: một mô hình cục bộ (Ollama hoặc llama-swap) cô đọng mỗi changelog thành “có gì thay đổi / Breaking / rủi ro”.",
   "s_ollama_url": "URL Ollama",
   "s_ollama_url_hint": "Dò các cổng Ollama cục bộ phổ biến và điền vào đây.",
   "s_ollama_model": "Mô hình Ollama",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "Chạy thử",
   "s_au_dryrun_desc": "Không áp dụng gì cả, chỉ gửi thông báo về những gì SẼ được cập nhật. Hãy dùng tùy chọn này trước để xem kế hoạch trước khi kích hoạt cập nhật thật.",
   "s_au_unit_hours": "giờ",
-  "s_au_unit_days": "ngày"
+  "s_au_unit_days": "ngày",
+  "s_llamaswap_url": "URL llama-swap",
+  "s_llamaswap_url_hint": "Hoạt động với mọi máy chủ tương thích OpenAI, như llama-swap, LM Studio hoặc vLLM. Khi được đặt, ShipLog dùng nó thay cho Ollama.",
+  "s_llamaswap_model": "Mô hình llama-swap"
 }

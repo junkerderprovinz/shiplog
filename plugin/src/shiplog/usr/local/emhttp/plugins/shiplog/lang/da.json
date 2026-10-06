@@ -24,7 +24,7 @@
   "s_dh_token": "Docker Hub-token",
   "s_dh_hint": "Tjekker den nyeste version + digest for <code>docker.io</code>-images. Anonym Docker Hub er hastighedsbegrænset pr. IP: med mange images struber det, så de viser en opdatering uden versionsnummer. En gratis <a href=\"https://app.docker.com/settings/personal-access-tokens\" target=\"_blank\">Docker Hub-adgangstoken</a> (skrivebeskyttet) fjerner grænsen. Bruger + token, begge kræves.",
   "s_ai": "AI-opsummeringer",
-  "s_ai_sub": "Valgfrit: Ollama fortætter hver changelog til »hvad ændrer sig / Breaking / risiko«.",
+  "s_ai_sub": "Valgfrit: en lokal model (Ollama eller llama-swap) fortætter hver changelog til »hvad ændrer sig / Breaking / risiko«.",
   "s_ollama_url": "Ollama-URL",
   "s_ollama_url_hint": "Undersøger almindelige lokale Ollama-porte og udfylder dette.",
   "s_ollama_model": "Ollama-model",
@@ -102,5 +102,8 @@
   "s_au_dryrun": "Prøvekørsel",
   "s_au_dryrun_desc": "Anvend ikke noget, send blot en notifikation om, hvad der VILLE blive opdateret. Brug dette først for at se planen, før du aktiverer rigtige opdateringer.",
   "s_au_unit_hours": "timer",
-  "s_au_unit_days": "dage"
+  "s_au_unit_days": "dage",
+  "s_llamaswap_url": "llama-swap-URL",
+  "s_llamaswap_url_hint": "Virker med enhver OpenAI-kompatibel server, fx llama-swap, LM Studio eller vLLM. Når den er sat, bruger ShipLog den i stedet for Ollama.",
+  "s_llamaswap_model": "llama-swap-model"
 }

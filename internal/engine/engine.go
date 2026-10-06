@@ -403,7 +403,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, cl.Raw); ok {
 					cl.Summary = sum
 				} else {
-					log.Printf("shiplog: no AI summary for %s (Ollama configured but returned nothing)", c.Name)
+					log.Printf("shiplog: no AI summary for %s (summaries configured but nothing came back)", c.Name)
 				}
 			}
 			e.maybeNotify(ctx, st, prior, hasPrior)
