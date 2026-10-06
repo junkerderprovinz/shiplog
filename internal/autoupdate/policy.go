@@ -37,6 +37,8 @@ type Policy struct {
 	Level        Level    // SemVer threshold
 	Digest       bool     // also auto-apply :latest and other digest-only moves
 	ExcludeWords []string // block an eligible update whose changelog contains one of these
+	// ExcludeContainers are never auto-updated; the admin updates them by hand.
+	ExcludeContainers []string
 }
 
 // ParseExcludeWords splits the comma-separated setting. It keeps the casing, so
@@ -50,6 +52,29 @@ func ParseExcludeWords(s string) []string {
 		}
 	}
 	return words
+}
+
+// ParseExcludeContainers splits the comma-separated container names, dropping
+// empties and repeats that differ only in case. Docker names hold no comma.
+func ParseExcludeContainers(s string) []string {
+	var names []string
+	for _, n := range strings.Split(s, ",") {
+		n = strings.TrimSpace(n)
+		if n != "" && !ContainerExcluded(n, names) {
+			names = append(names, n)
+		}
+	}
+	return names
+}
+
+// ContainerExcluded reports whether name is on the list, ignoring case.
+func ContainerExcluded(name string, excluded []string) bool {
+	for _, e := range excluded {
+		if strings.EqualFold(name, e) {
+			return true
+		}
+	}
+	return false
 }
 
 // MatchedExcludeWord returns the first word found in the target release's notes,

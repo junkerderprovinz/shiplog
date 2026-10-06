@@ -105,5 +105,19 @@
   "s_au_unit_days": "dní",
   "s_llamaswap_url": "URL llama-swap",
   "s_llamaswap_url_hint": "Funguje s jakýmkoli serverem kompatibilním s OpenAI, například llama-swap, LM Studio nebo vLLM. Pokud je nastavena, ShipLog ji použije místo Ollama.",
-  "s_llamaswap_model": "Model llama-swap"
+  "s_llamaswap_model": "Model llama-swap",
+  "s_au_containers": "Kontejnery",
+  "s_au_containers_desc": "Vyberte, které kontejnery smí automatická aktualizace aktualizovat. Když některý vypnete, ShipLog ho nikdy sám neaktualizuje a aktualizujete ho ručně. Ruční aktualizace, changelogy a štítky rizika zůstávají beze změny. Uložte tlačítkem Použít.",
+  "s_au_ct_off": "Automatická aktualizace je vypnutá. Zapněte ji výše, abyste mohli vybrat kontejnery.",
+  "s_au_ct_loading": "Načítání kontejnerů…",
+  "s_au_ct_none": "Zatím žádné kontejnery. První kontrola možná ještě běží.",
+  "s_au_ct_gone": "nenalezen",
+  "d_autoLabel": "Automaticky aktualizovat tento kontejner",
+  "d_autoHintOn": "Zahrnut do plánované automatické aktualizace ShipLogu.",
+  "d_autoHintOff": "Vynechán z plánované automatické aktualizace ShipLogu. Ruční aktualizace dál funguje.",
+  "d_autoHintDisabled": "Plánovaná automatická aktualizace je vypnutá v nastavení ShipLogu.",
+  "d_autoSaving": "Ukládání a restart ShipLogu…",
+  "d_autoFailed": "Uložení se nezdařilo. Načtěte stránku znovu a zkuste to ještě jednou.",
+  "d_autoOffBadge": "Automatická aktualizace vypnuta",
+  "d_autoOffBadgeHint": "Vynechán z plánované automatické aktualizace ShipLogu. Kliknutím změníte."
 }

@@ -27,12 +27,26 @@ type Outcome struct {
 	// trusted.
 	Blocked     bool
 	BlockedWord string
+	// Skipped marks an eligible update of a container on the exclude list. It
+	// is the admin's own choice, so it is reported apart from Blocked.
+	Skipped bool
 }
 
 // Result aggregates one auto-update run.
 type Result struct {
 	Outcomes []Outcome
 	DryRun   bool
+}
+
+// Notable reports whether the run is worth a notification. A run that only
+// skipped excluded containers is not; the log still lists them.
+func (r Result) Notable() bool {
+	for _, o := range r.Outcomes {
+		if !o.Skipped {
+			return true
+		}
+	}
+	return false
 }
 
 // Inspector reads the containers as Docker sees them (the Docker client).
@@ -77,6 +91,11 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 			From:  st.RunningVersion,
 			To:    st.NewestTag,
 			Level: string(st.Kind),
+		}
+		if ContainerExcluded(o.Name, p.ExcludeContainers) {
+			o.Skipped = true
+			res.Outcomes = append(res.Outcomes, o)
+			continue
 		}
 		if word := MatchedExcludeWord(st.Changelog, p.ExcludeWords); word != "" {
 			o.Blocked = true

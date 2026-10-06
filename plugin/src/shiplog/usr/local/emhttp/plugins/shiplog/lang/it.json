@@ -105,5 +105,19 @@
   "s_au_unit_days": "giorni",
   "s_llamaswap_url": "URL llama-swap",
   "s_llamaswap_url_hint": "Funziona con qualsiasi server compatibile OpenAI, come llama-swap, LM Studio o vLLM. Se impostato, ShipLog lo usa al posto di Ollama.",
-  "s_llamaswap_model": "Modello llama-swap"
+  "s_llamaswap_model": "Modello llama-swap",
+  "s_au_containers": "Container",
+  "s_au_containers_desc": "Scegli quali container l'aggiornamento automatico può aggiornare. Se ne disattivi uno, ShipLog non lo aggiorna mai da solo e lo aggiorni tu a mano. Aggiornamenti manuali, changelog e badge di rischio restano come sono. Premi Applica per salvare.",
+  "s_au_ct_off": "L'aggiornamento automatico è disattivato. Attivalo sopra per scegliere i container.",
+  "s_au_ct_loading": "Caricamento dei container…",
+  "s_au_ct_none": "Ancora nessun container. La prima scansione potrebbe essere ancora in corso.",
+  "s_au_ct_gone": "non trovato",
+  "d_autoLabel": "Aggiorna automaticamente questo container",
+  "d_autoHintOn": "Incluso nell'aggiornamento automatico pianificato di ShipLog.",
+  "d_autoHintOff": "Escluso dall'aggiornamento automatico pianificato di ShipLog. Aggiornarlo a mano funziona comunque.",
+  "d_autoHintDisabled": "L'aggiornamento automatico pianificato è disattivato nelle impostazioni di ShipLog.",
+  "d_autoSaving": "Salvataggio e riavvio di ShipLog…",
+  "d_autoFailed": "Salvataggio non riuscito. Ricarica la pagina e riprova.",
+  "d_autoOffBadge": "Aggiornamento automatico disattivato",
+  "d_autoOffBadgeHint": "Escluso dall'aggiornamento automatico pianificato di ShipLog. Clicca per cambiare."
 }

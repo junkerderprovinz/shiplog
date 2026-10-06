@@ -105,5 +105,19 @@
   "s_au_unit_days": "天",
   "s_llamaswap_url": "llama-swap URL",
   "s_llamaswap_url_hint": "适用于任何兼容 OpenAI 的服务器，例如 llama-swap、LM Studio 或 vLLM。设置后，ShipLog 将用它代替 Ollama。",
-  "s_llamaswap_model": "llama-swap 模型"
+  "s_llamaswap_model": "llama-swap 模型",
+  "s_au_containers": "容器",
+  "s_au_containers_desc": "选择自动更新可以更新哪些容器。关闭某个容器后，ShipLog 永远不会自行更新它，需要你手动更新。手动更新、更新日志和风险徽章保持不变。点击“应用”保存。",
+  "s_au_ct_off": "自动更新已关闭。请在上方开启后再选择容器。",
+  "s_au_ct_loading": "正在加载容器…",
+  "s_au_ct_none": "还没有容器。首次扫描可能仍在进行。",
+  "s_au_ct_gone": "未找到",
+  "d_autoLabel": "自动更新此容器",
+  "d_autoHintOn": "已纳入 ShipLog 的定时自动更新。",
+  "d_autoHintOff": "不在 ShipLog 的定时自动更新范围内。手动更新仍然可用。",
+  "d_autoHintDisabled": "定时自动更新已在 ShipLog 设置中关闭。",
+  "d_autoSaving": "正在保存并重启 ShipLog…",
+  "d_autoFailed": "保存失败。请刷新页面后重试。",
+  "d_autoOffBadge": "自动更新已关闭",
+  "d_autoOffBadgeHint": "不在 ShipLog 的定时自动更新范围内。点击可更改。"
 }

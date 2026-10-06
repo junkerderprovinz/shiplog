@@ -188,3 +188,124 @@ func TestExecutorSkipsConfirmationOnUpdateError(t *testing.T) {
 		t.Fatalf("outcome = %+v, want the updater's own error", o)
 	}
 }
+
+func TestExecutorExcludedContainerNeverUpdated(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+		stNamed("gitea", model.KindMinor),
+		stNamed("plex", model.KindMinor),
+	}}, upd)
+	res := e.Run(context.Background(), Policy{Level: LevelMajor, ExcludeContainers: []string{"gitea"}}, false)
+	if !reflect.DeepEqual(upd.calls, []string{"plex"}) {
+		t.Fatalf("Update calls = %v, want only [plex]", upd.calls)
+	}
+	if len(res.Outcomes) != 2 {
+		t.Fatalf("want one skipped and one updated outcome, got %+v", res.Outcomes)
+	}
+	gitea, plex := res.Outcomes[0], res.Outcomes[1]
+	if !gitea.Skipped || gitea.Updated || gitea.Blocked || gitea.Err != nil {
+		t.Fatalf("gitea = %+v, want only Skipped", gitea)
+	}
+	if plex.Skipped || !plex.Updated || plex.Err != nil {
+		t.Fatalf("plex = %+v, want a plain update", plex)
+	}
+}
+
+func TestExecutorExcludedMatchIgnoresCase(t *testing.T) {
+	for _, configured := range []string{"gitea", "GITEA", "Gitea"} {
+		upd := &fakeUpdater{sup: true}
+		e := NewExecutor(fakeLister{sts: []model.UpdateStatus{stNamed("Gitea", model.KindPatch)}}, upd)
+		res := e.Run(context.Background(), Policy{Level: LevelPatch, ExcludeContainers: []string{configured}}, false)
+		if len(upd.calls) != 0 {
+			t.Errorf("configured %q: Update called for %v, want none", configured, upd.calls)
+		}
+		if len(res.Outcomes) != 1 || !res.Outcomes[0].Skipped {
+			t.Errorf("configured %q: outcomes = %+v, want one Skipped", configured, res.Outcomes)
+		}
+	}
+}
+
+func TestExecutorExcludedContainerSkippedInDryRun(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+		stNamed("gitea", model.KindMinor), stNamed("plex", model.KindMinor),
+	}}, upd)
+	res := e.Run(context.Background(), Policy{Level: LevelMinor, ExcludeContainers: []string{"gitea"}}, true)
+	if len(upd.calls) != 0 {
+		t.Fatalf("a dry run must never call Update, got %v", upd.calls)
+	}
+	if !res.DryRun || len(res.Outcomes) != 2 {
+		t.Fatalf("dry-run result = %+v", res)
+	}
+	if !res.Outcomes[0].Skipped || res.Outcomes[0].Updated {
+		t.Fatalf("gitea = %+v, want Skipped, not a would-update", res.Outcomes[0])
+	}
+	if res.Outcomes[1].Skipped || !res.Outcomes[1].Updated {
+		t.Fatalf("plex = %+v, want a would-update", res.Outcomes[1])
+	}
+}
+
+func TestExecutorEmptyExcludeListChangesNothing(t *testing.T) {
+	for _, list := range [][]string{nil, {}, {"other"}} {
+		upd := &fakeUpdater{sup: true}
+		e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+			stNamed("gitea", model.KindMinor), stNamed("plex", model.KindMajor), stNamed("old", model.KindUnknown),
+		}}, upd)
+		res := e.Run(context.Background(), Policy{Level: LevelMajor, ExcludeContainers: list}, false)
+		if !reflect.DeepEqual(upd.calls, []string{"gitea", "plex"}) {
+			t.Fatalf("list=%v: updated %v, want [gitea plex]", list, upd.calls)
+		}
+		if len(res.Outcomes) != 2 || res.Outcomes[0].Skipped || res.Outcomes[1].Skipped {
+			t.Fatalf("list=%v: outcomes %+v, want two updates", list, res.Outcomes)
+		}
+	}
+}
+
+// Skipped means an update was due and held back, so an excluded container
+// without an eligible update reports nothing.
+func TestExecutorExcludedWithoutEligibleUpdateReportsNothing(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+		stNamed("gitea", model.KindNone), stNamed("plex", model.KindMajor),
+	}}, upd)
+	res := e.Run(context.Background(), Policy{Level: LevelMinor, ExcludeContainers: []string{"gitea", "plex"}}, false)
+	if len(upd.calls) != 0 || len(res.Outcomes) != 0 {
+		t.Fatalf("calls=%v outcomes=%+v, want neither", upd.calls, res.Outcomes)
+	}
+}
+
+func TestExecutorExclusionWinsOverExcludeWord(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+		stWithChangelog("gitea", model.KindPatch, "BREAKING: config format changed"),
+	}}, upd)
+	res := e.Run(context.Background(), Policy{
+		Level: LevelPatch, ExcludeWords: []string{"breaking"}, ExcludeContainers: []string{"gitea"},
+	}, false)
+	if len(upd.calls) != 0 {
+		t.Fatalf("Update called for %v, want none", upd.calls)
+	}
+	if len(res.Outcomes) != 1 || !res.Outcomes[0].Skipped || res.Outcomes[0].Blocked {
+		t.Fatalf("outcomes = %+v, want Skipped and not Blocked", res.Outcomes)
+	}
+}
+
+func TestResultNotable(t *testing.T) {
+	cases := []struct {
+		name string
+		res  Result
+		want bool
+	}{
+		{"empty run", Result{}, false},
+		{"only skipped", Result{Outcomes: []Outcome{{Name: "gitea", Skipped: true}}}, false},
+		{"skipped and updated", Result{Outcomes: []Outcome{{Name: "gitea", Skipped: true}, {Name: "plex", Updated: true}}}, true},
+		{"skipped and blocked", Result{Outcomes: []Outcome{{Name: "gitea", Skipped: true}, {Name: "a", Blocked: true}}}, true},
+		{"skipped and failed", Result{Outcomes: []Outcome{{Name: "gitea", Skipped: true}, {Name: "a", Err: errors.New("boom")}}}, true},
+		{"only updated", Result{Outcomes: []Outcome{{Name: "plex", Updated: true}}}, true},
+	}
+	for _, c := range cases {
+		if got := c.res.Notable(); got != c.want {
+			t.Errorf("%s: Notable = %v, want %v", c.name, got, c.want)
+		}
+	}
+}

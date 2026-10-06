@@ -105,5 +105,19 @@
   "s_au_unit_days": "dagar",
   "s_llamaswap_url": "llama-swap-URL",
   "s_llamaswap_url_hint": "Fungerar med alla OpenAI-kompatibla servrar, till exempel llama-swap, LM Studio eller vLLM. När den är satt använder ShipLog den i stället för Ollama.",
-  "s_llamaswap_model": "llama-swap-modell"
+  "s_llamaswap_model": "llama-swap-modell",
+  "s_au_containers": "Containrar",
+  "s_au_containers_desc": "Välj vilka containrar den automatiska uppdateringen får uppdatera. Stänger du av en uppdaterar ShipLog den aldrig själv, så du uppdaterar den för hand. Manuella uppdateringar, changelogar och riskmärken förblir som de är. Klicka på Verkställ för att spara.",
+  "s_au_ct_off": "Automatisk uppdatering är av. Slå på den ovan för att välja containrar.",
+  "s_au_ct_loading": "Läser in containrar…",
+  "s_au_ct_none": "Inga containrar ännu. Den första genomsökningen kanske fortfarande pågår.",
+  "s_au_ct_gone": "hittades inte",
+  "d_autoLabel": "Uppdatera den här containern automatiskt",
+  "d_autoHintOn": "Ingår i ShipLogs schemalagda automatiska uppdatering.",
+  "d_autoHintOff": "Utesluten från ShipLogs schemalagda automatiska uppdatering. Att uppdatera den för hand fungerar fortfarande.",
+  "d_autoHintDisabled": "Schemalagd automatisk uppdatering är avstängd i ShipLogs inställningar.",
+  "d_autoSaving": "Sparar och startar om ShipLog…",
+  "d_autoFailed": "Det gick inte att spara. Ladda om sidan och försök igen.",
+  "d_autoOffBadge": "Automatisk uppdatering av",
+  "d_autoOffBadgeHint": "Utesluten från ShipLogs schemalagda automatiska uppdatering. Klicka för att ändra."
 }

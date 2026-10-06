@@ -21,6 +21,15 @@
 @keyframes sl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.55)}50%{box-shadow:0 0 0 4px rgba(255,59,48,0)}}
 @media (prefers-reduced-motion:reduce){.sl-amp.sl-crit{animation:none}}
 
+/* A container left out of the scheduled auto-update. Neutral grey, because it
+   is a choice and not a problem. */
+.sl-autoff{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:0 8px;vertical-align:middle;
+  font-size:12px;line-height:1.55;color:#8a8a8a;border:1px solid rgba(128,128,128,.4);border-radius:999px;
+  cursor:pointer;text-decoration:none;white-space:nowrap;text-align:left}
+.sl-autoff:hover{color:#3c8ac0;border-color:currentColor}
+.sl-autoff .sl-ico{width:12px;height:12px}
+html.cc-header-on .sl-autoff{border:none;background:rgba(128,128,128,.18)}
+
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
 .sl-pill .sl-dot{width:7px;height:7px;border-radius:50%}
@@ -185,6 +194,30 @@ html.cc-header-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
 /* The last card has no bottom margin, so the footer brings its own. */
 html.cc-header-on .sl-bubble .sl-bf{margin-top:8px}
+
+/* Auto-update switch under the window header. data-au: on, off, saving, error. */
+.sl-bubble .sl-aubar{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:9px 16px;
+  border-bottom:1px solid var(--sl-line)}
+.sl-bubble .sl-au-row{position:relative;display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+  user-select:none;color:var(--sl-txt);font-size:13px;font-weight:600}
+.sl-bubble .sl-au-row.sl-au-dis{cursor:default;opacity:.65}
+.sl-bubble .sl-au-cb{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
+.sl-bubble .sl-au-track{position:relative;width:34px;height:18px;flex:none;border-radius:999px;
+  background:var(--sl-line2);transition:background .15s}
+.sl-bubble .sl-au-track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+  background:#bdbdbd;transition:transform .15s,background .15s}
+.sl-bubble .sl-au-cb:checked + .sl-au-track{background:var(--cc-accent,#ff8c2f)}
+.sl-bubble .sl-au-cb:checked + .sl-au-track::after{transform:translateX(16px);background:var(--cc-accent-fg,#fff)}
+.sl-bubble .sl-au-cb:focus-visible + .sl-au-track{box-shadow:0 0 0 2px var(--cc-accent,#ff8c2f)}
+.sl-bubble .sl-au-cb:disabled + .sl-au-track{opacity:.6}
+.sl-bubble .sl-au-info{display:inline-flex;color:var(--sl-dim2);opacity:.7;cursor:help;outline:none}
+.sl-bubble .sl-au-info:hover,.sl-bubble .sl-au-info:focus{opacity:1;color:var(--sl-dim)}
+.sl-bubble .sl-au-info .sl-ico{width:15px;height:15px}
+.sl-bubble .sl-au-state{flex:1 1 160px;min-width:0;color:var(--sl-dim);font-size:12px;line-height:1.4}
+.sl-bubble .sl-aubar[data-au="error"] .sl-au-state{color:#e5645f}
+@media (prefers-reduced-motion:reduce){.sl-bubble .sl-au-track,.sl-bubble .sl-au-track::after{transition:none}}
+html.cc-header-on .sl-bubble .sl-aubar{border-bottom:none;background:var(--sl-card);margin:10px 16px 0;padding:9px 14px;
+  border-radius:min(var(--cc-b-radius,10px),10px);box-shadow:var(--cc-elev-1,0 1px 4px rgba(0,0,0,.35))}
 
 /* Update-all button, left of the Basic/Advanced toggle. */
 a.sl-updall {

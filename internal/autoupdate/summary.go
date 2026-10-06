@@ -15,9 +15,11 @@ func RenderSummary(res Result) (text, html string) {
 	if res.DryRun {
 		verb = "Would auto-update"
 	}
-	var updated, failed, blocked []Outcome
+	var updated, failed, blocked, skipped []Outcome
 	for _, o := range res.Outcomes {
 		switch {
+		case o.Skipped:
+			skipped = append(skipped, o)
 		case o.Blocked:
 			blocked = append(blocked, o)
 		case o.Err != nil:
@@ -59,6 +61,15 @@ func RenderSummary(res Result) (text, html string) {
 		}
 		fmt.Fprintf(&t, ". %d blocked: %s", len(blocked), strings.Join(tp, ", "))
 		fmt.Fprintf(&h, ". %d blocked: %s", len(blocked), strings.Join(hp, ", "))
+	}
+	if len(skipped) > 0 {
+		var tp, hp []string
+		for _, o := range skipped {
+			tp = append(tp, fmt.Sprintf("%s %s→%s (%s)", o.Name, verOr(o.From), verOr(o.To), o.Level))
+			hp = append(hp, fmt.Sprintf("%s <code>%s→%s</code> (%s)", esc(o.Name), esc(verOr(o.From)), esc(verOr(o.To)), esc(o.Level)))
+		}
+		fmt.Fprintf(&t, ". %d skipped (excluded from auto-update): %s", len(skipped), strings.Join(tp, ", "))
+		fmt.Fprintf(&h, ". %d skipped (excluded from auto-update): %s", len(skipped), strings.Join(hp, ", "))
 	}
 	return t.String(), h.String()
 }

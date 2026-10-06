@@ -105,5 +105,19 @@
   "s_au_unit_days": "dagen",
   "s_llamaswap_url": "llama-swap-URL",
   "s_llamaswap_url_hint": "Werkt met elke OpenAI-compatibele server, zoals llama-swap, LM Studio of vLLM. Als deze is ingesteld, gebruikt ShipLog hem in plaats van Ollama.",
-  "s_llamaswap_model": "llama-swap-model"
+  "s_llamaswap_model": "llama-swap-model",
+  "s_au_containers": "Containers",
+  "s_au_containers_desc": "Kies welke containers automatisch bijgewerkt mogen worden. Zet je er een uit, dan werkt ShipLog hem nooit zelf bij en werk je hem met de hand bij. Handmatige updates, changelogs en risicobadges blijven zoals ze zijn. Klik op Toepassen om op te slaan.",
+  "s_au_ct_off": "Automatisch bijwerken staat uit. Zet het hierboven aan om containers te kiezen.",
+  "s_au_ct_loading": "Containers laden…",
+  "s_au_ct_none": "Nog geen containers. De eerste scan loopt misschien nog.",
+  "s_au_ct_gone": "niet gevonden",
+  "d_autoLabel": "Deze container automatisch bijwerken",
+  "d_autoHintOn": "Opgenomen in het geplande automatisch bijwerken van ShipLog.",
+  "d_autoHintOff": "Uitgesloten van het geplande automatisch bijwerken van ShipLog. Met de hand bijwerken werkt nog steeds.",
+  "d_autoHintDisabled": "Gepland automatisch bijwerken staat uit in de instellingen van ShipLog.",
+  "d_autoSaving": "Opslaan en ShipLog herstarten…",
+  "d_autoFailed": "Opslaan mislukt. Laad de pagina opnieuw en probeer het nog eens.",
+  "d_autoOffBadge": "Automatisch bijwerken uit",
+  "d_autoOffBadgeHint": "Uitgesloten van het geplande automatisch bijwerken van ShipLog. Klik om te wijzigen."
 }

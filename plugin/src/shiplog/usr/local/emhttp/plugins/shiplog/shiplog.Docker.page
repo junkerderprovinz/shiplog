@@ -8,6 +8,11 @@ Tag="anchor"
 $slcfg     = parse_plugin_cfg("shiplog");
 $slConfirm = (!isset($slcfg['CONFIRM_UPDATE']) || $slcfg['CONFIRM_UPDATE'] !== 'false'); // default on
 $slSilent  = (isset($slcfg['SILENT_UPDATE'])  && $slcfg['SILENT_UPDATE']  === 'true');   // default off
+$slAuEn    = (isset($slcfg['AUTOUPDATE_ENABLED']) && $slcfg['AUTOUPDATE_ENABLED'] === 'true');
+$slAuExcl  = array();
+if (isset($slcfg['AUTOUPDATE_EXCLUDE_CONTAINERS'])) {
+  foreach (explode(',', $slcfg['AUTOUPDATE_EXCLUDE_CONTAINERS']) as $slN) { $slN = trim($slN); if ($slN !== '') $slAuExcl[] = $slN; }
+}
 $slLang    = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2)); // Unraid's configured language
 /* The d_* strings for the active language, over the English ones. */
 $slLangDir = '/usr/local/emhttp/plugins/shiplog/lang';
@@ -20,5 +25,5 @@ $slI18n = array();
 foreach ($slAll as $slK => $slV) { if (substr($slK, 0, 2) === 'd_') $slI18n[$slK] = $slV; }
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
-<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;</script>
+<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>,autoUpdate:{enabled:<?=$slAuEn?'true':'false'?>,exclude:<?=json_encode($slAuExcl, JSON_UNESCAPED_UNICODE)?>}};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;</script>
 <script defer src="<?autov('/plugins/shiplog/scripts/docker.js')?>"></script>

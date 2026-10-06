@@ -55,3 +55,34 @@ func TestRenderSummary_Blocked(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderSummary_Skipped(t *testing.T) {
+	res := Result{Outcomes: []Outcome{
+		{Name: "plex", From: "1.2.3", To: "1.2.4", Level: "patch", Updated: true},
+		{Name: "gitea", From: "0.42.1", To: "0.43.0", Level: "minor", Skipped: true},
+	}}
+	text, html := RenderSummary(res)
+	for _, want := range []string{"Auto-updated 1", "plex", "1 skipped (excluded from auto-update)", "gitea 0.42.1→0.43.0 (minor)"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text missing %q: %s", want, text)
+		}
+	}
+	if !strings.Contains(html, "1 skipped (excluded from auto-update)") || !strings.Contains(html, "gitea") {
+		t.Errorf("html missing the skipped clause: %s", html)
+	}
+	for _, bad := range []string{"failed", "blocked"} {
+		if strings.Contains(text, bad) {
+			t.Errorf("a skipped outcome must not read as %q: %s", bad, text)
+		}
+	}
+
+	dry, _ := RenderSummary(Result{DryRun: true, Outcomes: []Outcome{{Name: "gitea", Level: "minor", Skipped: true}}})
+	for _, want := range []string{"Auto-update run", "1 skipped (excluded from auto-update)", "gitea ?→? (minor)"} {
+		if !strings.Contains(dry, want) {
+			t.Errorf("skipped-only dry run missing %q: %s", want, dry)
+		}
+	}
+	if strings.Contains(dry, "Would auto-update") {
+		t.Errorf("a skipped-only dry run must not claim anything would be updated: %s", dry)
+	}
+}

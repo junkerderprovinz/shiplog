@@ -1,6 +1,7 @@
 package autoupdate
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
@@ -91,6 +92,48 @@ func TestParseLevel(t *testing.T) {
 	} {
 		if got := ParseLevel(s); got != want {
 			t.Errorf("ParseLevel(%q) = %d, want %d", s, got, want)
+		}
+	}
+}
+
+func TestParseExcludeContainers(t *testing.T) {
+	cases := []struct {
+		in   string
+		want []string
+	}{
+		{"", nil},
+		{"   ", nil},
+		{"gitea", []string{"gitea"}},
+		{"gitea,plex", []string{"gitea", "plex"}},
+		{" gitea ,, plex , ", []string{"gitea", "plex"}},
+		{"Gitea,gitea,GITEA,plex", []string{"Gitea", "plex"}},
+	}
+	for _, c := range cases {
+		if got := ParseExcludeContainers(c.in); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("ParseExcludeContainers(%q) = %v, want %v", c.in, got, c.want)
+		}
+	}
+}
+
+func TestContainerExcluded(t *testing.T) {
+	list := []string{"Gitea", "plex"}
+	cases := []struct {
+		name string
+		list []string
+		want bool
+	}{
+		{"Gitea", list, true},
+		{"gitea", list, true},
+		{"PLEX", list, true},
+		{"sonarr", list, false},
+		{"Gitea2", list, false},
+		{"Git", list, false},
+		{"", list, false},
+		{"Gitea", nil, false},
+	}
+	for _, c := range cases {
+		if got := ContainerExcluded(c.name, c.list); got != c.want {
+			t.Errorf("ContainerExcluded(%q, %v) = %v, want %v", c.name, c.list, got, c.want)
 		}
 	}
 }

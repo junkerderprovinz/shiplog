@@ -105,5 +105,19 @@
   "s_au_unit_days": "jours",
   "s_llamaswap_url": "URL llama-swap",
   "s_llamaswap_url_hint": "Fonctionne avec tout serveur compatible OpenAI, comme llama-swap, LM Studio ou vLLM. Si elle est renseignée, ShipLog l'utilise à la place d'Ollama.",
-  "s_llamaswap_model": "Modèle llama-swap"
+  "s_llamaswap_model": "Modèle llama-swap",
+  "s_au_containers": "Conteneurs",
+  "s_au_containers_desc": "Choisis les conteneurs que la mise à jour automatique peut mettre à jour. Désactive-en un et ShipLog ne le mettra jamais à jour de lui-même, tu le mets donc à jour à la main. Les mises à jour manuelles, les changelogs et les badges de risque restent tels quels. Clique sur Appliquer pour enregistrer.",
+  "s_au_ct_off": "La mise à jour automatique est désactivée. Active-la ci-dessus pour choisir les conteneurs.",
+  "s_au_ct_loading": "Chargement des conteneurs…",
+  "s_au_ct_none": "Aucun conteneur pour l'instant. La première analyse est peut-être encore en cours.",
+  "s_au_ct_gone": "introuvable",
+  "d_autoLabel": "Mettre à jour ce conteneur automatiquement",
+  "d_autoHintOn": "Inclus dans la mise à jour automatique planifiée de ShipLog.",
+  "d_autoHintOff": "Exclu de la mise à jour automatique planifiée de ShipLog. La mise à jour à la main fonctionne toujours.",
+  "d_autoHintDisabled": "La mise à jour automatique planifiée est désactivée dans les réglages de ShipLog.",
+  "d_autoSaving": "Enregistrement et redémarrage de ShipLog…",
+  "d_autoFailed": "Échec de l'enregistrement. Recharge la page et réessaie.",
+  "d_autoOffBadge": "Mise à jour auto désactivée",
+  "d_autoOffBadgeHint": "Exclu de la mise à jour automatique planifiée de ShipLog. Clique pour modifier."
 }

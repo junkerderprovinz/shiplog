@@ -10,11 +10,12 @@ func TestLoadAutoUpdateDefaults(t *testing.T) {
 	for _, k := range []string{
 		"AUTOUPDATE_ENABLED", "AUTOUPDATE_LEVEL", "AUTOUPDATE_DIGEST", "AUTOUPDATE_DRYRUN",
 		"AUTOUPDATE_SCHED_MODE", "AUTOUPDATE_SCHED_TIME", "AUTOUPDATE_SCHED_EVERY",
+		"AUTOUPDATE_EXCLUDE_CONTAINERS",
 	} {
 		t.Setenv(k, "")
 	}
 	au := config.Load().AutoUpdate
-	if au.Enabled || au.Level != "off" || au.Digest || au.DryRun || au.SchedMode != "off" || au.SchedEvery != 6 {
+	if au.Enabled || au.Level != "off" || au.Digest || au.DryRun || au.SchedMode != "off" || au.SchedEvery != 6 || au.ExcludeContainers != "" {
 		t.Fatalf("defaults must be safe/off, got %+v", au)
 	}
 }
@@ -26,8 +27,9 @@ func TestLoadAutoUpdateParsed(t *testing.T) {
 	t.Setenv("AUTOUPDATE_DRYRUN", "yes")
 	t.Setenv("AUTOUPDATE_SCHED_MODE", "hours")
 	t.Setenv("AUTOUPDATE_SCHED_EVERY", "6")
+	t.Setenv("AUTOUPDATE_EXCLUDE_CONTAINERS", "gitea,plex")
 	au := config.Load().AutoUpdate
-	if !au.Enabled || au.Level != "minor" || !au.Digest || !au.DryRun || au.SchedMode != "hours" || au.SchedEvery != 6 {
+	if !au.Enabled || au.Level != "minor" || !au.Digest || !au.DryRun || au.SchedMode != "hours" || au.SchedEvery != 6 || au.ExcludeContainers != "gitea,plex" {
 		t.Fatalf("parse failed: %+v", au)
 	}
 }

@@ -105,5 +105,19 @@
   "s_au_unit_days": "일",
   "s_llamaswap_url": "llama-swap URL",
   "s_llamaswap_url_hint": "llama-swap, LM Studio, vLLM 등 모든 OpenAI 호환 서버에서 작동합니다. 설정하면 ShipLog가 Ollama 대신 이 서버를 사용합니다.",
-  "s_llamaswap_model": "llama-swap 모델"
+  "s_llamaswap_model": "llama-swap 모델",
+  "s_au_containers": "컨테이너",
+  "s_au_containers_desc": "자동 업데이트가 업데이트할 수 있는 컨테이너를 선택하세요. 컨테이너를 끄면 ShipLog가 스스로 업데이트하지 않으므로 직접 업데이트해야 합니다. 수동 업데이트, 변경 로그, 위험 배지는 그대로 유지됩니다. 저장하려면 적용을 클릭하세요.",
+  "s_au_ct_off": "자동 업데이트가 꺼져 있습니다. 컨테이너를 선택하려면 위에서 켜세요.",
+  "s_au_ct_loading": "컨테이너 불러오는 중…",
+  "s_au_ct_none": "아직 컨테이너가 없습니다. 첫 검사가 아직 진행 중일 수 있습니다.",
+  "s_au_ct_gone": "찾을 수 없음",
+  "d_autoLabel": "이 컨테이너 자동 업데이트",
+  "d_autoHintOn": "ShipLog의 예약된 자동 업데이트에 포함됩니다.",
+  "d_autoHintOff": "ShipLog의 예약된 자동 업데이트에서 제외되었습니다. 수동 업데이트는 계속 가능합니다.",
+  "d_autoHintDisabled": "예약된 자동 업데이트가 ShipLog 설정에서 꺼져 있습니다.",
+  "d_autoSaving": "저장하고 ShipLog를 다시 시작하는 중…",
+  "d_autoFailed": "저장하지 못했습니다. 페이지를 새로 고친 뒤 다시 시도하세요.",
+  "d_autoOffBadge": "자동 업데이트 꺼짐",
+  "d_autoOffBadgeHint": "ShipLog의 예약된 자동 업데이트에서 제외되었습니다. 클릭하여 변경하세요."
 }

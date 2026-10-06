@@ -105,5 +105,19 @@
   "s_au_unit_days": "dias",
   "s_llamaswap_url": "URL do llama-swap",
   "s_llamaswap_url_hint": "Funciona com qualquer servidor compatível com OpenAI, como llama-swap, LM Studio ou vLLM. Quando definida, o ShipLog a usa no lugar do Ollama.",
-  "s_llamaswap_model": "Modelo do llama-swap"
+  "s_llamaswap_model": "Modelo do llama-swap",
+  "s_au_containers": "Contêineres",
+  "s_au_containers_desc": "Escolha quais contêineres a atualização automática pode atualizar. Desative um e o ShipLog nunca o atualiza por conta própria, então você o atualiza manualmente. Atualizações manuais, changelogs e selos de risco continuam como estão. Clique em Aplicar para salvar.",
+  "s_au_ct_off": "A atualização automática está desativada. Ative-a acima para escolher contêineres.",
+  "s_au_ct_loading": "Carregando contêineres…",
+  "s_au_ct_none": "Ainda não há contêineres. A primeira verificação pode estar em andamento.",
+  "s_au_ct_gone": "não encontrado",
+  "d_autoLabel": "Atualizar este contêiner automaticamente",
+  "d_autoHintOn": "Incluído na atualização automática agendada do ShipLog.",
+  "d_autoHintOff": "Fora da atualização automática agendada do ShipLog. Atualizar manualmente continua funcionando.",
+  "d_autoHintDisabled": "A atualização automática agendada está desativada nas configurações do ShipLog.",
+  "d_autoSaving": "Salvando e reiniciando o ShipLog…",
+  "d_autoFailed": "Não foi possível salvar. Recarregue a página e tente novamente.",
+  "d_autoOffBadge": "Atualização automática desativada",
+  "d_autoOffBadgeHint": "Fora da atualização automática agendada do ShipLog. Clique para alterar."
 }

@@ -105,5 +105,19 @@
   "s_au_unit_days": "dni",
   "s_llamaswap_url": "URL llama-swap",
   "s_llamaswap_url_hint": "Działa z każdym serwerem zgodnym z OpenAI, np. llama-swap, LM Studio czy vLLM. Gdy jest ustawiony, ShipLog używa go zamiast Ollama.",
-  "s_llamaswap_model": "Model llama-swap"
+  "s_llamaswap_model": "Model llama-swap",
+  "s_au_containers": "Kontenery",
+  "s_au_containers_desc": "Wybierz, które kontenery może aktualizować automatyczna aktualizacja. Jeśli wyłączysz któryś, ShipLog nigdy nie zaktualizuje go sam, więc aktualizujesz go ręcznie. Ręczne aktualizacje, changelogi i znaczniki ryzyka pozostają bez zmian. Kliknij Zastosuj, aby zapisać.",
+  "s_au_ct_off": "Automatyczna aktualizacja jest wyłączona. Włącz ją powyżej, aby wybrać kontenery.",
+  "s_au_ct_loading": "Wczytywanie kontenerów…",
+  "s_au_ct_none": "Brak kontenerów. Pierwsze skanowanie może jeszcze trwać.",
+  "s_au_ct_gone": "nie znaleziono",
+  "d_autoLabel": "Aktualizuj ten kontener automatycznie",
+  "d_autoHintOn": "Objęty zaplanowaną automatyczną aktualizacją ShipLog.",
+  "d_autoHintOff": "Pominięty w zaplanowanej automatycznej aktualizacji ShipLog. Ręczna aktualizacja nadal działa.",
+  "d_autoHintDisabled": "Zaplanowana automatyczna aktualizacja jest wyłączona w ustawieniach ShipLog.",
+  "d_autoSaving": "Zapisywanie i restart ShipLog…",
+  "d_autoFailed": "Nie udało się zapisać. Odśwież stronę i spróbuj ponownie.",
+  "d_autoOffBadge": "Bez automatycznej aktualizacji",
+  "d_autoOffBadgeHint": "Pominięty w zaplanowanej automatycznej aktualizacji ShipLog. Kliknij, aby zmienić."
 }
