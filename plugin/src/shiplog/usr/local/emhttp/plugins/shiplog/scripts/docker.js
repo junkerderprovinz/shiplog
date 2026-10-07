@@ -159,9 +159,10 @@
     try {
       const res = await fetch("/update.php", { method: "POST", body });
       const txt = await res.text();
-      // Unraid answers a POST with a bad CSRF token with an empty 200; a run
-      // that went through echoes the command's log lines.
-      if (!res.ok || txt.indexOf("addLog") < 0) return false;
+      // Unraid answers a POST with a bad CSRF token with an empty 200. Its
+      // update.htm defines addLog either way, so only a call proves that the
+      // restart ran and echoed its log lines.
+      if (!res.ok || txt.indexOf("<script>addLog(") < 0) return false;
       auExclude = next;
       return true;
     } catch (e) { return false; }
