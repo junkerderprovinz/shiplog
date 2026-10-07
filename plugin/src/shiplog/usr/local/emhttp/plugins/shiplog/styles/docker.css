@@ -1,8 +1,9 @@
 /* ShipLog control and changelog window in the Docker tab. */
 
 /* A block of its own keeps the status text its own last line, so Unraid's
-   justify does not stretch it. */
-.sl-chiprow{display:block;width:fit-content;margin-top:3px}
+   justify does not stretch it. The gap instead of a margin keeps a pill that
+   wraps under the chip flush with it. */
+.sl-chiprow{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;width:fit-content;margin-top:3px}
 .sl-chip{display:inline-flex;align-items:center;gap:6px;
   font:13px/1.5 inherit;color:#8a8a8a;cursor:pointer;vertical-align:middle;text-decoration:none;text-align:left}
 .sl-chip:hover{color:#3c8ac0}
@@ -26,7 +27,7 @@
 
 /* A container left out of the scheduled auto-update. Neutral grey, because it
    is a choice and not a problem. */
-.sl-autoff{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:0 8px;vertical-align:middle;
+.sl-autoff{display:inline-flex;align-items:center;gap:5px;padding:0 8px;vertical-align:middle;
   font-size:12px;line-height:1.55;color:#8a8a8a;border:1px solid rgba(128,128,128,.4);border-radius:999px;
   cursor:pointer;text-decoration:none;white-space:nowrap;text-align:left}
 .sl-autoff:hover{color:#3c8ac0;border-color:currentColor}
