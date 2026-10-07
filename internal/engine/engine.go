@@ -60,6 +60,7 @@ type (
 	// caFeedLookuper lets tests fake a *cafeed.Feed.
 	caFeedLookuper interface {
 		Lookup(name, repo, templateURL string) (cafeed.Result, bool)
+		LookupImage(name, repo string) (cafeed.Result, bool)
 		CrawlsTemplate(templateURL string) bool
 	}
 )
@@ -82,6 +83,9 @@ type Engine struct {
 	templateURLs    func() map[string]string // container name -> template <TemplateURL>
 	// checkURL returns the HTTP status of a GET, or 0 on a transport error.
 	checkURL func(ctx context.Context, url string) int
+	// repoStatus is checkURL without following redirects, so a moved
+	// repository shows as one.
+	repoStatus func(ctx context.Context, url string) int
 	// caFeed loads the Community Applications catalog once per sweep. Unlike the
 	// template URL probe it also sees an app that CA demoted or blacklisted.
 	caFeed func(ctx context.Context) (caFeedLookuper, error)
@@ -137,22 +141,33 @@ func New(c Collector, r Resolver, cl Changelogger, s Storer, interval time.Durat
 		templateURLs: func() map[string]string {
 			return templates.TemplateURLs(templates.Dir)
 		},
-		checkURL: defaultCheckURL,
+		checkURL:   defaultCheckURL,
+		repoStatus: defaultRepoStatus,
 	}
 }
 
 // availClient has a short timeout so a slow host cannot hold up a sweep.
 var availClient = &http.Client{Timeout: 8 * time.Second}
 
-// defaultCheckURL uses GET because not every host answers HEAD, and template
-// files are small.
-func defaultCheckURL(ctx context.Context, url string) int {
+// repoClient answers a redirect itself instead of following it.
+var repoClient = &http.Client{
+	Timeout:       8 * time.Second,
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
+
+func defaultCheckURL(ctx context.Context, url string) int { return getStatus(ctx, availClient, url) }
+
+func defaultRepoStatus(ctx context.Context, url string) int { return getStatus(ctx, repoClient, url) }
+
+// getStatus uses GET because not every host answers HEAD, and template files
+// are small. A transport error reads as 0.
+func getStatus(ctx context.Context, client *http.Client, url string) int {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return 0
 	}
 	req.Header.Set("User-Agent", "shiplog")
-	resp, err := availClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0
 	}
@@ -414,30 +429,31 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 			// demotion in the feed.
 			st.Unmaintained, st.UnmaintainedReason = true, "Source repository archived"
 		default:
-			// A conclusive feed answer beats the template URL probe, because a
-			// template file also disappears when its repo or branch moves while
-			// the app stays listed. Both checks apply only to apps that came from
-			// CA. An app without a template URL, with a source override, or with
-			// a template in a repository CA does not crawl is the user's own and
-			// would otherwise always read as removed.
+			// An app without a template URL or with a source override is the
+			// user's own and would otherwise always read as removed.
 			_, selfSourced := overrides[c.Repo]
-			caApp := c.Managed && u != "" && !selfSourced && caFeed != nil && caFeed.CrawlsTemplate(u)
-			feedConclusive := false
-			if caApp {
-				if res, ok := caFeed.Lookup(c.Name, c.Repo, u); ok {
-					feedConclusive = true
-					switch {
-					case !res.Listed && res.Note != "":
-						st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications: "+res.Note
-					case !res.Listed:
-						st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
-					case res.Deprecated:
-						st.CADeprecated, st.CADeprecatedNote = true, res.Note
-					}
-				}
+			if !c.Managed || u == "" || selfSourced || caFeed == nil {
+				break
 			}
-			if caApp && !feedConclusive && e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
-				st.Unmaintained, st.UnmaintainedReason = true, "Removed from Community Applications"
+			if caFeed.CrawlsTemplate(u) {
+				// A conclusive feed answer beats the template URL probe, because
+				// a template file also disappears when its repo or branch moves
+				// while the app stays listed.
+				if res, ok := caFeed.Lookup(c.Name, c.Repo, u); ok {
+					applyCAResult(&st, res)
+				} else if e.checkURL != nil && e.checkURL(ctx, u) == http.StatusNotFound && e.repoGone(ctx, u) {
+					st.Unmaintained, st.UnmaintainedReason = true, removedFromCA
+				}
+				break
+			}
+			// A template from a repository CA does not crawl is the user's own or
+			// an old copy of a repository that moved. The image still finds a
+			// listed app. An unlisted one counts as removed only when its
+			// repository moved, because the user's own stays where it is.
+			if res, found := caFeed.LookupImage(c.Name, c.Repo); found {
+				applyCAResult(&st, res)
+			} else if e.repoMoved(ctx, u) {
+				st.Unmaintained, st.UnmaintainedReason = true, removedFromCA
 			}
 		}
 	}
@@ -460,6 +476,35 @@ func (e *Engine) repoGone(ctx context.Context, templateURL string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// repoMoved reports whether the GitHub repository of templateURL answers with a
+// redirect, which is how GitHub serves a renamed or transferred repository. A
+// 404 proves nothing here, since a private repository answers 404 as well.
+func (e *Engine) repoMoved(ctx context.Context, templateURL string) bool {
+	repoURL, ok := githubRepoURL(templateURL)
+	if !ok || e.repoStatus == nil {
+		return false
+	}
+	switch e.repoStatus(ctx, repoURL) {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		return true
+	}
+	return false
+}
+
+const removedFromCA = "Removed from Community Applications"
+
+// applyCAResult records a conclusive answer from the CA feed.
+func applyCAResult(st *model.UpdateStatus, res cafeed.Result) {
+	switch {
+	case !res.Listed && res.Note != "":
+		st.Unmaintained, st.UnmaintainedReason = true, removedFromCA+": "+res.Note
+	case !res.Listed:
+		st.Unmaintained, st.UnmaintainedReason = true, removedFromCA
+	case res.Deprecated:
+		st.CADeprecated, st.CADeprecatedNote = true, res.Note
 	}
 }
 

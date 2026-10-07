@@ -452,3 +452,52 @@ func TestFetcherLoadErrorsOnlyWhenNothingCachedAtAll(t *testing.T) {
 		t.Errorf("error should be identifiable as coming from cafeed, got: %v", err)
 	}
 }
+
+func TestLookupImageFindsAppFromMovedTemplateRepo(t *testing.T) {
+	f := feedFrom([]Entry{{
+		Name: "binhex-teamspeak", Repository: "ghcr.io/binhex/arch-teamspeak",
+		TemplateURL: "https://raw.githubusercontent.com/binhex/templates/main/unraid/binhex/templates/teamspeak.xml",
+	}}, nil, nil)
+	res, found := f.LookupImage("TeamSpeak", "docker.io/binhex/arch-teamspeak")
+	if !found || !res.Listed {
+		t.Fatalf("an image CA lists under its new template repo must read as listed, got %+v found=%v", res, found)
+	}
+}
+
+func TestLookupImagePrefersTheTemplateNamedLikeTheContainer(t *testing.T) {
+	f := feedFrom([]Entry{
+		{Name: "Plex-Other", Repository: "plexinc/pms-docker"},
+		{Name: "Plex", Repository: "plexinc/pms-docker", Deprecated: true, ModeratorComment: "use the official one"},
+	}, nil, nil)
+	res, found := f.LookupImage("plex", "plexinc/pms-docker")
+	if !found || !res.Deprecated || res.Note != "use the official one" {
+		t.Fatalf("want the same-named template's deprecation, got %+v found=%v", res, found)
+	}
+}
+
+func TestLookupImageListedInPreviousCrawlOnly(t *testing.T) {
+	prev := feedFrom([]Entry{{Name: "A", Repository: "x/a"}}, nil, nil)
+	cur := feedFrom([]Entry{{Name: "B", Repository: "x/b"}}, nil, prev)
+	if res, found := cur.LookupImage("A", "x/a"); !found || !res.Listed {
+		t.Fatalf("an image the previous crawl still had must not read as gone, got %+v found=%v", res, found)
+	}
+}
+
+func TestLookupImageBlacklisted(t *testing.T) {
+	f := feedFrom(nil, map[string]string{"oreandawe/storjshare-cli": "Deprecated by the author"}, nil)
+	res, found := f.LookupImage("Storj", "oreandawe/storjshare-cli:latest")
+	if !found || res.Listed || res.Note != "Deprecated by the author" {
+		t.Fatalf("want a blacklisted image unlisted with its reason, got %+v found=%v", res, found)
+	}
+}
+
+func TestLookupImageUnknownImageIsNotFound(t *testing.T) {
+	prev := feedFrom([]Entry{{Name: "A", Repository: "x/a"}}, nil, nil)
+	cur := feedFrom([]Entry{{Name: "A", Repository: "x/a"}}, nil, prev)
+	if _, found := cur.LookupImage("TrialYard", "ghcr.io/junkerderprovinz/trialyard"); found {
+		t.Fatal("an image neither crawl lists must not be found")
+	}
+	if _, found := cur.LookupImage("NoImage", ""); found {
+		t.Fatal("a container without a repo must not be found")
+	}
+}

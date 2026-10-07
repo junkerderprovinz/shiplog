@@ -10,7 +10,8 @@
 //
 // Absence means "removed" only for an app CA once carried. A template from a
 // repository CA does not crawl, such as the user's own, is absent by nature,
-// so CrawlsTemplate gates every verdict.
+// so CrawlsTemplate decides between Lookup and LookupImage, which finds such an
+// app only by its image.
 package cafeed
 
 import (
@@ -243,6 +244,36 @@ func (f *Feed) Lookup(name, repo, templateURL string) (Result, bool) {
 	}
 	if reason, blacklisted := f.blacklisted[normalizeRepo(e.Repository)]; blacklisted {
 		return Result{Listed: false, Note: reason}, true
+	}
+	return Result{Listed: true, Deprecated: e.Deprecated, Note: e.ModeratorComment}, true
+}
+
+// LookupImage finds an app whose template comes from a repository CA does not
+// crawl, such as an old copy of a repository that moved. Only the image ties
+// such an app to a listing; the name picks among several templates of one
+// image. found=false means neither crawl lists the image, which proves nothing
+// on its own, because the user's own templates are never listed.
+func (f *Feed) LookupImage(name, repo string) (res Result, found bool) {
+	nr := normalizeRepo(repo)
+	if nr == "" {
+		return Result{}, false
+	}
+	if reason, blacklisted := f.blacklisted[nr]; blacklisted {
+		return Result{Listed: false, Note: reason}, true
+	}
+	candidates := f.byRepo[nr]
+	if len(candidates) == 0 {
+		if f.previous != nil && len(f.previous.byRepo[nr]) > 0 {
+			return Result{Listed: true}, true
+		}
+		return Result{}, false
+	}
+	e := candidates[0]
+	for _, c := range candidates {
+		if normalizeName(c.Name) == normalizeName(name) {
+			e = c
+			break
+		}
 	}
 	return Result{Listed: true, Deprecated: e.Deprecated, Note: e.ModeratorComment}, true
 }
