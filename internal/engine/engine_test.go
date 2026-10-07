@@ -15,12 +15,15 @@ import (
 )
 
 // fakeCAFeed answers every lookup with the same result. personal marks a
-// template CA does not crawl, and lookups counts the lookups made anyway.
+// template CA does not crawl, and lookups counts the lookups made anyway. image
+// and imageFound answer LookupImage.
 type fakeCAFeed struct {
-	result   cafeed.Result
-	ok       bool
-	personal bool
-	lookups  *atomic.Int32
+	result     cafeed.Result
+	ok         bool
+	personal   bool
+	lookups    *atomic.Int32
+	image      cafeed.Result
+	imageFound bool
 }
 
 func (f fakeCAFeed) Lookup(name, repo, templateURL string) (cafeed.Result, bool) {
@@ -29,6 +32,8 @@ func (f fakeCAFeed) Lookup(name, repo, templateURL string) (cafeed.Result, bool)
 	}
 	return f.result, f.ok
 }
+
+func (f fakeCAFeed) LookupImage(string, string) (cafeed.Result, bool) { return f.image, f.imageFound }
 
 func (f fakeCAFeed) CrawlsTemplate(string) bool { return !f.personal }
 
@@ -458,6 +463,7 @@ func TestSweepOwnAppWithTemplateURLIsNeverFlaggedByCA(t *testing.T) {
 	}
 	var probes atomic.Int32
 	e.checkURL = func(context.Context, string) int { probes.Add(1); return 404 } // private repo: raw URL and repo page both 404
+	e.repoStatus = func(context.Context, string) int { return 404 }              // private, not moved
 	var lookups atomic.Int32
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		// What a lookup would answer if asked: not listed, with a deprecated
@@ -501,6 +507,7 @@ func TestSweepClearsStoredFalseCAFlagOnOwnApp(t *testing.T) {
 		return map[string]string{"ownapp": "https://raw.githubusercontent.com/me/own-app/main/unraid/own-app.xml"}
 	}
 	e.checkURL = func(context.Context, string) int { return 200 }
+	e.repoStatus = func(context.Context, string) int { return 200 }
 	e.caFeed = func(context.Context) (caFeedLookuper, error) {
 		return fakeCAFeed{personal: true, ok: true, result: cafeed.Result{Listed: false}}, nil
 	}
@@ -1215,5 +1222,61 @@ func TestSweepPrunesOrphanedRows(t *testing.T) {
 	}
 	if _, ok := st.rows["live"]; !ok {
 		t.Error("live container row was wrongly pruned")
+	}
+}
+
+// A template from a repository CA does not crawl gets a verdict only through
+// its image, or as removed once GitHub says the repository moved.
+func TestSweepUncrawledTemplateVerdicts(t *testing.T) {
+	cases := []struct {
+		name       string
+		image      cafeed.Result
+		imageFound bool
+		repoStatus int
+		wantUnm    string
+		wantDep    bool
+	}{
+		{name: "listed under a moved template", image: cafeed.Result{Listed: true}, imageFound: true, repoStatus: 200},
+		{name: "deprecated under its image", image: cafeed.Result{Listed: true, Deprecated: true, Note: "use X"}, imageFound: true, repoStatus: 200, wantDep: true},
+		{name: "blacklisted image", image: cafeed.Result{Listed: false, Note: "gone from Docker Hub"}, imageFound: true, repoStatus: 200, wantUnm: "Removed from Community Applications: gone from Docker Hub"},
+		{name: "unlisted from a renamed repo", repoStatus: 301, wantUnm: "Removed from Community Applications"},
+		{name: "unlisted own repo in place", repoStatus: 200},
+		{name: "unlisted private repo", repoStatus: 404},
+		{name: "unlisted, GitHub unreachable", repoStatus: 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			col := fakeCollector{list: []model.Container{
+				{ID: "a", Name: "Storj", Repo: "docker.io/storjlabs/storagenode", Tag: "latest", Digest: "sha256:a", Managed: true},
+			}}
+			res := fakeResolver{byRepo: map[string]resolveResult{"docker.io/storjlabs/storagenode": {tag: "latest", dig: "sha256:a"}}}
+			st := &fakeStore{}
+			e := New(col, res, &fakeChangelog{}, st, time.Hour)
+			e.templateURLs = func() map[string]string {
+				return map[string]string{"storj": "https://raw.githubusercontent.com/old/templates/master/storagenode.xml"}
+			}
+			var probed []string
+			e.checkURL = func(_ context.Context, url string) int { t.Errorf("unexpected template probe: %s", url); return 0 }
+			e.repoStatus = func(_ context.Context, url string) int { probed = append(probed, url); return tc.repoStatus }
+			e.caFeed = func(context.Context) (caFeedLookuper, error) {
+				return fakeCAFeed{personal: true, image: tc.image, imageFound: tc.imageFound}, nil
+			}
+			if err := e.Sweep(context.Background()); err != nil {
+				t.Fatalf("sweep: %v", err)
+			}
+			row := st.rows["a"]
+			if row.UnmaintainedReason != tc.wantUnm || row.Unmaintained != (tc.wantUnm != "") {
+				t.Errorf("unmaintained = %v %q, want %q", row.Unmaintained, row.UnmaintainedReason, tc.wantUnm)
+			}
+			if row.CADeprecated != tc.wantDep {
+				t.Errorf("deprecated = %v, want %v", row.CADeprecated, tc.wantDep)
+			}
+			if tc.imageFound && len(probed) > 0 {
+				t.Errorf("an app found by its image needs no repository probe, got %v", probed)
+			}
+			if !tc.imageFound && (len(probed) != 1 || probed[0] != "https://github.com/old/templates") {
+				t.Errorf("want one probe of the template repository, got %v", probed)
+			}
+		})
 	}
 }
