@@ -11,9 +11,9 @@ func RenderSummary(res Result) (text, html string) {
 	if len(res.Outcomes) == 0 {
 		return "", ""
 	}
-	verb := "Auto-updated"
+	verb, run := "Auto-updated", "Auto-update run"
 	if res.DryRun {
-		verb = "Would auto-update"
+		verb, run = "Would auto-update", "Auto-update dry run"
 	}
 	var updated, failed, blocked, skipped, current []Outcome
 	for _, o := range res.Outcomes {
@@ -43,8 +43,8 @@ func RenderSummary(res Result) (text, html string) {
 		fmt.Fprintf(&t, "%s %d: %s", verb, len(updated), strings.Join(tp, ", "))
 		fmt.Fprintf(&h, "%s %d: %s", verb, len(updated), strings.Join(hp, ", "))
 	} else {
-		t.WriteString("Auto-update run")
-		h.WriteString("Auto-update run")
+		t.WriteString(run)
+		h.WriteString(run)
 	}
 	if len(failed) > 0 {
 		var tp, hp []string
