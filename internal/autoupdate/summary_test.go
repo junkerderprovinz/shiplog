@@ -77,13 +77,17 @@ func TestRenderSummary_Skipped(t *testing.T) {
 	}
 
 	dry, _ := RenderSummary(Result{DryRun: true, Outcomes: []Outcome{{Name: "gitea", Level: "minor", Skipped: true}}})
-	for _, want := range []string{"Auto-update run", "1 skipped (excluded from auto-update)", "gitea ?→? (minor)"} {
+	for _, want := range []string{"Auto-update dry run", "1 skipped (excluded from auto-update)", "gitea ?→? (minor)"} {
 		if !strings.Contains(dry, want) {
 			t.Errorf("skipped-only dry run missing %q: %s", want, dry)
 		}
 	}
 	if strings.Contains(dry, "Would auto-update") {
 		t.Errorf("a skipped-only dry run must not claim anything would be updated: %s", dry)
+	}
+	live, _ := RenderSummary(Result{Outcomes: []Outcome{{Name: "gitea", Level: "minor", Skipped: true}}})
+	if !strings.Contains(live, "Auto-update run") || strings.Contains(live, "dry") {
+		t.Errorf("a skipped-only real run must read as a run, not a dry run: %s", live)
 	}
 }
 
