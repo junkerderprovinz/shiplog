@@ -152,9 +152,11 @@ html.cc-header-on .sl-pill.sl-dep{border:none}
 .sl-bubble .sl-raw .sp{height:6px}
 .sl-bubble .sl-raw code{background:var(--sl-bg);border:1px solid var(--sl-line);border-radius:4px;padding:0 4px}
 /* With CannonadeCommand, sections are lifted cards separated by margin, never
-   by a line, and the window uses the #1a1a1a frame of Unraid's update window.
-   The colour change between header and card separates them without a shadow. */
-html.cc-header-on .sl-bubble{border:none;--sl-bg:#1a1a1a}
+   by a line, and a dark window uses the #1a1a1a frame of Unraid's update window.
+   A light one keeps CC's white window surface under its dark header text. The
+   colour change between header and card separates them without a shadow. */
+html.cc-header-on .sl-bubble{border:none}
+html.cc-header-on .sl-bubble:not(.sl-light){--sl-bg:#1a1a1a}
 html.cc-header-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:none}
 /* Like the update window, buttons get no outline: the primary action is filled
    with the accent, the external link with the neutral card colour. */
