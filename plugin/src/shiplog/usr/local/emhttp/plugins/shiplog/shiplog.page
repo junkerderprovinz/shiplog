@@ -153,8 +153,11 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   .sl-ct .sl-ct-item{min-height:30px;min-width:0}
   .sl-ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sl-ct-item small{flex:none;color:var(--dim2);font-size:11.5px}
-  .sl-ct-item.sl-ct-pin{flex-wrap:wrap;row-gap:0;padding:3px 0}
-  .sl-ct-item small.sl-ct-newer{color:var(--cc-info,#4f8fd6);flex:0 0 100%;padding-left:21px;margin-top:-3px;line-height:1.35}
+  /* A pinned row has no switch; a hollow blue ring holds its place, like the
+     ring on the Docker tab's chip. */
+  .sl-ct-pin{display:flex;align-items:center;gap:8px}
+  .sl-ct-ring{flex:none;display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin:3px 3px 3px 4px}
+  .sl-ct-ring::after{content:"";width:9px;height:9px;box-sizing:border-box;border-radius:50%;border:2px solid #4f8fd6}
   .sl-ct[data-disabled="1"]{opacity:.45}
   .sl-ct[data-disabled="1"] .sl-ct-item{cursor:default}
 
@@ -194,6 +197,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
   html.cc-header-on .sl-cfg .sl-tab.active{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)!important;font-weight:600}
   html.cc-header-on .sl-warn{background:var(--cc-badge-bg,#3a2a12);color:#f1c21b}
   html.cc-header-on .sl-ct{background:var(--well);border:none;border-radius:var(--rad);padding:6px 10px}
+  html.cc-header-on .sl-ct-ring{width:46px;height:24px;margin:0}
 </style>
 
 <div class="sl-cfg">
@@ -557,6 +561,7 @@ function slAuLoaded(names, newer) {
   slAuRender();
 }
 function slAuItem(name, on, gone, newer) {
+  if (newer) return slAuPinned(name, on, newer);
   var l = document.createElement('label'); l.className = 'sl-switch sl-ct-item';
   var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = on;
   cb.setAttribute('data-name', name); cb.setAttribute('data-gone', gone ? '1' : '0');
@@ -565,13 +570,19 @@ function slAuItem(name, on, gone, newer) {
   var t = document.createElement('span'); t.className = 'sl-ct-name'; t.textContent = name;
   l.appendChild(cb); l.appendChild(tr); l.appendChild(t);
   if (gone) { var g = document.createElement('small'); g.textContent = SLT.s_au_ct_gone; l.appendChild(g); }
-  if (newer) {
-    l.className += ' sl-ct-pin';
-    var nw = document.createElement('small'); nw.className = 'sl-ct-newer';
-    nw.textContent = SLT.s_au_ct_newer.replace('%v', function () { return newer; });
-    l.appendChild(nw);
-  }
   return l;
+}
+// A pinned container has nothing for auto-update to apply, so it gets the
+// newer-version hint instead of a switch. An exclusion it already has stays in
+// data-off.
+function slAuPinned(name, on, newer) {
+  var d = document.createElement('div'); d.className = 'sl-ct-item sl-ct-pin';
+  d.setAttribute('data-name', name); d.setAttribute('data-off', on ? '0' : '1');
+  var ring = document.createElement('span'); ring.className = 'sl-ct-ring'; ring.setAttribute('aria-hidden', 'true');
+  var t = document.createElement('span'); t.className = 'sl-ct-name'; t.textContent = name;
+  var hint = SLT.s_au_ct_newer.replace('%v', function () { return newer; });
+  d.appendChild(ring); d.appendChild(t); d.appendChild(slInfoIcon(slEscHTML(hint), hint));
+  return d;
 }
 // Excluded containers come first, so none hides below the fold.
 function slAuRender() {
@@ -589,7 +600,10 @@ function slAuSync(changed) {
   var box = document.getElementById('sl-au-ct'), out = [];
   // Switching a stale exclusion back on simply drops it.
   if (changed && changed.checked && changed.getAttribute('data-gone') === '1') changed.closest('.sl-ct-item').remove();
-  box.querySelectorAll('input[type=checkbox]').forEach(function (cb) { if (!cb.checked) out.push(cb.getAttribute('data-name')); });
+  box.querySelectorAll('.sl-ct-item').forEach(function (it) {
+    var cb = it.querySelector('input[type=checkbox]');
+    if (cb ? !cb.checked : it.getAttribute('data-off') === '1') out.push((cb || it).getAttribute('data-name'));
+  });
   SL_AU_SKIP = out;
   var h = document.getElementById('sl-au-skip'); h.value = out.join(',');
   slFire(h);
@@ -617,48 +631,53 @@ function slAuState() {
   });
   slAuRender();
 })();
+// slInfoIcon builds an (i) whose bubble shows html; label is its accessible
+// name. The bubble lives in <body>, so no overflow above the icon clips it.
+var slInfoPop = null, slInfoHideT = null;
+function slInfoHideSoon() { clearTimeout(slInfoHideT); slInfoHideT = setTimeout(function () { if (slInfoPop) slInfoPop.style.display = 'none'; }, 150); }
+function slInfoShow(icon) {
+  clearTimeout(slInfoHideT);
+  if (!slInfoPop) {
+    slInfoPop = document.createElement('div'); slInfoPop.className = 'sl-info-pop'; slInfoPop.style.display = 'none';
+    slInfoPop.addEventListener('mouseenter', function () { clearTimeout(slInfoHideT); });
+    slInfoPop.addEventListener('mouseleave', slInfoHideSoon);
+    document.body.appendChild(slInfoPop);
+  }
+  var p = slInfoPop; p.innerHTML = icon.getAttribute('data-html') || '';
+  p.style.display = 'block'; p.style.visibility = 'hidden'; p.style.left = '0'; p.style.top = '0';
+  var r = icon.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
+  var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + vw - pw - 8));
+  var top = (r.bottom + ph + 14 > vh) ? (r.top + window.scrollY - ph - 7) : (r.bottom + window.scrollY + 7);
+  p.style.left = left + 'px'; p.style.top = top + 'px'; p.style.visibility = 'visible';
+}
+function slInfoIcon(html, label) {
+  var icon = document.createElement('span');
+  icon.className = 'sl-info'; icon.setAttribute('tabindex', '0'); icon.setAttribute('role', 'img');
+  icon.setAttribute('aria-label', label);
+  icon.setAttribute('data-html', html);
+  icon.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.1" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="4.7" r="1.05" fill="currentColor"/><rect x="7.05" y="6.8" width="1.9" height="5" rx=".95" fill="currentColor"/></svg>';
+  icon.addEventListener('mouseenter', function () { slInfoShow(icon); });
+  icon.addEventListener('mouseleave', slInfoHideSoon);
+  icon.addEventListener('focus', function () { slInfoShow(icon); });
+  icon.addEventListener('blur', slInfoHideSoon);
+  icon.addEventListener('click', function (e) { e.preventDefault(); slInfoShow(icon); });
+  icon.addEventListener('keydown', function (e) { if (e.key === 'Escape' && slInfoPop) { slInfoPop.style.display = 'none'; icon.blur(); } });
+  return icon;
+}
+function slEscHTML(s) {
+  return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+}
 // Moves each help text into an info icon next to its label. The bubble renders
 // the original HTML, so links stay clickable, and without this script the help
 // text simply stays visible.
 (function () {
-  var ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.1" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="4.7" r="1.05" fill="currentColor"/><rect x="7.05" y="6.8" width="1.9" height="5" rx=".95" fill="currentColor"/></svg>';
-  var pop = null, hideT = null;
-  function bubble() {
-    if (pop) return pop;
-    pop = document.createElement('div'); pop.className = 'sl-info-pop'; pop.style.display = 'none';
-    pop.addEventListener('mouseenter', function () { clearTimeout(hideT); });
-    pop.addEventListener('mouseleave', hideSoon);
-    document.body.appendChild(pop);
-    return pop;
-  }
-  function hideSoon() { clearTimeout(hideT); hideT = setTimeout(function () { if (pop) pop.style.display = 'none'; }, 150); }
-  function show(icon) {
-    clearTimeout(hideT);
-    var p = bubble(); p.innerHTML = icon.getAttribute('data-html') || '';
-    p.style.display = 'block'; p.style.visibility = 'hidden'; p.style.left = '0'; p.style.top = '0';
-    var r = icon.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
-    var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
-    var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + vw - pw - 8));
-    var top = (r.bottom + ph + 14 > vh) ? (r.top + window.scrollY - ph - 7) : (r.bottom + window.scrollY + 7);
-    p.style.left = left + 'px'; p.style.top = top + 'px'; p.style.visibility = 'visible';
-  }
   try {
     document.querySelectorAll('.sl-help, .sl-desc').forEach(function (h) {
       var html = (h.innerHTML || '').trim(); if (!html) return;
       var row = h.closest('.sl-row'); if (!row) return;
       var label = row.querySelector('label'); if (!label) return;
-      var icon = document.createElement('span');
-      icon.className = 'sl-info'; icon.setAttribute('tabindex', '0'); icon.setAttribute('role', 'img');
-      icon.setAttribute('aria-label', (h.textContent || '').trim());
-      icon.setAttribute('data-html', html);
-      icon.innerHTML = ICON;
-      icon.addEventListener('mouseenter', function () { show(icon); });
-      icon.addEventListener('mouseleave', hideSoon);
-      icon.addEventListener('focus', function () { show(icon); });
-      icon.addEventListener('blur', hideSoon);
-      icon.addEventListener('click', function (e) { e.preventDefault(); show(icon); });
-      icon.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pop) { pop.style.display = 'none'; icon.blur(); } });
-      label.appendChild(icon);
+      label.appendChild(slInfoIcon(html, (h.textContent || '').trim()));
       if (h.parentNode) h.parentNode.removeChild(h);
     });
   } catch (e) { /* the help text stays visible */ }

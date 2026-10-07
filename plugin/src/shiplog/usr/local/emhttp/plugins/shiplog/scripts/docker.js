@@ -170,9 +170,11 @@
   function autoHint(excluded) {
     return T(!auEnabled ? "autoHintDisabled" : (excluded ? "autoHintOff" : "autoHintOn"));
   }
+  // A pinned container has nothing for auto-update to apply, so its window
+  // shows the newer-version note instead of the switch.
   function autoHTML(st) {
     const name = st.container && st.container.name;
-    if (!AU_NAME_OK.test(name || "")) return "";
+    if (!AU_NAME_OK.test(name || "") || newerVersion(st)) return "";
     const excluded = auIsExcluded(name);
     const hint = esc(autoHint(excluded));
     return `<div class="sl-aubar" data-au="${excluded ? "off" : "on"}">
