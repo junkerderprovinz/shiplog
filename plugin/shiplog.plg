@@ -31,7 +31,31 @@
 <CHANGES>
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge. Read-only,
-optional AI summaries (Ollama) and Matrix alerts.
+optional AI summaries (Ollama or llama-swap) and Matrix alerts.
+
+### 3.6.0
+Most of this release started in @nphil's fork (https://github.com/nphil/shiplog), tests included. Thank you!
+
+✨ **Added**
+- You can leave single containers out of the scheduled auto-update: switch them off under Settings, Updates, Containers, or with the switch in a container's changelog window. An excluded container shows an "Auto-update off" pill next to its chip, and the auto-update log lists it as skipped.
+- Changelog summaries can come from llama-swap or any other OpenAI-compatible server, such as LM Studio or vLLM, with a Check button in the settings. Without a llama-swap URL, Ollama works as before.
+- Private images resolve with the registry logins in Docker's config.json, the same logins Unraid's own update check uses.
+- A container pinned to a version tag gets a blue hint when a newer version exists. Pulling the pinned tag again cannot reach that version, so the container shows no update and has no auto-update switch, and the hint tells you to change the tag.
+
+⚡ **Improved**
+- Auto-update leaves a container alone when it already runs the newest image.
+- When a dry run only skipped excluded containers, the log says it was a dry run.
+
+🐛 **Fixed**
+- No more phantom updates. Whether a container has an update depends only on the image behind its own tag. ShipLog used to compare against the highest version tag in the registry, which was often an old date tag, a beta channel or a version label inherited from the base image.
+- Your own apps no longer show "Removed from Community Applications". Only apps from repositories that Community Applications crawls get its verdicts. An app installed from an old copy of a template repository that has since moved is looked up by its image, and it counts as removed only when CA no longer lists that image.
+- The Docker Hub username and token from the settings never reached the engine, so Docker Hub images stayed on the anonymous rate limit.
+- After a quick restart, the engine could exit because the previous instance still held the database. It now waits for the lock.
+- The "Auto-update off" pill no longer sits indented when it wraps under the chip.
+- The switch in the changelog window counts a change as saved only after ShipLog has restarted with it. Before, any answer from Unraid's settings handler counted.
+
+🌐 **Translations**
+- The new texts in the settings and the Docker tab are translated into all 26 languages.
 
 ### 3.5.1
 🎨 **Design**
