@@ -90,6 +90,12 @@ KINDS = {
     # enough for type this large.
     "unraid":           (0, "unraid", "#f15a2c", "#ffffff", "Unraid", "Template", "Install from Unraid's Community Applications"),
     "unraid-plugin":    (0, "unraid", "#f15a2c", "#ffffff", "Unraid", "Plugin", "Install the plugin from Unraid's Community Applications"),
+    # The green of MOS's mark, where white holds 3.2:1, about as much as on Unraid's orange.
+    "mos":              (0, "mos", "#26a269", "#ffffff", "MOS", "Hub", "Install from the MOS Hub"),
+    # The light tile ZimaOS sets its black mark on.
+    "zimaos":           (0, "zimaos", "#f4f4f4", "#1b1b1b", "ZimaOS", "Community store", "Install from the ZimaOS and CasaOS store"),
+    # The tile Dashboard Icons sets Umbrel's mark on.
+    "umbrel":           (0, "umbrel", "#5351f3", "#ffffff", "Umbrel", "Community store", "Install from the umbrelOS community app store"),
     "docker":           (0, "docker", "#1d63ed", "#ffffff", "Docker", "Container", "Run it with Docker"),
     "compose":          (0, "docker", "#1d63ed", "#ffffff", "Docker", "compose file", "Download the docker-compose file"),
     # Slate, since GitHub's black vanishes in the dark theme.
@@ -139,7 +145,8 @@ SOON = {
 }
 # Links that may lead away from the repository.
 STORES = ("play.google.com", "f-droid.org", "chromewebstore.google.com", "addons.mozilla.org", "microsoftedge.microsoft.com",
-          "unraid.net", "github.com/junkerderprovinz/parleyport", "github.com/junkerderprovinz/bombvault-widget")
+          "unraid.net", "mos-official.net", "github.com/junkerderprovinz/zimaos-apps", "github.com/junkerderprovinz/umbrel-apps",
+          "github.com/junkerderprovinz/parleyport", "github.com/junkerderprovinz/bombvault-widget")
 
 # The sheen is a tilted white band, clipped to each button, that appears to
 # travel along the whole row, the same band as the donation row's. Its numbers
