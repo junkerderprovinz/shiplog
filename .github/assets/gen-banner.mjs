@@ -5,7 +5,7 @@
  *   shiplog-banner-dark.svg/.png  dark, logo, name and claim   (README, GitHub dark)
  *   shiplog-banner-logo.svg/.png  light, logo only             (support thread)
  *
- * Each theme embeds the logo variant that reads on its background. Text becomes
+ * Both themes embed logo.svg, whose silver ring reads on either background. Text becomes
  * SVG paths, so the SVG renders the same everywhere without the fonts.
  *
  * Deps (global): opentype.js, @resvg/resvg-js. Fonts are fetched to the OS temp dir.
@@ -33,8 +33,8 @@ const LH = 400, LW = 400;
 const nameSize = 132, claimSize = 44, gap = 70, lineGap = 8;
 
 const THEMES = [
-  { suffix: "", bg: "#ffffff", name: "#1f2328", claim: "#5a5d5e", logo: "shiplog-dunkel.svg" },
-  { suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad", logo: "shiplog-hell.svg" },
+  { suffix: "", bg: "#ffffff", name: "#1f2328", claim: "#5a5d5e", logo: "logo.svg" },
+  { suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad", logo: "logo.svg" },
 ];
 
 const fontPath = join(tmpdir(), "ShipLog-BreeSerif-Regular.ttf");

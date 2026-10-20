@@ -204,7 +204,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 
   <div class="sl-hd">
     <!-- The double ring reads on light and dark Unraid themes alike. -->
-    <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog-unraid.svg')?>" alt="ShipLog">
+    <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog.svg')?>" alt="ShipLog">
     <div>
       <div class="sl-ttl"><b>Ship</b>Log</div>
       <div class="sl-sub"><?=$L['s_sub']?></div>
