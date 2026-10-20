@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix alerts.
 
+### 3.6.2
+🎨 **Design**
+- ShipLog has a new logo, an anchor in a silver ring that reads on light and dark themes. It shows on the settings page, in the Unraid menu and in the Community Applications icon.
+
 ### 3.6.1
 🐛 **Fixed**
 - With Unraid's white theme and CannonadeCommand, the changelog window in the Docker tab kept its near-black frame, so the dark header text was unreadable. The window now stays light in a light theme.
