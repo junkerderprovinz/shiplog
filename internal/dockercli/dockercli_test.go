@@ -175,11 +175,36 @@ func TestImageVersion(t *testing.T) {
 				map[string]string{"org.opencontainers.image.version": "1.0.0"}), "2.0.0"},
 		{"no labels yields empty",
 			mk(nil, nil), ""},
+		{"the Ubuntu release of the base image is not the app's version",
+			mk(map[string]string{
+				"org.opencontainers.image.ref.name": "ubuntu",
+				"org.opencontainers.image.version":  "24.04",
+			}, nil), ""},
+		{"an image's own version over an Ubuntu base is kept",
+			mk(map[string]string{
+				"org.opencontainers.image.ref.name": "ubuntu",
+				"org.opencontainers.image.version":  "3.1.0",
+			}, nil), "3.1.0"},
 	}
 	for _, c := range cases {
 		if got := imageVersion(c.img); got != c.want {
 			t.Errorf("%s: imageVersion = %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+func TestBaseVersionNamesTheInheritedUbuntuRelease(t *testing.T) {
+	var img dockerImage
+	img.Config.Labels = map[string]string{
+		"org.opencontainers.image.ref.name": "ubuntu",
+		"org.opencontainers.image.version":  "24.04",
+	}
+	if got := baseVersion(img); got != "24.04" {
+		t.Errorf("baseVersion = %q, want 24.04", got)
+	}
+	img.Config.Labels["org.opencontainers.image.version"] = "3.1.0"
+	if got := baseVersion(img); got != "" {
+		t.Errorf("baseVersion of an image's own version = %q, want empty", got)
 	}
 }
 

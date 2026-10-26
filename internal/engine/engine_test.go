@@ -949,6 +949,17 @@ func TestDecideRunningVersion(t *testing.T) {
 			want:            "1.7.0",
 		},
 		{
+			name: "a version remembered from the base image's label is dropped",
+			c:    model.Container{Tag: "latest", Digest: dRun, BaseVersion: "24.04"},
+			prior: model.UpdateStatus{
+				Container: model.Container{Digest: dRun}, RunningVersion: "24.04",
+			},
+			hasPrior:        true,
+			newestVerTag:    "2026.03",
+			newestVerDigest: dNew,
+			want:            "",
+		},
+		{
 			name:            "revision label is not shown as a version",
 			c:               model.Container{Tag: "latest", Digest: dRun, ImageVersion: "6e5f64bd"},
 			newestVerTag:    "2.0.0",
