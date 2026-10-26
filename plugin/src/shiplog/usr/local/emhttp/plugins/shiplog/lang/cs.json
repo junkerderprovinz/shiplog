@@ -69,6 +69,8 @@
   "d_updateAll": "Aktualizovat vše",
   "d_updateAllHint": "spustí vlastní aktualizaci Unraidu pro každý kontejner s čekající aktualizací",
   "d_none": "Pro tento obraz nebyl nalezen žádný text changelogu: otevřete repo (vpravo nahoře) pro poznámky k vydání.",
+  "d_noSource": "Tento obraz neuvádí žádný zdrojový repozitář, takže ShipLog nemá žádné poznámky k vydání, které by mohl zobrazit. Pokud je projekt zveřejňuje na GitHubu nebo v souboru changelogu, nastavte to pod \"source\" v jeho řádku na stavové stránce ShipLogu.",
+  "d_unraidStale": "Unraid stále hlásí aktualizaci, ale při poslední kontrole ShipLogu (%d) už tento kontejner běžel s nejnovějším obrazem svého tagu.",
   "d_rateLimited": "Byl dosažen hodinový limit požadavků GitHubu, takže se poznámky k vydání nepodařilo načíst. Přidejte v nastavení ShipLog (Zdroje) token GitHubu, abyste jej zvýšili.",
   "d_recent": "Nejnovější vydání",
   "d_pinned": "připnuto",

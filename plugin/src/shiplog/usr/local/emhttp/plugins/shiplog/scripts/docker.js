@@ -64,6 +64,8 @@
     updatingOne: "Updating the container", updatingAll: "Updating all Containers",
     updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
     none: "No changelog text found for this image. Open the repo (top-right) for the release notes.",
+    noSource: "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
+    unraidStale: "Unraid still lists an update, but at ShipLog's last check (%d) this container already ran the newest image of its tag.",
     rateLimited: "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
     recent: "Recent releases",
     pinned: "pinned", localimg: "local image",
@@ -242,8 +244,8 @@
   function riskClass(st) { return RISK_CLASS[st && st.risk] || "grey"; }
 
   // unraidVerdict reads Unraid's own live verdict from its global docker[] array,
-  // so ShipLog never contradicts what the Docker tab shows. Returns "update",
-  // "current" or "unknown".
+  // so ShipLog follows what the Docker tab shows. Returns "update", "current" or
+  // "unknown".
   function unraidVerdict(name) {
     try {
       const list = window.docker;
@@ -258,13 +260,35 @@
     } catch (e) { return "unknown"; }
   }
 
-  // Unraid's verdict wins when it has one.
+  // engineCurrent reports that the engine found the container running the image
+  // behind its own tag. Unraid compares against the digest it pulled last, so
+  // once a container is updated some other way it keeps flagging an update that
+  // a pull would not change.
+  function engineCurrent(st) {
+    const d = st && st.newest_digest;
+    return !!d && st.kind === "none" && !!st.container && st.container.digest === d;
+  }
+  function unraidStale(st) {
+    return unraidVerdict(st && st.container && st.container.name) === "update" && engineCurrent(st);
+  }
+
+  // Unraid's verdict wins when it has one, unless the engine saw that a pull
+  // would change nothing.
   function isUpdate(st) {
     const uv = unraidVerdict(st && st.container && st.container.name);
-    if (uv === "update") return true;
+    if (uv === "update") return !engineCurrent(st);
     if (uv === "current") return false;
     return hasUpdate(st);
   }
+
+  // versionCore mirrors the engine's model.VersionCore, so "v10.3.5",
+  // "release-10.3.5" and "10.3.5+build.7" all read as 10.3.5.
+  function versionCore(t) {
+    const s = String(t == null ? "" : t).trim();
+    const m = /^(?:release-)?[vV]?(?=\d)/.exec(s);
+    return m ? s.slice(m[0].length).replace(/\+.*$/, "") : s;
+  }
+  function sameVersion(a, b) { return versionCore(a) === versionCore(b); }
 
   // A container without an upstream to check gets a grey dot and its own label
   // instead of a green "up to date".
@@ -392,7 +416,10 @@
       || (!upd && verLike(newestRel) ? newestRel : "")
       // A digest pin without a tag shows the pin, not "latest".
       || (c.tag || shortDig(c.pinned_digest) || "latest");
+    // The end of the changelog span is the version behind a rolling tag, when
+    // the engine could prove it.
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
+      || (upd && verLike(cl.to_tag) ? cl.to_tag : "")
       || (verLike(newestRel) ? newestRel : "")
       || newestRel || st.newest_tag || "?";
     const fmtDate = (iso) => {
@@ -401,8 +428,14 @@
       return m && m[1] !== "0001" ? `${m[3]}.${m[2]}.${m[1]}` : ""; // DD.MM.YYYY
     };
     const relDate = entries[0] ? fmtDate(entries[0].published_at) : "";
-    // An up-to-date container carries no version jump line.
-    let jump = upd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "")) : "";
+    // checked_at carries the server's local time, which is what the user reads.
+    const fmtStamp = (iso) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso || "");
+      return m ? `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}` : "";
+    };
+    // An up-to-date container carries no version jump line, and neither does an
+    // update only Unraid flags, since the engine's reason then reads "up to date".
+    let jump = upd && seUpd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "")) : "";
     if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
     let summary = "";
@@ -412,23 +445,6 @@
         .concat((cl.summary.bullets || []).map((t) => `<li>${esc(t)}</li>`))
         .join("");
       summary = `<div class="sl-sec"><h4>⚡ ${esc(T("summary"))} <span class="sl-ai">AI · ${esc(cl.summary.model || "Ollama")}</span></h4><ul>${lis}</ul></div>`;
-    }
-
-    let raw = "";
-    if (cl.rate_limited) {
-      raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("rateLimited"))}</div></div>`;
-    } else if (cl.recent && entries.length) {
-      const secs = entries.map((e) => {
-        const d = fmtDate(e.published_at);
-        const meta = d ? ` <span class="sl-reld">${esc(d)}</span>` : "";
-        const link = e.url ? ` <a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener">↗</a>` : "";
-        return `<div class="sl-rel"><h5>${esc(e.tag || "")}${meta}${link}</h5><div class="sl-raw">${renderMd(e.body || "")}</div></div>`;
-      }).join("");
-      raw = `<div class="sl-sec"><h4>${esc(T("recent"))}</h4>${secs}</div>`;
-    } else if (cl.raw) {
-      raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${renderMd(cl.raw)}</div></div>`;
-    } else if (!summary) {
-      raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("none"))}</div></div>`;
     }
 
     // The button links to the repo root, because the engine's compare URL is
@@ -451,8 +467,26 @@
         : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
+    let raw = "";
+    if (cl.rate_limited) {
+      raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("rateLimited"))}</div></div>`;
+    } else if (cl.recent && entries.length) {
+      const secs = entries.map((e) => {
+        const d = fmtDate(e.published_at);
+        const meta = d ? ` <span class="sl-reld">${esc(d)}</span>` : "";
+        const link = e.url ? ` <a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener">↗</a>` : "";
+        return `<div class="sl-rel"><h5>${esc(e.tag || "")}${meta}${link}</h5><div class="sl-raw">${renderMd(e.body || "")}</div></div>`;
+      }).join("");
+      raw = `<div class="sl-sec"><h4>${esc(T("recent"))}</h4>${secs}</div>`;
+    } else if (cl.raw) {
+      raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${renderMd(cl.raw)}</div></div>`;
+    } else if (!summary) {
+      // Without a link there is no repo to point at.
+      raw = `<div class="sl-sec"><div class="sl-none" style="color:var(--sl-dim2)">${esc(T(gh ? "none" : "noSource"))}</div></div>`;
+    }
+
     // A rebuild of the same version shows just the version.
-    const haveNext = verLike(next) && next !== "?" && norm(next) !== norm(cur);
+    const haveNext = verLike(next) && next !== "?" && !sameVersion(next, cur);
     const verHdr = (upd && haveNext) ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
     const pillTxt = upd
       ? esc(seUpd ? kindLabel(st) : T("update"))
@@ -472,6 +506,7 @@
       ${st.unmaintained ? `<div class="sl-unmaint-note"><h4>⚠ ${esc(T("unmaintained"))}</h4>${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
       ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>⚠ ${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${nv ? `<div class="sl-unmaint-note sl-newer-note"><h4>${esc(T("pinned"))}</h4><div>${esc(fillV(T("newerNote"), nv))}</div><div class="sl-newer-why">${esc(fillV(T("newerWhy"), cur))}</div></div>` : ""}
+      ${unraidStale(st) ? `<div class="sl-unmaint-note sl-newer-note sl-stale-note">${esc(T("unraidStale").replace("%d", () => fmtStamp(st.checked_at)))}</div>` : ""}
       ${autoHTML(st)}${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }

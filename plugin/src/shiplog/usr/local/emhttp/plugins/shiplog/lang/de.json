@@ -69,6 +69,8 @@
   "d_updateAll": "Alle aktualisieren",
   "d_updateAllHint": "löst Unraids eigenes Update für alle Container mit anstehendem Update aus",
   "d_none": "Kein Changelog-Text für dieses Image gefunden. Öffne das Repo (oben rechts) für die Release Notes.",
+  "d_noSource": "Dieses Image nennt kein Quell-Repository, daher hat ShipLog keine Release Notes zum Anzeigen. Liegen sie auf GitHub oder in einer Changelog-Datei, trag das auf ShipLogs Statusseite in der Zeile des Containers unter „source“ ein.",
+  "d_unraidStale": "Unraid zeigt noch ein Update an, aber bei ShipLogs letzter Prüfung (%d) lief dieser Container schon mit dem neuesten Image seines Tags.",
   "d_rateLimited": "GitHubs stündliches Anfragelimit wurde erreicht, daher konnten die Release Notes nicht geladen werden. Füge in ShipLogs Einstellungen (Quellen) einen GitHub-Token hinzu, um es anzuheben.",
   "d_recent": "Neueste Releases",
   "d_pinned": "gepinnt",
