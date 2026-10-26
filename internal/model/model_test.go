@@ -25,3 +25,27 @@ func TestUpdateStatusHasUpdate(t *testing.T) {
 		t.Fatal("KindMinor must be an update")
 	}
 }
+
+func TestSameVersionIgnoresPrefixAndBuildMetadata(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want bool
+	}{
+		{"10.3.5", "v10.3.5", true},
+		{"V10.3.5", "10.3.5", true},
+		{"release-10.3.5", "v10.3.5", true},
+		{"10.3.5+build.7", "10.3.5", true},
+		{" 10.3.5", "10.3.5", true},
+		{"latest", "latest", true},
+		{"10.3.5", "10.3.6", false},
+		{"10.3.5-rc1", "10.3.5", false},
+		{"10.3.5-ls12", "10.3.5-ls13", false},
+		{"version", "ersion", false},
+		{"latest", "v", false},
+	}
+	for _, c := range cases {
+		if got := SameVersion(c.a, c.b); got != c.want {
+			t.Errorf("SameVersion(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+		}
+	}
+}

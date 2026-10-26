@@ -1,7 +1,11 @@
 // Package model holds the types shared across every ShipLog engine unit.
 package model
 
-import "time"
+import (
+	"regexp"
+	"strings"
+	"time"
+)
 
 // Container is a single container as discovered on the host.
 type Container struct {
@@ -121,6 +125,29 @@ func (c Container) HasDigest(d string) bool {
 
 // HasUpdate reports whether this status represents an actionable update.
 func (s UpdateStatus) HasUpdate() bool { return s.Kind != KindNone && s.Kind != "" }
+
+var versionPrefix = regexp.MustCompile(`^(release-)?[vV]?\d`)
+
+// VersionCore strips what projects put around a version in one place and not in
+// another, such as a git tag and an image tag: a "release-" or "v" prefix and
+// semver build metadata. "v10.3.5", "release-10.3.5" and "10.3.5+build.7" all
+// give "10.3.5"; a tag like "latest" is only trimmed.
+func VersionCore(tag string) string {
+	s := strings.TrimSpace(tag)
+	m := versionPrefix.FindStringIndex(s)
+	if m == nil {
+		return s
+	}
+	s = s[m[1]-1:]
+	if i := strings.IndexByte(s, '+'); i >= 0 {
+		s = s[:i]
+	}
+	return s
+}
+
+// SameVersion reports whether two tags name the same version. A pre-release
+// such as "1.2.3-rc1" stays apart from "1.2.3".
+func SameVersion(a, b string) bool { return VersionCore(a) == VersionCore(b) }
 
 // Changelog is the resolved "what changed" payload for an update.
 type Changelog struct {

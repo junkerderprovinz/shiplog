@@ -11,11 +11,11 @@ import (
 )
 
 // Classify compares the current tag and digest against the newest ones. Under
-// the same tag, differing digests mean the image moved. Semver tags are ranked
+// the same version, differing digests mean the image moved. Semver tags are ranked
 // by the first level that differs, and a newest version at or below the
 // current one counts as up to date. Other tags cannot be compared.
 func Classify(cur, newest, curDigest, newDigest string) (model.Kind, model.RiskLevel, string) {
-	if cur == newest {
+	if model.SameVersion(cur, newest) {
 		if curDigest != "" && newDigest != "" && curDigest != newDigest {
 			return model.KindDigest, model.RiskLow, "same tag, new image digest"
 		}
@@ -73,16 +73,10 @@ func cmpInt(a, b int) int {
 	}
 }
 
-// parseSemver reads up to three numeric components from a tag, ignoring a
-// leading "v" and any pre-release or build suffix. Missing components are 0.
+// parseSemver reads up to three numeric components from a tag, ignoring what
+// model.VersionCore strips and any pre-release suffix. Missing components are 0.
 func parseSemver(tag string) (semver, bool) {
-	core := strings.TrimPrefix(strings.TrimSpace(tag), "v")
-	if core == "" {
-		return semver{}, false
-	}
-	if i := strings.IndexByte(core, '+'); i >= 0 {
-		core = core[:i]
-	}
+	core := model.VersionCore(tag)
 	if i := strings.IndexByte(core, '-'); i >= 0 {
 		core = core[:i]
 	}
