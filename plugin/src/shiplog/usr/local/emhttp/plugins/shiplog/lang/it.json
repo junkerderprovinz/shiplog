@@ -69,6 +69,8 @@
   "d_updateAll": "Aggiorna tutti",
   "d_updateAllHint": "attiva l'aggiornamento di Unraid stesso per ogni container con un aggiornamento in sospeso",
   "d_none": "Nessun testo di changelog trovato per questa immagine: apri il repo (in alto a destra) per le note di rilascio.",
+  "d_noSource": "Questa immagine non indica alcun repository sorgente, quindi ShipLog non ha note di rilascio da mostrare. Se il progetto le pubblica su GitHub o in un file di changelog, impostalo sotto \"source\" nella sua riga della pagina di stato di ShipLog.",
+  "d_unraidStale": "Unraid segnala ancora un aggiornamento, ma all'ultimo controllo di ShipLog (%d) questo container usava già l'immagine più recente del suo tag.",
   "d_rateLimited": "È stato raggiunto il limite orario di richieste di GitHub, quindi non è stato possibile caricare le note di rilascio. Aggiungi un token GitHub nelle impostazioni di ShipLog (Fonti) per aumentarlo.",
   "d_recent": "Rilasci recenti",
   "d_pinned": "bloccato",

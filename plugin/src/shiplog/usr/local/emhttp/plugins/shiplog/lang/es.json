@@ -69,6 +69,8 @@
   "d_updateAll": "Actualizar todo",
   "d_updateAllHint": "dispara la propia actualización de Unraid para cada contenedor con una actualización pendiente",
   "d_none": "No se encontró texto de changelog para esta imagen: abre el repo (arriba a la derecha) para ver las notas de la versión.",
+  "d_noSource": "Esta imagen no indica ningún repositorio de origen, así que ShipLog no tiene notas de versión que mostrar. Si el proyecto las publica en GitHub o en un archivo de changelog, indícalo en \"source\" en su fila de la página de estado de ShipLog.",
+  "d_unraidStale": "Unraid todavía muestra una actualización, pero en la última comprobación de ShipLog (%d) este contenedor ya usaba la imagen más reciente de su tag.",
   "d_rateLimited": "Se alcanzó el límite de solicitudes por hora de GitHub, así que no se pudieron cargar las notas de la versión. Añade un token de GitHub en los ajustes de ShipLog (Fuentes) para aumentarlo.",
   "d_recent": "Versiones recientes",
   "d_pinned": "fijado",

@@ -69,6 +69,8 @@
   "d_updateAll": "Tümünü güncelle",
   "d_updateAllHint": "bekleyen güncellemesi olan her konteyner için Unraid'in kendi güncellemesini tetikler",
   "d_none": "Bu imaj için changelog metni bulunamadı: sürüm notları için depoyu (sağ üst) aç.",
+  "d_noSource": "Bu imaj bir kaynak depo belirtmiyor, bu yüzden ShipLog'un gösterecek sürüm notu yok. Proje bunları GitHub'da veya bir changelog dosyasında yayınlıyorsa, ShipLog durum sayfasında satırındaki \"source\" altında ayarla.",
+  "d_unraidStale": "Unraid hâlâ bir güncelleme gösteriyor, ancak ShipLog'un son kontrolünde (%d) bu konteyner zaten etiketinin en yeni imajıyla çalışıyordu.",
   "d_rateLimited": "GitHub'ın saatlik istek sınırına ulaşıldı, bu yüzden sürüm notları yüklenemedi. Sınırı yükseltmek için ShipLog ayarlarında (Kaynaklar) bir GitHub token'ı ekle.",
   "d_recent": "Son sürümler",
   "d_pinned": "sabitlendi",

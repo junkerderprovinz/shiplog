@@ -69,6 +69,8 @@
   "d_updateAll": "Összes frissítése",
   "d_updateAllHint": "elindítja az Unraid saját frissítését minden függőben lévő frissítéssel rendelkező konténerhez",
   "d_none": "Nem található changelog-szöveg ehhez a képhez: nyisd meg a repót (jobbra fent) a kiadási jegyzetekért.",
+  "d_noSource": "Ez a kép nem nevez meg forrásrepót, így a ShipLog nem tud kiadási jegyzeteket mutatni. Ha a projekt a GitHubon vagy egy changelog-fájlban közli őket, állítsd be a ShipLog állapotoldalán a sorában a \"source\" alatt.",
+  "d_unraidStale": "Az Unraid még frissítést jelez, de a ShipLog legutóbbi ellenőrzésekor (%d) ez a konténer már a címkéje legújabb képével futott.",
   "d_rateLimited": "Elérted a GitHub óránkénti kéréslimitjét, ezért a kiadási jegyzeteket nem sikerült betölteni. Adj hozzá egy GitHub-tokent a ShipLog beállításaiban (Források), hogy megemeld.",
   "d_recent": "Legutóbbi kiadások",
   "d_pinned": "rögzítve",

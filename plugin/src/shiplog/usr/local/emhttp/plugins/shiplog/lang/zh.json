@@ -69,6 +69,8 @@
   "d_updateAll": "全部更新",
   "d_updateAllHint": "为每个有待处理更新的容器触发 Unraid 自己的更新",
   "d_none": "未找到此镜像的更新日志文本：请打开仓库（右上角）查看发行说明。",
+  "d_noSource": "此镜像未指明源码仓库，因此 ShipLog 没有可显示的发行说明。如果项目在 GitHub 或更新日志文件中发布它们，请在 ShipLog 状态页面该容器所在行的“source”中设置。",
+  "d_unraidStale": "Unraid 仍显示有更新，但在 ShipLog 上次检查时（%d），此容器已在运行其标签的最新镜像。",
   "d_rateLimited": "已达到 GitHub 每小时的请求速率限制，因此无法加载发行说明。请在 ShipLog 设置（来源）中添加 GitHub 令牌以提高限制。",
   "d_recent": "最近的发布",
   "d_pinned": "已固定",
