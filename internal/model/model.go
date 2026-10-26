@@ -35,6 +35,9 @@ type Container struct {
 	// .revision), so a rolling ":latest" container can show its version before
 	// ShipLog has seen it update.
 	ImageVersion string `json:"image_version"`
+	// BaseVersion is a version label the image inherited from its base image,
+	// such as Ubuntu's "24.04". It never counts as the app's version.
+	BaseVersion string `json:"base_version,omitempty"`
 	// ChangelogFile is the URL of a changelog file the user set as the source,
 	// read instead of the repo's releases.
 	ChangelogFile string `json:"changelog_file,omitempty"`

@@ -538,7 +538,8 @@ func (e *Engine) maybeNotifyUnmaintained(ctx context.Context, st, prior model.Up
 // decideRunningVersion returns a pinned version tag as it is. For a rolling tag
 // it takes, in order of evidence: the newest version when the running digest
 // matches it, the remembered version while the digest is unchanged, and the
-// image's version label. An unlabelled, outdated image stays unknown.
+// image's version label. An unlabelled, outdated image stays unknown, and so
+// does a version remembered from a label the image inherited from its base.
 func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest string, prior model.UpdateStatus, hasPrior bool) string {
 	if isVersion(c.Tag) {
 		return c.Tag
@@ -546,7 +547,7 @@ func decideRunningVersion(c model.Container, newestVerTag, newestVerDigest strin
 	if c.HasDigest(newestVerDigest) {
 		return newestVerTag
 	}
-	if hasPrior && c.Digest != "" && prior.Container.Digest == c.Digest && prior.RunningVersion != "" {
+	if hasPrior && c.Digest != "" && prior.Container.Digest == c.Digest && prior.RunningVersion != "" && prior.RunningVersion != c.BaseVersion {
 		return prior.RunningVersion
 	}
 	if isVersion(c.ImageVersion) {

@@ -20,7 +20,11 @@ const (
 	sourceLabel   = "org.opencontainers.image.source"
 	versionLabel  = "org.opencontainers.image.version"
 	revisionLabel = "org.opencontainers.image.revision"
+	refNameLabel  = "org.opencontainers.image.ref.name"
 )
+
+// ubuntuRelease is the shape of an Ubuntu release such as "24.04".
+var ubuntuRelease = regexp.MustCompile(`^\d{2}\.\d{2}$`)
 
 // managedLabel is set by Unraid's Docker Manager on every container it creates
 // from a template.
@@ -71,10 +75,11 @@ type dockerImage struct {
 // imageInfo is what one image inspect yields. isLocal is set only after a
 // successful inspect, so a failed one cannot mark a registry image as local.
 type imageInfo struct {
-	digest  string
-	digests []string
-	version string
-	isLocal bool
+	digest      string
+	digests     []string
+	version     string
+	baseVersion string
+	isLocal     bool
 }
 
 // List returns all containers, running and stopped, inspecting each image once.
@@ -133,6 +138,7 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			Source:       source,
 			State:        dc.State,
 			ImageVersion: info.version,
+			BaseVersion:  info.baseVersion,
 			Managed:      dc.Labels[managedLabel] != "",
 		})
 	}
@@ -202,10 +208,11 @@ func (c *Client) inspectImage(ctx context.Context, imageID, repo string) imageIn
 		return imageInfo{}
 	}
 	return imageInfo{
-		digest:  pickDigest(img.RepoDigests, repo),
-		digests: allDigests(img.RepoDigests),
-		version: imageVersion(img),
-		isLocal: len(img.RepoDigests) == 0,
+		digest:      pickDigest(img.RepoDigests, repo),
+		digests:     allDigests(img.RepoDigests),
+		version:     imageVersion(img),
+		baseVersion: baseVersion(img),
+		isLocal:     len(img.RepoDigests) == 0,
 	}
 }
 
@@ -223,7 +230,7 @@ func allDigests(repoDigests []string) []string {
 // current Config before the legacy ContainerConfig.
 func imageVersion(img dockerImage) string {
 	for _, labels := range []map[string]string{img.Config.Labels, img.ContainerConfig.Labels} {
-		if v := labels[versionLabel]; v != "" {
+		if v := labels[versionLabel]; v != "" && !inheritedUbuntuVersion(labels) {
 			return v
 		}
 		if v := labels[revisionLabel]; v != "" {
@@ -231,6 +238,25 @@ func imageVersion(img dockerImage) string {
 		}
 	}
 	return ""
+}
+
+// baseVersion returns the version label the image inherited from an Ubuntu
+// base, or "".
+func baseVersion(img dockerImage) string {
+	for _, labels := range []map[string]string{img.Config.Labels, img.ContainerConfig.Labels} {
+		if inheritedUbuntuVersion(labels) {
+			return labels[versionLabel]
+		}
+	}
+	return ""
+}
+
+// inheritedUbuntuVersion reports a version label that names the Ubuntu release
+// the image was built on. Ubuntu's own images carry ref.name "ubuntu" and their
+// release as the version, and an image that sets no version of its own inherits
+// both.
+func inheritedUbuntuVersion(labels map[string]string) bool {
+	return labels[refNameLabel] == "ubuntu" && ubuntuRelease.MatchString(labels[versionLabel])
 }
 
 // pickDigest returns the RepoDigests digest for repo, else the first one.
