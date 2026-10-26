@@ -39,6 +39,10 @@ func TestClassify(t *testing.T) {
 		// One empty digest cannot prove a move.
 		{"latest", "latest", "sha256:a", "", model.KindNone, model.RiskNone},
 		{"1.2.3", "1.2.3", "sha256:a", "sha256:b", model.KindDigest, model.RiskLow},
+		// A "v" or "release-" prefix spells the same version, so the digests decide.
+		{"10.3.5", "v10.3.5", "sha256:a", "sha256:a", model.KindNone, model.RiskNone},
+		{"10.3.5", "v10.3.5", "sha256:a", "sha256:b", model.KindDigest, model.RiskLow},
+		{"release-1.2.3", "release-1.3.0", "", "", model.KindMinor, model.RiskMedium},
 	}
 	for _, c := range cases {
 		k, r, reason := Classify(c.cur, c.newest, c.curDig, c.newDig)

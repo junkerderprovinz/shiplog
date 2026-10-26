@@ -58,13 +58,10 @@ func sign(n int) int {
 	}
 }
 
-// parseSemver reads up to three numeric components from a tag, ignoring a
-// leading "v" and any pre-release or build suffix. Missing components are 0.
+// parseSemver reads up to three numeric components from a tag, ignoring what
+// model.VersionCore strips and any pre-release suffix. Missing components are 0.
 func parseSemver(tag string) (semver, bool) {
-	core := strings.TrimPrefix(strings.TrimSpace(tag), "v")
-	if i := strings.IndexByte(core, '+'); i >= 0 {
-		core = core[:i]
-	}
+	core := model.VersionCore(tag)
 	if i := strings.IndexByte(core, '-'); i >= 0 {
 		core = core[:i]
 	}

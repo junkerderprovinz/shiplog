@@ -105,9 +105,8 @@ func (g *GitHub) Get(ctx context.Context, c model.Container, fromTag, toTag stri
 	}
 	if entries == nil {
 		if isVersionTag(toTag) {
-			want := strings.TrimPrefix(toTag, "v")
 			for i := range rc.releases {
-				if strings.TrimPrefix(rc.releases[i].Tag, "v") == want {
+				if model.SameVersion(rc.releases[i].Tag, toTag) {
 					entries = rc.releases[i : i+1]
 					break
 				}
