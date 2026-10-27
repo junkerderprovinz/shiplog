@@ -122,9 +122,12 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
 
 <div id="sl-cfg" class="sl-cfg" data-sl-labels="textGlyph">
 <div class="sl-hero">
-  <svg class="sl-hero-mark" viewBox="0 0 400 400" aria-hidden="true" focusable="false"><circle cx="200" cy="200" r="188"/><circle cx="200" cy="200" r="138"/><circle cx="200" cy="200" r="88"/></svg>
+  <span class="sl-hero-mark" aria-hidden="true"></span>
   <img class="sl-hero-logo" src="<?autov('/plugins/shiplog/images/shiplog.png')?>" alt="">
-  <h1 class="sl-hero-name">ShipLog</h1>
+  <div class="sl-hero-text">
+    <h1 class="sl-hero-name">ShipLog</h1>
+    <p class="sl-hero-claim">Read the changelog before you set sail.</p>
+  </div>
 </div>
 <form name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
 <input type="hidden" name="#file" value="shiplog/shiplog.cfg">

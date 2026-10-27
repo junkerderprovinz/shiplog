@@ -39,46 +39,49 @@ html:is(.Theme--white, .Theme--azure) .sl-cfg { --sl-ok: #0e6027; --sl-err: #da1
 .sl-cfg [hidden] { display: none !important; }
 
 /* The banner over the page, drawn alike on TowerTorch's and FireSquire's
-   settings pages: the logo and the name on a card surface, washed from the
-   start with the first colour and ringed at the end by all three. It is as wide
-   as the tab column and the cards together. Without TowerTorch the colours are
-   Unraid's button gradient; with it they are the accent, or three rainbow
-   positions, resting grey in the reactive mode until the pointer reaches it. */
+   settings pages: the logo, the name and the claim on a card surface, and the
+   logo again at the end as a faint silhouette cut by the edge. It is as wide as
+   the tab column and the cards together. The silhouette rests grey and takes
+   the colour while the pointer or the focus is on the banner: Unraid's red
+   without TowerTorch, the accent or the first rainbow position with it. */
 .sl-hero {
-  --sl-hero-a: #e22828;
-  --sl-hero-b: #ff8c2f;
-  --sl-hero-c: #ff8c2f;
-  --sl-hero-ground: var(--sl-card);
-  --sl-hero-dir: 100deg;
-  --sl-hero-wash: 26%;
-  --sl-hero-ring: 22%;
+  --sl-hero-tint: #e22828;
+  --sl-hero-sil: 16%;
   position: relative; isolation: isolate; overflow: hidden;
   display: flex; align-items: center; gap: 24px;
-  max-width: 1148px; height: 136px; margin: 4px 0 16px; padding: 0 32px;
+  max-width: 1148px; height: 136px; margin: 4px 0 32px; padding: 0 32px;
   border-radius: var(--sl-r-card);
-  background:
-    linear-gradient(var(--sl-hero-dir), color-mix(in srgb, var(--sl-hero-a) var(--sl-hero-wash), transparent), color-mix(in srgb, var(--sl-hero-a) calc(var(--sl-hero-wash) / 3), transparent) 42%, transparent 72%),
-    var(--sl-hero-ground);
+  background: var(--sl-card);
 }
-.sl-hero:dir(rtl) { --sl-hero-dir: 260deg; }
-/* A light colour washed over a white ground needs more of itself to show. */
-html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-wash: 40%; --sl-hero-ring: 36%; }
+/* A faint colour over a white ground needs more of itself to show. */
+html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-sil: 30%; }
 .sl-hero-mark {
-  position: absolute; z-index: -1; inset-inline-end: -72px; top: 50%; translate: 0 -50%;
-  width: 360px; height: 360px; fill: none; stroke-width: 18;
+  position: absolute; z-index: -1; inset-inline-end: -44px; top: 50%; translate: 0 -50%;
+  width: 264px; height: 264px; pointer-events: none;
+  background-color: color-mix(in srgb, var(--sl-dim) var(--sl-hero-sil), transparent);
+  -webkit-mask: url(/plugins/shiplog/images/shiplog.png) center / contain no-repeat;
+  mask: url(/plugins/shiplog/images/shiplog.png) center / contain no-repeat;
 }
-.sl-hero-mark circle:nth-child(1) { stroke: color-mix(in srgb, var(--sl-hero-c) calc(var(--sl-hero-ring) - 6%), transparent); }
-.sl-hero-mark circle:nth-child(2) { stroke: color-mix(in srgb, var(--sl-hero-b) var(--sl-hero-ring), transparent); }
-.sl-hero-mark circle:nth-child(3) { stroke: color-mix(in srgb, var(--sl-hero-a) calc(var(--sl-hero-ring) + 6%), transparent); }
+.sl-hero:is(:hover, :focus-within) .sl-hero-mark { background-color: color-mix(in srgb, var(--sl-hero-tint) var(--sl-hero-sil), transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .sl-hero-mark { transition: background-color var(--cc-motion-control-dur, 150ms); }
+}
 .sl-hero-logo { flex: none; display: block; width: 88px; height: 88px; object-fit: contain; }
+/* The text stops short of the silhouette. */
+.sl-hero-text { min-width: 0; max-width: calc(100% - 332px); }
 .sl-cfg .sl-hero-name {
-  min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-family: inherit; font-size: 32px; font-weight: 700; line-height: 1.15; letter-spacing: normal; text-transform: none; color: inherit;
+}
+.sl-cfg .sl-hero-claim {
+  margin: 4px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--cc-text-title, 16px); line-height: 1.45; text-align: start; color: var(--sl-dim);
 }
 @media (max-width: 1023px) {
   .sl-hero { gap: 16px; height: 104px; padding: 0 20px; }
-  .sl-hero-mark { inset-inline-end: -64px; width: 280px; height: 280px; }
+  .sl-hero-mark { inset-inline-end: -36px; width: 208px; height: 208px; }
   .sl-hero-logo { width: 64px; height: 64px; }
+  .sl-hero-text { max-width: calc(100% - 260px); }
   .sl-cfg .sl-hero-name { font-size: 26px; }
 }
 
@@ -512,14 +515,9 @@ html.cc-tools-on .sl-cfg {
   --sl-shadow: var(--cc-elev-1, 0 1px 4px rgba(0, 0, 0, .35));
   color: var(--cc-text, #e6e6e6);
 }
-/* The banner takes the accent, or the three rainbow positions the script hands
-   it, and rests grey in the reactive mode until the pointer reaches it. */
-html.cc-tools-on .sl-hero {
-  --sl-hero-a: var(--sl-hero-1, var(--cc-accent, #FCC419));
-  --sl-hero-b: var(--sl-hero-2, var(--cc-accent, #FCC419));
-  --sl-hero-c: var(--sl-hero-3, var(--cc-accent, #FCC419));
-}
-html.cc-tools-on .sl-reactive .sl-hero:not(:hover) { --sl-hero-a: var(--sl-dim); --sl-hero-b: var(--sl-dim); --sl-hero-c: var(--sl-dim); }
+/* The banner's silhouette takes the accent, or the first rainbow position the
+   script hands it. */
+html.cc-tools-on .sl-hero { --sl-hero-tint: var(--sl-hero-rb, var(--cc-accent, #FCC419)); }
 /* A card or a tab under the rainbow carries its own position as --sl-hue. */
 html.cc-tools-on .sl-cfg .sl-h { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); font-size: var(--cc-sec-fs, 12px); font-weight: var(--cc-sec-fw, 500); letter-spacing: var(--cc-sec-ls, 1.2px); min-height: var(--cc-sec-h, 22px); }
 html.cc-tools-on .sl-cfg .sl-tab[aria-selected="true"],
