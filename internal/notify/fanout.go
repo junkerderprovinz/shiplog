@@ -6,7 +6,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-// Sink is one notification channel such as Matrix or native Unraid. SendMessage
+// Sink is one notification channel such as Matrix, Apprise or native Unraid. SendMessage
 // carries the auto-update run summary.
 type Sink interface {
 	Notify(ctx context.Context, st model.UpdateStatus) error

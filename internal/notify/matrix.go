@@ -1,5 +1,5 @@
-// Package notify announces a newly sighted container update through Matrix and
-// native Unraid notifications.
+// Package notify announces a newly sighted container update through Matrix,
+// Apprise and native Unraid notifications.
 package notify
 
 import (
