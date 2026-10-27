@@ -30,7 +30,6 @@
   --sl-r-pill: 4px;
   --sl-shadow: none;
   --sl-fw: 400px;
-  --sl-aw: 240px;
   font-size: 14px;
   line-height: 1.45;
   padding-bottom: 24px;
@@ -120,21 +119,18 @@ html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-wash: 40%; --sl-hero-
 }
 .sl-h .sl-info { color: inherit; opacity: 1; }
 
-/* A row: the name and its (i) at the start, the control at the end. Where both
-   do not fit, the control moves under the name and keeps the end.
-   The controls stand in two columns on every row of the page: a field, select,
-   switch or state ends on the first column's edge, and a button that acts on it
-   starts in the second, so neither moves from row to row. A row without a
-   button leaves the second column empty. */
+/* A row: the name and its (i) at the start, the control at the end (GlimStone
+   rule 35). Every control on the page ends on the card's inner edge; a button
+   that acts on a field stands right of it and ends there in its place. Where
+   both do not fit, the control moves under the name and keeps the end. */
 .sl-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; min-height: 44px; padding: 6px 0; }
 .sl-lbl { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; }
 .sl-lbl label { margin: 0; cursor: pointer; }
 .sl-ctl {
-  display: grid; grid-template-columns: minmax(0, var(--sl-fw)) minmax(0, var(--sl-aw)); align-items: center; justify-items: end;
-  column-gap: 12px; row-gap: 8px; max-width: 100%; margin-inline-start: auto;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px;
+  min-width: 0; max-width: 100%; margin-inline-start: auto;
 }
-.sl-ctl > :not(.sl-act) { grid-column: 1; }
-.sl-ctl > .sl-act { grid-column: 2; justify-self: start; display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.sl-ctl > .sl-act { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
 .sl-act > .sl-btn { max-width: 100%; }
 @media (max-width: 1023px) {
   .sl-cfg { --sl-fw: 300px; }
