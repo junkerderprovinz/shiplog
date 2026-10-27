@@ -1,5 +1,4 @@
 {
-  "s_sub": "Csak olvasható frissítési tanácsadó: soha nem frissít semmit, hanem közvetlenül a Docker fülön mutatja, mi változott és mennyire kockázatos.",
   "s_engine": "Engine",
   "s_enable": "Engedélyezés",
   "s_port": "Port",
@@ -134,6 +133,10 @@
   "s_manual": "Kézi frissítések",
   "s_channels": "Csatornák",
   "s_reset": "Visszaállítás",
+  "s_version": "Verzió",
+  "s_help": "Súgó",
+  "s_help_body": "Hibák, ötletek vagy kívánságok? Nyugodtan nyiss egy issue-t a GitHubon. A kérdésekre az Unraid fórum támogatási topikjában válaszolok.",
+  "s_forum": "Fórum",
   "s_about": "Névjegy",
   "s_about_body": "A ShipLog ingyenes bővítmény az Unraid Docker lapjához, amelyet egyetlen lovag épít esténként és hétvégente, fiók, telemetria és reklám nélkül.",
   "s_about_coin": "Ha kiérdemelte a helyét a szervereden, dobj egy érmét a lovagodnak: segít fedezni a költségeket, és életben tartja a projektet.",

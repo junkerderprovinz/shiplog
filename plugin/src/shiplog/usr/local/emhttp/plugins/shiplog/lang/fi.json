@@ -1,5 +1,4 @@
 {
-  "s_sub": "Vain luku -päivitysneuvoja: se ei koskaan päivitä mitään, vaan näyttää mikä muuttui ja kuinka riskialtista se on, suoraan Docker-välilehdellä.",
   "s_engine": "Engine",
   "s_enable": "Ota käyttöön",
   "s_port": "Portti",
@@ -134,6 +133,10 @@
   "s_manual": "Manuaaliset päivitykset",
   "s_channels": "Kanavat",
   "s_reset": "Palauta",
+  "s_version": "Versio",
+  "s_help": "Ohje",
+  "s_help_body": "Virheitä, ideoita tai toiveita? Avaa rohkeasti issue GitHubissa. Kysymyksiin vastaan Unraid-foorumin tukiketjussa.",
+  "s_forum": "Foorumi",
   "s_about": "Tietoja",
   "s_about_body": "ShipLog on ilmainen laajennus Unraidin Docker-välilehdelle. Sitä rakentaa yksi ritari iltaisin ja viikonloppuisin, ilman tilejä, ilman telemetriaa ja ilman mainoksia.",
   "s_about_coin": "Jos se on ansainnut paikkansa palvelimellasi, heitä ritarillesi kolikko: se auttaa kattamaan kulut ja pitää projektin hengissä.",

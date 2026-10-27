@@ -1,5 +1,4 @@
 {
-  "s_sub": "只读更新顾问：它从不更新任何内容，只在 Docker 标签页中直接显示发生了什么变化以及风险有多大。",
   "s_engine": "引擎",
   "s_enable": "启用",
   "s_port": "端口",
@@ -134,6 +133,10 @@
   "s_manual": "手动更新",
   "s_channels": "渠道",
   "s_reset": "重置",
+  "s_version": "版本",
+  "s_help": "帮助",
+  "s_help_body": "遇到问题、有想法或心愿？欢迎在 GitHub 上提 issue。问题我会在 Unraid 论坛的支持帖里回答。",
+  "s_forum": "论坛",
   "s_about": "关于",
   "s_about_body": "ShipLog 是 Unraid Docker 标签页的免费插件，由一位骑士在晚上和周末打造，没有账户、没有遥测、没有广告。",
   "s_about_coin": "如果它在你的服务器上赢得了一席之地，就给你的骑士抛一枚硬币吧：这有助于支付成本，让项目继续下去。",
