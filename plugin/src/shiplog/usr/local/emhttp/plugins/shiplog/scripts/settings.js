@@ -281,10 +281,9 @@
   }
 
   /* The colour engine, read from TowerTorch: the accent, the rainbow with one
-     position per tab, per card heading and per switch and the first three for
-     the banner, and the reactive mode
-     in which an idle tab glyph rests grey. Without TowerTorch nothing is set
-     and the page keeps Unraid's colours. */
+     position per tab, per card heading and per switch and the first for the
+     banner, and the reactive mode in which an idle tab glyph rests grey.
+     Without TowerTorch nothing is set and the page keeps Unraid's colours. */
   function ink(hex) {
     if (window.CCTheme && window.CCTheme.idealText) return window.CCTheme.idealText(hex);
     return "#161616";
@@ -307,9 +306,7 @@
     });
     wins.querySelectorAll(".sl-coin").forEach(function (b, i) { hue(b, b.getAttribute("aria-selected") === "true" ? at(i) : "", "--sl-hue", "--sl-hue-ink"); });
     var banner = root.querySelector(".sl-hero");
-    [1, 2, 3].forEach(function (n) {
-      if (rb) banner.style.setProperty("--sl-hero-" + n, at(n - 1)); else banner.style.removeProperty("--sl-hero-" + n);
-    });
+    if (rb) banner.style.setProperty("--sl-hero-rb", at(0)); else banner.style.removeProperty("--sl-hero-rb");
     tabs.forEach(function (t, i) { hue(t, at(i), "--sl-hue", "--sl-hue-ink"); });
     root.querySelectorAll(".sl-pane").forEach(function (p) {
       p.querySelectorAll(".sl-card").forEach(function (c, i) { hue(c, at(i), "--sl-hue", "--sl-hue-ink"); });
