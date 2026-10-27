@@ -315,6 +315,184 @@ html.cc-tools-on #sl-cfg .sl-tile-house { --sl-house: var(--cc-accent, #FCC419);
   .sl-bubble { animation: sl-fade var(--cc-motion-fade-dur, 110ms) ease-out; }
 }
 
+/* The windows the give buttons open, drawn as FireSquire draws its own. They
+   live in <body>, outside .sl-cfg, so they carry their own colours: Unraid's
+   theme without TowerTorch, and with it a window that stays dark on every
+   theme, as TowerTorch's windows do. */
+#sl-wins {
+  --sl-w-card: var(--mild-background-color, rgba(128, 128, 128, .08));
+  --sl-w-ground: var(--background-color, #1c1b1b);
+  --sl-w-chip: color-mix(in srgb, currentColor 12%, transparent);
+  --sl-w-head: var(--hover-button-background, #e22828);
+  --sl-w-head-ink: var(--hover-button-text-color, #fff);
+  --sl-w-dim: var(--alt-text-color, #8d8d8d);
+  --sl-w-focus: var(--link-text-color, #486dba);
+  --sl-w-ok: #3fae6a;
+  --sl-w-err: #e05252;
+  --sl-w-warn: #ff832b;
+  --sl-w-scrim: rgba(0, 0, 0, .6);
+  --sl-w-r-card: 4px;
+  --sl-w-r-ctl: 4px;
+  --sl-w-r-pill: 4px;
+  --sl-w-shadow: 0 12px 48px rgba(0, 0, 0, .55);
+}
+html:is(.Theme--white, .Theme--azure) #sl-wins { --sl-w-ok: #0e6027; --sl-w-err: #da1e28; --sl-w-warn: #ba4e00; }
+html.cc-tools-on #sl-wins {
+  --sl-w-ground: #1a1a1a;
+  --sl-w-card: #222;
+  --sl-w-chip: #2e2e2e;
+  --sl-w-head: var(--cc-accent, #FCC419);
+  --sl-w-head-ink: var(--cc-accent-text, #161616);
+  --sl-w-dim: #8a8a8a;
+  --sl-w-focus: var(--cc-accent, #FCC419);
+  --sl-w-ok: #6fdc8c;
+  --sl-w-err: #ff8389;
+  --sl-w-warn: #ff832b;
+  --sl-w-scrim: var(--cc-backdrop-dim, rgba(0, 0, 0, .72));
+  --sl-w-r-card: var(--cc-radius-card, 20px);
+  --sl-w-r-ctl: var(--cc-radius-control, 12px);
+  --sl-w-r-pill: var(--cc-radius-pill, 9999px);
+  --sl-w-shadow: var(--cc-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
+}
+#sl-wins *, #sl-wins *::before, #sl-wins *::after { box-sizing: border-box; }
+#sl-wins [hidden] { display: none !important; }
+
+/* The scrim darkens and blurs the page; the window sits above Unraid's own
+   popovers, whose z-index reaches 999999. */
+.sl-scrim {
+  position: fixed; inset: 0; z-index: 1000000;
+  background: var(--sl-w-scrim);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .sl-scrim { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+.sl-win {
+  position: fixed; z-index: 1000001; left: 50%; top: 50%; translate: -50% -50%;
+  display: flex; flex-direction: column;
+  width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 48px);
+  padding: 21px 0 16px; border-radius: var(--sl-w-r-card);
+  background: var(--sl-w-ground); color: var(--text-color, #f2f2f2); box-shadow: var(--sl-w-shadow);
+  font-size: 14px; line-height: 1.45; text-align: start;
+}
+html.cc-tools-on .sl-win { color: #e6e6e6; }
+.sl-win:focus { outline: none; }
+/* As tall as the screen allows less a margin: Buy Me a Coffee's payment step
+   runs to about 1200px, and every pixel here is scrolling a donor is spared. */
+.sl-win.sl-win-coffee { width: min(512px, calc(100vw - 32px)); height: calc(100vh - 112px); }
+.sl-win.sl-win-paypal { width: min(460px, calc(100vw - 32px)); }
+.sl-win .sl-win-title {
+  position: absolute; top: 0; inset-inline-start: 24px; transform: translateY(-50%);
+  display: inline-flex; align-items: center; max-width: calc(100% - 48px); min-height: 22px; margin: 0; padding: 0 12px;
+  border-radius: var(--sl-w-r-pill); background: var(--sl-hue, var(--sl-w-head)); color: var(--sl-hue-ink, var(--sl-w-head-ink));
+  font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.2; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.sl-win-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 4px;
+}
+.sl-win-coffee .sl-win-body { overflow: hidden; }
+.sl-win .sl-win-text { margin: 0; text-align: start; }
+.sl-win .sl-win-sub { color: var(--sl-w-dim); }
+.sl-win-act { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
+.sl-win-act > button { margin: 0; }
+
+.sl-frame { flex: 1 1 auto; min-height: 0; display: flex; padding: 8px; border-radius: var(--sl-w-r-card); background: var(--sl-w-card); }
+/* White behind the frame, so its first paint is not a dark hole; the widget is light either way. */
+.sl-frame iframe { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; border-radius: var(--sl-w-r-ctl); background: #fff; }
+
+.sl-group { display: flex; flex-direction: column; gap: 6px; }
+.sl-group-lbl { color: var(--sl-w-dim); font-size: 12px; }
+.sl-seg { display: flex; gap: 4px; width: 100%; padding: 4px; border-radius: var(--sl-w-r-ctl); background: var(--sl-w-card); }
+.sl-win .sl-seg-opt {
+  flex: 1 1 0; min-width: 0; height: 32px; margin: 0; padding: 0 10px;
+  border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none; background: transparent; color: inherit;
+  font-family: inherit; font-size: 13px; font-weight: 500; line-height: 1; letter-spacing: normal; text-transform: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+}
+.sl-win .sl-seg-opt:hover { background: var(--sl-w-chip); color: inherit; }
+.sl-win .sl-seg-opt[aria-checked="true"] { background: var(--sl-hue, var(--sl-w-head)); color: var(--sl-hue-ink, var(--sl-w-head-ink)); }
+.sl-amounts { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.sl-win input.sl-amount { width: 144px; max-width: 100%; height: 32px; margin: 0; outline: 1px solid transparent; outline-offset: -1px; }
+.sl-win input.sl-amount.sl-amount-ok { outline-color: var(--sl-w-focus); }
+/* PayPal draws its frames light, and inside a dark color-scheme the browser
+   paints them an opaque white strip, so their box declares light. */
+.sl-paypal { color-scheme: light; margin-top: 8px; }
+.sl-pp-state { margin: 0; color: var(--sl-w-dim); font-size: 12px; text-align: center; }
+.sl-pp-state:empty { display: none; }
+.sl-pp-state.sl-ok { color: var(--sl-w-ok); font-size: 14px; }
+.sl-pp-state.sl-err { color: var(--sl-w-err); font-size: 14px; }
+
+.sl-crypto { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; border-radius: var(--sl-w-r-card); background: var(--sl-w-card); }
+.sl-qrpanel { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+/* Black on white in every theme: an inverted code is outside the standard, and
+   the wallets a donor holds are the scanners that refuse one. The plate takes
+   the card radius; the quiet zone keeps its rounded corners white. */
+.sl-qr { flex: none; width: 192px; height: 192px; padding: 12px; border-radius: var(--sl-w-r-card); background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+.sl-qr svg { display: block; width: 100%; height: 100%; }
+/* Never shortened: an address is read back by eye before somebody sends to it. */
+.sl-win .sl-addr {
+  width: 100%; margin: 0; text-align: center; overflow-wrap: anywhere; word-break: break-all;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.sl-nets { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.sl-win .sl-net {
+  min-width: 0; height: auto; margin: 0; padding: 4px 12px;
+  border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: var(--sl-w-chip); color: var(--sl-w-dim);
+  font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+.sl-win .sl-net:hover { background: var(--sl-w-chip); color: inherit; }
+.sl-win .sl-net[aria-selected="true"] { background: var(--sl-hue, var(--sl-w-head)); color: var(--sl-hue-ink, var(--sl-w-head-ink)); }
+.sl-win .sl-note { margin: 0; color: var(--sl-w-warn); font-size: 12px; text-align: center; }
+.sl-win .sl-copy { margin: 0; }
+.sl-copy-src { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; }
+
+/* The coins as square tiles, the mark half the tile. A tile lights up in its
+   coin's colour under the pointer; the picked one keeps the page's colour. */
+.sl-coins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sl-win .sl-coin {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-width: 0; height: auto; margin: 0; padding: 0 8px;
+  border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none; background: var(--sl-w-card); color: var(--sl-w-dim);
+  font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+.sl-coin-mark { flex: none; display: flex; align-items: center; justify-content: center; height: 50%; }
+.sl-coin-mark svg { display: block; width: auto; height: 100%; }
+.sl-coin-tick { max-height: 1.4em; overflow: hidden; }
+.sl-win .sl-coin:is(:hover, :focus-visible):not([aria-selected="true"]) { background: var(--sl-tile); color: var(--sl-tile-ink); --sl-mark-ink: var(--sl-tile-ink); }
+.sl-win .sl-coin[aria-selected="true"] { background: var(--sl-hue, var(--sl-w-head)); color: var(--sl-hue-ink, var(--sl-w-head-ink)); }
+/* The tiles follow TowerTorch's label mode: the ticker alone, the mark alone,
+   or the mark with the ticker opening under the pointer; a picked coin keeps
+   its word. */
+#sl-wins[data-sl-labels="text"] .sl-coin-mark { display: none; }
+#sl-wins[data-sl-labels="glyph"] .sl-coin-tick { display: none; }
+#sl-wins[data-sl-labels="reactive"] .sl-coin:not([aria-selected="true"]):not(:hover):not(:focus-visible) .sl-coin-tick { max-height: 0; opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  #sl-wins[data-sl-labels="reactive"] .sl-coin-tick {
+    transition: max-height var(--cc-motion-label-dur, 160ms) var(--cc-motion-label-ease, ease-out), opacity var(--cc-motion-label-dur, 160ms) ease-out;
+  }
+}
+.sl-win :is(.sl-seg-opt, .sl-net, .sl-coin):focus-visible { outline: 2px solid var(--sl-w-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .sl-win .sl-shake { animation: sl-shake var(--cc-motion-shake-dur, 360ms) ease-in-out; }
+}
+
+/* TowerTorch's sheets dress the buttons and fields of the page, not of <body>,
+   so the window draws its own in the look of TowerTorch's windows. */
+html.cc-tools-on .sl-win button.sl-win-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 96px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
+  border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: #2e2e2e; color: #e6e6e6;
+  font-family: inherit; font-size: var(--cc-text-meta, 12px); font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+html.cc-tools-on .sl-win button.sl-win-btn:hover { background: var(--sl-w-head); color: var(--sl-w-head-ink); }
+html.cc-tools-on .sl-win input.sl-amount {
+  height: 32px; padding: 7px 10px; border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none;
+  background: #2e2e2e; color: #e6e6e6; font-family: inherit; font-size: 13px;
+}
+html.cc-tools-on .sl-win input.sl-amount:focus { background: #383838; }
+html.cc-tools-on .sl-win input.sl-amount::placeholder { color: #a3a3a3; opacity: 1; }
+
 /* With TowerTorch: GlimStone's look from its tokens. */
 html.cc-tools-on .sl-cfg {
   --sl-card: var(--cc-fm-card, #222);
