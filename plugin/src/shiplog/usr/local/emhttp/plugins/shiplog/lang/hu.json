@@ -79,6 +79,7 @@
   "t_updates": "Frissítések",
   "t_notify": "Értesítések",
   "t_sources": "Források",
+  "t_info": "Infó",
   "s_autoupd": "Automatikus frissítés",
   "s_autoupd_sub": "ütemezett, verziószint szerint (csak Unraid)",
   "s_ca_warn": "A CA Auto Update is telepítve van. Mindkettő frissíti a konténereket, ezért csak az egyiket használd a dupla frissítések elkerülése érdekében.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "Állapotoldal",
   "s_manual": "Kézi frissítések",
   "s_channels": "Csatornák",
-  "s_reset": "Visszaállítás"
+  "s_reset": "Visszaállítás",
+  "s_about": "Névjegy",
+  "s_about_body": "A ShipLog ingyenes bővítmény az Unraid Docker lapjához, amelyet egyetlen lovag épít esténként és hétvégente, fiók, telemetria és reklám nélkül.",
+  "s_about_coin": "Ha kiérdemelte a helyét a szervereden, dobj egy érmét a lovagodnak: segít fedezni a költségeket, és életben tartja a projektet.",
+  "s_crypto": "Kripto"
 }

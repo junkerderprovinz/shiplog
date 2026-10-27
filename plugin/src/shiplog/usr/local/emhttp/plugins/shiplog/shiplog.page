@@ -87,10 +87,31 @@ $slEye = function ($id) use ($G, $slE, $L) {
   return '<span class="sl-eye" role="button" tabindex="0" data-sl-eye="'.$id.'" aria-label="'.$slE($L['s_show']).'" aria-pressed="false">'.$G['Eye'].'</span>';
 };
 $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
+/* A version links to its release page. A build without a release behind it shows its name alone. */
+$slVerLink = function ($ver, $repo) use ($slE) {
+  $v = preg_replace('/^v/', '', (string)$ver);
+  if (!preg_match('/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/', $v)) return '<span class="sl-ver">'.$slE($v !== '' ? $v : '?').'</span>';
+  return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">v'.$slE($v).'</a>';
+};
+$M = include '/usr/local/emhttp/plugins/shiplog/include/marks.php';
+/* A give button in the shape of the README's buttons, as on TowerTorch's About card. */
+$slGive = function ($brand, $name, $href) use ($M, $slE) {
+  $inner = $brand === 'coffee'
+    ? '<span class="sl-rbtn-art">'.$M['coffee'].'</span>'
+    : '<span class="sl-rbtn-mark sl-'.$brand.'-mark">'.$M[$brand].'</span><span class="sl-rbtn-text"><span class="sl-rbtn-name">'.$slE($name).'</span></span>';
+  return '<span class="sl-rbtn-unit sl-tile-'.$brand.'"><a class="sl-rbtn" href="'.$slE($href).'" target="_blank" rel="noopener noreferrer" aria-label="'.$slE($name).'">'.$inner.'</a><span class="sl-rbtn-sheen"></span></span>';
+};
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/settings.css')?>">
 
 <div id="sl-cfg" class="sl-cfg" data-sl-labels="textGlyph">
+<div class="sl-hero">
+  <span class="sl-hero-tile"><img src="<?autov('/plugins/shiplog/images/shiplog.png')?>" alt=""></span>
+  <div class="sl-hero-text">
+    <h1 class="sl-hero-name">ShipLog</h1>
+    <p class="sl-hero-sub"><?=$slE($slPlain($L['s_sub']))?></p>
+  </div>
+</div>
 <form name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
 <input type="hidden" name="#file" value="shiplog/shiplog.cfg">
 <input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
@@ -102,6 +123,7 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
     <button type="button" class="sl-tab" role="tab" id="sl-tab-updates" aria-controls="sl-pane-updates" aria-selected="false" tabindex="-1" data-sl-tab="updates"><span class="sl-tabico"><?=$G['Refresh']?></span><span class="sl-tablbl"><?=$slE($L['t_updates'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-notify" aria-controls="sl-pane-notify" aria-selected="false" tabindex="-1" data-sl-tab="notify"><span class="sl-tabico"><?=$G['Notifications']?></span><span class="sl-tablbl"><?=$slE($L['t_notify'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-sources" aria-controls="sl-pane-sources" aria-selected="false" tabindex="-1" data-sl-tab="sources"><span class="sl-tabico"><?=$G['Link']?></span><span class="sl-tablbl"><?=$slE($L['t_sources'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-info" aria-controls="sl-pane-info" aria-selected="false" tabindex="-1" data-sl-tab="info"><span class="sl-tabico"><?=$G['Info']?></span><span class="sl-tablbl"><?=$slE($L['t_info'])?></span></button>
   </div>
 
   <div class="sl-main">
@@ -119,7 +141,7 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-DATA_DIR"><?=$slE($L['s_datadir'])?></label><?=$slInfo($L['s_datadir_hint'])?></div>
-        <div class="sl-ctl"><input type="text" class="sl-f sl-f-l" id="sl-DATA_DIR" name="DATA_DIR" value="<?=$slE($ddir)?>" dir="ltr"></div>
+        <div class="sl-ctl"><input type="text" class="sl-f" id="sl-DATA_DIR" name="DATA_DIR" value="<?=$slE($ddir)?>" dir="ltr"></div>
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-POLL_INTERVAL"><?=$slE($L['s_poll'])?></label><?=$slInfo($L['s_poll_hint'])?></div>
@@ -133,7 +155,7 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
         <div class="sl-lbl"><span id="sl-status-lbl"><?=$slE($L['s_status'])?></span></div>
         <div class="sl-ctl">
           <span class="sl-stat" id="sl-stat" data-state="run" role="status" aria-labelledby="sl-status-lbl sl-stat-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-stat-txt"><?=$slE($L['s_checking'])?></span></span>
-          <a class="button sl-btn" id="sl-statuslink" href="<?=$slE($slStatusUrl)?>" target="_blank" rel="noopener noreferrer" data-sl-port="<?=$slE($port)?>"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a>
+          <span class="sl-act"><a class="button sl-btn" id="sl-statuslink" href="<?=$slE($slStatusUrl)?>" target="_blank" rel="noopener noreferrer" data-sl-port="<?=$slE($port)?>"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a></span>
         </div>
       </div>
     </section>
@@ -178,9 +200,11 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
             <option value="hours" <?=$auMode==='hours'?'selected':''?>><?=$slE($L['s_au_sm_hours'])?></option>
             <option value="days"  <?=$auMode==='days'?'selected':''?>><?=$slE($L['s_au_sm_days'])?></option>
           </select>
-          <input type="text" class="sl-f sl-f-s" name="AUTOUPDATE_SCHED_TIME" id="sl-au-time" value="<?=$slE($auTime)?>" placeholder="04:00" aria-label="<?=$slE($L['s_au_sm_daily'])?>" dir="ltr">
-          <input type="text" class="sl-f sl-f-xs" name="AUTOUPDATE_SCHED_EVERY" id="sl-au-every" value="<?=$slE($auEvery)?>" placeholder="6" inputmode="numeric" dir="ltr">
-          <span class="sl-unit" id="sl-au-every-unit"></span>
+          <span class="sl-act">
+            <input type="text" class="sl-f sl-f-s" name="AUTOUPDATE_SCHED_TIME" id="sl-au-time" value="<?=$slE($auTime)?>" placeholder="04:00" aria-label="<?=$slE($L['s_au_sm_daily'])?>" dir="ltr">
+            <input type="text" class="sl-f sl-f-xs" name="AUTOUPDATE_SCHED_EVERY" id="sl-au-every" value="<?=$slE($auEvery)?>" placeholder="6" inputmode="numeric" dir="ltr">
+            <span class="sl-unit" id="sl-au-every-unit"></span>
+          </span>
         </div>
       </div>
       <div class="sl-row" data-sl-au>
@@ -229,7 +253,7 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
         <div class="sl-lbl"><label for="sl-MATRIX_ROOM"><?=$slE($L['s_mx_room'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-MATRIX_ROOM" name="MATRIX_ROOM" value="<?=$slE($mroom)?>" placeholder="!roomid:server  or  #alias:server" dir="ltr">
-          <button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-matrix-result" role="status"></div>
       </div>
@@ -241,14 +265,14 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
       <h3 class="sl-h"><span id="sl-h-registry"><?=$slE($L['s_registry'])?></span><?=$slInfo($L['s_registry_sub'])?></h3>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-GITHUB_TOKEN"><?=$slE($L['s_gh_token'])?></label><?=$slInfo($L['s_gh_hint'])?></div>
-        <div class="sl-ctl"><span class="sl-field"><input type="password" class="sl-f" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=$slE($ghtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-GITHUB_TOKEN')?></span></div>
-      </div>
-      <div class="sl-row sl-row-act">
         <div class="sl-ctl">
-          <?=$slLinks($L['s_gh_hint'])?>
-          <button type="button" class="sl-btn" data-sl-check="github" data-sl-out="sl-gh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+          <span class="sl-field"><input type="password" class="sl-f" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=$slE($ghtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-GITHUB_TOKEN')?></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="github" data-sl-out="sl-gh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-gh-result" role="status"></div>
+      </div>
+      <div class="sl-row sl-row-act">
+        <div class="sl-ctl"><span class="sl-act"><?=$slLinks($L['s_gh_hint'])?></span></div>
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-DOCKERHUB_USERNAME"><?=$slE($L['s_dh_user'])?></label></div>
@@ -256,14 +280,14 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-DOCKERHUB_TOKEN"><?=$slE($L['s_dh_token'])?></label><?=$slInfo($L['s_dh_hint'])?></div>
-        <div class="sl-ctl"><span class="sl-field"><input type="password" class="sl-f" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=$slE($dhtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-DOCKERHUB_TOKEN')?></span></div>
-      </div>
-      <div class="sl-row sl-row-act">
         <div class="sl-ctl">
-          <?=$slLinks($L['s_dh_hint'])?>
-          <button type="button" class="sl-btn" data-sl-check="dockerhub" data-sl-out="sl-dh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+          <span class="sl-field"><input type="password" class="sl-f" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=$slE($dhtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-DOCKERHUB_TOKEN')?></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="dockerhub" data-sl-out="sl-dh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-dh-result" role="status"></div>
+      </div>
+      <div class="sl-row sl-row-act">
+        <div class="sl-ctl"><span class="sl-act"><?=$slLinks($L['s_dh_hint'])?></span></div>
       </div>
     </section>
 
@@ -273,14 +297,14 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
         <div class="sl-lbl"><label for="sl-OLLAMA_URL"><?=$slE($L['s_ollama_url'])?></label><?=$slInfo($L['s_ollama_url_hint'])?></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-OLLAMA_URL" name="OLLAMA_URL" value="<?=$slE($ourl)?>" placeholder="http://127.0.0.1:11434" dir="ltr">
-          <button type="button" class="sl-btn" data-sl-check="ollama-detect" data-sl-out="sl-ollama-result"><?=$slBtn('Search', $L['s_autodetect'])?></button>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama-detect" data-sl-out="sl-ollama-result"><?=$slBtn('Search', $L['s_autodetect'])?></button></span>
         </div>
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-OLLAMA_MODEL"><?=$slE($L['s_ollama_model'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-OLLAMA_MODEL" name="OLLAMA_MODEL" value="<?=$slE($omodel)?>" placeholder="llama3.1" dir="ltr">
-          <button type="button" class="sl-btn" data-sl-check="ollama" data-sl-out="sl-ollama-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama" data-sl-out="sl-ollama-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-ollama-result" role="status"></div>
       </div>
@@ -292,9 +316,30 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
         <div class="sl-lbl"><label for="sl-LLAMASWAP_MODEL"><?=$slE($L['s_llamaswap_model'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-LLAMASWAP_MODEL" name="LLAMASWAP_MODEL" value="<?=$slE($lsmodel)?>" placeholder="gemma4-e4b" dir="ltr">
-          <button type="button" class="sl-btn" data-sl-check="llamaswap" data-sl-out="sl-llamaswap-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="llamaswap" data-sl-out="sl-llamaswap-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-llamaswap-result" role="status"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="sl-pane" role="tabpanel" id="sl-pane-info" aria-labelledby="sl-tab-info" hidden>
+    <section class="sl-card" aria-labelledby="sl-h-about">
+      <h3 class="sl-h"><span id="sl-h-about"><?=$slE($L['s_about'])?></span></h3>
+      <p class="sl-prose"><?=$slE($L['s_about_body'])?></p>
+      <div class="sl-row">
+        <div class="sl-lbl"><span>ShipLog</span></div>
+        <div class="sl-ctl"><?=$slVerLink($slVer, 'https://github.com/junkerderprovinz/shiplog')?></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><span>GlimStone</span></div>
+        <div class="sl-ctl"><?=$slVerLink($slGlimstoneVer, 'https://github.com/junkerderprovinz/glimstone')?></div>
+      </div>
+      <p class="sl-prose sl-prose-next"><?=$slE($L['s_about_coin'])?></p>
+      <div class="sl-rbtn-rows sl-give">
+        <?=$slGive('coffee', 'Buy me a coffee', 'https://buymeacoffee.com/junkerderprovinz')?>
+        <?=$slGive('paypal', 'PayPal', 'https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS')?>
+        <?=$slGive('bitcoin', $L['s_crypto'], 'https://junkerderprovinz.github.io/junkerderprovinz/')?>
       </div>
     </section>
   </div>
@@ -314,7 +359,6 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
   </script>
 
   <div class="sl-foot">
-    <div class="sl-version"><span>ShipLog v<?=$slE($slVer)?> · GlimStone v<?=$slE($slGlimstoneVer)?></span><?=$slInfo($L['s_sub'])?></div>
     <div class="sl-actions">
       <button type="button" class="sl-btn" id="sl-done" data-sl-alt="<?=$slE($L['s_reset'])?>" onclick="done()"><?=$slBtn('Check', $L['s_done'])?></button>
       <button type="submit" class="sl-btn sl-primary" id="sl-apply" name="#apply" value="<?=$slE($L['s_apply'])?>" disabled><?=$slBtn('Save', $L['s_apply'])?></button>

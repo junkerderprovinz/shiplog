@@ -79,6 +79,7 @@
   "t_updates": "Päivitykset",
   "t_notify": "Ilmoitukset",
   "t_sources": "Lähteet",
+  "t_info": "Info",
   "s_autoupd": "Automaattipäivitys",
   "s_autoupd_sub": "ajastettu, versiotason mukaan (vain Unraid)",
   "s_ca_warn": "Myös CA Auto Update on asennettu. Molemmat päivittävät kontteja, joten käytä vain yhtä välttääksesi kaksinkertaiset päivitykset.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "Tilasivu",
   "s_manual": "Manuaaliset päivitykset",
   "s_channels": "Kanavat",
-  "s_reset": "Palauta"
+  "s_reset": "Palauta",
+  "s_about": "Tietoja",
+  "s_about_body": "ShipLog on ilmainen laajennus Unraidin Docker-välilehdelle. Sitä rakentaa yksi ritari iltaisin ja viikonloppuisin, ilman tilejä, ilman telemetriaa ja ilman mainoksia.",
+  "s_about_coin": "Jos se on ansainnut paikkansa palvelimellasi, heitä ritarillesi kolikko: se auttaa kattamaan kulut ja pitää projektin hengissä.",
+  "s_crypto": "Krypto"
 }

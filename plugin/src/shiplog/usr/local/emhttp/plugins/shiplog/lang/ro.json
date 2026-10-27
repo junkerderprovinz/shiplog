@@ -79,6 +79,7 @@
   "t_updates": "Actualizări",
   "t_notify": "Notificări",
   "t_sources": "Surse",
+  "t_info": "Info",
   "s_autoupd": "Actualizare automată",
   "s_autoupd_sub": "programată, în funcție de nivelul versiunii (doar Unraid)",
   "s_ca_warn": "CA Auto Update este de asemenea instalat. Ambele vor actualiza containerele, așa că folosiți doar unul pentru a evita actualizările duble.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "Pagină de stare",
   "s_manual": "Actualizări manuale",
   "s_channels": "Canale",
-  "s_reset": "Resetează"
+  "s_reset": "Resetează",
+  "s_about": "Despre",
+  "s_about_body": "ShipLog este un plugin gratuit pentru fila Docker din Unraid, construit de un singur cavaler serile și în weekenduri, fără conturi, fără telemetrie și fără reclame.",
+  "s_about_coin": "Dacă și-a câștigat un loc pe serverul tău, aruncă-i cavalerului tău o monedă: ajută la acoperirea costurilor și ține proiectul în viață.",
+  "s_crypto": "Cripto"
 }

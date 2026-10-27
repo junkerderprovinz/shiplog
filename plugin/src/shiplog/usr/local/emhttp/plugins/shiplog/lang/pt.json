@@ -79,6 +79,7 @@
   "t_updates": "Atualizações",
   "t_notify": "Notificações",
   "t_sources": "Fontes",
+  "t_info": "Info",
   "s_autoupd": "Atualização automática",
   "s_autoupd_sub": "agendada, por nível de versão (somente Unraid)",
   "s_ca_warn": "O CA Auto Update também está instalado. Ambos atualizam contêineres, então use apenas um para evitar atualizações duplicadas.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "Página de status",
   "s_manual": "Atualizações manuais",
   "s_channels": "Canais",
-  "s_reset": "Redefinir"
+  "s_reset": "Redefinir",
+  "s_about": "Sobre",
+  "s_about_body": "O ShipLog é um plugin gratuito para a aba Docker do Unraid, feito por um único cavaleiro à noite e aos fins de semana, sem contas, sem telemetria e sem anúncios.",
+  "s_about_coin": "Se ele conquistou um lugar no seu servidor, jogue uma moeda ao seu cavaleiro: isso ajuda a cobrir os custos e mantém o projeto vivo.",
+  "s_crypto": "Cripto"
 }
