@@ -127,5 +127,10 @@
   "d_newerPill": "sabitlendi · daha yeni %v",
   "d_newerChipHint": "Daha yeni sürüm %v mevcut. Etiket sabitlendi, güncellemek için onu değiştir.",
   "d_newerNote": "%v sürümü mevcut. Güncellemek için etiketi değiştir.",
-  "d_newerWhy": "Bu konteyner %v sürümüne sabitlendi, bu yüzden yeniden çekmek hiçbir şeyi değiştirmez ve ShipLog onu asla otomatik güncellemez."
+  "d_newerWhy": "Bu konteyner %v sürümüne sabitlendi, bu yüzden yeniden çekmek hiçbir şeyi değiştirmez ve ShipLog onu asla otomatik güncellemez.",
+  "s_status": "Durum",
+  "s_statuspage_btn": "Durum sayfası",
+  "s_manual": "Elle güncellemeler",
+  "s_channels": "Kanallar",
+  "s_reset": "Sıfırla"
 }

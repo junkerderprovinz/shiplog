@@ -127,5 +127,10 @@
   "d_newerPill": "fäst · nyare %v",
   "d_newerChipHint": "Nyare version %v tillgänglig. Taggen är fäst, så ändra den för att uppdatera.",
   "d_newerNote": "Version %v är tillgänglig. Ändra taggen för att uppdatera.",
-  "d_newerWhy": "Den här containern är fäst vid %v, så en ny hämtning ändrar ingenting och ShipLog uppdaterar den aldrig automatiskt."
+  "d_newerWhy": "Den här containern är fäst vid %v, så en ny hämtning ändrar ingenting och ShipLog uppdaterar den aldrig automatiskt.",
+  "s_status": "Status",
+  "s_statuspage_btn": "Statussida",
+  "s_manual": "Manuella uppdateringar",
+  "s_channels": "Kanaler",
+  "s_reset": "Återställ"
 }

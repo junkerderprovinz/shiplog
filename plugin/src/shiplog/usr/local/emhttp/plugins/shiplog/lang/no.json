@@ -127,5 +127,10 @@
   "d_newerPill": "festet · nyere %v",
   "d_newerChipHint": "Nyere versjon %v tilgjengelig. Taggen er festet, så endre den for å oppdatere.",
   "d_newerNote": "Versjon %v er tilgjengelig. Endre taggen for å oppdatere.",
-  "d_newerWhy": "Denne containeren er festet til %v, så å hente den på nytt endrer ingenting, og ShipLog auto-oppdaterer den aldri."
+  "d_newerWhy": "Denne containeren er festet til %v, så å hente den på nytt endrer ingenting, og ShipLog auto-oppdaterer den aldri.",
+  "s_status": "Status",
+  "s_statuspage_btn": "Statusside",
+  "s_manual": "Manuelle oppdateringer",
+  "s_channels": "Kanaler",
+  "s_reset": "Tilbakestill"
 }

@@ -127,5 +127,10 @@
   "d_newerPill": "đã ghim · mới hơn %v",
   "d_newerChipHint": "Có phiên bản mới hơn %v. Thẻ đang được ghim, hãy đổi thẻ để cập nhật.",
   "d_newerNote": "Đã có phiên bản %v. Hãy đổi thẻ để cập nhật.",
-  "d_newerWhy": "Container này được ghim vào %v, nên kéo lại không thay đổi gì và ShipLog không bao giờ tự động cập nhật nó."
+  "d_newerWhy": "Container này được ghim vào %v, nên kéo lại không thay đổi gì và ShipLog không bao giờ tự động cập nhật nó.",
+  "s_status": "Trạng thái",
+  "s_statuspage_btn": "Trang trạng thái",
+  "s_manual": "Cập nhật thủ công",
+  "s_channels": "Kênh",
+  "s_reset": "Đặt lại"
 }

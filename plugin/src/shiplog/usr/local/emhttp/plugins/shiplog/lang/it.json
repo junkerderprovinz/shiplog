@@ -127,5 +127,10 @@
   "d_newerPill": "bloccato · più recente %v",
   "d_newerChipHint": "Versione più recente %v disponibile. Il tag è bloccato, quindi cambialo per aggiornare.",
   "d_newerNote": "La versione %v è disponibile. Cambia il tag per aggiornare.",
-  "d_newerWhy": "Questo container è bloccato su %v, quindi riscaricarlo non cambia nulla e ShipLog non lo aggiorna mai automaticamente."
+  "d_newerWhy": "Questo container è bloccato su %v, quindi riscaricarlo non cambia nulla e ShipLog non lo aggiorna mai automaticamente.",
+  "s_status": "Stato",
+  "s_statuspage_btn": "Pagina di stato",
+  "s_manual": "Aggiornamenti manuali",
+  "s_channels": "Canali",
+  "s_reset": "Ripristina"
 }

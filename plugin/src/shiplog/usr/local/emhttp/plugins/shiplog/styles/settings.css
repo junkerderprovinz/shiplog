@@ -1,0 +1,274 @@
+/* ShipLog's settings page.
+ *
+ * One markup, two looks. Without TowerTorch the page follows Unraid: its theme
+ * colours, its fields, its buttons and its blue switch. With TowerTorch, which
+ * puts cc-tools-on on <html> for every settings page, its sheets draw the
+ * fields, the buttons and the switches as GlimStone does, and the second half
+ * of this sheet gives the cards, the headings, the tabs and the bubble the same
+ * look from TowerTorch's tokens. The geometry is the same in both, so the page
+ * does not move when TowerTorch's script arrives after the first paint. */
+
+.sl-cfg {
+  --sl-card: var(--mild-background-color, rgba(128, 128, 128, .08));
+  --sl-tile: var(--mild-background-color, rgba(128, 128, 128, .08));
+  --sl-tile-ink: var(--text-color, inherit);
+  --sl-tile-hover: var(--hover-table-row-background-color, rgba(128, 128, 128, .14));
+  --sl-head: var(--hover-button-background, #e22828);
+  --sl-head-ink: var(--hover-button-text-color, #fff);
+  --sl-dim: var(--alt-text-color, #8d8d8d);
+  --sl-track: var(--checkbox-color, #8d8d8d);
+  --sl-on: var(--link-text-color, #486dba);
+  --sl-on-ink: #fff;
+  --sl-knob: #fff;
+  --sl-focus: var(--link-text-color, #486dba);
+  --sl-well: color-mix(in srgb, currentColor 6%, transparent);
+  --sl-ok: #3fae6a;
+  --sl-err: #e05252;
+  --sl-warn: #ff832b;
+  --sl-r-card: 4px;
+  --sl-r-ctl: 4px;
+  --sl-r-pill: 4px;
+  --sl-shadow: none;
+  font-size: 14px;
+  line-height: 1.45;
+  padding-bottom: 24px;
+}
+html:is(.Theme--white, .Theme--azure) .sl-cfg { --sl-ok: #0e6027; --sl-err: #da1e28; --sl-warn: #ba4e00; }
+.sl-cfg *, .sl-cfg *::before, .sl-cfg *::after { box-sizing: border-box; }
+.sl-cfg [hidden] { display: none !important; }
+
+/* The tab column beside the cards, as on TowerTorch's own settings page. */
+.sl-body { display: flex; align-items: flex-start; gap: 24px; margin-top: 18px; }
+.sl-tabs { position: sticky; top: 12px; flex: none; width: 204px; display: flex; flex-direction: column; gap: 4px; }
+.sl-cfg .sl-tab {
+  display: flex; align-items: center; gap: 12px; width: 100%; height: 66px; min-width: 0; margin: 0; padding: 0 12px;
+  border: none; border-radius: var(--sl-r-ctl); box-shadow: none;
+  background: var(--sl-tile); color: var(--sl-tile-ink);
+  font-family: inherit; font-size: 14px; font-weight: 500; line-height: 20px;
+  letter-spacing: normal; text-transform: none; text-align: start; cursor: pointer;
+}
+.sl-cfg .sl-tab:hover { background: var(--sl-tile); color: var(--sl-tile-ink); box-shadow: inset 0 0 0 100vmax var(--sl-tile-hover); }
+.sl-cfg .sl-tab[aria-selected="true"],
+.sl-cfg .sl-tab[aria-selected="true"]:hover { background: var(--sl-head); color: var(--sl-head-ink); box-shadow: none; }
+.sl-tabico { flex: none; display: inline-flex; width: 20px; height: 20px; }
+.sl-tabico svg { width: 20px; height: 20px; display: block; }
+.sl-tablbl { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+@media (max-width: 1023px) {
+  .sl-tabs { width: 52px; }
+  .sl-cfg .sl-tab { justify-content: center; padding: 0; }
+  /* hidden from view, still the tab's accessible name */
+  .sl-tablbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+.sl-main { flex: 1 1 auto; min-width: 0; max-width: 920px; }
+/* The top padding is the room the first card's heading takes above it. */
+.sl-pane { display: flex; flex-direction: column; gap: 40px; padding-top: 11px; }
+
+/* A card, and its heading as a badge across the card's top edge. */
+.sl-card { position: relative; padding: 22px 18px 12px; border-radius: var(--sl-r-card); background: var(--sl-card); box-shadow: var(--sl-shadow); }
+.sl-cfg .sl-h {
+  position: absolute; top: 0; transform: translateY(-50%); z-index: 1;
+  display: inline-flex; align-items: center; gap: 6px; max-width: calc(100% - 36px); min-height: 22px; margin: 0; padding: 0 12px;
+  border-radius: var(--sl-r-pill); background: var(--sl-head); color: var(--sl-head-ink);
+  font-size: 12px; font-weight: 500; line-height: 1.2; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.sl-h .sl-info { color: inherit; opacity: 1; }
+
+/* A row: the name and its (i) at the start, the control at the end. Where both
+   do not fit, the control moves under the name and keeps the end. */
+.sl-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; min-height: 44px; padding: 6px 0; }
+.sl-lbl { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 0; }
+.sl-lbl label { margin: 0; cursor: pointer; }
+.sl-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; max-width: 100%; margin-inline-start: auto; }
+.sl-row-wide .sl-lbl { flex-basis: 100%; }
+.sl-wide { flex: 1 0 100%; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sl-res { flex: 1 0 100%; text-align: end; font-size: 13px; overflow-wrap: anywhere; }
+.sl-res:empty { display: none; }
+.sl-res.ok { color: var(--sl-ok); }
+.sl-res.err { color: var(--sl-err); }
+.sl-res.run, .sl-hint, .sl-unit { color: var(--sl-dim); font-size: 13px; }
+
+/* Fields keep a width of their own instead of stretching across the row. */
+.sl-cfg input.sl-f { width: 280px; max-width: 100%; height: 32px; margin: 0; }
+.sl-cfg input.sl-f-l { width: 340px; }
+.sl-cfg input.sl-f-s { width: 120px; }
+.sl-cfg input.sl-f-xs { width: 72px; }
+.sl-cfg select.sl-sel { width: 240px; max-width: 100%; height: 32px; margin: 0; }
+.sl-field { position: relative; display: inline-flex; width: 280px; max-width: 100%; }
+.sl-cfg .sl-field > input.sl-f { width: 100%; padding-inline-end: 34px; }
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
+.sl-eye {
+  position: absolute; inset-inline-end: 9px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; width: 17px; height: 17px; line-height: 0; color: var(--sl-dim); cursor: pointer;
+}
+.sl-eye:hover { color: inherit; }
+.sl-eye svg { width: 17px; height: 17px; display: block; }
+
+/* The switch, drawn on the checkbox itself. TowerTorch draws its own on the
+   same checkbox with the same box and the same knob, so nothing moves. */
+.sl-cfg input.sl-sw {
+  -webkit-appearance: none; appearance: none; position: relative; flex: none; vertical-align: middle;
+  width: 44px; height: 24px; margin: 0; padding: 0; border: none; border-radius: var(--sl-r-pill);
+  background: var(--sl-track); cursor: pointer; transition: background-color .12s;
+}
+.sl-cfg input.sl-sw::before {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: var(--sl-r-pill); background: var(--sl-knob); transition: left .15s;
+}
+.sl-cfg input.sl-sw:checked { background: var(--sl-on); }
+.sl-cfg input.sl-sw:checked::before { left: 23px; background: var(--sl-on-ink); }
+
+/* Buttons are the host's: Unraid's without TowerTorch, TowerTorch's badges with
+   it. This only lays out the glyph beside the words. */
+.sl-cfg .sl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  margin: 0; white-space: nowrap; text-decoration: none; vertical-align: middle;
+}
+.sl-cfg .sl-btn:disabled { opacity: .5; cursor: default; }
+.sl-cfg .sl-btn:disabled:hover { color: var(--button-text-color); background: var(--button-background); background-size: var(--button-background-size); }
+.sl-g { display: inline-flex; flex: none; line-height: 0; }
+.sl-g svg { width: 1.15em; height: 1.15em; display: block; }
+.sl-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+.sl-cfg .sl-btn.sl-ok { color: var(--sl-ok); }
+.sl-cfg .sl-btn.sl-err { color: var(--sl-err); }
+
+/* The label engine: words, glyph and words, the glyph alone, or the glyph with
+   the words opening under the pointer and on keyboard focus. The words stay in
+   the button as its accessible name in every mode. */
+#sl-cfg[data-sl-labels="text"] .sl-btn .sl-g { display: none; }
+#sl-cfg:is([data-sl-labels="glyph"], [data-sl-labels="reactive"]) .sl-btn { gap: 0; }
+#sl-cfg:is([data-sl-labels="glyph"], [data-sl-labels="reactive"]) .sl-btn .sl-l { max-width: 0; opacity: 0; }
+#sl-cfg[data-sl-labels="glyph"] .sl-btn .sl-g svg { width: 15px; height: 15px; }
+#sl-cfg[data-sl-labels="reactive"] .sl-btn:is(:hover, :focus-visible):not(:disabled) .sl-l {
+  max-width: calc(var(--sl-rchars, 12) * .62em + 4px); opacity: 1; margin-inline-start: 6px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  #sl-cfg[data-sl-labels="reactive"] .sl-btn .sl-l {
+    transition: max-width var(--cc-motion-label-dur, 160ms) var(--cc-motion-label-ease, ease-out),
+      opacity calc(var(--cc-motion-label-dur, 160ms) * .6) ease-out,
+      margin-inline-start var(--cc-motion-label-dur, 160ms) var(--cc-motion-label-ease, ease-out);
+  }
+}
+
+/* A failed check shakes its button once. */
+@keyframes sl-shake {
+  0%, 100% { transform: none; }
+  20%, 60% { transform: translateX(calc(var(--cc-motion-shake-dist, 4px) * -1)); }
+  40%, 80% { transform: translateX(var(--cc-motion-shake-dist, 4px)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sl-cfg .sl-btn.sl-shake { animation: sl-shake var(--cc-motion-shake-dur, 360ms) ease-in-out; }
+}
+
+/* The engine's state: a quiet dot and the words in the secondary colour. */
+.sl-stat { display: inline-flex; align-items: center; gap: 8px; color: var(--sl-dim); font-size: 13px; }
+.sl-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--sl-dim); }
+.sl-stat[data-state="ok"] .sl-dot { background: var(--sl-ok); }
+.sl-stat[data-state="err"] .sl-dot { background: var(--sl-err); }
+.sl-stat[data-state="err"] { color: var(--sl-err); }
+
+.sl-warn {
+  display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 6px; padding: 9px 12px;
+  border-radius: var(--sl-r-ctl); background: color-mix(in srgb, var(--sl-warn) 12%, transparent);
+  color: var(--sl-warn); font-size: 13px; line-height: 1.45;
+}
+.sl-warn .sl-g { padding-top: 2px; }
+
+/* The auto-update container list: a switch per container, in a well. */
+.sl-ct {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 16px;
+  max-height: 300px; overflow-y: auto; padding: 8px 12px; border-radius: var(--sl-r-ctl); background: var(--sl-well);
+}
+.sl-ct:empty { display: none; }
+.sl-ct-item { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 34px; margin: 0; cursor: pointer; }
+.sl-ct-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.sl-ct-item small { flex: none; color: var(--sl-dim); font-size: 12px; }
+/* A pinned container has no switch; a hollow blue ring holds its place, like
+   the ring on the Docker tab's chip. */
+.sl-ct-pin { cursor: default; }
+.sl-ct-ring { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 24px; }
+.sl-ct-ring::after { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--cc-info, #4f8fd6); }
+
+.sl-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 28px; }
+.sl-version { display: inline-flex; align-items: center; gap: 6px; color: var(--sl-dim); font-size: 12px; font-variant-numeric: tabular-nums lining-nums; }
+.sl-actions { display: flex; gap: 10px; margin-inline-start: auto; }
+
+/* The (i): a bare stroked glyph, never a filled badge. */
+.sl-info { display: inline-flex; flex: none; width: 15px; height: 15px; border-radius: 50%; color: inherit; opacity: .8; cursor: help; }
+.sl-info:hover { opacity: 1; }
+.sl-info svg { width: 15px; height: 15px; display: block; }
+
+/* The bubble lives in <body>, outside .sl-cfg, so it names its colours itself. */
+.sl-bubble {
+  position: fixed; z-index: 2147483647; transform: translateX(-50%); width: max-content; max-width: 300px; pointer-events: none;
+  padding: 7px 10px; border-radius: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  background: var(--mild-background-color, #262626); color: var(--text-color, #f2f2f2);
+  font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: normal; text-transform: none; text-align: start; white-space: normal;
+}
+.sl-bubble::before {
+  content: ""; position: absolute; left: var(--sl-tip-ax, 50%); top: -6px; transform: translateX(-50%);
+  border-style: solid; border-width: 0 6px 6px 6px; border-color: transparent transparent var(--sl-bubble-bg, var(--mild-background-color, #262626)) transparent;
+}
+.sl-bubble.sl-bubble-above::before { top: auto; bottom: -6px; border-width: 6px 6px 0 6px; border-color: var(--sl-bubble-bg, var(--mild-background-color, #262626)) transparent transparent transparent; }
+@keyframes sl-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .sl-bubble { animation: sl-fade var(--cc-motion-fade-dur, 110ms) ease-out; }
+}
+
+/* With TowerTorch: GlimStone's look from its tokens. */
+html.cc-tools-on .sl-cfg {
+  --sl-card: var(--cc-fm-card, #222);
+  --sl-tile: var(--cc-fm-btn, #353535);
+  --sl-tile-ink: var(--cc-text-chip, #cfcfcf);
+  --sl-tile-hover: var(--cc-hover-wash, rgba(230, 230, 230, .15));
+  --sl-head: var(--cc-accent, #FCC419);
+  --sl-head-ink: var(--cc-accent-text, #161616);
+  --sl-dim: var(--cc-text-dim, #8a8a8a);
+  --sl-focus: var(--cc-accent-ink, #FCC419);
+  --sl-ok: var(--cc-ok-ink, #6fdc8c);
+  --sl-err: var(--cc-err-ink, #ff8389);
+  --sl-warn: var(--cc-warn-ink, #ff832b);
+  --sl-r-card: var(--cc-radius-card, 20px);
+  --sl-r-ctl: var(--cc-radius-control, 12px);
+  --sl-r-pill: var(--cc-radius-pill, 9999px);
+  --sl-shadow: var(--cc-elev-1, 0 1px 4px rgba(0, 0, 0, .35));
+  color: var(--cc-text, #e6e6e6);
+}
+/* A card or a tab under the rainbow carries its own position as --sl-hue. */
+html.cc-tools-on .sl-cfg .sl-h { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); font-size: var(--cc-sec-fs, 12px); font-weight: var(--cc-sec-fw, 500); letter-spacing: var(--cc-sec-ls, 1.2px); min-height: var(--cc-sec-h, 22px); }
+html.cc-tools-on .sl-cfg .sl-tab[aria-selected="true"],
+html.cc-tools-on .sl-cfg .sl-tab[aria-selected="true"]:hover { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); }
+/* The tab-strip colour rule: an idle tab's glyph wears its colour, the open tab
+   wears it as its fill, and in the reactive mode an idle glyph rests grey until
+   the pointer or the focus reaches it. */
+html.cc-tools-on .sl-tab .sl-tabico { color: var(--sl-hue, var(--cc-accent, #FCC419)); }
+html.cc-tools-on .sl-tab[aria-selected="true"] .sl-tabico,
+html.cc-tools-on .sl-reactive .sl-tab .sl-tabico { color: inherit; }
+html.cc-tools-on .sl-reactive .sl-tab:not([aria-selected="true"]):is(:hover, :focus-visible) .sl-tabico { color: var(--sl-hue, var(--cc-accent, #FCC419)); }
+html.cc-tools-on .sl-bubble {
+  --sl-bubble-bg: var(--cc-surface-window, #242424);
+  background: var(--sl-bubble-bg); color: var(--cc-text, #e6e6e6);
+  border-radius: var(--cc-radius-control, 12px); box-shadow: var(--cc-elev-2, 0 10px 28px rgba(0, 0, 0, .38));
+}
+
+/* TowerTorch's sheets reach every button, switch and focus ring on a settings
+   page with !important. An important declaration in a cascade layer outranks
+   every unlayered one, so the few things this page needs to keep sit here: the
+   width stage that stops a button from changing width between label modes, the
+   verdict of a check, the switch's place at the end of its row and a visible
+   focus ring. */
+@layer shiplog-settings {
+  #sl-cfg .sl-btn.sl-w-xs { min-width: max(88px, var(--sl-w, 0px)) !important; }
+  #sl-cfg .sl-btn.sl-w-sm { min-width: max(128px, var(--sl-w, 0px)) !important; }
+  #sl-cfg .sl-btn.sl-w-md { min-width: max(184px, var(--sl-w, 0px)) !important; }
+  #sl-cfg .sl-btn.sl-w-lg { min-width: max(240px, var(--sl-w, 0px)) !important; }
+  #sl-cfg.sl-still .sl-btn, #sl-cfg.sl-still .sl-btn * { transition: none !important; }
+  html.cc-tools-on #sl-cfg .sl-btn.sl-ok { background: var(--cc-ok, #6fdc8c) !important; color: var(--cc-ok-fg, #161616) !important; }
+  html.cc-tools-on #sl-cfg .sl-btn.sl-ok:hover { background: var(--cc-ok-hover, #6fdc8c) !important; }
+  html.cc-tools-on #sl-cfg .sl-btn.sl-err { background: var(--cc-err, #ff8389) !important; color: var(--cc-err-fg, #161616) !important; }
+  html.cc-tools-on #sl-cfg .sl-btn.sl-err:hover { background: var(--cc-err-hover, #ff8389) !important; }
+  #sl-cfg input.sl-sw { margin: 0 !important; }
+  #sl-cfg :is(.sl-tab, .sl-btn, .sl-sw, .sl-eye, .sl-info):focus-visible {
+    outline: 2px solid var(--sl-focus) !important; outline-offset: 2px !important; filter: none !important;
+  }
+}

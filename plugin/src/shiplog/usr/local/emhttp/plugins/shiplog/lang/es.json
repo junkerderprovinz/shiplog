@@ -127,5 +127,10 @@
   "d_newerPill": "fijado · más reciente %v",
   "d_newerChipHint": "Versión más reciente %v disponible. La etiqueta está fijada, así que cámbiala para actualizar.",
   "d_newerNote": "La versión %v está disponible. Cambia la etiqueta para actualizar.",
-  "d_newerWhy": "Este contenedor está fijado a %v, así que volver a descargarlo no cambia nada y ShipLog nunca lo actualiza automáticamente."
+  "d_newerWhy": "Este contenedor está fijado a %v, así que volver a descargarlo no cambia nada y ShipLog nunca lo actualiza automáticamente.",
+  "s_status": "Estado",
+  "s_statuspage_btn": "Página de estado",
+  "s_manual": "Actualizaciones manuales",
+  "s_channels": "Canales",
+  "s_reset": "Restablecer"
 }
