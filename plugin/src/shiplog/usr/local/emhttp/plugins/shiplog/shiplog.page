@@ -97,12 +97,25 @@ $slVerLink = function ($ver, $repo) use ($slE) {
   return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">v'.$slE($v).'</a>';
 };
 $M = include '/usr/local/emhttp/plugins/shiplog/include/marks.php';
-/* A button in the shape of the README's buttons, as on TowerTorch's Info tab. */
-$slRbtn = function ($brand, $name, $href) use ($M, $slE) {
+/* A button in the shape of the README's buttons, as on TowerTorch's Info tab. A give
+   button opens its window; the link stays for a new tab and for a page without script. */
+$slRbtn = function ($brand, $name, $href, $give = '') use ($M, $slE) {
   $inner = $brand === 'coffee'
     ? '<span class="sl-rbtn-art">'.$M['coffee'].'</span>'
     : '<span class="sl-rbtn-mark sl-'.$brand.'-mark">'.$M[$brand].'</span><span class="sl-rbtn-text"><span class="sl-rbtn-name">'.$slE($name).'</span></span>';
-  return '<span class="sl-rbtn-unit sl-tile-'.$brand.'"><a class="sl-rbtn" href="'.$slE($href).'" target="_blank" rel="noopener noreferrer" aria-label="'.$slE($name).'">'.$inner.'</a><span class="sl-rbtn-sheen"></span></span>';
+  $win = $give !== '' ? ' data-sl-give="'.$give.'" aria-haspopup="dialog"' : '';
+  return '<span class="sl-rbtn-unit sl-tile-'.$brand.'"><a class="sl-rbtn" href="'.$slE($href).'" target="_blank" rel="noopener noreferrer" aria-label="'.$slE($name).'"'.$win.'>'.$inner.'</a><span class="sl-rbtn-sheen"></span></span>';
+};
+$GV = include '/usr/local/emhttp/plugins/shiplog/include/give.php';
+/* What every give window holds, as on FireSquire's: the title notched into its
+   top edge, the appeal, the sentence naming who takes the payment, the window's
+   own content and Close at the end of the foot. */
+$slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
+  return '<div class="sl-win sl-win-'.$id.'" id="sl-win-'.$id.'" role="dialog" aria-modal="true" aria-labelledby="sl-win-'.$id.'-t" tabindex="-1" hidden>'
+       . '<h2 class="sl-win-title" id="sl-win-'.$id.'-t">'.$slE($title).'</h2>'
+       . '<div class="sl-win-body"><p class="sl-win-text">'.$slE($L['s_give_appeal']).'</p><p class="sl-win-text sl-win-sub">'.$slE($intro).'</p>'.$body.'</div>'
+       . '<div class="sl-win-act"><button type="button" class="sl-win-btn" data-sl-close>'.$slE($L['s_close']).'</button></div>'
+       . '</div>';
 };
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/settings.css')?>">
@@ -359,9 +372,9 @@ $slRbtn = function ($brand, $name, $href) use ($M, $slE) {
       <p class="sl-prose"><?=$slE($L['s_about_body'])?></p>
       <p class="sl-prose"><?=$slE($L['s_about_coin'])?></p>
       <div class="sl-rbtn-rows sl-give">
-        <?=$slRbtn('coffee', 'Buy me a coffee', 'https://buymeacoffee.com/junkerderprovinz')?>
-        <?=$slRbtn('paypal', 'PayPal', 'https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS')?>
-        <?=$slRbtn('bitcoin', $L['s_crypto'], 'https://junkerderprovinz.github.io/junkerderprovinz/')?>
+        <?=$slRbtn('coffee', 'Buy me a coffee', 'https://buymeacoffee.com/junkerderprovinz', 'coffee')?>
+        <?=$slRbtn('paypal', 'PayPal', 'https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS', 'paypal')?>
+        <?=$slRbtn('bitcoin', $L['s_crypto'], 'https://junkerderprovinz.github.io/junkerderprovinz/', 'crypto')?>
       </div>
     </section>
   </div>
@@ -385,6 +398,58 @@ $slRbtn = function ($brand, $name, $href) use ($M, $slE) {
   </div>
 </div>
 </form>
+</div>
+
+<?php
+/* The give windows. The script moves them into <body> and mounts the coffee frame
+   and PayPal's buttons only while their window is open, so nothing from either
+   provider loads before somebody asks for it. A QR path carries no quiet zone, so
+   the four modules the standard asks for are added around it here. */
+$slQr = '';
+foreach ($GV['qr'] as $addr => $qr) {
+  $n = $qr[0] + 8;
+  $slQr .= '<div class="sl-qrpanel" data-address="'.$slE($addr).'" hidden>'
+         . '<div class="sl-qr"><svg viewBox="-4 -4 '.$n.' '.$n.'" role="img" aria-label="'.$slE($addr).'" shape-rendering="crispEdges"><rect x="-4" y="-4" width="'.$n.'" height="'.$n.'" fill="#fff"/><path d="'.$qr[1].'" fill="#000"/></svg></div>'
+         . '<p class="sl-addr" dir="ltr">'.$slE($addr).'</p></div>';
+}
+$slNets = ''; $slCoins = '';
+foreach ($GV['coins'] as $c) {
+  $slNets .= '<div class="sl-nets" data-coin="'.$c['id'].'" role="listbox" aria-label="'.$slE($L['s_give_networks']).'" hidden>';
+  foreach ($c['networks'] as $n) {
+    $slNets .= '<button type="button" role="option" class="sl-net" aria-selected="false" data-address="'.$slE($n['address']).'"'.(!empty($n['note']) ? ' data-note' : '').'>'.$slE($n['name']).'</button>';
+  }
+  $slNets .= '</div>';
+  $m = $c['mark'];
+  $slCoins .= '<button type="button" role="option" class="sl-coin" aria-selected="false" data-coin="'.$c['id'].'" aria-label="'.$slE($c['name'].' ('.$c['symbol'].')').'" title="'.$slE($c['name']).'"'
+            . ' style="--sl-tile: '.$c['tile'].'; --sl-tile-ink: '.$c['ink'].'">'
+            . '<span class="sl-coin-mark"><svg viewBox="'.$m['box'].'" aria-hidden="true" focusable="false"><path fill="var(--sl-mark-ink, currentColor)" d="'.$m['d'].'"/></svg></span>'
+            . '<span class="sl-coin-tick">'.$slE($c['symbol']).'</span></button>';
+}
+/* The house's horizontal selector: one option picked, the arrow keys move the pick. */
+$slSeg = function ($name, $label, $items) use ($slE) {
+  $out = '<div class="sl-seg" role="radiogroup" aria-label="'.$slE($label).'" data-sl-seg="'.$name.'">';
+  foreach ($items as $v => $text) $out .= '<button type="button" class="sl-seg-opt" role="radio" aria-checked="false" tabindex="-1" data-value="'.$slE($v).'">'.$slE($text).'</button>';
+  return $out.'</div>';
+};
+$slGroup = function ($label, $control) use ($slE) {
+  return '<div class="sl-group"><div class="sl-group-lbl">'.$slE($label).'</div>'.$control.'</div>';
+};
+?>
+<div class="sl-wins" id="sl-wins" data-sl-labels="textGlyph">
+<div class="sl-scrim" hidden></div>
+<?=$slWin('coffee', 'Buy Me a Coffee', $L['s_give_coffee_intro'],
+  '<div class="sl-frame" data-src="https://buymeacoffee.com/widget/page/junkerderprovinz?description=&amp;color=%23FFDD00"></div>')?>
+<?=$slWin('paypal', 'PayPal', $L['s_give_paypal_intro'],
+  $slGroup($L['s_give_freq'], $slSeg('often', $L['s_give_freq'], array('once' => $L['s_give_once'], 'month' => $L['s_give_month'], 'year' => $L['s_give_year'])))
+  .$slGroup($L['s_give_amount'], '<div class="sl-amounts">'.$slSeg('amount', $L['s_give_amount'], array('10' => '10 €', '25' => '25 €', '50' => '50 €'))
+  .'<input type="text" class="sl-amount" id="sl-pp-other" inputmode="decimal" autocomplete="off" placeholder="'.$slE($L['s_give_other']).'" aria-label="'.$slE($L['s_give_other']).'"></div>')
+  .'<div class="sl-paypal" id="sl-pp-buttons"></div>'
+  .'<p class="sl-pp-state" id="sl-pp-state" role="status"></p>')?>
+<?=$slWin('crypto', $L['s_give_crypto_title'], $L['s_give_crypto_intro'],
+  '<div class="sl-crypto">'.$slQr.$slNets
+  .'<p class="sl-note" hidden>'.$slE($L['s_give_no_tag']).'</p>'
+  .'<button type="button" class="sl-win-btn sl-copy" id="sl-copy">'.$slE($L['s_copy']).'</button></div>'
+  .'<div class="sl-coins" role="listbox" aria-label="'.$slE($L['s_give_crypto_title']).'">'.$slCoins.'</div>')?>
 </div>
 
 <script>

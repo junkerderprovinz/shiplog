@@ -9,6 +9,9 @@
   "use strict";
   var root = document.getElementById("sl-cfg");
   var form = root.querySelector("form");
+  // The give windows sit in <body>, clear of any stacking context on the page.
+  var wins = document.getElementById("sl-wins");
+  document.body.appendChild(wins);
   var html = document.documentElement;
   var T = window.SLT;
   var GLYPH = window.SL_GLYPHS;
@@ -249,6 +252,8 @@
   function labels() {
     var m = mode();
     if (root.getAttribute("data-sl-labels") !== m) root.setAttribute("data-sl-labels", m);
+    // The coin tiles in the crypto window follow the same mode.
+    wins.setAttribute("data-sl-labels", m);
     root.querySelectorAll(".sl-btn").forEach(function (b) {
       var text = b.querySelector(".sl-l").textContent.trim();
       var st = "sl-w-" + stage(labelWidth(text));
@@ -294,6 +299,13 @@
     var accent = (getComputedStyle(html).getPropertyValue("--cc-accent") || "").trim() || "#FCC419";
     root.classList.toggle("sl-reactive", on && get("cc.rbmode", "all") === "active");
     function at(i) { return rb ? window.CCTheme.rbColor(i, accent) : ""; }
+    // In the give windows the title, each option and each chain take their own
+    // position, and a coin tile its own once it is picked.
+    wins.querySelectorAll(".sl-win-title").forEach(function (t) { hue(t, at(0), "--sl-hue", "--sl-hue-ink"); });
+    wins.querySelectorAll(".sl-seg, .sl-nets").forEach(function (g) {
+      Array.prototype.forEach.call(g.children, function (b, i) { hue(b, at(i), "--sl-hue", "--sl-hue-ink"); });
+    });
+    wins.querySelectorAll(".sl-coin").forEach(function (b, i) { hue(b, b.getAttribute("aria-selected") === "true" ? at(i) : "", "--sl-hue", "--sl-hue-ink"); });
     var banner = root.querySelector(".sl-hero");
     [1, 2, 3].forEach(function (n) {
       if (rb) banner.style.setProperty("--sl-hero-" + n, at(n - 1)); else banner.style.removeProperty("--sl-hero-" + n);
@@ -516,6 +528,297 @@
     });
     auRender();
   })();
+
+  /* The give windows, as FireSquire opens them: Buy Me a Coffee's widget,
+     PayPal's buttons under the house's own controls, and an address and a QR
+     code per network. Escape, the scrim and Close shut a window, the focus
+     stays inside while it is open and goes back to the button that opened it. */
+  var scrim = wins.querySelector(".sl-scrim");
+  var shown = null, opener = null;
+  var FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled]), select, textarea, iframe, [tabindex]";
+  function focusables(w) {
+    return Array.prototype.filter.call(w.querySelectorAll(FOCUSABLE), function (n) { return n.tabIndex >= 0 && n.getClientRects().length > 0; });
+  }
+  function showWin(name, from) {
+    var w = byId("sl-win-" + name);
+    hideTip();
+    opener = from;
+    shown = w;
+    scrim.hidden = false;
+    w.hidden = false;
+    var into = GIVE[name].open(w);
+    paint();
+    (into || w).focus();
+  }
+  function closeWin() {
+    if (!shown) return;
+    var w = shown;
+    shown = null;
+    w.hidden = true;
+    scrim.hidden = true;
+    GIVE[w.id.replace("sl-win-", "")].close(w);
+    if (opener && document.contains(opener)) opener.focus();
+  }
+  document.addEventListener("keydown", function (e) {
+    if (!shown) return;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeWin(); return; }
+    if (e.key !== "Tab") return;
+    var f = focusables(shown), a = document.activeElement;
+    if (!f.length) { e.preventDefault(); shown.focus(); return; }
+    var first = f[0], last = f[f.length - 1];
+    if (!shown.contains(a)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+    else if (e.shiftKey && (a === first || a === shown)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+  }, true);
+  scrim.addEventListener("click", closeWin);
+  wins.querySelectorAll("[data-sl-close]").forEach(function (b) { b.addEventListener("click", closeWin); });
+  // A plain click opens the window; one that asks for a new tab still reaches
+  // the hosted page. The window keeps the donor on the page, so Unraid's
+  // warning about leaving for an outside site, delegated from <body>, has
+  // nothing to say.
+  root.querySelectorAll("[data-sl-give]").forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      if (e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      showWin(a.getAttribute("data-sl-give"), a);
+    });
+  });
+  function shake(node) {
+    node.classList.remove("sl-shake");
+    void node.offsetWidth;
+    node.classList.add("sl-shake");
+  }
+
+  var GIVE = {
+    coffee: {
+      open: function (w) {
+        var box = w.querySelector(".sl-frame"), f = document.createElement("iframe");
+        f.src = box.getAttribute("data-src");
+        f.title = "Buy Me a Coffee";
+        f.allow = "payment";
+        box.appendChild(f);
+        return null;
+      },
+      close: function (w) { w.querySelector(".sl-frame").textContent = ""; }
+    },
+    paypal: {
+      open: function () {
+        pp.freq = "once";
+        pp.preset = PP_DEFAULT;
+        ppField.value = "";
+        ppSegs.often.set(pp.freq);
+        ppMark();
+        ppRender();
+        return ppSegs.often.opts[0];
+      },
+      close: function () { pp.run++; ppClose(); }
+    },
+    crypto: {
+      open: function () {
+        pickCoin(cwin.querySelector(".sl-coin"));
+        return copyBtn;
+      },
+      close: function () { clearTimeout(copiedTimer); }
+    }
+  };
+
+  /* The house's horizontal selector: one option is picked, the arrow keys move
+     the pick, and only the picked option is a tab stop. */
+  function selector(node, pick) {
+    var opts = Array.prototype.slice.call(node.children);
+    var rtl = getComputedStyle(node).direction === "rtl";
+    function set(v) {
+      var any = false;
+      opts.forEach(function (b) {
+        var on = b.getAttribute("data-value") === v;
+        any = any || on;
+        b.setAttribute("aria-checked", on ? "true" : "false");
+        b.tabIndex = on ? 0 : -1;
+      });
+      if (!any) opts[0].tabIndex = 0;
+    }
+    opts.forEach(function (b, i) {
+      b.addEventListener("click", function () { set(b.getAttribute("data-value")); pick(b.getAttribute("data-value")); });
+      b.addEventListener("keydown", function (e) {
+        var step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (!step) return;
+        e.preventDefault();
+        if (rtl && (e.key === "ArrowRight" || e.key === "ArrowLeft")) step = -step;
+        var next = opts[(i + step + opts.length) % opts.length];
+        next.click();
+        next.focus();
+      });
+    });
+    return { set: set, opts: opts };
+  }
+
+  /* PayPal. A one-off donation and a recurring one need the SDK loaded with
+     different parameters, so each gets its own namespace. A recurring one is a
+     subscription to a plan priced at 1 EUR, with the amount as its quantity.
+     Only the PayPal wallet and the card button stay; the other funding sources
+     repeat what the card covers. */
+  var PAYPAL = {
+    clientId: "BAAbFqgNYfuCIBT_gwVE64oqj-E-jmxFiLaoR1yMIF9KK-CW16x5Pt2bSjBloqbTF4TvjFYw3ZTLnRP8_U",
+    plans: { month: "P-2ND5083133959702RNK2375A", year: "P-2FN843952N550243RNK2375A" },
+    currency: "EUR"
+  };
+  var PP_AMOUNTS = ["10", "25", "50"], PP_DEFAULT = "25";
+  var PP_OFF = "sepa,paylater,venmo,bancontact,blik,eps,giropay,ideal,mybank,p24,sofort";
+  var pp = { freq: "once", preset: PP_DEFAULT, buttons: null, run: 0 }, ppLoads = {};
+  var pwin = byId("sl-win-paypal"), ppBox = byId("sl-pp-buttons"), ppField = byId("sl-pp-other"), ppState = byId("sl-pp-state");
+  // A typed amount as PayPal's decimal string, or null below 1 or with more
+  // than two decimals. A comma counts as the decimal mark.
+  function ppParse(text) {
+    var v = String(text).replace(",", ".").trim();
+    if (!/^\d+(\.\d{1,2})?$/.test(v) || Number(v) < 1) return null;
+    return Number(v).toFixed(2).replace(/\.00$/, "");
+  }
+  function ppAmount() { return ppField.value === "" ? pp.preset : ppParse(ppField.value); }
+  var ppSegs = {
+    often: selector(pwin.querySelector('[data-sl-seg="often"]'), function (v) {
+      if (v === pp.freq) return;
+      pp.freq = v;
+      ppRender();
+    }),
+    amount: selector(pwin.querySelector('[data-sl-seg="amount"]'), function (v) {
+      pp.preset = v;
+      ppField.value = "";
+      ppMark();
+    })
+  };
+  function ppMark() {
+    ppSegs.amount.set(pp.preset);
+    var ok = !!ppParse(ppField.value);
+    ppField.classList.toggle("sl-amount-ok", ok);
+    ppField.setAttribute("aria-invalid", ppField.value !== "" && !ok ? "true" : "false");
+  }
+  // A valid typed amount takes the pick from the presets, so the window never
+  // shows two amounts; clearing the field gives it back.
+  ppField.addEventListener("input", function () {
+    if (ppParse(ppField.value)) pp.preset = null;
+    else if (ppField.value === "") pp.preset = pp.preset || PP_DEFAULT;
+    ppMark();
+  });
+  // Leaving the field shows the amount as it will be charged, hands a preset's
+  // amount back to its preset, and shakes text that is no amount.
+  ppField.addEventListener("blur", function () {
+    if (ppField.value === "") return;
+    var v = ppParse(ppField.value);
+    if (!v) { shake(ppField); return; }
+    if (PP_AMOUNTS.indexOf(v) >= 0) { pp.preset = v; ppField.value = ""; } else ppField.value = v;
+    ppMark();
+  });
+  function ppSay(cls, text) { ppState.className = "sl-pp-state" + (cls ? " " + cls : ""); ppState.textContent = text; }
+  function ppLoad(recurring) {
+    var ns = recurring ? "slPaypalRecurring" : "slPaypalOnce";
+    if (ppLoads[ns]) return ppLoads[ns];
+    var q = "client-id=" + encodeURIComponent(PAYPAL.clientId) + "&currency=" + PAYPAL.currency +
+      "&intent=" + (recurring ? "subscription&vault=true" : "capture") + "&components=buttons&disable-funding=" + PP_OFF;
+    ppLoads[ns] = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = "https://www.paypal.com/sdk/js?" + q;
+      s.setAttribute("data-namespace", ns);
+      // A blocker can let the script load and still keep the SDK from running.
+      s.onload = function () { if (window[ns]) resolve(window[ns]); else reject(new Error("paypal")); };
+      s.onerror = function () { delete ppLoads[ns]; s.remove(); reject(new Error("paypal")); };
+      document.head.appendChild(s);
+    });
+    return ppLoads[ns];
+  }
+  function ppClose() {
+    if (pp.buttons) pp.buttons.close().catch(function () {});
+    pp.buttons = null;
+    ppBox.textContent = "";
+  }
+  function ppRender() {
+    var mine = ++pp.run, freq = pp.freq;
+    ppSay("", T.s_give_loading);
+    ppClose();
+    function thanks() { if (mine === pp.run) ppSay("sl-ok", T.s_give_thanks); }
+    function failed() { if (mine === pp.run) ppSay("sl-err", T.s_give_failed); }
+    ppLoad(freq !== "once").then(function (paypal) {
+      if (mine !== pp.run) return;
+      var handlers = freq === "once" ? {
+        createOrder: function (d, actions) {
+          var money = { currency_code: PAYPAL.currency, value: ppAmount() };
+          return actions.order.create({
+            purchase_units: [{
+              description: "ShipLog",
+              amount: { currency_code: money.currency_code, value: money.value, breakdown: { item_total: money } },
+              // DONATION marks the payment as a gift in the donor's PayPal history.
+              items: [{ name: "ShipLog", quantity: "1", category: "DONATION", unit_amount: money }]
+            }]
+          });
+        },
+        onApprove: function (d, actions) { return actions.order.capture().then(thanks); }
+      } : {
+        createSubscription: function (d, actions) {
+          return actions.subscription.create({ plan_id: PAYPAL.plans[freq], quantity: String(Math.max(1, Math.round(Number(ppAmount())))) });
+        },
+        onApprove: thanks
+      };
+      pp.buttons = paypal.Buttons(Object.assign({
+        style: { layout: "vertical", color: "blue", shape: "rect", borderRadius: 10, label: "donate", height: 40 },
+        // A half-typed amount keeps the buttons from opening PayPal at all.
+        onClick: function (d, actions) { return ppAmount() ? actions.resolve() : actions.reject(); },
+        onError: failed
+      }, handlers));
+      return pp.buttons.render(ppBox).then(function () { if (mine === pp.run) ppSay("", ""); });
+    }).catch(failed);
+  }
+
+  /* Crypto. The code comes first, since it is what the window is opened for;
+     the chain is switched right under the address it changes, and the coins
+     wait below as tiles. A new coin starts on its own first chain, never on one
+     carried over. */
+  var cwin = byId("sl-win-crypto"), copyBtn = byId("sl-copy"), note = cwin.querySelector(".sl-note"), copiedTimer = 0;
+  function shownAddress() {
+    return Array.prototype.filter.call(cwin.querySelectorAll(".sl-qrpanel"), function (p) { return !p.hidden; })[0].getAttribute("data-address");
+  }
+  function pickNet(chip) {
+    Array.prototype.forEach.call(chip.parentNode.children, function (c) { c.setAttribute("aria-selected", c === chip ? "true" : "false"); });
+    cwin.querySelectorAll(".sl-qrpanel").forEach(function (p) { p.hidden = p.getAttribute("data-address") !== chip.getAttribute("data-address"); });
+    note.hidden = !chip.hasAttribute("data-note");
+    clearTimeout(copiedTimer);
+    copyBtn.textContent = T.s_copy;
+  }
+  function pickCoin(tile) {
+    var id = tile.getAttribute("data-coin");
+    cwin.querySelectorAll(".sl-coin").forEach(function (t) { t.setAttribute("aria-selected", t === tile ? "true" : "false"); });
+    cwin.querySelectorAll(".sl-nets").forEach(function (r) { r.hidden = r.getAttribute("data-coin") !== id; });
+    pickNet(cwin.querySelector('.sl-nets[data-coin="' + id + '"] .sl-net'));
+    paint();
+  }
+  cwin.querySelectorAll(".sl-coin").forEach(function (t) { t.addEventListener("click", function () { pickCoin(t); }); });
+  cwin.querySelectorAll(".sl-net").forEach(function (c) { c.addEventListener("click", function () { pickNet(c); c.focus(); }); });
+  // Without HTTPS there is no clipboard API, and a browser may refuse it; a
+  // hidden field copied the old way stands in for it.
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).catch(function () { return copyOld(text); });
+    return copyOld(text);
+  }
+  function copyOld(text) {
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.className = "sl-copy-src";
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      cwin.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      ta.remove();
+      if (ok) resolve(); else reject(new Error("copy"));
+    });
+  }
+  copyBtn.addEventListener("click", function () {
+    copyText(shownAddress()).then(function () {
+      copyBtn.textContent = T.s_copied;
+      clearTimeout(copiedTimer);
+      copiedTimer = setTimeout(function () { copyBtn.textContent = T.s_copy; }, 1500);
+    }, function () { shake(copyBtn); });
+  });
 
   auShown();
   engines();
