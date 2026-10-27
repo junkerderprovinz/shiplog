@@ -424,7 +424,7 @@ foreach ($GV['coins'] as $c) {
   $slNets .= '</div>';
   $m = $c['mark'];
   $slCoins .= '<button type="button" role="option" class="sl-coin" aria-selected="false" data-coin="'.$c['id'].'" aria-label="'.$slE($c['name'].' ('.$c['symbol'].')').'" title="'.$slE($c['name']).'"'
-            . ' style="--sl-tile: '.$c['tile'].'; --sl-tile-ink: '.$c['ink'].'">'
+            . ' style="--sl-tile: '.$c['tile'].'; --sl-tile-ink: '.$c['ink'].'; --sl-coin: '.$m['color'].'">'
             . '<span class="sl-coin-mark"><svg viewBox="'.$m['box'].'" aria-hidden="true" focusable="false"><path fill="var(--sl-mark-ink, currentColor)" d="'.$m['d'].'"/></svg></span>'
             . '<span class="sl-coin-tick">'.$slE($c['symbol']).'</span></button>';
 }
