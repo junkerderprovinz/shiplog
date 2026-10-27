@@ -423,6 +423,8 @@
     var unit = m === "hours" ? T.s_au_unit_hours : (m === "days" ? T.s_au_unit_days : "");
     t.hidden = m !== "daily";
     e.hidden = u.hidden = !(m === "hours" || m === "days");
+    // An empty slot would keep its gap and hold the dropdown off the edge.
+    t.parentNode.hidden = t.hidden && e.hidden;
     u.textContent = unit;
     e.setAttribute("aria-label", unit);
   }
