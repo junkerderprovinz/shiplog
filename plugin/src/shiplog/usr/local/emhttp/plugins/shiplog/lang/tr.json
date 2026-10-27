@@ -79,6 +79,7 @@
   "t_updates": "Güncellemeler",
   "t_notify": "Bildirimler",
   "t_sources": "Kaynaklar",
+  "t_info": "Bilgi",
   "s_autoupd": "Otomatik güncelleme",
   "s_autoupd_sub": "zamanlanmış, sürüm düzeyine göre (yalnızca Unraid)",
   "s_ca_warn": "CA Auto Update de yüklü. İkisi de konteynerleri günceller, bu yüzden çift güncellemeyi önlemek için yalnızca birini kullan.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "Durum sayfası",
   "s_manual": "Elle güncellemeler",
   "s_channels": "Kanallar",
-  "s_reset": "Sıfırla"
+  "s_reset": "Sıfırla",
+  "s_about": "Hakkında",
+  "s_about_body": "ShipLog, Unraid'in Docker sekmesi için ücretsiz bir eklentidir; tek bir şövalye tarafından akşamları ve hafta sonları geliştirilir, hesap, telemetri ve reklam yoktur.",
+  "s_about_coin": "Sunucunda bir yeri hak ettiyse şövalyene bir bozuk para at: masrafları karşılamaya yardım eder ve projeyi hayatta tutar.",
+  "s_crypto": "Kripto"
 }

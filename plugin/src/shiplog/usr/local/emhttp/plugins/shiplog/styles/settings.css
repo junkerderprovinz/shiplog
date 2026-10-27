@@ -29,6 +29,8 @@
   --sl-r-ctl: 4px;
   --sl-r-pill: 4px;
   --sl-shadow: none;
+  --sl-fw: 400px;
+  --sl-aw: 240px;
   font-size: 14px;
   line-height: 1.45;
   padding-bottom: 24px;
@@ -37,8 +39,24 @@ html:is(.Theme--white, .Theme--azure) .sl-cfg { --sl-ok: #0e6027; --sl-err: #da1
 .sl-cfg *, .sl-cfg *::before, .sl-cfg *::after { box-sizing: border-box; }
 .sl-cfg [hidden] { display: none !important; }
 
+/* The plugin's logo and name over the page, drawn alike on TowerTorch's and
+   FireSquire's settings pages. */
+.sl-hero { display: flex; align-items: center; gap: 20px; min-width: 0; margin: 4px 0 16px; }
+.sl-hero-tile {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 88px; height: 88px; padding: 10px; border-radius: var(--sl-r-ctl); background: rgba(128, 128, 128, .18);
+}
+.sl-hero-tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sl-hero-text { min-width: 0; }
+.sl-cfg .sl-hero-name { margin: 0; font-family: inherit; font-size: 32px; font-weight: 700; line-height: 1.15; letter-spacing: normal; text-transform: none; color: inherit; }
+.sl-cfg .sl-hero-sub { margin: 4px 0 0; color: var(--sl-dim); font-size: 13px; line-height: 1.45; text-align: start; }
+@media (max-width: 1023px) {
+  .sl-hero-tile { width: 72px; height: 72px; padding: 8px; }
+  .sl-cfg .sl-hero-name { font-size: 26px; }
+}
+
 /* The tab column beside the cards, as on TowerTorch's own settings page. */
-.sl-body { display: flex; align-items: flex-start; gap: 24px; margin-top: 18px; }
+.sl-body { display: flex; align-items: flex-start; gap: 24px; margin-top: 12px; }
 .sl-tabs { position: sticky; top: 12px; flex: none; width: 204px; display: flex; flex-direction: column; gap: 4px; }
 .sl-cfg .sl-tab {
   display: flex; align-items: center; gap: 12px; width: 100%; height: 66px; min-width: 0; margin: 0; padding: 0 12px;
@@ -75,11 +93,24 @@ html:is(.Theme--white, .Theme--azure) .sl-cfg { --sl-ok: #0e6027; --sl-err: #da1
 .sl-h .sl-info { color: inherit; opacity: 1; }
 
 /* A row: the name and its (i) at the start, the control at the end. Where both
-   do not fit, the control moves under the name and keeps the end. */
+   do not fit, the control moves under the name and keeps the end.
+   The controls stand in two columns on every row of the page: a field, select,
+   switch or state ends on the first column's edge, and a button that acts on it
+   starts in the second, so neither moves from row to row. A row without a
+   button leaves the second column empty. */
 .sl-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; min-height: 44px; padding: 6px 0; }
-.sl-lbl { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 0; }
+.sl-lbl { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; }
 .sl-lbl label { margin: 0; cursor: pointer; }
-.sl-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; max-width: 100%; margin-inline-start: auto; }
+.sl-ctl {
+  display: grid; grid-template-columns: minmax(0, var(--sl-fw)) minmax(0, var(--sl-aw)); align-items: center; justify-items: end;
+  column-gap: 12px; row-gap: 8px; max-width: 100%; margin-inline-start: auto;
+}
+.sl-ctl > :not(.sl-act) { grid-column: 1; }
+.sl-ctl > .sl-act { grid-column: 2; justify-self: start; display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.sl-act > .sl-btn { max-width: 100%; }
+@media (max-width: 1023px) {
+  .sl-cfg { --sl-fw: 300px; }
+}
 .sl-row-wide .sl-lbl { flex-basis: 100%; }
 .sl-wide { flex: 1 0 100%; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .sl-res { flex: 1 0 100%; text-align: end; font-size: 13px; overflow-wrap: anywhere; }
@@ -88,13 +119,13 @@ html:is(.Theme--white, .Theme--azure) .sl-cfg { --sl-ok: #0e6027; --sl-err: #da1
 .sl-res.err { color: var(--sl-err); }
 .sl-res.run, .sl-hint, .sl-unit { color: var(--sl-dim); font-size: 13px; }
 
-/* Fields keep a width of their own instead of stretching across the row. */
-.sl-cfg input.sl-f { width: 280px; max-width: 100%; height: 32px; margin: 0; }
-.sl-cfg input.sl-f-l { width: 340px; }
+/* One width per kind of field: every text field, secret and dropdown is as wide
+   as the field column, a short value such as a port or a time keeps a short one. */
+.sl-cfg input.sl-f { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-cfg input.sl-f-s { width: 120px; }
 .sl-cfg input.sl-f-xs { width: 72px; }
-.sl-cfg select.sl-sel { width: 240px; max-width: 100%; height: 32px; margin: 0; }
-.sl-field { position: relative; display: inline-flex; width: 280px; max-width: 100%; }
+.sl-cfg select.sl-sel { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
+.sl-field { position: relative; display: inline-flex; width: var(--sl-fw); max-width: 100%; }
 .sl-cfg .sl-field > input.sl-f { width: 100%; padding-inline-end: 34px; }
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 .sl-eye {
@@ -189,9 +220,44 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .sl-ct-ring { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 24px; }
 .sl-ct-ring::after { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--cc-info, #4f8fd6); }
 
-.sl-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 28px; }
-.sl-version { display: inline-flex; align-items: center; gap: 6px; color: var(--sl-dim); font-size: 12px; font-variant-numeric: tabular-nums lining-nums; }
-.sl-actions { display: flex; gap: 10px; margin-inline-start: auto; }
+.sl-foot { display: flex; justify-content: flex-end; margin-top: 28px; }
+.sl-actions { display: flex; gap: 10px; }
+
+/* The About card on the Info tab, as on TowerTorch's: the maker's sentence, the
+   versions, and the sentence about the money over its give row. */
+.sl-prose { margin: 4px 0 8px; text-align: start; }
+.sl-prose-next { margin-top: 21px; }
+.sl-ver { font-variant-numeric: tabular-nums lining-nums; }
+.sl-cfg a.sl-ver { margin: 0; }
+
+/* The give buttons, TowerTorch's README buttons unchanged: the mark and the name
+   at rest, the brand's own colour and one sheen under the pointer. */
+#sl-cfg .sl-rbtn-rows { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 12px; }
+#sl-cfg .sl-rbtn-rows.sl-give { margin-top: 21px; }
+#sl-cfg .sl-rbtn-unit { position: relative; display: inline-flex; border-radius: var(--cc-radius-pill, 9999px); overflow: hidden; isolation: isolate; --sl-brand-coffee: #ffdd00; --sl-brand-paypal: #4fb5f0; --sl-brand-bitcoin: #f7931a; }
+#sl-cfg .sl-rbtn { position: relative; display: block; flex: none; box-sizing: border-box; width: 160px; height: 46.6px; padding: 0; background: var(--cc-surface-3, #2e2e2e); text-decoration: none; cursor: pointer; }
+#sl-cfg .sl-rbtn:hover { text-decoration: none; }
+#sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--cc-accent, #FCC419) 45%, transparent) !important; }
+#sl-cfg .sl-rbtn-mark { position: absolute; top: 50%; left: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; }
+#sl-cfg :is(.sl-rbtn-mark, .sl-rbtn-art) svg { display: block; width: 100%; height: 100%; }
+#sl-cfg .sl-rbtn-art { position: absolute; inset: 0; }
+#sl-cfg .sl-rbtn-text { position: absolute; top: 0; bottom: 0; left: 53px; right: 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15; }
+#sl-cfg .sl-rbtn-name { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: var(--cc-text-body, 14px); font-weight: 700; }
+#sl-cfg .sl-paypal-mark { color: var(--sl-brand-paypal); }
+#sl-cfg .sl-bitcoin-mark { color: var(--sl-brand-bitcoin); }
+#sl-cfg .sl-tile-paypal { --sl-give: #003087; --sl-give-ink: #fff; }
+#sl-cfg .sl-tile-bitcoin { --sl-give: #f7931a; --sl-give-ink: #161616; }
+#sl-cfg .sl-tile-coffee { --sl-give: #ffdd00; --sl-give-ink: #0d0c22; }
+@media (hover: hover) {
+  #sl-cfg .sl-rbtn-unit:hover .sl-rbtn { background: var(--sl-give); --sl-mark-ink: var(--sl-give-ink); }
+  #sl-cfg .sl-rbtn-unit:hover .sl-rbtn-mark { color: var(--sl-give-ink); }
+}
+#sl-cfg .sl-rbtn-sheen { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+#sl-cfg .sl-rbtn-sheen::after { content: ""; position: absolute; top: -12px; bottom: -12px; left: -64px; width: 33px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .28) 45%, rgba(255, 255, 255, .28) 55%, transparent); transform: skewX(-16deg); }
+@keyframes sl-rbtn-sheen { to { left: calc(100% + 32px); } }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  html:not([data-cc-motion="off"]) #sl-cfg .sl-rbtn-unit:hover .sl-rbtn-sheen::after { animation: sl-rbtn-sheen .7s linear; }
+}
 
 /* The (i): a bare stroked glyph, never a filled badge. */
 .sl-info { display: inline-flex; flex: none; width: 15px; height: 15px; border-radius: 50%; color: inherit; opacity: .8; cursor: help; }
@@ -255,8 +321,9 @@ html.cc-tools-on .sl-bubble {
    page with !important. An important declaration in a cascade layer outranks
    every unlayered one, so the few things this page needs to keep sit here: the
    width stage that stops a button from changing width between label modes, the
-   verdict of a check, the switch's place at the end of its row and a visible
-   focus ring. */
+   verdict of a check, the switch's place in its row, the give buttons' ink
+   against the accent TowerTorch gives every link, a visible focus ring, and
+   the title strip the header replaces. */
 @layer shiplog-settings {
   #sl-cfg .sl-btn.sl-w-xs { min-width: max(88px, var(--sl-w, 0px)) !important; }
   #sl-cfg .sl-btn.sl-w-sm { min-width: max(128px, var(--sl-w, 0px)) !important; }
@@ -268,6 +335,12 @@ html.cc-tools-on .sl-bubble {
   html.cc-tools-on #sl-cfg .sl-btn.sl-err { background: var(--cc-err, #ff8389) !important; color: var(--cc-err-fg, #161616) !important; }
   html.cc-tools-on #sl-cfg .sl-btn.sl-err:hover { background: var(--cc-err-hover, #ff8389) !important; }
   #sl-cfg input.sl-sw { margin: 0 !important; }
+  #sl-cfg a.sl-rbtn { color: var(--cc-text, #e6e6e6) !important; filter: none !important; }
+  @media (hover: hover) {
+    #sl-cfg .sl-rbtn-unit:hover a.sl-rbtn { color: var(--sl-give-ink) !important; }
+  }
+  /* The header above the page names it, so Unraid's title strip would say it twice. */
+  .content:has(#sl-cfg) > div.title { display: none !important; }
   #sl-cfg :is(.sl-tab, .sl-btn, .sl-sw, .sl-eye, .sl-info):focus-visible {
     outline: 2px solid var(--sl-focus) !important; outline-offset: 2px !important; filter: none !important;
   }

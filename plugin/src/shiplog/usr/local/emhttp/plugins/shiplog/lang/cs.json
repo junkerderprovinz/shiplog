@@ -79,6 +79,7 @@
   "t_updates": "Aktualizace",
   "t_notify": "Oznámení",
   "t_sources": "Zdroje",
+  "t_info": "Info",
   "s_autoupd": "Automatická aktualizace",
   "s_autoupd_sub": "naplánováno, podle úrovně verze (jen Unraid)",
   "s_ca_warn": "Je nainstalováno i CA Auto Update. Obě by aktualizovaly kontejnery. Používejte jen jedno, abyste se vyhnuli dvojím aktualizacím.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "Stavová stránka",
   "s_manual": "Ruční aktualizace",
   "s_channels": "Kanály",
-  "s_reset": "Obnovit"
+  "s_reset": "Obnovit",
+  "s_about": "O pluginu",
+  "s_about_body": "ShipLog je bezplatný plugin pro kartu Docker v Unraidu, který po večerech a o víkendech staví jeden rytíř, bez účtů, bez telemetrie a bez reklam.",
+  "s_about_coin": "Pokud si vysloužil místo na tvém serveru, hoď svému rytíři minci: pomůže to pokrýt náklady a udrží projekt naživu.",
+  "s_crypto": "Krypto"
 }

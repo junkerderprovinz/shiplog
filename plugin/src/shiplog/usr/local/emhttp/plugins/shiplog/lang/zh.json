@@ -79,6 +79,7 @@
   "t_updates": "更新",
   "t_notify": "通知",
   "t_sources": "来源",
+  "t_info": "信息",
   "s_autoupd": "自动更新",
   "s_autoupd_sub": "按计划、按版本级别（仅限 Unraid）",
   "s_ca_warn": "同时也安装了 CA Auto Update。两者都会更新容器，请只使用其中一个，以避免重复更新。",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "状态页面",
   "s_manual": "手动更新",
   "s_channels": "渠道",
-  "s_reset": "重置"
+  "s_reset": "重置",
+  "s_about": "关于",
+  "s_about_body": "ShipLog 是 Unraid Docker 标签页的免费插件，由一位骑士在晚上和周末打造，没有账户、没有遥测、没有广告。",
+  "s_about_coin": "如果它在你的服务器上赢得了一席之地，就给你的骑士抛一枚硬币吧：这有助于支付成本，让项目继续下去。",
+  "s_crypto": "加密货币"
 }

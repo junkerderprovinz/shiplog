@@ -79,6 +79,7 @@
   "t_updates": "업데이트",
   "t_notify": "알림",
   "t_sources": "소스",
+  "t_info": "정보",
   "s_autoupd": "자동 업데이트",
   "s_autoupd_sub": "예약 실행, 버전 수준별 (Unraid 전용)",
   "s_ca_warn": "CA Auto Update도 설치되어 있습니다. 둘 다 컨테이너를 업데이트하므로, 중복 업데이트를 피하려면 하나만 사용하세요.",
@@ -132,5 +133,9 @@
   "s_statuspage_btn": "상태 페이지",
   "s_manual": "수동 업데이트",
   "s_channels": "채널",
-  "s_reset": "초기화"
+  "s_reset": "초기화",
+  "s_about": "소개",
+  "s_about_body": "ShipLog는 Unraid의 Docker 탭을 위한 무료 플러그인으로, 한 명의 기사가 저녁과 주말에 만들며 계정도, 원격 측정도, 광고도 없습니다.",
+  "s_about_coin": "서버에 둘 만한 가치가 있었다면 기사에게 동전 하나를 던져 주세요. 비용을 충당하고 프로젝트를 이어 가는 데 도움이 됩니다.",
+  "s_crypto": "암호화폐"
 }
