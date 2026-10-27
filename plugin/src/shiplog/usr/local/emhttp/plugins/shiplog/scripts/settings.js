@@ -343,8 +343,14 @@
     matrix: function () {
       return "matrix-check.php?hs=" + encodeURIComponent(val("MATRIX_HOMESERVER")) + "&token=" + encodeURIComponent(val("MATRIX_TOKEN")) +
         "&room=" + encodeURIComponent(val("MATRIX_ROOM"));
-    }
+    },
+    apprise: function () { return "apprise-test.php"; }
   };
+  // The Apprise URL carries its key, so it goes in a POST body rather than a query string.
+  function post(kind) {
+    if (kind !== "apprise") return undefined;
+    return { method: "POST", body: new URLSearchParams({ url: val("APPRISE_URL"), csrf_token: window.csrf_token || "" }) };
+  }
   root.querySelectorAll("[data-sl-check]").forEach(function (btn) {
     var kind = btn.getAttribute("data-sl-check"), out = byId(btn.getAttribute("data-sl-out"));
     var glyph = btn.querySelector(".sl-g") ? btn.querySelector(".sl-g").innerHTML : "";
@@ -353,8 +359,8 @@
       if (btn.querySelector(".sl-g")) btn.querySelector(".sl-g").innerHTML = glyph;
       btn.setAttribute("aria-busy", "true");
       out.className = "sl-res run";
-      out.textContent = (kind === "ollama-detect" ? T.s_autodetect : T.s_check) + " …";
-      fetch("/plugins/shiplog/server/" + CHECKS[kind]())
+      out.textContent = (kind === "ollama-detect" ? T.s_autodetect : kind === "apprise" ? T.s_apprise_test : T.s_check) + " …";
+      fetch("/plugins/shiplog/server/" + CHECKS[kind](), post(kind))
         .then(function (r) { return r.json(); })
         .then(function (d) {
           verdict(btn, out, !!d.ok, d.message);

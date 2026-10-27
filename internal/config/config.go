@@ -36,6 +36,7 @@ type Config struct {
 	MatrixHomeserver string // MATRIX_HOMESERVER
 	MatrixToken      string // MATRIX_TOKEN
 	MatrixRoom       string // MATRIX_ROOM
+	AppriseURL       string // APPRISE_URL, an Apprise API notify URL with its key
 
 	// UnraidNotify (UNRAID_NOTIFY) also sends native Unraid notifications, which
 	// fan out to every agent configured on the host.
@@ -82,6 +83,7 @@ func Load() Config {
 		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),
 		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
 		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
+		AppriseURL:       os.Getenv("APPRISE_URL"),
 		UnraidNotify:     truthy("UNRAID_NOTIFY"),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:           truthy("AUTOUPDATE_ENABLED"),

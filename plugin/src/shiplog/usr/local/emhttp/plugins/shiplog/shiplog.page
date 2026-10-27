@@ -23,6 +23,7 @@ $lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
 $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
+$apprise= isset($cfg['APPRISE_URL'])       ? $cfg['APPRISE_URL']       : '';
 $unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true'); // default off
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
@@ -256,6 +257,14 @@ $slRbtn = function ($brand, $name, $href) use ($M, $slE) {
           <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-matrix-result" role="status"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-APPRISE_URL"><?=$slE($L['s_apprise'])?></label><?=$slInfo($L['s_apprise_hint'])?></div>
+        <div class="sl-ctl">
+          <span class="sl-field"><input type="password" class="sl-f" id="sl-APPRISE_URL" name="APPRISE_URL" value="<?=$slE($apprise)?>" placeholder="http://host:8000/notify/key" autocomplete="off" dir="ltr"><?=$slEye('sl-APPRISE_URL')?></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="apprise" data-sl-out="sl-apprise-result"><?=$slBtn('Notifications', $L['s_apprise_test'])?></button></span>
+        </div>
+        <div class="sl-res" id="sl-apprise-result" role="status"></div>
       </div>
     </section>
   </div>

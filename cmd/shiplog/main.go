@@ -81,6 +81,12 @@ func main() {
 		}
 		cancelWho()
 	}
+	if a := notify.NewApprise(cfg.AppriseURL); a != nil {
+		sinks = append(sinks, a)
+		log.Printf("shiplog: Apprise notifications enabled (%s)", a.Where())
+	} else if strings.TrimSpace(cfg.AppriseURL) != "" {
+		log.Printf("shiplog: APPRISE_URL is not an http(s) URL; Apprise notifications off")
+	}
 	if u := notify.NewUnraid(cfg.UnraidNotify); u != nil {
 		sinks = append(sinks, u)
 		log.Printf("shiplog: native Unraid notifications enabled")
