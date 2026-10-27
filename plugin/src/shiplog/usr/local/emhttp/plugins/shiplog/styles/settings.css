@@ -338,8 +338,12 @@ html.cc-tools-on #sl-cfg .sl-tile-house { --sl-house: var(--cc-accent, #FCC419);
   --sl-w-r-ctl: 4px;
   --sl-w-r-pill: 4px;
   --sl-w-shadow: 0 12px 48px rgba(0, 0, 0, .55);
+  /* XRP's near-black vanishes on a dark tile, so there it rests in the white
+     of its reversed logo. */
+  --sl-coin-xrp: #fff;
 }
 html:is(.Theme--white, .Theme--azure) #sl-wins { --sl-w-ok: #0e6027; --sl-w-err: #da1e28; --sl-w-warn: #ba4e00; }
+html:is(.Theme--white, .Theme--azure):not(.cc-tools-on) #sl-wins { --sl-coin-xrp: #23292f; }
 html.cc-tools-on #sl-wins {
   --sl-w-ground: #1a1a1a;
   --sl-w-card: #222;
@@ -450,8 +454,9 @@ html.cc-tools-on .sl-win { color: #e6e6e6; }
 .sl-win .sl-copy { margin: 0; }
 .sl-copy-src { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; }
 
-/* The coins as square tiles, the mark half the tile. A tile lights up in its
-   coin's colour under the pointer; the picked one keeps the page's colour. */
+/* The coins as square tiles, the mark half the tile. At rest each mark wears
+   its coin's colour; under the pointer the tile lights up in that colour and
+   the mark turns its ink, and the picked one keeps the page's colour. */
 .sl-coins { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .sl-win .sl-coin {
   aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
@@ -459,11 +464,12 @@ html.cc-tools-on .sl-win { color: #e6e6e6; }
   border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none; background: var(--sl-w-card); color: var(--sl-w-dim);
   font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
-.sl-coin-mark { flex: none; display: flex; align-items: center; justify-content: center; height: 50%; }
+.sl-coin-mark { flex: none; display: flex; align-items: center; justify-content: center; height: 50%; color: var(--sl-coin); }
 .sl-coin-mark svg { display: block; width: auto; height: 100%; }
 .sl-coin-tick { max-height: 1.4em; overflow: hidden; }
 .sl-win .sl-coin:is(:hover, :focus-visible):not([aria-selected="true"]) { background: var(--sl-tile); color: var(--sl-tile-ink); --sl-mark-ink: var(--sl-tile-ink); }
 .sl-win .sl-coin[aria-selected="true"] { background: var(--sl-hue, var(--sl-w-head)); color: var(--sl-hue-ink, var(--sl-w-head-ink)); }
+.sl-win .sl-coin:is(:hover, :focus-visible, [aria-selected="true"]) .sl-coin-mark { color: inherit; }
 /* The tiles follow TowerTorch's label mode: the ticker alone, the mark alone,
    or the mark with the ticker opening under the pointer; a picked coin keeps
    its word. */
