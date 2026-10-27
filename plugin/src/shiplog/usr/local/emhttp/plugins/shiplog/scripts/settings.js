@@ -69,22 +69,95 @@
   }, true);
   window.addEventListener("scroll", hideTip, true);
 
-  /* Apply stays disabled until something changes, and Done turns into Reset,
-     which reloads the page and drops the edits, as on Unraid's own settings
-     pages. */
-  var dirty = false;
-  function markDirty() {
-    if (dirty) return;
-    dirty = true;
-    var done = byId("sl-done");
-    byId("sl-apply").disabled = false;
-    done.querySelector(".sl-l").textContent = done.getAttribute("data-sl-alt");
-    done.querySelector(".sl-g").innerHTML = GLYPH.Restore;
-    done.onclick = function () { if (typeof window.refresh === "function") window.refresh(); else location.reload(); };
-    labels();
+  /* Every setting saves itself (GlimStone, "Saving"): a switch or a pick from
+     a list at once, a typed value once its field has been quiet for 800ms. A
+     save posts the whole form to Unraid's update.php, which merges it into
+     shiplog.cfg, and restarts the engine only when a key it reads at start
+     changed. Changes made while a save runs go out together in the next one,
+     so a burst of edits restarts the engine once. A switch or a pick that could
+     not be saved goes back and shakes; a typed value stays as it is. */
+  var UI_ONLY = { CONFIRM_UPDATE: true, SILENT_UPDATE: true };
+  var savedEl = byId("sl-saved");
+  var saving = false, queued = null, typed = null, typeTimer = 0;
+  function note(state, text) { savedEl.setAttribute("data-state", state); savedEl.textContent = text; }
+  function job(names, undo, ctl) {
+    return { restart: names.some(function (n) { return !UI_ONLY[n]; }), undo: undo ? [undo] : [], ctl: ctl ? [ctl] : [] };
   }
-  form.addEventListener("input", function (e) { if (e.target.name || e.target.hasAttribute("data-sl-mirror")) markDirty(); });
-  form.addEventListener("change", function (e) { if (e.target.name || e.target.hasAttribute("data-sl-mirror")) markDirty(); });
+  function merged(a, b) {
+    if (!a) return b;
+    return { restart: a.restart || b.restart, undo: a.undo.concat(b.undo), ctl: a.ctl.concat(b.ctl) };
+  }
+  function save(j) {
+    if (saving) { queued = merged(queued, j); return; }
+    saving = true;
+    note("run", j.restart ? T.s_saving_restart : T.s_saving);
+    // update.php never answers a multipart body, so the form goes URL-encoded.
+    var body = new URLSearchParams(new FormData(form));
+    if (!j.restart) { body.delete("#command"); body.delete("#arg[1]"); }
+    fetch("/update.php", { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (r) {
+        // An expired session answers with the login page.
+        if (!r.ok || r.redirected) throw new Error(r.ok ? T.s_session : "HTTP " + r.status);
+        var t = new Date().toLocaleTimeString(window.SL_LANG, { hour: "2-digit", minute: "2-digit" });
+        note("ok", T.s_saved + " · " + t);
+        if (j.restart) loadStatus();
+      })
+      .catch(function (e) {
+        j.undo.forEach(function (fn) { fn(); });
+        j.ctl.forEach(fail);
+        note("err", T.s_save_failed.replace("%s", function () { return e.message; }));
+      })
+      .then(function () {
+        saving = false;
+        if (queued) { var q = queued; queued = null; save(q); }
+      });
+  }
+  function isText(el) { return el.tagName === "INPUT" && (el.type === "text" || el.type === "password"); }
+  // A typed value goes out once per change: after the pause, or when the field
+  // is left or Enter is pressed before the pause ends.
+  function flushTyped() {
+    clearTimeout(typeTimer);
+    if (!typed) return;
+    var changed = typed.filter(function (f) { return f.value !== f.getAttribute("data-sl-saved"); });
+    typed = null;
+    if (!changed.length) return;
+    changed.forEach(function (f) { f.setAttribute("data-sl-saved", f.value); });
+    var j = job(changed.map(function (f) { return f.name; }));
+    j.ctl = changed;
+    save(j);
+  }
+  form.querySelectorAll("input.sl-f").forEach(function (f) { f.setAttribute("data-sl-saved", f.value); });
+  form.querySelectorAll("select.sl-sel").forEach(function (s) { s.setAttribute("data-sl-saved", s.value); });
+  form.addEventListener("input", function (e) {
+    var f = e.target;
+    if (!isText(f) || !f.name) return;
+    typed = typed || [];
+    if (typed.indexOf(f) < 0) typed.push(f);
+    clearTimeout(typeTimer);
+    typeTimer = setTimeout(flushTyped, 800);
+  });
+  form.addEventListener("submit", function (e) { e.preventDefault(); flushTyped(); });
+  form.addEventListener("change", function (e) {
+    var el = e.target;
+    if (isText(el)) { flushTyped(); return; }
+    if (el.tagName === "SELECT" && el.name) {
+      var was = el.getAttribute("data-sl-saved");
+      el.setAttribute("data-sl-saved", el.value);
+      save(job([el.name], function () {
+        el.value = was;
+        el.setAttribute("data-sl-saved", was);
+        if (el.id === "sl-au-mode") auMode();
+      }, el));
+    } else if (el.hasAttribute("data-sl-mirror")) {
+      save(job([byId(el.getAttribute("data-sl-mirror")).name], function () {
+        el.checked = !el.checked;
+        mirror(el);
+        if (el.id === "sl-au-en-cb") auShown();
+      }, el));
+    } else if (el.closest("#sl-au-ct")) {
+      save(job(["AUTOUPDATE_EXCLUDE_CONTAINERS"], function () { el.checked = !el.checked; auSync(el); }, el));
+    }
+  });
 
   /* A switch is a checkbox without a name; the hidden field beside it posts
      true or false. */
@@ -177,10 +250,8 @@
     var m = mode();
     if (root.getAttribute("data-sl-labels") !== m) root.setAttribute("data-sl-labels", m);
     root.querySelectorAll(".sl-btn").forEach(function (b) {
-      var text = b.querySelector(".sl-l").textContent.trim(), alt = b.getAttribute("data-sl-alt") || "";
-      // The longer of the two captions a button can carry sets its stage.
-      var w = Math.max(labelWidth(text), labelWidth(alt));
-      var st = "sl-w-" + stage(w);
+      var text = b.querySelector(".sl-l").textContent.trim();
+      var st = "sl-w-" + stage(labelWidth(text));
       ["sl-w-xs", "sl-w-sm", "sl-w-md", "sl-w-lg"].forEach(function (c) { b.classList.toggle(c, c === st); });
       b.style.setProperty("--sl-rchars", String(labelWidth(text)));
       if (m === "glyph" || (m === "reactive" && b.disabled)) b.setAttribute("data-sl-tip", text);
@@ -188,25 +259,15 @@
     });
     fit();
   }
-  // Measured in textGlyph with every caption the button can carry, Done and
-  // Reset alike. A button in a closed tab has no box yet and is measured when
-  // its tab opens.
+  // Measured in textGlyph. A button in a closed tab has no box yet and is
+  // measured when its tab opens.
   function fit() {
     var m = root.getAttribute("data-sl-labels");
     root.classList.add("sl-still");
     root.setAttribute("data-sl-labels", "textGlyph");
     var btns = Array.prototype.filter.call(root.querySelectorAll(".sl-btn"), function (b) { return b.getClientRects().length > 0; });
     btns.forEach(function (b) { b.style.removeProperty("--sl-w"); });
-    var ws = btns.map(function (b) {
-      var w = b.getBoundingClientRect().width, alt = b.getAttribute("data-sl-alt"), l = b.querySelector(".sl-l");
-      if (alt) {
-        var cur = l.textContent;
-        l.textContent = alt;
-        w = Math.max(w, b.getBoundingClientRect().width);
-        l.textContent = cur;
-      }
-      return Math.ceil(w);
-    });
+    var ws = btns.map(function (b) { return Math.ceil(b.getBoundingClientRect().width); });
     root.setAttribute("data-sl-labels", m);
     btns.forEach(function (b, i) { b.style.setProperty("--sl-w", ws[i] + "px"); });
     // Settled before the transitions come back, or a reactive label would replay its opening.
@@ -314,10 +375,12 @@
     return i;
   }
 
-  /* The engine's state and the address of its status page. */
-  (function () {
-    var stat = byId("sl-stat"), txt = byId("sl-stat-txt"), link = byId("sl-statuslink");
-    if (!link.getAttribute("href")) link.href = "http://" + (window.SL_STATUS_HOST || location.hostname) + ":" + link.getAttribute("data-sl-port") + "/";
+  /* The engine's state and the address of its status page. The state is read
+     again after a save that restarted the engine. */
+  var statusLink = byId("sl-statuslink");
+  if (!statusLink.getAttribute("href")) statusLink.href = "http://" + (window.SL_STATUS_HOST || location.hostname) + ":" + statusLink.getAttribute("data-sl-port") + "/";
+  function loadStatus() {
+    var stat = byId("sl-stat"), txt = byId("sl-stat-txt");
     function show(state, text, hint) {
       stat.setAttribute("data-state", state);
       txt.textContent = String(text || "").replace(/^[✓✗]\s*/, "");
@@ -338,7 +401,8 @@
         }
       })
       .catch(function () { show("err", T.s_unreachable, T.s_unreachable_hint); auLoaded(null); });
-  })();
+  }
+  loadStatus();
 
   /* Auto-update. Everything below the main switch only matters while it is on,
      so those rows are left out while it is off. */
@@ -425,7 +489,6 @@
     });
     skip = out;
     byId("sl-au-skip").value = out.join(",");
-    markDirty();
     auState();
   }
   function auState() {

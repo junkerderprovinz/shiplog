@@ -4,8 +4,10 @@ Icon="shiplog.png"
 ---
 <?php
 /* Writes /boot/config/plugins/shiplog/shiplog.cfg through Unraid's /update.php
-   and restarts the daemon. Unraid may include a .page more than once, so it
-   declares no functions; a "Cannot redeclare" error would leave a blank page. */
+   as each setting changes, and restarts the daemon when a key it reads at
+   start changed (scripts/settings.js). Unraid may include a .page more than
+   once, so it declares no functions; a "Cannot redeclare" error would leave a
+   blank page. */
 $cfg    = parse_plugin_cfg("shiplog");
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
 $port   = !empty($cfg['PORT'])          ? $cfg['PORT']          : '8484';
@@ -369,12 +371,7 @@ $slRbtn = function ($brand, $name, $href) use ($M, $slE) {
   })();
   </script>
 
-  <div class="sl-foot">
-    <div class="sl-actions">
-      <button type="button" class="sl-btn" id="sl-done" data-sl-alt="<?=$slE($L['s_reset'])?>" onclick="done()"><?=$slBtn('Check', $L['s_done'])?></button>
-      <button type="submit" class="sl-btn sl-primary" id="sl-apply" name="#apply" value="<?=$slE($L['s_apply'])?>" disabled><?=$slBtn('Save', $L['s_apply'])?></button>
-    </div>
-  </div>
+  <div class="sl-foot"><span class="sl-saved" id="sl-saved" role="status"></span></div>
 
   </div>
 </div>
@@ -383,7 +380,8 @@ $slRbtn = function ($brand, $name, $href) use ($M, $slE) {
 
 <script>
 var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
-var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Restore' => $G['Restore'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
+var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
 var SL_STATUS_HOST = <?=json_encode($lanip)?>;
+var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 </script>
 <script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>

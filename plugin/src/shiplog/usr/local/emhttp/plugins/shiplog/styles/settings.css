@@ -209,14 +209,15 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   }
 }
 
-/* A failed check shakes its button once. */
+/* A failed check shakes its button once, and a setting that could not be saved
+   shakes its control. */
 @keyframes sl-shake {
   0%, 100% { transform: none; }
   20%, 60% { transform: translateX(calc(var(--cc-motion-shake-dist, 4px) * -1)); }
   40%, 80% { transform: translateX(var(--cc-motion-shake-dist, 4px)); }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .sl-cfg .sl-btn.sl-shake { animation: sl-shake var(--cc-motion-shake-dur, 360ms) ease-in-out; }
+  .sl-cfg .sl-shake { animation: sl-shake var(--cc-motion-shake-dur, 360ms) ease-in-out; }
 }
 
 /* The engine's state: a quiet dot and the words in the secondary colour. */
@@ -248,8 +249,12 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .sl-ct-ring { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 24px; }
 .sl-ct-ring::after { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--cc-info, #4f8fd6); }
 
-.sl-foot { display: flex; justify-content: flex-end; margin-top: 28px; }
-.sl-actions { display: flex; gap: 10px; }
+/* The save state under the cards: quiet while it saves and once it has, with
+   a green dot before the time; a save that failed says why in the fault colour. */
+.sl-foot { display: flex; justify-content: flex-end; min-height: 20px; margin-top: 28px; }
+.sl-saved { display: inline-flex; align-items: center; gap: 8px; color: var(--sl-dim); font-size: 13px; }
+.sl-saved[data-state="ok"]::before { content: ""; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--sl-ok); }
+.sl-saved[data-state="err"] { color: var(--sl-err); }
 
 /* The Info tab's cards, as on TowerTorch's: the versions, the ways to ask for
    help, and the maker's sentences over the give row. */
