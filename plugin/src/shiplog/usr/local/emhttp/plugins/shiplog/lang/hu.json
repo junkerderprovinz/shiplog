@@ -127,5 +127,10 @@
   "d_newerPill": "rögzítve · újabb %v",
   "d_newerChipHint": "Újabb verzió érhető el: %v. A címke rögzítve van, a frissítéshez módosítsd.",
   "d_newerNote": "A(z) %v verzió elérhető. A frissítéshez módosítsd a címkét.",
-  "d_newerWhy": "Ez a konténer a(z) %v verzióra van rögzítve, ezért az újbóli letöltése semmit sem változtat, és a ShipLog sosem frissíti automatikusan."
+  "d_newerWhy": "Ez a konténer a(z) %v verzióra van rögzítve, ezért az újbóli letöltése semmit sem változtat, és a ShipLog sosem frissíti automatikusan.",
+  "s_status": "Állapot",
+  "s_statuspage_btn": "Állapotoldal",
+  "s_manual": "Kézi frissítések",
+  "s_channels": "Csatornák",
+  "s_reset": "Visszaállítás"
 }

@@ -127,5 +127,10 @@
   "d_newerPill": "przypięte · nowsza %v",
   "d_newerChipHint": "Dostępna nowsza wersja %v. Tag jest przypięty, więc zmień go, aby zaktualizować.",
   "d_newerNote": "Wersja %v jest dostępna. Zmień tag, aby zaktualizować.",
-  "d_newerWhy": "Ten kontener jest przypięty do %v, więc ponowne pobranie niczego nie zmienia, a ShipLog nigdy nie aktualizuje go automatycznie."
+  "d_newerWhy": "Ten kontener jest przypięty do %v, więc ponowne pobranie niczego nie zmienia, a ShipLog nigdy nie aktualizuje go automatycznie.",
+  "s_status": "Stan",
+  "s_statuspage_btn": "Strona statusu",
+  "s_manual": "Aktualizacje ręczne",
+  "s_channels": "Kanały",
+  "s_reset": "Resetuj"
 }

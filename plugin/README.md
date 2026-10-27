@@ -27,7 +27,10 @@ plugin/
   spike/docker-tab-inject.js  the feasibility spike (paste-in-console; proven on a real box)
   src/shiplog/usr/local/emhttp/plugins/shiplog/
     shiplog.Docker.page       Menu="Docker" → injected into the Docker tab
-    ShipLog.page              Settings → ShipLog (port, enable, token, Ollama/Matrix)
+    shiplog.page              Settings → ShipLog (port, enable, token, Ollama/Matrix)
+    scripts/settings.js       the settings page: tabs, switches, checks, bubbles, label modes
+    styles/settings.css       the settings page, native without TowerTorch, GlimStone with it
+    include/glyphs.php        the GlimStone glyphs the settings page draws
     scripts/docker.js         the injection: proxy fetch → per-row chip + bubble
     styles/docker.css         the chip + bubble styles
     server/status.php         same-origin proxy → the local engine

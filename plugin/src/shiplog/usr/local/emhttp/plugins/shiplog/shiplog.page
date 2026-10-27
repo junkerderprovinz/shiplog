@@ -5,7 +5,7 @@ Icon="shiplog.png"
 <?php
 /* Writes /boot/config/plugins/shiplog/shiplog.cfg through Unraid's /update.php
    and restarts the daemon. Unraid may include a .page more than once, so it
-   defines no functions; a "Cannot redeclare" error would leave a blank page. */
+   declares no functions; a "Cannot redeclare" error would leave a blank page. */
 $cfg    = parse_plugin_cfg("shiplog");
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
 $port   = !empty($cfg['PORT'])          ? $cfg['PORT']          : '8484';
@@ -21,10 +21,10 @@ $lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
 $mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
 $mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
 $mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
-$unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true'); // native Unraid notifications (default off)
-$confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // ask before updating (default on)
-$silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // suppress Unraid's update pop-up (default off)
-$ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // skip 3rd-party (non-Unraid) containers (default off)
+$unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true'); // default off
+$confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
+$silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
+$ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
 /* Auto-update settings, all off by default. */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
 $auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';
@@ -38,23 +38,8 @@ $auSkip    = isset($cfg['AUTOUPDATE_EXCLUDE_CONTAINERS']) ? $cfg['AUTOUPDATE_EXC
 /* CA Auto Update coexistence: warn so the user doesn't run both. */
 $caPresent = is_dir('/usr/local/emhttp/plugins/ca.update.applications') || is_dir('/boot/config/plugins/ca.update.applications');
 
-/* On/Off label in the active Unraid language. */
+/* The UI text comes from the locale files, the active language over English. */
 $lang = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
-$onoff = array(
-  'en'=>array('On','Off'),   'de'=>array('Ein','Aus'),   'nl'=>array('Aan','Uit'),
-  'fr'=>array('Activé','Désactivé'), 'es'=>array('Activado','Desactivado'),
-  'it'=>array('Attivo','Disattivo'), 'pt'=>array('Ligado','Desligado'),
-  'ru'=>array('Вкл','Выкл'), 'uk'=>array('Увімк','Вимк'), 'bg'=>array('Вкл','Изкл'),
-  'pl'=>array('Wł.','Wył.'), 'cs'=>array('Zap.','Vyp.'),
-  'sv'=>array('På','Av'),    'da'=>array('Til','Fra'),    'no'=>array('På','Av'), 'nb'=>array('På','Av'),
-  'fi'=>array('Päällä','Pois'), 'hu'=>array('Be','Ki'),   'ro'=>array('Pornit','Oprit'),
-  'tr'=>array('Açık','Kapalı'), 'el'=>array('Ενεργό','Ανενεργό'),
-  'zh'=>array('开','关'),     'ja'=>array('オン','オフ'),  'ko'=>array('켜짐','꺼짐'),
-);
-$lbl   = isset($onoff[$lang]) ? $onoff[$lang] : $onoff['en'];
-$onTxt = $lbl[0]; $offTxt = $lbl[1];
-
-/* The other UI text comes from the locale files, the active language over English. */
 $langdir = '/usr/local/emhttp/plugins/shiplog/lang';
 $L = json_decode(@file_get_contents("$langdir/en.json"), true) ?: array();
 if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
@@ -68,618 +53,282 @@ $lanip = '';
 $net = '/var/local/emhttp/network.ini';
 if (is_file($net) && preg_match('/IPADDR(?::0)?\s*=\s*"?([0-9.]+)/', file_get_contents($net), $mip)) $lanip = $mip[1];
 if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_ADDR'];
+
+$slVer = '';
+if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
+$slGlimstoneVer = '3.7.0';
+
+$G = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
+$slE = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
+/* A help text in the locale files may carry markup; its bubble shows the words. */
+$slPlain = function ($html) { return trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string)$html), ENT_QUOTES, 'UTF-8'))); };
+$slInfoSvg = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/><path d="M8 7v4.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+$slInfo = function ($html) use ($slE, $slPlain, $slInfoSvg) {
+  $t = $slE($slPlain($html));
+  return '<span class="sl-info" tabindex="0" role="img" aria-label="'.$t.'" data-sl-tip="'.$t.'">'.$slInfoSvg.'</span>';
+};
+$slBtn = function ($glyph, $label) use ($G, $slE) {
+  return '<span class="sl-g">'.$G[$glyph].'</span><span class="sl-l">'.$slE($label).'</span>';
+};
+/* A link inside a help text stands beside its control as a badge. */
+$slLinks = function ($html) use ($slBtn, $slE, $slPlain) {
+  $out = '';
+  if (preg_match_all('/<a\s[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/i', (string)$html, $m, PREG_SET_ORDER)) {
+    foreach ($m as $a) $out .= '<a class="button sl-btn" href="'.$slE($a[1]).'" target="_blank" rel="noopener noreferrer">'.$slBtn('ExternalLink', $slPlain($a[2])).'</a>';
+  }
+  return $out;
+};
+/* The checkbox carries no name; its hidden twin posts true or false, as Unraid's cfg expects. */
+$slSwitch = function ($id, $name, $on) {
+  return '<input type="checkbox" role="switch" class="sl-sw" id="'.$id.'-cb" data-sl-mirror="'.$id.'"'.($on ? ' checked' : '').'>'
+       . '<input type="hidden" name="'.$name.'" id="'.$id.'" value="'.($on ? 'true' : 'false').'">';
+};
+$slEye = function ($id) use ($G, $slE, $L) {
+  return '<span class="sl-eye" role="button" tabindex="0" data-sl-eye="'.$id.'" aria-label="'.$slE($L['s_show']).'" aria-pressed="false">'.$G['Eye'].'</span>';
+};
+$slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
 ?>
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/settings.css')?>">
 
-<style>
-  /* One markup, two looks. The base look adds only layout and leaves the forms
-     to Unraid's own CSS. With CannonadeCommand installed (html.cc-header-on), the
-     GlimStone look adds cards, pill tabs, toggles and filled buttons from the
-     --cc-* tokens. */
+<div id="sl-cfg" class="sl-cfg" data-sl-labels="textGlyph">
+<form name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="shiplog/shiplog.cfg">
+<input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
+<input type="hidden" name="#arg[1]" value="restart">
 
-  /* CC tokens when present, dark fallbacks otherwise. */
-  .sl-cfg{
-    --card:      var(--cc-card-bg,   #242424);
-    --well:      var(--cc-field-bg,  #171717);
-    --chip:      var(--cc-surface-chip, #2f2f2f);
-    --chip-h:    var(--cc-chip-hover, #3a3a3a);
-    --track:     var(--cc-toggle-track-off, #3a3a3a);
-    --accent:    var(--cc-accent,    #ff8c2f);
-    --accent-fg: var(--cc-accent-fg, #ffffff);
-    --txt:  var(--cc-text,      #e6e6e6);
-    --dim:  var(--cc-text-dim,  #b4b4b4);
-    --dim2: var(--cc-text-dim2, #8a8a8a);
-    --rad:  var(--cc-b-radius, 8px);
-    --pill: 999px;
-    max-width:820px;margin:6px auto 0;font-size:14px;line-height:1.5}
-  .sl-cfg *{box-sizing:border-box}
+<div class="sl-body">
+  <div class="sl-tabs" role="tablist" aria-orientation="vertical" aria-label="ShipLog">
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-general" aria-controls="sl-pane-general" aria-selected="true" data-sl-tab="general"><span class="sl-tabico"><?=$G['TabGeneral']?></span><span class="sl-tablbl"><?=$slE($L['t_general'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-updates" aria-controls="sl-pane-updates" aria-selected="false" tabindex="-1" data-sl-tab="updates"><span class="sl-tabico"><?=$G['Refresh']?></span><span class="sl-tablbl"><?=$slE($L['t_updates'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-notify" aria-controls="sl-pane-notify" aria-selected="false" tabindex="-1" data-sl-tab="notify"><span class="sl-tabico"><?=$G['Notifications']?></span><span class="sl-tablbl"><?=$slE($L['t_notify'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-sources" aria-controls="sl-pane-sources" aria-selected="false" tabindex="-1" data-sl-tab="sources"><span class="sl-tabico"><?=$G['Link']?></span><span class="sl-tablbl"><?=$slE($L['t_sources'])?></span></button>
+  </div>
 
-  /* Layout shared by both looks. */
-  .sl-hd{display:flex;align-items:center;gap:15px;padding:0 2px 16px;margin-bottom:12px}
-  .sl-hd .sl-logo{width:46px;height:46px;flex:none}
-  .sl-hd .sl-ttl{font-size:21px;font-weight:600;letter-spacing:.2px}
-  .sl-hd .sl-ttl b{font-weight:700}
-  .sl-hd .sl-sub{margin-top:3px;color:var(--dim2);font-size:12.5px;max-width:660px}
-  .sl-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 2px 16px}
-  .sl-cfg .sl-tab{margin:0}
-  .sl-card{margin-bottom:14px}
-  .sl-card[data-hidden="1"]{display:none}
-  .sl-row{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 14px;align-items:center;padding:6px 2px}
-  .sl-row > label{font-size:13px;display:inline-flex;align-items:center;gap:6px;min-height:32px}
-  .sl-row .sl-in{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:32px}
-  .sl-in.sl-stack{flex-direction:column;align-items:flex-start;gap:8px}
-  .sl-row .sl-desc{grid-column:2/-1;color:var(--dim2);font-size:12px;line-height:1.45;max-width:600px}
-  .sl-cfg input.sl-narrow{width:120px;min-width:120px}
-  .sl-field{position:relative;display:block;width:100%}
-  .sl-field > input{width:100%;padding-right:34px}
-  .sl-eyebtn{position:absolute;right:10px;top:50%;transform:translateY(-50%);
-    display:inline-flex;cursor:pointer;color:var(--dim2);line-height:0;background:none;border:none;padding:0}
-  .sl-eyebtn:hover{color:var(--txt)}
-  .sl-eyebtn svg{width:17px;height:17px;display:block}
-  input[type=password]::-ms-reveal,input[type=password]::-ms-clear{display:none}
-  .sl-switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;position:relative}
-  .sl-state{font-size:13px;min-width:26px}
-  .sl-hint{color:var(--dim2);font-size:12px}
-  .sl-cfg .sl-btn{margin:0}
-  .sl-res{font-size:12.5px}
-  .sl-res.ok{color:var(--status-ok-text,#3fae6a)}
-  .sl-res.err{color:var(--status-fail-text,#d9534f)}
-  .sl-res.run{color:var(--dim)}
-  .sl-actions{display:flex;gap:10px;margin:6px 2px 4px}
-  .sl-version{color:var(--dim2);font-size:11.5px;margin:2px 2px 0}
-  .sl-cfg a{color:#8ab4f8;text-decoration:none}
+  <div class="sl-main">
 
-  /* The info bubble stays neutral in both looks. */
-  .sl-info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
-    color:var(--dim2);opacity:.7;cursor:help;flex:none;padding:0;background:none;border:none}
-  .sl-info:hover,.sl-info:focus{opacity:1;outline:none;color:var(--dim)}
-  .sl-info svg{width:15px;height:15px;display:block}
-  .sl-info-pop{position:absolute;z-index:9999;max-width:300px;background:var(--cc-surface-window,#1c1c1c);color:var(--txt);
-    border:none;border-radius:var(--rad);padding:9px 11px;font-size:12px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.5)}
-  .sl-info-pop a{color:#8ab4f8}
-  .sl-info-pop code{background:rgba(255,255,255,.08);padding:1px 4px;border-radius:4px;font-size:11.5px}
+  <div class="sl-pane" role="tabpanel" id="sl-pane-general" aria-labelledby="sl-tab-general">
+    <section class="sl-card" aria-labelledby="sl-h-engine">
+      <h3 class="sl-h"><span id="sl-h-engine"><?=$slE($L['s_engine'])?></span></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-enable-cb"><?=$slE($L['s_enable'])?></label></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-enable', 'ENABLE', $enable !== 'false')?></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-PORT"><?=$slE($L['s_port'])?></label></div>
+        <div class="sl-ctl"><input type="text" class="sl-f sl-f-s" id="sl-PORT" name="PORT" value="<?=$slE($port)?>" inputmode="numeric" dir="ltr"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-DATA_DIR"><?=$slE($L['s_datadir'])?></label><?=$slInfo($L['s_datadir_hint'])?></div>
+        <div class="sl-ctl"><input type="text" class="sl-f sl-f-l" id="sl-DATA_DIR" name="DATA_DIR" value="<?=$slE($ddir)?>" dir="ltr"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-POLL_INTERVAL"><?=$slE($L['s_poll'])?></label><?=$slInfo($L['s_poll_hint'])?></div>
+        <div class="sl-ctl"><input type="text" class="sl-f sl-f-s" id="sl-POLL_INTERVAL" name="POLL_INTERVAL" value="<?=$slE($poll)?>" dir="ltr"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-ignore-unmanaged-cb"><?=$slE($L['s_ignore_unmanaged'])?></label><?=$slInfo($L['s_ignore_unmanaged_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-ignore-unmanaged', 'IGNORE_UNMANAGED', $ignoreUnmanaged)?></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><span id="sl-status-lbl"><?=$slE($L['s_status'])?></span></div>
+        <div class="sl-ctl">
+          <span class="sl-stat" id="sl-stat" data-state="run" role="status" aria-labelledby="sl-status-lbl sl-stat-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-stat-txt"><?=$slE($L['s_checking'])?></span></span>
+          <a class="button sl-btn" id="sl-statuslink" href="<?=$slE($slStatusUrl)?>" target="_blank" rel="noopener noreferrer" data-sl-port="<?=$slE($port)?>"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a>
+        </div>
+      </div>
+    </section>
+  </div>
 
-  /* Base look; inputs, selects and buttons keep Unraid's styling. */
-  .sl-card > h3{margin:14px 2px 10px;font-size:16px;font-weight:700}
-  .sl-card > h3 small{font-weight:400;color:var(--dim2);font-size:12.5px;margin-left:8px}
-  .sl-track{display:none}
-  .sl-state{color:inherit}
-  .sl-cfg .sl-tab.active{background:var(--accent)!important;background-image:none!important;color:#fff!important}
-  .sl-warn{background:rgba(241,194,27,.12);border-radius:4px;color:#f1c21b;padding:10px 12px;margin:2px 0 12px;font-size:12.5px;line-height:1.45}
-  .sl-row.sl-top{align-items:start}
-  .sl-row.sl-top > label{padding-top:5px}
-  .sl-ct{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 14px;width:100%;
-    max-height:280px;overflow-y:auto;padding:4px 8px;border:1px solid rgba(128,128,128,.35);border-radius:4px}
-  .sl-ct:empty{display:none}
-  .sl-ct .sl-ct-item{min-height:30px;min-width:0}
-  .sl-ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sl-ct-item small{flex:none;color:var(--dim2);font-size:11.5px}
-  /* A pinned row has no switch; a hollow blue ring holds its place, like the
-     ring on the Docker tab's chip. */
-  .sl-ct-pin{display:flex;align-items:center;gap:8px}
-  .sl-ct-ring{flex:none;display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin:3px 3px 3px 4px}
-  .sl-ct-ring::after{content:"";width:9px;height:9px;box-sizing:border-box;border-radius:50%;border:2px solid #4f8fd6}
-  .sl-ct[data-disabled="1"]{opacity:.45}
-  .sl-ct[data-disabled="1"] .sl-ct-item{cursor:default}
+  <div class="sl-pane" role="tabpanel" id="sl-pane-updates" aria-labelledby="sl-tab-updates" hidden>
+    <section class="sl-card" aria-labelledby="sl-h-autoupd">
+      <h3 class="sl-h"><span id="sl-h-autoupd"><?=$slE($L['s_autoupd'])?></span><?=$slInfo($L['s_autoupd_sub'])?></h3>
+      <?php if ($caPresent): ?>
+      <p class="sl-warn" role="note"><span class="sl-g"><?=$G['Warning']?></span><span><?=$slE($slPlain($L['s_ca_warn']))?></span></p>
+      <?php endif; ?>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-au-en-cb"><?=$slE($L['s_au_enable'])?></label><?=$slInfo($L['s_au_enable_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-au-en', 'AUTOUPDATE_ENABLED', $auEn)?></div>
+      </div>
+      <div class="sl-row" data-sl-au>
+        <div class="sl-lbl"><label for="sl-au-level"><?=$slE($L['s_au_level'])?></label><?=$slInfo($L['s_au_level_desc'])?></div>
+        <div class="sl-ctl">
+          <select class="sl-sel" id="sl-au-level" name="AUTOUPDATE_LEVEL">
+            <option value="off"   <?=$auLevel==='off'?'selected':''?>><?=$slE($L['s_au_lvl_off'])?></option>
+            <option value="patch" <?=$auLevel==='patch'?'selected':''?>><?=$slE($L['s_au_lvl_patch'])?></option>
+            <option value="minor" <?=$auLevel==='minor'?'selected':''?>><?=$slE($L['s_au_lvl_minor'])?></option>
+            <option value="major" <?=$auLevel==='major'?'selected':''?>><?=$slE($L['s_au_lvl_major'])?></option>
+          </select>
+        </div>
+      </div>
+      <div class="sl-row" data-sl-au>
+        <div class="sl-lbl"><label for="sl-AUTOUPDATE_EXCLUDE_WORDS"><?=$slE($L['s_au_exclude'])?></label><?=$slInfo($L['s_au_exclude_desc'])?></div>
+        <div class="sl-ctl"><input type="text" class="sl-f" id="sl-AUTOUPDATE_EXCLUDE_WORDS" name="AUTOUPDATE_EXCLUDE_WORDS" value="<?=$slE($auExclude)?>" placeholder="breaking, migration required"></div>
+      </div>
+      <div class="sl-row" data-sl-au>
+        <div class="sl-lbl"><label for="sl-au-dg-cb"><?=$slE($L['s_au_digest'])?></label><?=$slInfo($L['s_au_digest_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-au-dg', 'AUTOUPDATE_DIGEST', $auDigest)?></div>
+      </div>
+      <div class="sl-row" data-sl-au>
+        <div class="sl-lbl"><label for="sl-au-mode"><?=$slE($L['s_au_sched'])?></label><?=$slInfo($L['s_au_sched_desc'])?></div>
+        <div class="sl-ctl">
+          <select class="sl-sel" name="AUTOUPDATE_SCHED_MODE" id="sl-au-mode">
+            <option value="off"   <?=$auMode==='off'?'selected':''?>><?=$slE($L['s_au_sm_off'])?></option>
+            <option value="daily" <?=$auMode==='daily'?'selected':''?>><?=$slE($L['s_au_sm_daily'])?></option>
+            <option value="boot"  <?=$auMode==='boot'?'selected':''?>><?=$slE($L['s_au_sm_boot'])?></option>
+            <option value="hours" <?=$auMode==='hours'?'selected':''?>><?=$slE($L['s_au_sm_hours'])?></option>
+            <option value="days"  <?=$auMode==='days'?'selected':''?>><?=$slE($L['s_au_sm_days'])?></option>
+          </select>
+          <input type="text" class="sl-f sl-f-s" name="AUTOUPDATE_SCHED_TIME" id="sl-au-time" value="<?=$slE($auTime)?>" placeholder="04:00" aria-label="<?=$slE($L['s_au_sm_daily'])?>" dir="ltr">
+          <input type="text" class="sl-f sl-f-xs" name="AUTOUPDATE_SCHED_EVERY" id="sl-au-every" value="<?=$slE($auEvery)?>" placeholder="6" inputmode="numeric" dir="ltr">
+          <span class="sl-unit" id="sl-au-every-unit"></span>
+        </div>
+      </div>
+      <div class="sl-row" data-sl-au>
+        <div class="sl-lbl"><label for="sl-au-dr-cb"><?=$slE($L['s_au_dryrun'])?></label><?=$slInfo($L['s_au_dryrun_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-au-dr', 'AUTOUPDATE_DRYRUN', $auDry)?></div>
+      </div>
+      <div class="sl-row sl-row-wide" data-sl-au>
+        <div class="sl-lbl"><span id="sl-au-ct-lbl"><?=$slE($L['s_au_containers'])?></span><?=$slInfo($L['s_au_containers_desc'].' '.$L['s_au_pinned_desc'])?></div>
+        <div class="sl-wide">
+          <span class="sl-hint" id="sl-au-ct-hint"></span>
+          <div class="sl-ct" id="sl-au-ct" role="group" aria-labelledby="sl-au-ct-lbl"></div>
+          <input type="hidden" name="AUTOUPDATE_EXCLUDE_CONTAINERS" id="sl-au-skip" value="<?=$slE($auSkip)?>">
+        </div>
+      </div>
+    </section>
 
-  /* GlimStone look, only with CannonadeCommand. */
-  html.cc-header-on .sl-cfg{color:var(--txt)}
-  html.cc-header-on .sl-card{background:var(--card);border-radius:var(--rad);box-shadow:0 1px 3px rgba(0,0,0,.3);padding:6px 18px 18px}
-  html.cc-header-on .sl-card > h3{display:flex;align-items:baseline;gap:10px;margin:16px 2px 16px;
-    font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--txt)}
-  html.cc-header-on .sl-card > h3 small{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px;margin-left:0}
-  html.cc-header-on .sl-row > label{color:var(--txt)}
-  html.cc-header-on .sl-cfg input[type=text],
-  html.cc-header-on .sl-cfg input[type=password],
-  html.cc-header-on .sl-cfg select{background:var(--well);border:none;border-radius:var(--rad);color:var(--txt);
-    height:34px;padding:0 11px;font-size:13px;line-height:34px;min-width:240px;outline:none;-webkit-appearance:none;appearance:none}
-  html.cc-header-on .sl-cfg select{padding-right:30px;
-    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
-    background-position:calc(100% - 15px) 15px,calc(100% - 10px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
-  html.cc-header-on .sl-cfg input:focus,html.cc-header-on .sl-cfg select:focus{box-shadow:0 0 0 2px var(--accent)}
-  html.cc-header-on .sl-cfg input::placeholder{color:var(--dim2)}
-  html.cc-header-on .sl-cfg .sl-btn{background:var(--chip);border:none;border-radius:var(--rad);color:var(--txt);
-    height:32px;min-width:0;padding:0 14px;font-size:13px;line-height:1.2;font-weight:500;letter-spacing:normal;
-    text-transform:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-  html.cc-header-on .sl-cfg .sl-btn:hover{background:var(--chip-h);color:var(--txt)}
-  html.cc-header-on .sl-cfg .sl-btn.sl-primary{background:var(--accent);color:var(--accent-fg);font-weight:600}
-  html.cc-header-on .sl-cfg .sl-btn.sl-primary:hover{filter:brightness(1.06)}
-  html.cc-header-on .sl-cfg .sl-switch > input[type=checkbox]{position:absolute!important;left:0;top:0;
-    width:1px!important;height:1px!important;opacity:0!important;margin:0!important;padding:0!important;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
-  html.cc-header-on .sl-track{display:block;position:relative;width:46px;height:24px;flex:none;border-radius:var(--pill);background:var(--track);transition:background .15s}
-  html.cc-header-on .sl-track::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#e6e6e6;transition:transform .15s,background .15s}
-  html.cc-header-on .sl-switch > input:checked + .sl-track{background:var(--accent)}
-  html.cc-header-on .sl-switch > input:checked + .sl-track::after{transform:translateX(22px);background:var(--accent-fg)}
-  html.cc-header-on .sl-switch > input:focus-visible + .sl-track{box-shadow:0 0 0 2px var(--accent)}
-  html.cc-header-on .sl-state{color:var(--txt)}
-  html.cc-header-on .sl-cfg .sl-tab{background:none;border:none;color:var(--dim);min-width:0;
-    padding:7px 14px;font-size:13px;line-height:1.2;font-weight:500;letter-spacing:normal;text-transform:none;cursor:pointer;border-radius:var(--rad)}
-  html.cc-header-on .sl-cfg .sl-tab:hover{color:var(--txt);background:var(--chip)}
-  html.cc-header-on .sl-cfg .sl-tab.active{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)!important;font-weight:600}
-  html.cc-header-on .sl-warn{background:var(--cc-badge-bg,#3a2a12);color:#f1c21b}
-  html.cc-header-on .sl-ct{background:var(--well);border:none;border-radius:var(--rad);padding:6px 10px}
-  html.cc-header-on .sl-ct-ring{width:46px;height:24px;margin:0}
-</style>
+    <section class="sl-card" aria-labelledby="sl-h-manual">
+      <h3 class="sl-h"><span id="sl-h-manual"><?=$slE($L['s_manual'])?></span><?=$slInfo($L['s_updates_sub'])?></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-confirm-cb"><?=$slE($L['s_confirm'])?></label><?=$slInfo($L['s_confirm_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-confirm', 'CONFIRM_UPDATE', $confirm !== 'false')?></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-silent-cb"><?=$slE($L['s_silent'])?></label><?=$slInfo($L['s_silent_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-silent', 'SILENT_UPDATE', $silent === 'true')?></div>
+      </div>
+    </section>
+  </div>
 
-<div class="sl-cfg">
+  <div class="sl-pane" role="tabpanel" id="sl-pane-notify" aria-labelledby="sl-tab-notify" hidden>
+    <section class="sl-card" aria-labelledby="sl-h-channels">
+      <h3 class="sl-h"><span id="sl-h-channels"><?=$slE($L['s_channels'])?></span><?=$slInfo($L['s_notif_sub'])?></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-unraid-notify-cb"><?=$slE($L['s_unraid_notify'])?></label><?=$slInfo($L['s_unraid_notify_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-unraid-notify', 'UNRAID_NOTIFY', $unraidNotify)?></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-MATRIX_HOMESERVER"><?=$slE($L['s_mx_home'])?></label></div>
+        <div class="sl-ctl"><input type="text" class="sl-f" id="sl-MATRIX_HOMESERVER" name="MATRIX_HOMESERVER" value="<?=$slE($mhs)?>" placeholder="https://matrix.example.com" dir="ltr"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-MATRIX_TOKEN"><?=$slE($L['s_mx_token'])?></label></div>
+        <div class="sl-ctl"><span class="sl-field"><input type="password" class="sl-f" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=$slE($mtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-MATRIX_TOKEN')?></span></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-MATRIX_ROOM"><?=$slE($L['s_mx_room'])?></label></div>
+        <div class="sl-ctl">
+          <input type="text" class="sl-f" id="sl-MATRIX_ROOM" name="MATRIX_ROOM" value="<?=$slE($mroom)?>" placeholder="!roomid:server  or  #alias:server" dir="ltr">
+          <button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+        </div>
+        <div class="sl-res" id="sl-matrix-result" role="status"></div>
+      </div>
+    </section>
+  </div>
 
-  <div class="sl-hd">
-    <!-- The double ring reads on light and dark Unraid themes alike. -->
-    <img class="sl-logo" src="<?autov('/plugins/shiplog/images/shiplog.svg')?>" alt="ShipLog">
-    <div>
-      <div class="sl-ttl"><b>Ship</b>Log</div>
-      <div class="sl-sub"><?=$L['s_sub']?></div>
+  <div class="sl-pane" role="tabpanel" id="sl-pane-sources" aria-labelledby="sl-tab-sources" hidden>
+    <section class="sl-card" aria-labelledby="sl-h-registry">
+      <h3 class="sl-h"><span id="sl-h-registry"><?=$slE($L['s_registry'])?></span><?=$slInfo($L['s_registry_sub'])?></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-GITHUB_TOKEN"><?=$slE($L['s_gh_token'])?></label><?=$slInfo($L['s_gh_hint'])?></div>
+        <div class="sl-ctl"><span class="sl-field"><input type="password" class="sl-f" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=$slE($ghtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-GITHUB_TOKEN')?></span></div>
+      </div>
+      <div class="sl-row sl-row-act">
+        <div class="sl-ctl">
+          <?=$slLinks($L['s_gh_hint'])?>
+          <button type="button" class="sl-btn" data-sl-check="github" data-sl-out="sl-gh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+        </div>
+        <div class="sl-res" id="sl-gh-result" role="status"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-DOCKERHUB_USERNAME"><?=$slE($L['s_dh_user'])?></label></div>
+        <div class="sl-ctl"><input type="text" class="sl-f" id="sl-DOCKERHUB_USERNAME" name="DOCKERHUB_USERNAME" value="<?=$slE($dhuser)?>" placeholder="<?=$slE($L['s_dh_user_ph'])?>" autocomplete="off" dir="ltr"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-DOCKERHUB_TOKEN"><?=$slE($L['s_dh_token'])?></label><?=$slInfo($L['s_dh_hint'])?></div>
+        <div class="sl-ctl"><span class="sl-field"><input type="password" class="sl-f" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=$slE($dhtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-DOCKERHUB_TOKEN')?></span></div>
+      </div>
+      <div class="sl-row sl-row-act">
+        <div class="sl-ctl">
+          <?=$slLinks($L['s_dh_hint'])?>
+          <button type="button" class="sl-btn" data-sl-check="dockerhub" data-sl-out="sl-dh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+        </div>
+        <div class="sl-res" id="sl-dh-result" role="status"></div>
+      </div>
+    </section>
+
+    <section class="sl-card" aria-labelledby="sl-h-ai">
+      <h3 class="sl-h"><span id="sl-h-ai"><?=$slE($L['s_ai'])?></span><?=$slInfo($L['s_ai_sub'])?></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-OLLAMA_URL"><?=$slE($L['s_ollama_url'])?></label><?=$slInfo($L['s_ollama_url_hint'])?></div>
+        <div class="sl-ctl">
+          <input type="text" class="sl-f" id="sl-OLLAMA_URL" name="OLLAMA_URL" value="<?=$slE($ourl)?>" placeholder="http://127.0.0.1:11434" dir="ltr">
+          <button type="button" class="sl-btn" data-sl-check="ollama-detect" data-sl-out="sl-ollama-result"><?=$slBtn('Search', $L['s_autodetect'])?></button>
+        </div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-OLLAMA_MODEL"><?=$slE($L['s_ollama_model'])?></label></div>
+        <div class="sl-ctl">
+          <input type="text" class="sl-f" id="sl-OLLAMA_MODEL" name="OLLAMA_MODEL" value="<?=$slE($omodel)?>" placeholder="llama3.1" dir="ltr">
+          <button type="button" class="sl-btn" data-sl-check="ollama" data-sl-out="sl-ollama-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+        </div>
+        <div class="sl-res" id="sl-ollama-result" role="status"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-LLAMASWAP_URL"><?=$slE($L['s_llamaswap_url'])?></label><?=$slInfo($L['s_llamaswap_url_hint'])?></div>
+        <div class="sl-ctl"><input type="text" class="sl-f" id="sl-LLAMASWAP_URL" name="LLAMASWAP_URL" value="<?=$slE($lsurl)?>" placeholder="http://127.0.0.1:9292" dir="ltr"></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-LLAMASWAP_MODEL"><?=$slE($L['s_llamaswap_model'])?></label></div>
+        <div class="sl-ctl">
+          <input type="text" class="sl-f" id="sl-LLAMASWAP_MODEL" name="LLAMASWAP_MODEL" value="<?=$slE($lsmodel)?>" placeholder="gemma4-e4b" dir="ltr">
+          <button type="button" class="sl-btn" data-sl-check="llamaswap" data-sl-out="sl-llamaswap-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button>
+        </div>
+        <div class="sl-res" id="sl-llamaswap-result" role="status"></div>
+      </div>
+    </section>
+  </div>
+  <script>
+  /* The tab chosen last opens before the first paint, so the page does not jump to it. */
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('shiplog.settings.tab'); } catch (e) {}
+    if (!t || t === 'general' || !document.getElementById('sl-pane-' + t)) return;
+    document.querySelectorAll('#sl-cfg .sl-tab').forEach(function (b) {
+      var on = b.getAttribute('data-sl-tab') === t;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+    });
+    document.querySelectorAll('#sl-cfg .sl-pane').forEach(function (p) { p.hidden = p.id !== 'sl-pane-' + t; });
+  })();
+  </script>
+
+  <div class="sl-foot">
+    <div class="sl-version"><span>ShipLog v<?=$slE($slVer)?> · GlimStone v<?=$slE($slGlimstoneVer)?></span><?=$slInfo($L['s_sub'])?></div>
+    <div class="sl-actions">
+      <button type="button" class="sl-btn" id="sl-done" data-sl-alt="<?=$slE($L['s_reset'])?>" onclick="done()"><?=$slBtn('Check', $L['s_done'])?></button>
+      <button type="submit" class="sl-btn sl-primary" id="sl-apply" name="#apply" value="<?=$slE($L['s_apply'])?>" disabled><?=$slBtn('Save', $L['s_apply'])?></button>
     </div>
   </div>
 
-  <form name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
-    <input type="hidden" name="#file" value="shiplog/shiplog.cfg">
-    <input type="hidden" name="#command" value="/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog">
-    <input type="hidden" name="#arg[1]" value="restart">
-
-    <div class="sl-tabs" id="sl-tabs">
-      <button type="button" class="sl-tab" data-go="general"><?=$L['t_general']?></button>
-      <button type="button" class="sl-tab" data-go="updates"><?=$L['t_updates']?></button>
-      <button type="button" class="sl-tab" data-go="notify"><?=$L['t_notify']?></button>
-      <button type="button" class="sl-tab" data-go="sources"><?=$L['t_sources']?></button>
-    </div>
-
-    <div class="sl-card" data-tab="general">
-      <h3><?=$L['s_engine']?></h3>
-      <div class="sl-row"><label><?=$L['s_enable']?></label><div class="sl-in">
-        <label class="sl-switch">
-          <input type="checkbox" id="sl-enable-cb" <?=$enable!=='false'?'checked':''?> onchange="slEnable(this)">
-          <span class="sl-track"></span>
-          <span class="sl-state" id="sl-enable-state"><?=htmlspecialchars($enable!=='false'?$onTxt:$offTxt)?></span>
-        </label>
-        <input type="hidden" name="ENABLE" id="sl-enable" value="<?=$enable!=='false'?'true':'false'?>"></div></div>
-      <div class="sl-row"><label><?=$L['s_port']?></label><div class="sl-in">
-        <input type="text" class="sl-narrow" name="PORT" value="<?=htmlspecialchars($port)?>">
-        <span id="sl-statuslink" class="sl-hint"></span></div></div>
-      <div class="sl-row"><label><?=$L['s_datadir']?></label><div class="sl-in">
-        <input type="text" name="DATA_DIR" value="<?=htmlspecialchars($ddir)?>">
-        <span class="sl-hint sl-help"><?=$L['s_datadir_hint']?></span></div></div>
-      <div class="sl-row"><label><?=$L['s_poll']?></label><div class="sl-in">
-        <input type="text" class="sl-narrow" name="POLL_INTERVAL" value="<?=htmlspecialchars($poll)?>">
-        <span class="sl-hint sl-help"><?=$L['s_poll_hint']?></span></div></div>
-      <div class="sl-row"><label><?=$L['s_ignore_unmanaged']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-ignore-unmanaged-cb" <?=$ignoreUnmanaged?'checked':''?> onchange="slSwitch(this,'sl-ignore-unmanaged','sl-ignore-unmanaged-state')">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-ignore-unmanaged-state"><?=htmlspecialchars($ignoreUnmanaged?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="IGNORE_UNMANAGED" id="sl-ignore-unmanaged" value="<?=$ignoreUnmanaged?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_ignore_unmanaged_desc']?></div></div>
-    </div>
-
-    <div class="sl-card" data-tab="updates">
-      <h3><?=$L['s_autoupd']?> <small><?=$L['s_autoupd_sub']?></small></h3>
-      <?php if ($caPresent): ?>
-      <div class="sl-warn"><?=$L['s_ca_warn']?></div>
-      <?php endif; ?>
-      <div class="sl-row"><label><?=$L['s_au_enable']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-au-en-cb" <?=$auEn?'checked':''?> onchange="slSwitch(this,'sl-au-en','sl-au-en-state');slAuState()">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-au-en-state"><?=htmlspecialchars($auEn?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="AUTOUPDATE_ENABLED" id="sl-au-en" value="<?=$auEn?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_au_enable_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_au_level']?></label>
-        <div class="sl-in">
-          <select name="AUTOUPDATE_LEVEL">
-            <option value="off"   <?=$auLevel==='off'?'selected':''?>><?=$L['s_au_lvl_off']?></option>
-            <option value="patch" <?=$auLevel==='patch'?'selected':''?>><?=$L['s_au_lvl_patch']?></option>
-            <option value="minor" <?=$auLevel==='minor'?'selected':''?>><?=$L['s_au_lvl_minor']?></option>
-            <option value="major" <?=$auLevel==='major'?'selected':''?>><?=$L['s_au_lvl_major']?></option>
-          </select>
-        </div>
-        <div class="sl-desc"><?=$L['s_au_level_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_au_exclude']?></label>
-        <div class="sl-in">
-          <input type="text" name="AUTOUPDATE_EXCLUDE_WORDS" value="<?=htmlspecialchars($auExclude)?>" placeholder="breaking, migration required">
-        </div>
-        <div class="sl-desc"><?=$L['s_au_exclude_desc']?></div></div>
-      <div class="sl-row sl-top"><label><?=$L['s_au_containers']?></label>
-        <div class="sl-in sl-stack">
-          <span class="sl-hint" id="sl-au-ct-hint"></span>
-          <div class="sl-ct" id="sl-au-ct" role="group" aria-label="<?=htmlspecialchars($L['s_au_containers'])?>"></div>
-          <input type="hidden" name="AUTOUPDATE_EXCLUDE_CONTAINERS" id="sl-au-skip" value="<?=htmlspecialchars($auSkip)?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_au_containers_desc']?> <?=$L['s_au_pinned_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_au_digest']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-au-dg-cb" <?=$auDigest?'checked':''?> onchange="slSwitch(this,'sl-au-dg','sl-au-dg-state')">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-au-dg-state"><?=htmlspecialchars($auDigest?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="AUTOUPDATE_DIGEST" id="sl-au-dg" value="<?=$auDigest?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_au_digest_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_au_sched']?></label>
-        <div class="sl-in">
-          <select name="AUTOUPDATE_SCHED_MODE" id="sl-au-mode" onchange="slAuMode()">
-            <option value="off"   <?=$auMode==='off'?'selected':''?>><?=$L['s_au_sm_off']?></option>
-            <option value="daily" <?=$auMode==='daily'?'selected':''?>><?=$L['s_au_sm_daily']?></option>
-            <option value="boot"  <?=$auMode==='boot'?'selected':''?>><?=$L['s_au_sm_boot']?></option>
-            <option value="hours" <?=$auMode==='hours'?'selected':''?>><?=$L['s_au_sm_hours']?></option>
-            <option value="days"  <?=$auMode==='days'?'selected':''?>><?=$L['s_au_sm_days']?></option>
-          </select>
-          <input type="text" class="sl-narrow" name="AUTOUPDATE_SCHED_TIME" id="sl-au-time" value="<?=htmlspecialchars($auTime)?>" placeholder="04:00">
-          <input type="text" class="sl-narrow" name="AUTOUPDATE_SCHED_EVERY" id="sl-au-every" value="<?=htmlspecialchars($auEvery)?>" placeholder="6">
-          <span class="sl-hint" id="sl-au-every-unit"></span>
-        </div>
-        <div class="sl-desc"><?=$L['s_au_sched_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_au_dryrun']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-au-dr-cb" <?=$auDry?'checked':''?> onchange="slSwitch(this,'sl-au-dr','sl-au-dr-state')">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-au-dr-state"><?=htmlspecialchars($auDry?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="AUTOUPDATE_DRYRUN" id="sl-au-dr" value="<?=$auDry?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_au_dryrun_desc']?></div></div>
-    </div>
-
-    <div class="sl-card" data-tab="updates">
-      <h3><?=$L['s_updates']?> <small><?=$L['s_updates_sub']?></small></h3>
-      <div class="sl-row"><label><?=$L['s_confirm']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-confirm-cb" <?=$confirm!=='false'?'checked':''?> onchange="slSwitch(this,'sl-confirm','sl-confirm-state')">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-confirm-state"><?=htmlspecialchars($confirm!=='false'?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="CONFIRM_UPDATE" id="sl-confirm" value="<?=$confirm!=='false'?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_confirm_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_silent']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-silent-cb" <?=$silent==='true'?'checked':''?> onchange="slSwitch(this,'sl-silent','sl-silent-state')">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-silent-state"><?=htmlspecialchars($silent==='true'?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="SILENT_UPDATE" id="sl-silent" value="<?=$silent==='true'?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_silent_desc']?></div></div>
-    </div>
-
-    <div class="sl-card" data-tab="sources">
-      <h3><?=$L['s_registry']?> <small><?=$L['s_registry_sub']?></small></h3>
-      <div class="sl-row"><label><?=$L['s_gh_token']?></label><div class="sl-in sl-stack">
-        <span class="sl-field"><input type="password" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=htmlspecialchars($ghtok)?>">
-          <span class="sl-eyebtn" data-eye role="button" tabindex="0" onclick="slToggle('sl-GITHUB_TOKEN',this)" aria-label="<?=htmlspecialchars($L['s_show'])?>"></span></span>
-        <button type="button" class="sl-btn" onclick="slCheckGitHub()"><?=$L['s_check']?></button>
-        <span id="sl-gh-result" class="sl-res"></span>
-        <span class="sl-hint sl-help"><?=$L['s_gh_hint']?></span></div></div>
-      <div class="sl-row"><label><?=$L['s_dh_user']?></label><div class="sl-in">
-        <input type="text" name="DOCKERHUB_USERNAME" value="<?=htmlspecialchars($dhuser)?>" placeholder="<?=htmlspecialchars($L['s_dh_user_ph'])?>"></div></div>
-      <div class="sl-row"><label><?=$L['s_dh_token']?></label><div class="sl-in sl-stack">
-        <span class="sl-field"><input type="password" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=htmlspecialchars($dhtok)?>">
-          <span class="sl-eyebtn" data-eye role="button" tabindex="0" onclick="slToggle('sl-DOCKERHUB_TOKEN',this)" aria-label="<?=htmlspecialchars($L['s_show'])?>"></span></span>
-        <button type="button" class="sl-btn" onclick="slCheckDockerHub()"><?=$L['s_check']?></button>
-        <span id="sl-dh-result" class="sl-res"></span>
-        <span class="sl-hint sl-help"><?=$L['s_dh_hint']?></span></div></div>
-    </div>
-
-    <div class="sl-card" data-tab="sources">
-      <h3><?=$L['s_ai']?> <small><?=$L['s_ai_sub']?></small></h3>
-      <div class="sl-row"><label><?=$L['s_ollama_url']?></label><div class="sl-in">
-        <input type="text" name="OLLAMA_URL" value="<?=htmlspecialchars($ourl)?>" placeholder="http://127.0.0.1:11434">
-        <button type="button" class="sl-btn" onclick="slDetectOllama()"><?=$L['s_autodetect']?></button>
-        <span class="sl-hint sl-help"><?=$L['s_ollama_url_hint']?></span></div></div>
-      <div class="sl-row"><label><?=$L['s_ollama_model']?></label><div class="sl-in">
-        <input type="text" name="OLLAMA_MODEL" value="<?=htmlspecialchars($omodel)?>" placeholder="llama3.1">
-        <button type="button" class="sl-btn" onclick="slCheckOllama()"><?=$L['s_check']?></button>
-        <span id="sl-ollama-result" class="sl-res"></span></div></div>
-      <div class="sl-row"><label><?=$L['s_llamaswap_url']?></label><div class="sl-in">
-        <input type="text" name="LLAMASWAP_URL" value="<?=htmlspecialchars($lsurl)?>" placeholder="http://127.0.0.1:9292">
-        <span class="sl-hint sl-help"><?=$L['s_llamaswap_url_hint']?></span></div></div>
-      <div class="sl-row"><label><?=$L['s_llamaswap_model']?></label><div class="sl-in">
-        <input type="text" name="LLAMASWAP_MODEL" value="<?=htmlspecialchars($lsmodel)?>" placeholder="gemma4-e4b">
-        <button type="button" class="sl-btn" onclick="slCheckLlamaSwap()"><?=$L['s_check']?></button>
-        <span id="sl-llamaswap-result" class="sl-res"></span></div></div>
-    </div>
-
-    <div class="sl-card" data-tab="notify">
-      <h3><?=$L['s_notif']?> <small><?=$L['s_notif_sub']?></small></h3>
-      <div class="sl-row"><label><?=$L['s_unraid_notify']?></label>
-        <div class="sl-in">
-          <label class="sl-switch">
-            <input type="checkbox" id="sl-unraid-notify-cb" <?=$unraidNotify?'checked':''?> onchange="slSwitch(this,'sl-unraid-notify','sl-unraid-notify-state')">
-            <span class="sl-track"></span>
-            <span class="sl-state" id="sl-unraid-notify-state"><?=htmlspecialchars($unraidNotify?$onTxt:$offTxt)?></span>
-          </label>
-          <input type="hidden" name="UNRAID_NOTIFY" id="sl-unraid-notify" value="<?=$unraidNotify?'true':'false'?>">
-        </div>
-        <div class="sl-desc"><?=$L['s_unraid_notify_desc']?></div></div>
-      <div class="sl-row"><label><?=$L['s_mx_home']?></label><div class="sl-in">
-        <input type="text" name="MATRIX_HOMESERVER" value="<?=htmlspecialchars($mhs)?>" placeholder="https://matrix.example.com"></div></div>
-      <div class="sl-row"><label><?=$L['s_mx_token']?></label><div class="sl-in">
-        <span class="sl-field"><input type="password" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=htmlspecialchars($mtok)?>">
-          <span class="sl-eyebtn" data-eye role="button" tabindex="0" onclick="slToggle('sl-MATRIX_TOKEN',this)" aria-label="<?=htmlspecialchars($L['s_show'])?>"></span></span></div></div>
-      <div class="sl-row"><label><?=$L['s_mx_room']?></label><div class="sl-in">
-        <input type="text" name="MATRIX_ROOM" value="<?=htmlspecialchars($mroom)?>" placeholder="!roomid:server  or  #alias:server">
-        <button type="button" class="sl-btn" onclick="slCheckMatrix()"><?=$L['s_check']?></button>
-        <span id="sl-matrix-result" class="sl-res"></span></div></div>
-    </div>
-
-    <?php
-      // Nothing stamps these at build time; bump them with <!ENTITY version>.
-      $slVer = "3.4.1";
-      $slGlimstoneVer = "1.0.0";
-    ?>
-    <div class="sl-version">ShipLog v<?=htmlspecialchars($slVer)?> · GlimStone v<?=htmlspecialchars($slGlimstoneVer)?></div>
-
-    <div class="sl-actions">
-      <input type="submit" name="#apply" class="sl-btn sl-primary" value="<?=htmlspecialchars($L['s_apply'])?>">
-      <input type="button" class="sl-btn" value="<?=htmlspecialchars($L['s_done'])?>" onclick="done()">
-    </div>
-  </form>
+  </div>
+</div>
+</form>
 </div>
 
 <script>
 var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
-var SL_ON = <?=json_encode($onTxt)?>, SL_OFF = <?=json_encode($offTxt)?>;
-(function () {
-  var port = "<?=htmlspecialchars($port)?>";
-  var host = <?=json_encode($lanip)?> || location.hostname;
-  var a = document.getElementById("sl-statuslink");
-  if (!a) return;
-  a.innerHTML = '<span class="sl-res run">' + SLT.s_checking + '</span>';
-  fetch("/plugins/shiplog/server/status.php", { headers: { Accept: "application/json" } })
-    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }, function () { return { ok: false, d: null }; }); })
-    .then(function (res) {
-      if (res.ok && Array.isArray(res.d)) {
-        var n = res.d.length;
-        a.innerHTML = '<span class="sl-res ok">' + SLT.s_running.replace('%n', n) + '</span>' +
-          ' <span class="sl-hint">' + SLT.s_statuspage + ' <a href="http://' + host + ':' + port + '/" target="_blank" rel="noopener">' + SLT.s_open + '</a></span>';
-        var nv = Object.create(null);
-        res.d.forEach(function (s) { var n = s && s.container && s.container.name; if (n && s.newer_version) nv[n] = String(s.newer_version); });
-        slAuLoaded(res.d.map(function (s) { return s && s.container && s.container.name; }), nv);
-      } else {
-        a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span> <span class="sl-hint">' + SLT.s_unreachable_hint + '</span>';
-        slAuLoaded(null);
-      }
-    })
-    .catch(function () { a.innerHTML = '<span class="sl-res err">' + SLT.s_unreachable + '</span>'; slAuLoaded(null); });
-})();
-function slEnable(cb) {
-  document.getElementById('sl-enable').value = cb.checked ? 'true' : 'false';
-  document.getElementById('sl-enable-state').textContent = cb.checked ? SL_ON : SL_OFF;
-  slFire(document.getElementById('sl-enable'));
-}
-function slSwitch(cb, hiddenId, stateId) {
-  document.getElementById(hiddenId).value = cb.checked ? 'true' : 'false';
-  document.getElementById(stateId).textContent = cb.checked ? SL_ON : SL_OFF;
-  slFire(document.getElementById(hiddenId));
-}
-// Unraid only un-greys Apply when a field fires change/input. A programmatic
-// value change (autodetect, the toggle's hidden field) must announce itself.
-function slFire(el) {
-  if (!el) return;
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  el.dispatchEvent(new Event('change', { bubbles: true }));
-}
-function slCheck(elId, url) {
-  var out = document.getElementById(elId);
-  out.className = 'sl-res run'; out.textContent = SLT.s_check + '…';
-  fetch(url)
-    .then(function (r) { return r.json(); })
-    .then(function (d) { out.className = 'sl-res ' + (d.ok ? 'ok' : 'err'); out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message; })
-    .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
-}
-function slVal(n) { return (document.querySelector('[name=' + n + ']') || {}).value || ''; }
-var SL_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
-var SL_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><line x1="3.5" y1="3.5" x2="20.5" y2="20.5"/></svg>';
-function slToggle(id, btn) {
-  var i = document.getElementById(id);
-  if (!i) return;
-  if (i.type === 'password') { i.type = 'text'; if (btn) { btn.innerHTML = SL_EYE_OFF; btn.setAttribute('aria-label', SLT.s_hide || 'Hide'); } }
-  else { i.type = 'password'; if (btn) { btn.innerHTML = SL_EYE; btn.setAttribute('aria-label', SLT.s_show || 'Show'); } }
-}
-document.querySelectorAll('[data-eye]').forEach(function (b) {
-  b.innerHTML = SL_EYE;
-  b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
-});
-function slCheckDockerHub() {
-  slCheck('sl-dh-result', '/plugins/shiplog/server/dockerhub-check.php?user=' +
-    encodeURIComponent(slVal('DOCKERHUB_USERNAME')) + '&token=' + encodeURIComponent(slVal('DOCKERHUB_TOKEN')));
-}
-function slCheckOllama() {
-  slCheck('sl-ollama-result', '/plugins/shiplog/server/ollama-check.php?url=' +
-    encodeURIComponent(slVal('OLLAMA_URL')) + '&model=' + encodeURIComponent(slVal('OLLAMA_MODEL')));
-}
-function slCheckLlamaSwap() {
-  slCheck('sl-llamaswap-result', '/plugins/shiplog/server/llamaswap-check.php?url=' +
-    encodeURIComponent(slVal('LLAMASWAP_URL')) + '&model=' + encodeURIComponent(slVal('LLAMASWAP_MODEL')));
-}
-function slCheckMatrix() {
-  slCheck('sl-matrix-result', '/plugins/shiplog/server/matrix-check.php?hs=' +
-    encodeURIComponent(slVal('MATRIX_HOMESERVER')) + '&token=' + encodeURIComponent(slVal('MATRIX_TOKEN')) +
-    '&room=' + encodeURIComponent(slVal('MATRIX_ROOM')));
-}
-function slCheckGitHub() {
-  slCheck('sl-gh-result', '/plugins/shiplog/server/github-check.php?token=' + encodeURIComponent(slVal('GITHUB_TOKEN')));
-}
-function slDetectOllama() {
-  var out = document.getElementById('sl-ollama-result');
-  out.className = 'sl-res run'; out.textContent = 'Detecting…';
-  fetch('/plugins/shiplog/server/ollama-detect.php?url=' + encodeURIComponent(slVal('OLLAMA_URL')))
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      out.className = 'sl-res ' + (d.ok ? 'ok' : 'err');
-      out.textContent = (d.ok ? '✓ ' : '✗ ') + d.message;
-      if (d.ok && d.url) {
-        var u = document.querySelector('[name=OLLAMA_URL]'); if (u) { u.value = d.url; slFire(u); }
-        var m = document.querySelector('[name=OLLAMA_MODEL]'); if (m && !m.value && d.models && d.models.length) { m.value = d.models[0]; slFire(m); }
-      }
-    })
-    .catch(function (e) { out.className = 'sl-res err'; out.textContent = '✗ ' + e; });
-}
-(function () {
-  var tabs = document.querySelectorAll('#sl-tabs .sl-tab');
-  var cards = document.querySelectorAll('.sl-card[data-tab]');
-  function show(name) {
-    tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-go') === name); });
-    cards.forEach(function (c) { c.setAttribute('data-hidden', c.getAttribute('data-tab') === name ? '0' : '1'); });
-  }
-  tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-go')); }); });
-  show('general');
-})();
-function slAuMode() {
-  var m = (document.getElementById('sl-au-mode') || {}).value;
-  var t = document.getElementById('sl-au-time'), e = document.getElementById('sl-au-every'), u = document.getElementById('sl-au-every-unit');
-  if (t) t.style.display = (m === 'daily') ? '' : 'none';
-  if (e) e.style.display = (m === 'hours' || m === 'days') ? '' : 'none';
-  if (u) u.textContent = m === 'hours' ? (SLT.s_au_unit_hours || '') : (m === 'days' ? (SLT.s_au_unit_days || '') : '');
-}
-slAuMode();
-// One switch per container the engine tracks; on means auto-update may update
-// it. The hidden field holds the names switched off, including one with no
-// container behind it right now, so Apply never drops an exclusion.
-var SL_AU_SKIP = [];
-var SL_AU_NAMES = null; // null until the engine answered, or when it is down
-var SL_AU_NEWER = Object.create(null); // name -> newer version of a pinned container
-var SL_AU_LOAD = 'loading';
-var SL_AU_NAME_OK = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/; // Docker's name rule keeps the cfg value safe
-function slAuKey(s) { return String(s).toLowerCase(); }
-function slAuLoaded(names, newer) {
-  var seen = {};
-  SL_AU_NAMES = Array.isArray(names) ? names.filter(function (n) {
-    if (!n || !SL_AU_NAME_OK.test(n) || seen[n]) return false;
-    seen[n] = true; return true;
-  }) : null;
-  SL_AU_LOAD = SL_AU_NAMES ? 'ok' : 'down';
-  SL_AU_NEWER = (SL_AU_NAMES && newer) ? newer : Object.create(null);
-  slAuRender();
-}
-function slAuItem(name, on, gone, newer) {
-  if (newer) return slAuPinned(name, on, newer);
-  var l = document.createElement('label'); l.className = 'sl-switch sl-ct-item';
-  var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = on;
-  cb.setAttribute('data-name', name); cb.setAttribute('data-gone', gone ? '1' : '0');
-  cb.addEventListener('change', function () { slAuSync(cb); });
-  var tr = document.createElement('span'); tr.className = 'sl-track';
-  var t = document.createElement('span'); t.className = 'sl-ct-name'; t.textContent = name;
-  l.appendChild(cb); l.appendChild(tr); l.appendChild(t);
-  if (gone) { var g = document.createElement('small'); g.textContent = SLT.s_au_ct_gone; l.appendChild(g); }
-  return l;
-}
-// A pinned container has nothing for auto-update to apply, so it gets the
-// newer-version hint instead of a switch. An exclusion it already has stays in
-// data-off.
-function slAuPinned(name, on, newer) {
-  var d = document.createElement('div'); d.className = 'sl-ct-item sl-ct-pin';
-  d.setAttribute('data-name', name); d.setAttribute('data-off', on ? '0' : '1');
-  var ring = document.createElement('span'); ring.className = 'sl-ct-ring'; ring.setAttribute('aria-hidden', 'true');
-  var t = document.createElement('span'); t.className = 'sl-ct-name'; t.textContent = name;
-  var hint = SLT.s_au_ct_newer.replace('%v', function () { return newer; });
-  d.appendChild(ring); d.appendChild(t); d.appendChild(slInfoIcon(slEscHTML(hint), hint));
-  return d;
-}
-// Excluded containers come first, so none hides below the fold.
-function slAuRender() {
-  var box = document.getElementById('sl-au-ct'); if (!box) return;
-  var skip = {}; SL_AU_SKIP.forEach(function (n) { skip[slAuKey(n)] = true; });
-  var have = {}, rows = [];
-  (SL_AU_NAMES || []).forEach(function (n) { have[slAuKey(n)] = true; rows.push({ name: n, off: !!skip[slAuKey(n)], gone: false }); });
-  SL_AU_SKIP.forEach(function (n) { if (!have[slAuKey(n)]) rows.push({ name: n, off: true, gone: SL_AU_NAMES !== null }); });
-  rows.sort(function (a, b) { return (b.off - a.off) || slAuKey(a.name).localeCompare(slAuKey(b.name)); });
-  box.textContent = '';
-  rows.forEach(function (r) { box.appendChild(slAuItem(r.name, !r.off, r.gone, r.gone ? '' : SL_AU_NEWER[r.name])); });
-  slAuState();
-}
-function slAuSync(changed) {
-  var box = document.getElementById('sl-au-ct'), out = [];
-  // Switching a stale exclusion back on simply drops it.
-  if (changed && changed.checked && changed.getAttribute('data-gone') === '1') changed.closest('.sl-ct-item').remove();
-  box.querySelectorAll('.sl-ct-item').forEach(function (it) {
-    var cb = it.querySelector('input[type=checkbox]');
-    if (cb ? !cb.checked : it.getAttribute('data-off') === '1') out.push((cb || it).getAttribute('data-name'));
-  });
-  SL_AU_SKIP = out;
-  var h = document.getElementById('sl-au-skip'); h.value = out.join(',');
-  slFire(h);
-  slAuState();
-}
-function slAuState() {
-  var box = document.getElementById('sl-au-ct'), hint = document.getElementById('sl-au-ct-hint');
-  if (!box || !hint) return;
-  var on = (document.getElementById('sl-au-en') || {}).value === 'true';
-  box.setAttribute('data-disabled', on ? '0' : '1');
-  box.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.disabled = !on; });
-  var msg = '';
-  if (!on) msg = SLT.s_au_ct_off;
-  else if (SL_AU_LOAD === 'loading') msg = SLT.s_au_ct_loading;
-  else if (SL_AU_LOAD === 'down') msg = SLT.s_unreachable + ' ' + SLT.s_unreachable_hint;
-  else if (!box.children.length) msg = SLT.s_au_ct_none;
-  hint.textContent = msg;
-  hint.style.display = msg ? '' : 'none';
-}
-(function () {
-  var h = document.getElementById('sl-au-skip'), seen = {};
-  SL_AU_SKIP = ((h && h.value) || '').split(',').map(function (s) { return s.trim(); }).filter(function (n) {
-    if (!n || seen[slAuKey(n)]) return false;
-    seen[slAuKey(n)] = true; return true;
-  });
-  slAuRender();
-})();
-// slInfoIcon builds an (i) whose bubble shows html; label is its accessible
-// name. The bubble lives in <body>, so no overflow above the icon clips it.
-var slInfoPop = null, slInfoHideT = null;
-function slInfoHideSoon() { clearTimeout(slInfoHideT); slInfoHideT = setTimeout(function () { if (slInfoPop) slInfoPop.style.display = 'none'; }, 150); }
-function slInfoShow(icon) {
-  clearTimeout(slInfoHideT);
-  if (!slInfoPop) {
-    slInfoPop = document.createElement('div'); slInfoPop.className = 'sl-info-pop'; slInfoPop.style.display = 'none';
-    slInfoPop.addEventListener('mouseenter', function () { clearTimeout(slInfoHideT); });
-    slInfoPop.addEventListener('mouseleave', slInfoHideSoon);
-    document.body.appendChild(slInfoPop);
-  }
-  var p = slInfoPop; p.innerHTML = icon.getAttribute('data-html') || '';
-  p.style.display = 'block'; p.style.visibility = 'hidden'; p.style.left = '0'; p.style.top = '0';
-  var r = icon.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
-  var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
-  var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + vw - pw - 8));
-  var top = (r.bottom + ph + 14 > vh) ? (r.top + window.scrollY - ph - 7) : (r.bottom + window.scrollY + 7);
-  p.style.left = left + 'px'; p.style.top = top + 'px'; p.style.visibility = 'visible';
-}
-function slInfoIcon(html, label) {
-  var icon = document.createElement('span');
-  icon.className = 'sl-info'; icon.setAttribute('tabindex', '0'); icon.setAttribute('role', 'img');
-  icon.setAttribute('aria-label', label);
-  icon.setAttribute('data-html', html);
-  icon.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.1" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="4.7" r="1.05" fill="currentColor"/><rect x="7.05" y="6.8" width="1.9" height="5" rx=".95" fill="currentColor"/></svg>';
-  icon.addEventListener('mouseenter', function () { slInfoShow(icon); });
-  icon.addEventListener('mouseleave', slInfoHideSoon);
-  icon.addEventListener('focus', function () { slInfoShow(icon); });
-  icon.addEventListener('blur', slInfoHideSoon);
-  icon.addEventListener('click', function (e) { e.preventDefault(); slInfoShow(icon); });
-  icon.addEventListener('keydown', function (e) { if (e.key === 'Escape' && slInfoPop) { slInfoPop.style.display = 'none'; icon.blur(); } });
-  return icon;
-}
-function slEscHTML(s) {
-  return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
-}
-// Moves each help text into an info icon next to its label. The bubble renders
-// the original HTML, so links stay clickable, and without this script the help
-// text simply stays visible.
-(function () {
-  try {
-    document.querySelectorAll('.sl-help, .sl-desc').forEach(function (h) {
-      var html = (h.innerHTML || '').trim(); if (!html) return;
-      var row = h.closest('.sl-row'); if (!row) return;
-      var label = row.querySelector('label'); if (!label) return;
-      label.appendChild(slInfoIcon(html, (h.textContent || '').trim()));
-      if (h.parentNode) h.parentNode.removeChild(h);
-    });
-  } catch (e) { /* the help text stays visible */ }
-})();
+var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Restore' => $G['Restore'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
+var SL_STATUS_HOST = <?=json_encode($lanip)?>;
 </script>
+<script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>

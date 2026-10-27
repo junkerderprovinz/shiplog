@@ -127,5 +127,10 @@
   "d_newerPill": "已固定 · 新版本 %v",
   "d_newerChipHint": "有更新版本 %v。标签已固定，请修改标签以更新。",
   "d_newerNote": "版本 %v 可用。请修改标签以更新。",
-  "d_newerWhy": "此容器已固定在 %v，因此重新拉取不会有任何变化，ShipLog 也永远不会自动更新它。"
+  "d_newerWhy": "此容器已固定在 %v，因此重新拉取不会有任何变化，ShipLog 也永远不会自动更新它。",
+  "s_status": "状态",
+  "s_statuspage_btn": "状态页面",
+  "s_manual": "手动更新",
+  "s_channels": "渠道",
+  "s_reset": "重置"
 }

@@ -127,5 +127,10 @@
   "d_newerPill": "vastgezet · nieuwer %v",
   "d_newerChipHint": "Nieuwere versie %v beschikbaar. De tag is vastgezet, dus wijzig hem om bij te werken.",
   "d_newerNote": "Versie %v is beschikbaar. Wijzig de tag om bij te werken.",
-  "d_newerWhy": "Deze container is vastgezet op %v, dus opnieuw ophalen verandert niets en ShipLog werkt hem nooit automatisch bij."
+  "d_newerWhy": "Deze container is vastgezet op %v, dus opnieuw ophalen verandert niets en ShipLog werkt hem nooit automatisch bij.",
+  "s_status": "Status",
+  "s_statuspage_btn": "Statuspagina",
+  "s_manual": "Handmatige updates",
+  "s_channels": "Kanalen",
+  "s_reset": "Herstellen"
 }

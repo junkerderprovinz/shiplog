@@ -1,0 +1,449 @@
+/* ShipLog's settings page: the tabs, the switches, the checks, the auto-update
+ * container list, the info bubbles and the label engine for its buttons.
+ *
+ * The page reads as Unraid's own without TowerTorch. With TowerTorch, which
+ * stamps cc-tools-on on <html> for every settings page, its sheets draw the
+ * fields, buttons and switches, and this script hands them the colour mode and
+ * the label mode TowerTorch keeps in localStorage. */
+(function () {
+  "use strict";
+  var root = document.getElementById("sl-cfg");
+  var form = root.querySelector("form");
+  var html = document.documentElement;
+  var T = window.SLT;
+  var GLYPH = window.SL_GLYPHS;
+
+  function get(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+  function put(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function byId(id) { return document.getElementById(id); }
+  function themed() { return html.classList.contains("cc-tools-on"); }
+
+  /* The bubble: one element in <body>, shared by every (i), by a button that
+     shows only its glyph and by a tab that does. It opens below its trigger,
+     flips above when below would clip, stays inside the window and points at
+     the trigger with its arrow. */
+  var bubble = null, tipFor = null, pointerLast = false;
+  function bubbleEl() {
+    if (!bubble) {
+      bubble = document.createElement("div");
+      bubble.id = "sl-bubble";
+      bubble.className = "sl-bubble";
+      bubble.setAttribute("role", "tooltip");
+      bubble.style.display = "none";
+      document.body.appendChild(bubble);
+    }
+    return bubble;
+  }
+  function hideTip() { if (bubble) bubble.style.display = "none"; tipFor = null; }
+  function showTip(el) {
+    var text = el.getAttribute("data-sl-tip");
+    if (!text) return;
+    var b = bubbleEl(), r = el.getBoundingClientRect();
+    b.textContent = text;
+    b.style.display = "block";
+    var vw = html.clientWidth || window.innerWidth, vh = html.clientHeight || window.innerHeight;
+    var w = b.offsetWidth, h = b.offsetHeight, cx = r.left + r.width / 2;
+    var x = Math.max(8 + w / 2, Math.min(vw - 8 - w / 2, cx));
+    var above = r.bottom + 8 + h > vh && r.top - 8 - h >= 0;
+    b.classList.toggle("sl-bubble-above", above);
+    b.style.left = x + "px";
+    b.style.top = (above ? r.top - 8 - h : r.bottom + 8) + "px";
+    b.style.setProperty("--sl-tip-ax", Math.max(10, Math.min(w - 10, cx - (x - w / 2))) + "px");
+    tipFor = el;
+  }
+  function tipTarget(e) { return e.target && e.target.closest ? e.target.closest("[data-sl-tip]") : null; }
+  document.addEventListener("mouseover", function (e) { var t = tipTarget(e); if (t && t !== tipFor) showTip(t); });
+  document.addEventListener("mouseout", function (e) {
+    if (!tipFor) return;
+    if (e.relatedTarget instanceof Node && tipFor.contains(e.relatedTarget)) return;
+    hideTip();
+  });
+  // Focus that follows a click is a side effect of the click, so only the
+  // keyboard opens a bubble on focus.
+  document.addEventListener("focusin", function (e) { if (pointerLast) return; var t = tipTarget(e); if (t) showTip(t); });
+  document.addEventListener("focusout", function () { if (tipFor) hideTip(); });
+  document.addEventListener("pointerdown", function () { pointerLast = true; hideTip(); }, true);
+  document.addEventListener("keydown", function (e) {
+    pointerLast = false;
+    if (e.key === "Escape" && tipFor) hideTip();
+  }, true);
+  window.addEventListener("scroll", hideTip, true);
+
+  /* Apply stays disabled until something changes, and Done turns into Reset,
+     which reloads the page and drops the edits, as on Unraid's own settings
+     pages. */
+  var dirty = false;
+  function markDirty() {
+    if (dirty) return;
+    dirty = true;
+    var done = byId("sl-done");
+    byId("sl-apply").disabled = false;
+    done.querySelector(".sl-l").textContent = done.getAttribute("data-sl-alt");
+    done.querySelector(".sl-g").innerHTML = GLYPH.Restore;
+    done.onclick = function () { if (typeof window.refresh === "function") window.refresh(); else location.reload(); };
+    labels();
+  }
+  form.addEventListener("input", function (e) { if (e.target.name || e.target.hasAttribute("data-sl-mirror")) markDirty(); });
+  form.addEventListener("change", function (e) { if (e.target.name || e.target.hasAttribute("data-sl-mirror")) markDirty(); });
+
+  /* A switch is a checkbox without a name; the hidden field beside it posts
+     true or false. */
+  function mirror(cb) {
+    var h = byId(cb.getAttribute("data-sl-mirror"));
+    if (h) h.value = cb.checked ? "true" : "false";
+  }
+  root.querySelectorAll("input[data-sl-mirror]").forEach(function (cb) {
+    cb.addEventListener("change", function () {
+      mirror(cb);
+      if (cb.id === "sl-au-en-cb") auShown();
+    });
+  });
+
+  /* Tabs: a vertical tab list, arrows move between the tabs, the choice is
+     kept for the next visit. */
+  var tabs = Array.prototype.slice.call(root.querySelectorAll(".sl-tab"));
+  function openTab(tab, focus) {
+    var name = tab.getAttribute("data-sl-tab");
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      var p = byId(t.getAttribute("aria-controls"));
+      if (p) p.hidden = !on;
+    });
+    put("shiplog.settings.tab", name);
+    hideTip();
+    if (focus) tab.focus();
+    fit();
+    paint();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { openTab(t, false); });
+    t.addEventListener("keydown", function (e) {
+      var n = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (n === undefined) return;
+      e.preventDefault();
+      openTab(tabs[(n + tabs.length) % tabs.length], true);
+    });
+  });
+  // Below 1024px the tabs show their glyphs only, and the name moves into the bubble.
+  var narrow = window.matchMedia("(max-width: 1023px)");
+  function tabTips() {
+    tabs.forEach(function (t) {
+      var name = t.querySelector(".sl-tablbl").textContent;
+      if (narrow.matches) t.setAttribute("data-sl-tip", name); else t.removeAttribute("data-sl-tip");
+    });
+  }
+  if (narrow.addEventListener) narrow.addEventListener("change", tabTips); else if (narrow.addListener) narrow.addListener(tabTips);
+  tabTips();
+
+  /* The eye inside a secret field shows and hides the value. */
+  root.querySelectorAll("[data-sl-eye]").forEach(function (eye) {
+    function flip() {
+      var f = byId(eye.getAttribute("data-sl-eye"));
+      var show = f.type === "password";
+      f.type = show ? "text" : "password";
+      eye.innerHTML = show ? GLYPH.EyeOff : GLYPH.Eye;
+      eye.setAttribute("aria-label", show ? T.s_hide : T.s_show);
+      eye.setAttribute("aria-pressed", show ? "true" : "false");
+    }
+    eye.addEventListener("click", flip);
+    eye.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } });
+  });
+
+  /* The label engine. TowerTorch keeps one mode for every button it draws as
+     a badge (text, textGlyph, glyph or reactive) and puts it on <html>; this
+     page follows it, and without TowerTorch shows glyph and text. A button
+     keeps one width in all four modes, so a mode change or a reactive reveal
+     never moves the row: at least the stage its label belongs to, and at least
+     what it measures with glyph and words. */
+  var MODES = ["text", "textGlyph", "glyph", "reactive"];
+  function labelWidth(s) {
+    var n = 0;
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      var wide = (c >= 0x1100 && c <= 0x115f) || (c >= 0x2e80 && c <= 0xa4cf) || (c >= 0xac00 && c <= 0xd7a3) ||
+        (c >= 0xf900 && c <= 0xfaff) || (c >= 0xfe30 && c <= 0xfe6f) || (c >= 0xff00 && c <= 0xff60) || (c >= 0xffe0 && c <= 0xffe6);
+      n += wide ? 2 : 1;
+    }
+    return n;
+  }
+  function stage(w) { return w <= 10 ? "xs" : w <= 16 ? "sm" : w <= 26 ? "md" : "lg"; }
+  function mode() {
+    var m = themed() ? html.getAttribute("data-cc-labels-buttons") : "";
+    return MODES.indexOf(m) < 0 ? "textGlyph" : m;
+  }
+  function labels() {
+    var m = mode();
+    if (root.getAttribute("data-sl-labels") !== m) root.setAttribute("data-sl-labels", m);
+    root.querySelectorAll(".sl-btn").forEach(function (b) {
+      var text = b.querySelector(".sl-l").textContent.trim(), alt = b.getAttribute("data-sl-alt") || "";
+      // The longer of the two captions a button can carry sets its stage.
+      var w = Math.max(labelWidth(text), labelWidth(alt));
+      var st = "sl-w-" + stage(w);
+      ["sl-w-xs", "sl-w-sm", "sl-w-md", "sl-w-lg"].forEach(function (c) { b.classList.toggle(c, c === st); });
+      b.style.setProperty("--sl-rchars", String(labelWidth(text)));
+      if (m === "glyph" || (m === "reactive" && b.disabled)) b.setAttribute("data-sl-tip", text);
+      else b.removeAttribute("data-sl-tip");
+    });
+    fit();
+  }
+  // Measured in textGlyph with every caption the button can carry, Done and
+  // Reset alike. A button in a closed tab has no box yet and is measured when
+  // its tab opens.
+  function fit() {
+    var m = root.getAttribute("data-sl-labels");
+    root.classList.add("sl-still");
+    root.setAttribute("data-sl-labels", "textGlyph");
+    var btns = Array.prototype.filter.call(root.querySelectorAll(".sl-btn"), function (b) { return b.getClientRects().length > 0; });
+    btns.forEach(function (b) { b.style.removeProperty("--sl-w"); });
+    var ws = btns.map(function (b) {
+      var w = b.getBoundingClientRect().width, alt = b.getAttribute("data-sl-alt"), l = b.querySelector(".sl-l");
+      if (alt) {
+        var cur = l.textContent;
+        l.textContent = alt;
+        w = Math.max(w, b.getBoundingClientRect().width);
+        l.textContent = cur;
+      }
+      return Math.ceil(w);
+    });
+    root.setAttribute("data-sl-labels", m);
+    btns.forEach(function (b, i) { b.style.setProperty("--sl-w", ws[i] + "px"); });
+    // Settled before the transitions come back, or a reactive label would replay its opening.
+    void root.offsetWidth;
+    root.classList.remove("sl-still");
+  }
+
+  /* The colour engine, read from TowerTorch: the accent, the rainbow with one
+     position per tab, per card heading and per switch, and the reactive mode
+     in which an idle tab glyph rests grey. Without TowerTorch nothing is set
+     and the page keeps Unraid's colours. */
+  function ink(hex) {
+    if (window.CCTheme && window.CCTheme.idealText) return window.CCTheme.idealText(hex);
+    return "#161616";
+  }
+  function hue(el, c, a, b) {
+    if (c) { el.style.setProperty(a, c); el.style.setProperty(b, ink(c)); }
+    else { el.style.removeProperty(a); el.style.removeProperty(b); }
+  }
+  function paint() {
+    var on = themed() && get("cc.theming", "1") !== "0";
+    var rb = on && get("cc.rainbow", "0") === "1" && window.CCTheme && window.CCTheme.rbColor;
+    var accent = (getComputedStyle(html).getPropertyValue("--cc-accent") || "").trim() || "#FCC419";
+    root.classList.toggle("sl-reactive", on && get("cc.rbmode", "all") === "active");
+    function at(i) { return rb ? window.CCTheme.rbColor(i, accent) : ""; }
+    tabs.forEach(function (t, i) { hue(t, at(i), "--sl-hue", "--sl-hue-ink"); });
+    root.querySelectorAll(".sl-pane").forEach(function (p) {
+      p.querySelectorAll(".sl-card").forEach(function (c, i) { hue(c, at(i), "--sl-hue", "--sl-hue-ink"); });
+      // TowerTorch draws these checkboxes as its switches and fills a checked
+      // one from --cc-rb-c.
+      p.querySelectorAll("input.sl-sw").forEach(function (s, i) { hue(s, at(i), "--cc-rb-c", "--cc-rb-ct"); });
+    });
+  }
+  function engines() { labels(); paint(); }
+  new MutationObserver(engines).observe(html, { attributes: true, attributeFilter: ["class", "data-cc-labels-buttons"] });
+  window.addEventListener("storage", function (e) { if (!e.key || /^cc\./.test(e.key)) engines(); });
+
+  /* The checks. A button that runs a test shows the verdict on itself, a tick
+     or a cross in the state colour, and the reason stands in one line under
+     its row until the next attempt. */
+  function fail(btn) {
+    btn.classList.remove("sl-shake");
+    void btn.offsetWidth; // restarts the animation on a second failure
+    btn.classList.add("sl-shake");
+  }
+  function verdict(btn, out, ok, msg) {
+    btn.classList.toggle("sl-ok", ok);
+    btn.classList.toggle("sl-err", !ok);
+    var g = btn.querySelector(".sl-g"); if (g) g.innerHTML = ok ? GLYPH.Check : GLYPH.Close;
+    out.className = "sl-res " + (ok ? "ok" : "err");
+    out.textContent = msg || "";
+    btn.removeAttribute("aria-busy");
+    if (!ok) fail(btn);
+  }
+  function val(n) { var e = form.querySelector('[name="' + n + '"]'); return e ? e.value : ""; }
+  function setVal(n, v) {
+    var e = form.querySelector('[name="' + n + '"]');
+    e.value = v;
+    e.dispatchEvent(new Event("input", { bubbles: true }));
+    e.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  var CHECKS = {
+    github: function () { return "github-check.php?token=" + encodeURIComponent(val("GITHUB_TOKEN")); },
+    dockerhub: function () { return "dockerhub-check.php?user=" + encodeURIComponent(val("DOCKERHUB_USERNAME")) + "&token=" + encodeURIComponent(val("DOCKERHUB_TOKEN")); },
+    ollama: function () { return "ollama-check.php?url=" + encodeURIComponent(val("OLLAMA_URL")) + "&model=" + encodeURIComponent(val("OLLAMA_MODEL")); },
+    "ollama-detect": function () { return "ollama-detect.php?url=" + encodeURIComponent(val("OLLAMA_URL")); },
+    llamaswap: function () { return "llamaswap-check.php?url=" + encodeURIComponent(val("LLAMASWAP_URL")) + "&model=" + encodeURIComponent(val("LLAMASWAP_MODEL")); },
+    matrix: function () {
+      return "matrix-check.php?hs=" + encodeURIComponent(val("MATRIX_HOMESERVER")) + "&token=" + encodeURIComponent(val("MATRIX_TOKEN")) +
+        "&room=" + encodeURIComponent(val("MATRIX_ROOM"));
+    }
+  };
+  root.querySelectorAll("[data-sl-check]").forEach(function (btn) {
+    var kind = btn.getAttribute("data-sl-check"), out = byId(btn.getAttribute("data-sl-out"));
+    var glyph = btn.querySelector(".sl-g") ? btn.querySelector(".sl-g").innerHTML : "";
+    btn.addEventListener("click", function () {
+      btn.classList.remove("sl-ok", "sl-err");
+      if (btn.querySelector(".sl-g")) btn.querySelector(".sl-g").innerHTML = glyph;
+      btn.setAttribute("aria-busy", "true");
+      out.className = "sl-res run";
+      out.textContent = (kind === "ollama-detect" ? T.s_autodetect : T.s_check) + " …";
+      fetch("/plugins/shiplog/server/" + CHECKS[kind]())
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          verdict(btn, out, !!d.ok, d.message);
+          if (kind === "ollama-detect" && d.ok && d.url) {
+            setVal("OLLAMA_URL", d.url);
+            if (!val("OLLAMA_MODEL") && d.models && d.models.length) setVal("OLLAMA_MODEL", d.models[0]);
+          }
+        })
+        .catch(function (e) { verdict(btn, out, false, String(e)); });
+    });
+  });
+
+  function infoIcon(text) {
+    var i = document.createElement("span");
+    i.className = "sl-info"; i.tabIndex = 0; i.setAttribute("role", "img");
+    i.setAttribute("aria-label", text); i.setAttribute("data-sl-tip", text);
+    i.innerHTML = root.querySelector(".sl-info").innerHTML;
+    return i;
+  }
+
+  /* The engine's state and the address of its status page. */
+  (function () {
+    var stat = byId("sl-stat"), txt = byId("sl-stat-txt"), link = byId("sl-statuslink");
+    if (!link.getAttribute("href")) link.href = "http://" + (window.SL_STATUS_HOST || location.hostname) + ":" + link.getAttribute("data-sl-port") + "/";
+    function show(state, text, hint) {
+      stat.setAttribute("data-state", state);
+      txt.textContent = String(text || "").replace(/^[✓✗]\s*/, "");
+      var old = stat.querySelector(".sl-info"); if (old) old.remove();
+      if (hint) stat.appendChild(infoIcon(String(hint).replace(/^\(|\)$/g, "")));
+    }
+    fetch("/plugins/shiplog/server/status.php", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }, function () { return { ok: false, d: null }; }); })
+      .then(function (res) {
+        if (res.ok && Array.isArray(res.d)) {
+          show("ok", T.s_running.replace("%n", res.d.length));
+          var nv = Object.create(null);
+          res.d.forEach(function (s) { var n = s && s.container && s.container.name; if (n && s.newer_version) nv[n] = String(s.newer_version); });
+          auLoaded(res.d.map(function (s) { return s && s.container && s.container.name; }), nv);
+        } else {
+          show("err", T.s_unreachable, T.s_unreachable_hint);
+          auLoaded(null);
+        }
+      })
+      .catch(function () { show("err", T.s_unreachable, T.s_unreachable_hint); auLoaded(null); });
+  })();
+
+  /* Auto-update. Everything below the main switch only matters while it is on,
+     so those rows are left out while it is off. */
+  function auShown() {
+    var on = byId("sl-au-en").value === "true";
+    root.querySelectorAll("[data-sl-au]").forEach(function (r) { r.hidden = !on; });
+    auState();
+  }
+  function auMode() {
+    var m = byId("sl-au-mode").value;
+    var t = byId("sl-au-time"), e = byId("sl-au-every"), u = byId("sl-au-every-unit");
+    var unit = m === "hours" ? T.s_au_unit_hours : (m === "days" ? T.s_au_unit_days : "");
+    t.hidden = m !== "daily";
+    e.hidden = u.hidden = !(m === "hours" || m === "days");
+    u.textContent = unit;
+    e.setAttribute("aria-label", unit);
+  }
+  byId("sl-au-mode").addEventListener("change", auMode);
+  auMode();
+
+  // One switch per container the engine tracks; on means auto-update may
+  // update it. The hidden field holds the names switched off, including one
+  // with no container behind it right now, so Apply never drops an exclusion.
+  var skip = [];
+  var names = null; // null until the engine answered, or when it is down
+  var newer = Object.create(null); // name -> newer version of a pinned container
+  var loadState = "loading";
+  var NAME_OK = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/; // Docker's name rule keeps the cfg value safe
+  function key(s) { return String(s).toLowerCase(); }
+  function auLoaded(list, nv) {
+    var seen = {};
+    names = Array.isArray(list) ? list.filter(function (n) {
+      if (!n || !NAME_OK.test(n) || seen[n]) return false;
+      seen[n] = true; return true;
+    }) : null;
+    loadState = names ? "ok" : "down";
+    newer = (names && nv) ? nv : Object.create(null);
+    auRender();
+  }
+  function auItem(name, on, gone, nv) {
+    if (nv) return auPinned(name, on, nv);
+    var l = document.createElement("label"); l.className = "sl-ct-item";
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.className = "sl-sw"; cb.checked = on;
+    cb.setAttribute("role", "switch");
+    cb.setAttribute("data-name", name); cb.setAttribute("data-gone", gone ? "1" : "0");
+    cb.addEventListener("change", function () { auSync(cb); });
+    var t = document.createElement("span"); t.className = "sl-ct-name"; t.textContent = name;
+    l.appendChild(cb); l.appendChild(t);
+    if (gone) { var g = document.createElement("small"); g.textContent = T.s_au_ct_gone; l.appendChild(g); }
+    return l;
+  }
+  // A pinned container has nothing for auto-update to apply, so it gets the
+  // newer-version hint instead of a switch. An exclusion it already has stays
+  // in data-off.
+  function auPinned(name, on, nv) {
+    var d = document.createElement("div"); d.className = "sl-ct-item sl-ct-pin";
+    d.setAttribute("data-name", name); d.setAttribute("data-off", on ? "0" : "1");
+    var ring = document.createElement("span"); ring.className = "sl-ct-ring"; ring.setAttribute("aria-hidden", "true");
+    var t = document.createElement("span"); t.className = "sl-ct-name"; t.textContent = name;
+    var hint = T.s_au_ct_newer.replace("%v", function () { return nv; });
+    d.appendChild(ring); d.appendChild(t); d.appendChild(infoIcon(hint));
+    return d;
+  }
+  // Excluded containers come first, so none hides below the fold.
+  function auRender() {
+    var box = byId("sl-au-ct");
+    var off = {}; skip.forEach(function (n) { off[key(n)] = true; });
+    var have = {}, rows = [];
+    (names || []).forEach(function (n) { have[key(n)] = true; rows.push({ name: n, off: !!off[key(n)], gone: false }); });
+    skip.forEach(function (n) { if (!have[key(n)]) rows.push({ name: n, off: true, gone: names !== null }); });
+    rows.sort(function (a, b) { return (b.off - a.off) || key(a.name).localeCompare(key(b.name)); });
+    box.textContent = "";
+    rows.forEach(function (r) { box.appendChild(auItem(r.name, !r.off, r.gone, r.gone ? "" : newer[r.name])); });
+    auState();
+    paint();
+  }
+  function auSync(changed) {
+    var box = byId("sl-au-ct"), out = [];
+    // Switching a stale exclusion back on simply drops it.
+    if (changed.checked && changed.getAttribute("data-gone") === "1") changed.closest(".sl-ct-item").remove();
+    box.querySelectorAll(".sl-ct-item").forEach(function (it) {
+      var cb = it.querySelector("input[type=checkbox]");
+      if (cb ? !cb.checked : it.getAttribute("data-off") === "1") out.push((cb || it).getAttribute("data-name"));
+    });
+    skip = out;
+    byId("sl-au-skip").value = out.join(",");
+    markDirty();
+    auState();
+  }
+  function auState() {
+    var box = byId("sl-au-ct"), hint = byId("sl-au-ct-hint");
+    var msg = "";
+    if (loadState === "loading") msg = T.s_au_ct_loading;
+    else if (loadState === "down") msg = T.s_unreachable + " " + T.s_unreachable_hint;
+    else if (!box.children.length) msg = T.s_au_ct_none;
+    hint.textContent = String(msg || "").replace(/^[✓✗]\s*/, "");
+    hint.hidden = !msg;
+  }
+  (function () {
+    var seen = {};
+    skip = byId("sl-au-skip").value.split(",").map(function (s) { return s.trim(); }).filter(function (n) {
+      if (!n || seen[key(n)]) return false;
+      seen[key(n)] = true; return true;
+    });
+    auRender();
+  })();
+
+  auShown();
+  engines();
+  // TowerTorch sets the accent from a deferred script.
+  window.addEventListener("load", engines);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();

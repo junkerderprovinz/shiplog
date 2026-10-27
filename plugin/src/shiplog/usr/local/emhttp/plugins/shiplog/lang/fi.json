@@ -127,5 +127,10 @@
   "d_newerPill": "kiinnitetty · uudempi %v",
   "d_newerChipHint": "Uudempi versio %v saatavilla. Tunniste on kiinnitetty, joten päivitä vaihtamalla se.",
   "d_newerNote": "Versio %v on saatavilla. Päivitä vaihtamalla tunniste.",
-  "d_newerWhy": "Tämä kontti on kiinnitetty versioon %v, joten sen hakeminen uudelleen ei muuta mitään eikä ShipLog koskaan päivitä sitä automaattisesti."
+  "d_newerWhy": "Tämä kontti on kiinnitetty versioon %v, joten sen hakeminen uudelleen ei muuta mitään eikä ShipLog koskaan päivitä sitä automaattisesti.",
+  "s_status": "Tila",
+  "s_statuspage_btn": "Tilasivu",
+  "s_manual": "Manuaaliset päivitykset",
+  "s_channels": "Kanavat",
+  "s_reset": "Palauta"
 }

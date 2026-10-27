@@ -127,5 +127,10 @@
   "d_newerPill": "épinglé · plus récent %v",
   "d_newerChipHint": "Version plus récente %v disponible. Le tag est épinglé, change-le pour mettre à jour.",
   "d_newerNote": "La version %v est disponible. Change le tag pour mettre à jour.",
-  "d_newerWhy": "Ce conteneur est épinglé sur %v, donc le retélécharger ne change rien et ShipLog ne le met jamais à jour automatiquement."
+  "d_newerWhy": "Ce conteneur est épinglé sur %v, donc le retélécharger ne change rien et ShipLog ne le met jamais à jour automatiquement.",
+  "s_status": "Statut",
+  "s_statuspage_btn": "Page de statut",
+  "s_manual": "Mises à jour manuelles",
+  "s_channels": "Canaux",
+  "s_reset": "Réinitialiser"
 }

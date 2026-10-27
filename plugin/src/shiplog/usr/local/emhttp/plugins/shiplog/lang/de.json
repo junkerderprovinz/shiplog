@@ -127,5 +127,10 @@
   "d_newerPill": "gepinnt · neuere %v",
   "d_newerChipHint": "Neuere Version %v verfügbar. Das Tag ist gepinnt, ändere es zum Aktualisieren.",
   "d_newerNote": "Version %v ist verfügbar. Ändere das Tag, um zu aktualisieren.",
-  "d_newerWhy": "Dieser Container ist auf %v gepinnt, ein erneutes Pullen ändert also nichts und ShipLog aktualisiert ihn nie automatisch."
+  "d_newerWhy": "Dieser Container ist auf %v gepinnt, ein erneutes Pullen ändert also nichts und ShipLog aktualisiert ihn nie automatisch.",
+  "s_status": "Status",
+  "s_statuspage_btn": "Statusseite",
+  "s_manual": "Manuelle Updates",
+  "s_channels": "Kanäle",
+  "s_reset": "Zurücksetzen"
 }

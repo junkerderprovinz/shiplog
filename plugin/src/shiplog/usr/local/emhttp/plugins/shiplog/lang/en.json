@@ -127,5 +127,10 @@
   "d_newerPill": "pinned · newer %v",
   "d_newerChipHint": "Newer version %v available. The tag is pinned, so change it to update.",
   "d_newerNote": "Version %v is available. Change the tag to update.",
-  "d_newerWhy": "This container is pinned to %v, so pulling it again changes nothing and ShipLog never auto-updates it."
+  "d_newerWhy": "This container is pinned to %v, so pulling it again changes nothing and ShipLog never auto-updates it.",
+  "s_status": "Status",
+  "s_statuspage_btn": "Status page",
+  "s_manual": "Manual updates",
+  "s_channels": "Channels",
+  "s_reset": "Reset"
 }
