@@ -94,8 +94,8 @@ $slVerLink = function ($ver, $repo) use ($slE) {
   return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">v'.$slE($v).'</a>';
 };
 $M = include '/usr/local/emhttp/plugins/shiplog/include/marks.php';
-/* A give button in the shape of the README's buttons, as on TowerTorch's About card. */
-$slGive = function ($brand, $name, $href) use ($M, $slE) {
+/* A button in the shape of the README's buttons, as on TowerTorch's Info tab. */
+$slRbtn = function ($brand, $name, $href) use ($M, $slE) {
   $inner = $brand === 'coffee'
     ? '<span class="sl-rbtn-art">'.$M['coffee'].'</span>'
     : '<span class="sl-rbtn-mark sl-'.$brand.'-mark">'.$M[$brand].'</span><span class="sl-rbtn-text"><span class="sl-rbtn-name">'.$slE($name).'</span></span>';
@@ -106,11 +106,9 @@ $slGive = function ($brand, $name, $href) use ($M, $slE) {
 
 <div id="sl-cfg" class="sl-cfg" data-sl-labels="textGlyph">
 <div class="sl-hero">
-  <span class="sl-hero-tile"><img src="<?autov('/plugins/shiplog/images/shiplog.png')?>" alt=""></span>
-  <div class="sl-hero-text">
-    <h1 class="sl-hero-name">ShipLog</h1>
-    <p class="sl-hero-sub"><?=$slE($slPlain($L['s_sub']))?></p>
-  </div>
+  <svg class="sl-hero-mark" viewBox="0 0 400 400" aria-hidden="true" focusable="false"><circle cx="200" cy="200" r="188"/><circle cx="200" cy="200" r="138"/><circle cx="200" cy="200" r="88"/></svg>
+  <img class="sl-hero-logo" src="<?autov('/plugins/shiplog/images/shiplog.png')?>" alt="">
+  <h1 class="sl-hero-name">ShipLog</h1>
 </div>
 <form name="shiplog_settings" method="POST" action="/update.php" target="progressFrame">
 <input type="hidden" name="#file" value="shiplog/shiplog.cfg">
@@ -324,9 +322,8 @@ $slGive = function ($brand, $name, $href) use ($M, $slE) {
   </div>
 
   <div class="sl-pane" role="tabpanel" id="sl-pane-info" aria-labelledby="sl-tab-info" hidden>
-    <section class="sl-card" aria-labelledby="sl-h-about">
-      <h3 class="sl-h"><span id="sl-h-about"><?=$slE($L['s_about'])?></span></h3>
-      <p class="sl-prose"><?=$slE($L['s_about_body'])?></p>
+    <section class="sl-card" aria-labelledby="sl-h-version">
+      <h3 class="sl-h"><span id="sl-h-version"><?=$slE($L['s_version'])?></span></h3>
       <div class="sl-row">
         <div class="sl-lbl"><span>ShipLog</span></div>
         <div class="sl-ctl"><?=$slVerLink($slVer, 'https://github.com/junkerderprovinz/shiplog')?></div>
@@ -335,11 +332,25 @@ $slGive = function ($brand, $name, $href) use ($M, $slE) {
         <div class="sl-lbl"><span>GlimStone</span></div>
         <div class="sl-ctl"><?=$slVerLink($slGlimstoneVer, 'https://github.com/junkerderprovinz/glimstone')?></div>
       </div>
-      <p class="sl-prose sl-prose-next"><?=$slE($L['s_about_coin'])?></p>
+    </section>
+
+    <section class="sl-card" aria-labelledby="sl-h-help">
+      <h3 class="sl-h"><span id="sl-h-help"><?=$slE($L['s_help'])?></span></h3>
+      <p class="sl-prose"><?=$slE($L['s_help_body'])?></p>
+      <div class="sl-rbtn-rows">
+        <?=$slRbtn('github', 'GitHub', 'https://github.com/junkerderprovinz/shiplog/issues')?>
+        <?=$slRbtn('house', $L['s_forum'], 'https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/')?>
+      </div>
+    </section>
+
+    <section class="sl-card" aria-labelledby="sl-h-about">
+      <h3 class="sl-h"><span id="sl-h-about"><?=$slE($L['s_about'])?></span></h3>
+      <p class="sl-prose"><?=$slE($L['s_about_body'])?></p>
+      <p class="sl-prose"><?=$slE($L['s_about_coin'])?></p>
       <div class="sl-rbtn-rows sl-give">
-        <?=$slGive('coffee', 'Buy me a coffee', 'https://buymeacoffee.com/junkerderprovinz')?>
-        <?=$slGive('paypal', 'PayPal', 'https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS')?>
-        <?=$slGive('bitcoin', $L['s_crypto'], 'https://junkerderprovinz.github.io/junkerderprovinz/')?>
+        <?=$slRbtn('coffee', 'Buy me a coffee', 'https://buymeacoffee.com/junkerderprovinz')?>
+        <?=$slRbtn('paypal', 'PayPal', 'https://www.paypal.com/donate/?hosted_button_id=76FVV52TKXTUS')?>
+        <?=$slRbtn('bitcoin', $L['s_crypto'], 'https://junkerderprovinz.github.io/junkerderprovinz/')?>
       </div>
     </section>
   </div>

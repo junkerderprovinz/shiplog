@@ -1,5 +1,4 @@
 {
-  "s_sub": "Poradce aktualizací pouze pro čtení: nikdy nic neaktualizuje, ukazuje, co se změnilo a jak rizikové to je, přímo na kartě Docker.",
   "s_engine": "Engine",
   "s_enable": "Povolit",
   "s_port": "Port",
@@ -134,6 +133,10 @@
   "s_manual": "Ruční aktualizace",
   "s_channels": "Kanály",
   "s_reset": "Obnovit",
+  "s_version": "Verze",
+  "s_help": "Nápověda",
+  "s_help_body": "Chyby, nápady nebo přání? Klidně založ issue na GitHubu. Na otázky odpovídám ve vlákně podpory na fóru Unraid.",
+  "s_forum": "Fórum",
   "s_about": "O pluginu",
   "s_about_body": "ShipLog je bezplatný plugin pro kartu Docker v Unraidu, který po večerech a o víkendech staví jeden rytíř, bez účtů, bez telemetrie a bez reklam.",
   "s_about_coin": "Pokud si vysloužil místo na tvém serveru, hoď svému rytíři minci: pomůže to pokrýt náklady a udrží projekt naživu.",

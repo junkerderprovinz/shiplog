@@ -1,5 +1,4 @@
 {
-  "s_sub": "Consilier de actualizări doar pentru citire: nu actualizează niciodată nimic, arată ce s-a schimbat și cât de riscant este, direct în fila Docker.",
   "s_engine": "Engine",
   "s_enable": "Activează",
   "s_port": "Port",
@@ -134,6 +133,10 @@
   "s_manual": "Actualizări manuale",
   "s_channels": "Canale",
   "s_reset": "Resetează",
+  "s_version": "Versiune",
+  "s_help": "Ajutor",
+  "s_help_body": "Erori, idei sau dorințe? Deschide liniștit un issue pe GitHub. La întrebări răspund în firul de suport de pe forumul Unraid.",
+  "s_forum": "Forum",
   "s_about": "Despre",
   "s_about_body": "ShipLog este un plugin gratuit pentru fila Docker din Unraid, construit de un singur cavaler serile și în weekenduri, fără conturi, fără telemetrie și fără reclame.",
   "s_about_coin": "Dacă și-a câștigat un loc pe serverul tău, aruncă-i cavalerului tău o monedă: ajută la acoperirea costurilor și ține proiectul în viață.",

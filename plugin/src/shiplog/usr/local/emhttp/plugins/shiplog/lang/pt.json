@@ -1,5 +1,4 @@
 {
-  "s_sub": "Consultor de atualizações somente leitura: nunca atualiza nada, mostra o que mudou e o risco, diretamente na aba do Docker.",
   "s_engine": "Engine",
   "s_enable": "Ativar",
   "s_port": "Porta",
@@ -134,6 +133,10 @@
   "s_manual": "Atualizações manuais",
   "s_channels": "Canais",
   "s_reset": "Redefinir",
+  "s_version": "Versão",
+  "s_help": "Ajuda",
+  "s_help_body": "Erros, ideias ou pedidos? Abra à vontade uma issue no GitHub. As perguntas respondo no tópico de suporte do fórum do Unraid.",
+  "s_forum": "Fórum",
   "s_about": "Sobre",
   "s_about_body": "O ShipLog é um plugin gratuito para a aba Docker do Unraid, feito por um único cavaleiro à noite e aos fins de semana, sem contas, sem telemetria e sem anúncios.",
   "s_about_coin": "Se ele conquistou um lugar no seu servidor, jogue uma moeda ao seu cavaleiro: isso ajuda a cobrir os custos e mantém o projeto vivo.",

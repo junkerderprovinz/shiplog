@@ -1,5 +1,4 @@
 {
-  "s_sub": "Cố vấn cập nhật chỉ đọc: nó không bao giờ cập nhật bất cứ thứ gì, mà hiển thị những gì đã thay đổi và mức độ rủi ro, ngay trong tab Docker.",
   "s_engine": "Engine",
   "s_enable": "Bật",
   "s_port": "Cổng",
@@ -134,6 +133,10 @@
   "s_manual": "Cập nhật thủ công",
   "s_channels": "Kênh",
   "s_reset": "Đặt lại",
+  "s_version": "Phiên bản",
+  "s_help": "Trợ giúp",
+  "s_help_body": "Gặp lỗi, có ý tưởng hay mong muốn? Bạn cứ mở một issue trên GitHub. Câu hỏi thì tôi trả lời trong chủ đề hỗ trợ trên diễn đàn Unraid.",
+  "s_forum": "Diễn đàn",
   "s_about": "Giới thiệu",
   "s_about_body": "ShipLog là plugin miễn phí cho thẻ Docker của Unraid, do một hiệp sĩ duy nhất xây dựng vào buổi tối và cuối tuần, không tài khoản, không thu thập dữ liệu và không quảng cáo.",
   "s_about_coin": "Nếu nó xứng đáng có chỗ trên máy chủ của bạn, hãy tung cho hiệp sĩ của bạn một đồng xu: điều đó giúp trang trải chi phí và giữ cho dự án tiếp tục.",

@@ -1,5 +1,4 @@
 {
-  "s_sub": "Salt okunur güncelleme danışmanı: asla bir şey güncellemez, neyin değiştiğini ve ne kadar riskli olduğunu doğrudan Docker sekmesinde gösterir.",
   "s_engine": "Engine",
   "s_enable": "Etkinleştir",
   "s_port": "Port",
@@ -134,6 +133,10 @@
   "s_manual": "Elle güncellemeler",
   "s_channels": "Kanallar",
   "s_reset": "Sıfırla",
+  "s_version": "Sürüm",
+  "s_help": "Yardım",
+  "s_help_body": "Hata, fikir ya da istek mi var? GitHub'da rahatça bir issue aç. Soruları Unraid forumundaki destek başlığında yanıtlıyorum.",
+  "s_forum": "Forum",
   "s_about": "Hakkında",
   "s_about_body": "ShipLog, Unraid'in Docker sekmesi için ücretsiz bir eklentidir; tek bir şövalye tarafından akşamları ve hafta sonları geliştirilir, hesap, telemetri ve reklam yoktur.",
   "s_about_coin": "Sunucunda bir yeri hak ettiyse şövalyene bir bozuk para at: masrafları karşılamaya yardım eder ve projeyi hayatta tutar.",

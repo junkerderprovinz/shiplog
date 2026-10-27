@@ -1,5 +1,4 @@
 {
-  "s_sub": "Doradca aktualizacji tylko do odczytu: nigdy niczego nie aktualizuje, pokazuje, co się zmieniło i jak ryzykowne to jest, prosto w karcie Docker.",
   "s_engine": "Engine",
   "s_enable": "Włącz",
   "s_port": "Port",
@@ -134,6 +133,10 @@
   "s_manual": "Aktualizacje ręczne",
   "s_channels": "Kanały",
   "s_reset": "Resetuj",
+  "s_version": "Wersja",
+  "s_help": "Pomoc",
+  "s_help_body": "Błędy, pomysły albo życzenia? Śmiało otwórz issue na GitHubie. Na pytania odpowiadam w wątku wsparcia na forum Unraid.",
+  "s_forum": "Forum",
   "s_about": "O wtyczce",
   "s_about_body": "ShipLog to darmowa wtyczka do karty Docker w Unraid, budowana przez jednego rycerza wieczorami i w weekendy, bez kont, bez telemetrii i bez reklam.",
   "s_about_coin": "Jeśli zasłużyła na miejsce na twoim serwerze, rzuć swojemu rycerzowi monetę: pomaga to pokryć koszty i utrzymuje projekt przy życiu.",

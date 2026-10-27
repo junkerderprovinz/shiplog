@@ -1,5 +1,4 @@
 {
-  "s_sub": "Alleen-lezen update-adviseur: hij werkt nooit iets bij, hij laat zien wat er is veranderd en hoe riskant, direct in het Docker-tabblad.",
   "s_engine": "Engine",
   "s_enable": "Inschakelen",
   "s_port": "Poort",
@@ -134,6 +133,10 @@
   "s_manual": "Handmatige updates",
   "s_channels": "Kanalen",
   "s_reset": "Herstellen",
+  "s_version": "Versie",
+  "s_help": "Hulp",
+  "s_help_body": "Bugs, ideeën of wensen? Open gerust een issue op GitHub. Vragen beantwoord ik in de supportthread op het Unraid-forum.",
+  "s_forum": "Forum",
   "s_about": "Over",
   "s_about_body": "ShipLog is een gratis plugin voor het Docker-tabblad van Unraid, gebouwd door één ridder op avonden en in het weekend, zonder accounts, zonder telemetrie en zonder advertenties.",
   "s_about_coin": "Als het een plek op je server heeft verdiend, gooi je ridder dan een munt toe: dat helpt de kosten te dekken en houdt het project in leven.",

@@ -215,7 +215,8 @@
   }
 
   /* The colour engine, read from TowerTorch: the accent, the rainbow with one
-     position per tab, per card heading and per switch, and the reactive mode
+     position per tab, per card heading and per switch and the first three for
+     the banner, and the reactive mode
      in which an idle tab glyph rests grey. Without TowerTorch nothing is set
      and the page keeps Unraid's colours. */
   function ink(hex) {
@@ -232,6 +233,10 @@
     var accent = (getComputedStyle(html).getPropertyValue("--cc-accent") || "").trim() || "#FCC419";
     root.classList.toggle("sl-reactive", on && get("cc.rbmode", "all") === "active");
     function at(i) { return rb ? window.CCTheme.rbColor(i, accent) : ""; }
+    var banner = root.querySelector(".sl-hero");
+    [1, 2, 3].forEach(function (n) {
+      if (rb) banner.style.setProperty("--sl-hero-" + n, at(n - 1)); else banner.style.removeProperty("--sl-hero-" + n);
+    });
     tabs.forEach(function (t, i) { hue(t, at(i), "--sl-hue", "--sl-hue-ink"); });
     root.querySelectorAll(".sl-pane").forEach(function (p) {
       p.querySelectorAll(".sl-card").forEach(function (c, i) { hue(c, at(i), "--sl-hue", "--sl-hue-ink"); });

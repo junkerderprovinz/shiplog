@@ -1,5 +1,4 @@
 {
-  "s_sub": "Skrivskyddad uppdateringsrådgivare: den uppdaterar aldrig något, den visar vad som ändrats och hur riskabelt det är, direkt i Docker-fliken.",
   "s_engine": "Engine",
   "s_enable": "Aktivera",
   "s_port": "Port",
@@ -134,6 +133,10 @@
   "s_manual": "Manuella uppdateringar",
   "s_channels": "Kanaler",
   "s_reset": "Återställ",
+  "s_version": "Version",
+  "s_help": "Hjälp",
+  "s_help_body": "Buggar, idéer eller önskemål? Öppna gärna ett issue på GitHub. Frågor svarar jag på i supporttråden på Unraid-forumet.",
+  "s_forum": "Forum",
   "s_about": "Om",
   "s_about_body": "ShipLog är ett gratis tillägg för Docker-fliken i Unraid, byggt av en enda riddare på kvällar och helger, utan konton, utan telemetri och utan reklam.",
   "s_about_coin": "Om det har förtjänat en plats på din server, kasta ett mynt till din riddare: det hjälper till att täcka kostnaderna och håller projektet vid liv.",
