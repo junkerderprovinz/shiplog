@@ -100,13 +100,15 @@
     if (html != null) n.innerHTML = html;
     return n;
   }
+  // esc output lands in quoted attributes as well as in text, so quotes count.
   function esc(s) {
-    return String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
   // renderMd escapes the whole release body before it rebuilds a few markdown
-  // patterns as HTML, so no upstream HTML reaches innerHTML. URLs exclude quotes,
-  // so they cannot break out of the href attribute.
+  // patterns as HTML, so no upstream HTML reaches innerHTML. Quotes stay literal
+  // so the link patterns can stop at them; a URL therefore cannot break out of
+  // the href attribute.
   function renderMd(md) {
     const decoded = String(md)
       .replace(/&nbsp;/gi, " ")
@@ -119,7 +121,8 @@
       .replace(/(^|[^"'>=])(https?:\/\/[^\s<"']+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
     let html = "";
     let inList = false;
-    for (const line of esc(decoded).split("\n")) {
+    const escaped = decoded.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    for (const line of escaped.split("\n")) {
       const l = line.trim();
       const li = /^[-*]\s+(.*)$/.exec(l);
       if (li) {
@@ -461,7 +464,7 @@
     // A changelog file is linked as it is, since its repo root may not exist
     // on a raw host.
     const gh = cl.provider === "file" && cl.url
-      ? `<a class="sl-gh" href="${esc(cl.url).replace(/"/g, "&quot;")}" target="_blank" rel="noopener">Changelog ↗</a>`
+      ? `<a class="sl-gh" href="${esc(cl.url)}" target="_blank" rel="noopener">Changelog ↗</a>`
       : href
         ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">Repository ↗</a>`
         : "";
