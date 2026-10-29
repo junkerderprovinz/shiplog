@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.6.4
+🐛 **Fixed**
+- A quote in a CA deprecation note can no longer break out of the changelog window's tooltip.
+
 ### 3.6.3
 ✨ **Added**
 - **Apprise as a notification channel.** On the Notifications tab, enter the address of an Apprise API server or an Apprise URL and send a test message. ShipLog then sends the same messages it sends to Matrix, which reaches more than 100 services.
