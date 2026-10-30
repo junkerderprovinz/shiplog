@@ -34,43 +34,27 @@ what changed from your running image to the newest, with a risk badge. Read-only
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
 ### 3.7.0
-🎨 **Design**
-- **GlimStone 3.8.0 for the settings page and the changelog window.** The Version card on the Info tab names it and shows version numbers without the leading `v`.
-- **Glyphs in the changelog window.** Update now, Update all, Close, the Repository and changelog links and the warnings show a glyph where they had a text arrow or symbol. With TowerTorch, the buttons follow its label mode, and the pulse on a critical update, the scrolling line and the fade behind the window stop when TowerTorch's Motion is set to Off.
-- **New glyphs on the settings page.** The Updates tab and the Check buttons get new glyphs, as do Send test message on the Notifications tab and Autodetect on the Sources tab. Close and Copy in the coffee, PayPal and crypto windows show glyphs too and follow the label mode.
-
-🐛 **Fixed**
-- With TowerTorch, the changelog window took on its look only while TowerTorch's header area was switched on, which it is not by default. It follows TowerTorch whenever TowerTorch's theming is on.
-- With TowerTorch, the settings page has its look from the start instead of switching over once the page has loaded.
-
-🌐 **Translations**
-- "Repository" in the changelog window is translated into all 26 languages.
-
-### 3.6.4
-🐛 **Fixed**
-- A quote in a CA deprecation note can no longer break out of the changelog window's tooltip.
-
-### 3.6.3
 ✨ **Added**
 - **Apprise as a notification channel.** On the Notifications tab, enter the address of an Apprise API server or an Apprise URL and send a test message. ShipLog then sends the same messages it sends to Matrix, which reaches more than 100 services.
-- **Coffee, PayPal and crypto windows in the page.** The giving buttons on the Info tab open a window inside the settings page instead of a new tab. Each coin's logo shows in its own colour.
+- **Coffee, PayPal and crypto windows in the page.** The giving buttons on the Info tab open a window inside the settings page instead of a new tab. Each coin's logo shows in its own colour, and Close and Copy show glyphs that follow TowerTorch's label mode.
 
 🎨 **Design**
-- **A new settings page** on GlimStone 3.7.0, laid out like TowerTorch's: tabs on the left, cards with a title badge, the label on the left and the control on the right edge. A banner with the logo and the claim heads the page, and the Info tab is split into Version, Help and About cards.
+- **A new settings page** on GlimStone 3.8.0, laid out like TowerTorch's: tabs on the left, cards with a title badge, the label on the left and the control on the right edge. A banner with the logo and the claim heads the page, and the Info tab is split into Version, Help and About cards. The Version card names the GlimStone version and shows version numbers without the leading `v`.
 - **Settings save as you change them.** Done and Apply are gone. A switch saves at once and springs back if saving fails, a text field saves shortly after you stop typing, and the engine picks up the change without a restart.
+- **Glyphs on the settings page.** The Updates tab, the Check buttons, Send test message on the Notifications tab and Autodetect on the Sources tab show glyphs.
+- **The changelog window on GlimStone 3.8.0, with glyphs.** Update now, Update all, Close, the Repository and changelog links and the warnings show a glyph where they had a text arrow or symbol. With TowerTorch, the buttons follow its label mode, and the pulse on a critical update, the scrolling line and the fade behind the window stop when TowerTorch's Motion is set to Off.
+- **A new logo**, an anchor in a silver ring that reads on light and dark themes. It shows on the settings page, in the Unraid menu and in the Community Applications icon.
 
 🐛 **Fixed**
 - A tag with a `v` or `release-` prefix counts as the same version as one without, so ShipLog no longer reports an update to the release you already run.
 - A version label a container inherits from its Ubuntu base image no longer passes for the app's version.
 - When Unraid still lists an update that ShipLog's last check already saw installed, the changelog window says so instead of showing a stale verdict. For an image without a source repository, it explains where to set one.
+- A quote in a CA deprecation note can no longer break out of the changelog window's tooltip.
+- With Unraid's white theme and TowerTorch, the changelog window in the Docker tab kept its near-black frame, so the dark header text was unreadable. The window stays light in a light theme.
+- With TowerTorch, the changelog window and the settings page took on its look only while TowerTorch's header area was switched on, which it is not by default. Both follow TowerTorch whenever its theming is on, and the settings page has the look from the start.
 
-### 3.6.2
-🎨 **Design**
-- ShipLog has a new logo, an anchor in a silver ring that reads on light and dark themes. It shows on the settings page, in the Unraid menu and in the Community Applications icon.
-
-### 3.6.1
-🐛 **Fixed**
-- With Unraid's white theme and CannonadeCommand, the changelog window in the Docker tab kept its near-black frame, so the dark header text was unreadable. The window now stays light in a light theme.
+🌐 **Translations**
+- "Repository" in the changelog window is translated into all 26 languages.
 
 ### 3.6.0
 Most of this release started in @nphil's fork (https://github.com/nphil/shiplog), tests included. Thank you!
