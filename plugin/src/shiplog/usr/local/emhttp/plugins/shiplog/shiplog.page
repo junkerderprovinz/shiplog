@@ -59,7 +59,7 @@ if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_
 
 $slVer = '';
 if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
-$slGlimstoneVer = '3.7.0';
+$slGlimstoneVer = '3.7.1';
 
 $G = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
 $slE = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
@@ -110,11 +110,11 @@ $GV = include '/usr/local/emhttp/plugins/shiplog/include/give.php';
 /* What every give window holds, as on FireSquire's: the title notched into its
    top edge, the appeal, the sentence naming who takes the payment, the window's
    own content and Close at the end of the foot. */
-$slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
+$slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
   return '<div class="sl-win sl-win-'.$id.'" id="sl-win-'.$id.'" role="dialog" aria-modal="true" aria-labelledby="sl-win-'.$id.'-t" tabindex="-1" hidden>'
        . '<h2 class="sl-win-title" id="sl-win-'.$id.'-t">'.$slE($title).'</h2>'
        . '<div class="sl-win-body"><p class="sl-win-text">'.$slE($L['s_give_appeal']).'</p><p class="sl-win-text sl-win-sub">'.$slE($intro).'</p>'.$body.'</div>'
-       . '<div class="sl-win-act"><button type="button" class="sl-win-btn" data-sl-close>'.$slE($L['s_close']).'</button></div>'
+       . '<div class="sl-win-act"><button type="button" class="sl-win-btn" data-sl-close>'.$slBtn('Close', $L['s_close']).'</button></div>'
        . '</div>';
 };
 ?>
@@ -137,7 +137,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
 <div class="sl-body">
   <div class="sl-tabs" role="tablist" aria-orientation="vertical" aria-label="ShipLog">
     <button type="button" class="sl-tab" role="tab" id="sl-tab-general" aria-controls="sl-pane-general" aria-selected="true" data-sl-tab="general"><span class="sl-tabico"><?=$G['TabGeneral']?></span><span class="sl-tablbl"><?=$slE($L['t_general'])?></span></button>
-    <button type="button" class="sl-tab" role="tab" id="sl-tab-updates" aria-controls="sl-pane-updates" aria-selected="false" tabindex="-1" data-sl-tab="updates"><span class="sl-tabico"><?=$G['Refresh']?></span><span class="sl-tablbl"><?=$slE($L['t_updates'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-updates" aria-controls="sl-pane-updates" aria-selected="false" tabindex="-1" data-sl-tab="updates"><span class="sl-tabico"><?=$G['Update']?></span><span class="sl-tablbl"><?=$slE($L['t_updates'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-notify" aria-controls="sl-pane-notify" aria-selected="false" tabindex="-1" data-sl-tab="notify"><span class="sl-tabico"><?=$G['Notifications']?></span><span class="sl-tablbl"><?=$slE($L['t_notify'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-sources" aria-controls="sl-pane-sources" aria-selected="false" tabindex="-1" data-sl-tab="sources"><span class="sl-tabico"><?=$G['Link']?></span><span class="sl-tablbl"><?=$slE($L['t_sources'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-info" aria-controls="sl-pane-info" aria-selected="false" tabindex="-1" data-sl-tab="info"><span class="sl-tabico"><?=$G['Info']?></span><span class="sl-tablbl"><?=$slE($L['t_info'])?></span></button>
@@ -270,7 +270,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
         <div class="sl-lbl"><label for="sl-MATRIX_ROOM"><?=$slE($L['s_mx_room'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-MATRIX_ROOM" name="MATRIX_ROOM" value="<?=$slE($mroom)?>" placeholder="!roomid:server  or  #alias:server" dir="ltr">
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-matrix-result" role="status"></div>
       </div>
@@ -278,7 +278,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
         <div class="sl-lbl"><label for="sl-APPRISE_URL"><?=$slE($L['s_apprise'])?></label><?=$slInfo($L['s_apprise_hint'])?></div>
         <div class="sl-ctl">
           <span class="sl-field"><input type="password" class="sl-f" id="sl-APPRISE_URL" name="APPRISE_URL" value="<?=$slE($apprise)?>" placeholder="http://host:8000/notify/key" autocomplete="off" dir="ltr"><?=$slEye('sl-APPRISE_URL')?></span>
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="apprise" data-sl-out="sl-apprise-result"><?=$slBtn('Notifications', $L['s_apprise_test'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="apprise" data-sl-out="sl-apprise-result"><?=$slBtn('SendTest', $L['s_apprise_test'])?></button></span>
         </div>
         <div class="sl-res" id="sl-apprise-result" role="status"></div>
       </div>
@@ -292,7 +292,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
         <div class="sl-lbl"><label for="sl-GITHUB_TOKEN"><?=$slE($L['s_gh_token'])?></label><?=$slInfo($L['s_gh_hint'])?></div>
         <div class="sl-ctl">
           <span class="sl-field"><input type="password" class="sl-f" id="sl-GITHUB_TOKEN" name="GITHUB_TOKEN" value="<?=$slE($ghtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-GITHUB_TOKEN')?></span>
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="github" data-sl-out="sl-gh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="github" data-sl-out="sl-gh-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-gh-result" role="status"></div>
       </div>
@@ -307,7 +307,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
         <div class="sl-lbl"><label for="sl-DOCKERHUB_TOKEN"><?=$slE($L['s_dh_token'])?></label><?=$slInfo($L['s_dh_hint'])?></div>
         <div class="sl-ctl">
           <span class="sl-field"><input type="password" class="sl-f" id="sl-DOCKERHUB_TOKEN" name="DOCKERHUB_TOKEN" value="<?=$slE($dhtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-DOCKERHUB_TOKEN')?></span>
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="dockerhub" data-sl-out="sl-dh-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="dockerhub" data-sl-out="sl-dh-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-dh-result" role="status"></div>
       </div>
@@ -322,14 +322,14 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
         <div class="sl-lbl"><label for="sl-OLLAMA_URL"><?=$slE($L['s_ollama_url'])?></label><?=$slInfo($L['s_ollama_url_hint'])?></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-OLLAMA_URL" name="OLLAMA_URL" value="<?=$slE($ourl)?>" placeholder="http://127.0.0.1:11434" dir="ltr">
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama-detect" data-sl-out="sl-ollama-result"><?=$slBtn('Search', $L['s_autodetect'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama-detect" data-sl-out="sl-ollama-result"><?=$slBtn('CompressAuto', $L['s_autodetect'])?></button></span>
         </div>
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-OLLAMA_MODEL"><?=$slE($L['s_ollama_model'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-OLLAMA_MODEL" name="OLLAMA_MODEL" value="<?=$slE($omodel)?>" placeholder="llama3.1" dir="ltr">
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama" data-sl-out="sl-ollama-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama" data-sl-out="sl-ollama-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-ollama-result" role="status"></div>
       </div>
@@ -341,7 +341,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $L) {
         <div class="sl-lbl"><label for="sl-LLAMASWAP_MODEL"><?=$slE($L['s_llamaswap_model'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-LLAMASWAP_MODEL" name="LLAMASWAP_MODEL" value="<?=$slE($lsmodel)?>" placeholder="gemma4-e4b" dir="ltr">
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="llamaswap" data-sl-out="sl-llamaswap-result"><?=$slBtn('ShieldOn', $L['s_check'])?></button></span>
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="llamaswap" data-sl-out="sl-llamaswap-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-llamaswap-result" role="status"></div>
       </div>
@@ -451,13 +451,13 @@ $slGroup = function ($label, $control) use ($slE) {
 <?=$slWin('crypto', $L['s_give_crypto_title'], $L['s_give_crypto_intro'],
   '<div class="sl-crypto">'.$slQr.$slNets
   .'<p class="sl-note" hidden>'.$slE($L['s_give_no_tag']).'</p>'
-  .'<button type="button" class="sl-win-btn sl-copy" id="sl-copy">'.$slE($L['s_copy']).'</button></div>'
+  .'<button type="button" class="sl-win-btn sl-copy" id="sl-copy">'.$slBtn('Copy', $L['s_copy']).'</button></div>'
   .'<div class="sl-coins" role="listbox" aria-label="'.$slE($L['s_give_crypto_title']).'">'.$slCoins.'</div>')?>
 </div>
 
 <script>
 var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
-var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
+var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Copy' => $G['Copy'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
 var SL_STATUS_HOST = <?=json_encode($lanip)?>;
 var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 </script>

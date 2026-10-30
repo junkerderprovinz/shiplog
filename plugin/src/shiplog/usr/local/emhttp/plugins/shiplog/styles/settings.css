@@ -403,6 +403,19 @@ html.cc-tools-on .sl-win { color: #e6e6e6; }
 .sl-win .sl-win-sub { color: var(--sl-w-dim); }
 .sl-win-act { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
 .sl-win-act > button { margin: 0; }
+/* A window's buttons wear their glyph like the page's and follow the same label mode. */
+#sl-wins .sl-win-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+#sl-wins[data-sl-labels="text"] .sl-win-btn .sl-g { display: none; }
+#sl-wins:is([data-sl-labels="glyph"], [data-sl-labels="reactive"]) .sl-win-btn { gap: 0; }
+#sl-wins:is([data-sl-labels="glyph"], [data-sl-labels="reactive"]) .sl-win-btn .sl-l { max-width: 0; opacity: 0; }
+#sl-wins[data-sl-labels="reactive"] .sl-win-btn:is(:hover, :focus-visible) .sl-l { max-width: 16em; opacity: 1; margin-inline-start: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  #sl-wins[data-sl-labels="reactive"] .sl-win-btn .sl-l {
+    transition: max-width var(--cc-motion-label-dur, 160ms) var(--cc-motion-label-ease, ease-out),
+      opacity calc(var(--cc-motion-label-dur, 160ms) * .6) ease-out,
+      margin-inline-start var(--cc-motion-label-dur, 160ms) var(--cc-motion-label-ease, ease-out);
+  }
+}
 
 .sl-frame { flex: 1 1 auto; min-height: 0; display: flex; padding: 8px; border-radius: var(--sl-w-r-card); background: var(--sl-w-card); }
 /* White behind the frame, so its first paint is not a dark hole; the widget is light either way. */
