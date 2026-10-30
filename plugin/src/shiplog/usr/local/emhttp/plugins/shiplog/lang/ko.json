@@ -55,6 +55,7 @@
   "d_raw": "변경 로그 (원본)",
   "d_source": "소스",
   "d_close": "닫기",
+  "d_repository": "저장소",
   "d_uptodate": "최신",
   "d_deprecated": "지원 중단됨",
   "d_unmaintained": "단종됨",

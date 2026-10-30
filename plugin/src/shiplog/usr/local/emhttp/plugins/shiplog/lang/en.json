@@ -55,6 +55,7 @@
   "d_raw": "Changelog (raw)",
   "d_source": "Source",
   "d_close": "close",
+  "d_repository": "Repository",
   "d_uptodate": "up to date",
   "d_deprecated": "DEPRECATED",
   "d_unmaintained": "Discontinued",

@@ -55,6 +55,7 @@
   "d_raw": "更新日志（原始）",
   "d_source": "来源",
   "d_close": "关闭",
+  "d_repository": "仓库",
   "d_uptodate": "最新",
   "d_deprecated": "已弃用",
   "d_unmaintained": "已停用",

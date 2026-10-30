@@ -28,6 +28,7 @@
 .sl-amp.sl-info{background:transparent;box-sizing:border-box;border:2px solid #4f8fd6}
 @keyframes sl-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.55)}50%{box-shadow:0 0 0 4px rgba(255,59,48,0)}}
 @media (prefers-reduced-motion:reduce){.sl-amp.sl-crit{animation:none}}
+html[data-cc-motion="off"] .sl-amp.sl-crit{animation:none}
 
 /* A container left out of the scheduled auto-update. Neutral grey, because it
    is a choice and not a problem. */
@@ -49,6 +50,8 @@ html.cc-popups-on .sl-autoff{border:none;background:rgba(128,128,128,.18)}
 .sl-pill.sl-ok  {color:#3fae6a;border-color:#2f6b46} .sl-pill.sl-ok   .sl-dot{background:#3fae6a}
 .sl-pill.sl-info{color:#6aa5e8;border-color:#35608f} .sl-pill.sl-info .sl-dot{background:transparent;box-sizing:border-box;border:2px solid #6aa5e8}
 .sl-bubble.sl-light .sl-pill.sl-info{color:#1f5fa8;border-color:#8fb2dc} .sl-bubble.sl-light .sl-pill.sl-info .sl-dot{border-color:#1f5fa8}
+.sl-pill .sl-g{display:inline-flex;line-height:0}
+.sl-pill .sl-g svg{width:11px;height:11px}
 /* With TowerTorch, badges are a solid 18% tint without any outline, like
    TowerTorch's own chips. */
 html.cc-popups-on .sl-pill{border:none;background:color-mix(in srgb, currentColor 18%, transparent)}
@@ -95,6 +98,7 @@ html.cc-popups-on .sl-pill.sl-dep{border:none}
   animation:sl-bd-in .14s ease both}
 @keyframes sl-bd-in{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.sl-backdrop{animation:none}}
+html[data-cc-motion="off"] .sl-backdrop{animation:none}
 
 /* Dark by default; docker.js adds .sl-light on a light page. */
 .sl-bubble{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;box-sizing:border-box;
@@ -130,7 +134,8 @@ html.cc-popups-on .sl-pill.sl-dep{border:none}
 .sl-bubble .sl-jump-txt{padding-right:40px}
 @keyframes sl-jump-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .sl-bubble .sl-bh-right{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
-.sl-bubble .sl-gh,.sl-bubble .sl-upd{background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
+.sl-bubble .sl-gh,.sl-bubble .sl-upd{display:inline-flex;align-items:center;gap:6px;
+  background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
   padding:5px 11px;text-decoration:none;font-size:12px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
 .sl-bubble .sl-upd{font-weight:600}
 .sl-bubble .sl-gh:hover,.sl-bubble .sl-upd:hover{background:#ff8c2f;color:#fff}
@@ -138,15 +143,38 @@ html.cc-popups-on .sl-pill.sl-dep{border:none}
 .sl-bubble .sl-x{cursor:pointer;color:var(--sl-dim);background:var(--cc-chip,rgba(128,128,128,.18));border:none;
   border-radius:var(--cc-b-radius,7px);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none;transition:background .12s}
 .sl-bubble .sl-x:hover{background:var(--cc-chip-hover,rgba(128,128,128,.30));color:var(--sl-txt)}
+.sl-bubble .sl-x svg{width:11px;height:11px;display:block}
+.sl-bubble :is(.sl-gh,.sl-upd) .sl-g{display:inline-flex;flex:none;line-height:0}
+.sl-bubble :is(.sl-gh,.sl-upd) .sl-g svg{width:13px;height:13px;display:block}
+.sl-bubble :is(.sl-gh,.sl-upd) .sl-l{overflow:hidden;white-space:nowrap}
+/* TowerTorch's label mode: the words, glyph and words, the glyph alone, or the
+   glyph with the words opening under the pointer and on keyboard focus. The
+   words stay in the button as its accessible name. A button that could not
+   find Unraid's update says why in words in every mode. */
+html.cc-popups-on[data-cc-labels-buttons="text"] .sl-bubble :is(.sl-gh,.sl-upd) .sl-g,
+.sl-bubble .sl-upd.sl-upd-off .sl-g{display:none}
+html.cc-popups-on:is([data-cc-labels-buttons="glyph"],[data-cc-labels-buttons="reactive"]) .sl-bubble :is(.sl-gh,.sl-upd:not(.sl-upd-off)){gap:0}
+html.cc-popups-on:is([data-cc-labels-buttons="glyph"],[data-cc-labels-buttons="reactive"]) .sl-bubble :is(.sl-gh,.sl-upd:not(.sl-upd-off)) .sl-l{max-width:0;opacity:0}
+html.cc-popups-on[data-cc-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd:not(.sl-upd-off)):is(:hover,:focus-visible) .sl-l{max-width:16em;opacity:1;margin-left:6px}
+@media (prefers-reduced-motion:no-preference){
+  html.cc-popups-on[data-cc-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd) .sl-l{
+    transition:max-width var(--cc-motion-label-dur,160ms) var(--cc-motion-label-ease,ease-out),
+      opacity calc(var(--cc-motion-label-dur,160ms) * .6) ease-out,
+      margin-left var(--cc-motion-label-dur,160ms) var(--cc-motion-label-ease,ease-out)}
+}
 .sl-bubble .sl-sec{padding:12px 16px;border-bottom:1px solid var(--sl-line)}
 .sl-bubble h4{font:600 11px/1.4 "Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.7px;
   color:var(--sl-dim2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sl-bubble h4 .sl-g{display:inline-flex;line-height:0}
+.sl-bubble h4 .sl-g svg{width:12px;height:12px}
 .sl-bubble .sl-ai{font:400 10px/1 "Segoe UI",sans-serif;border:1px solid var(--sl-line2);border-radius:4px;
   padding:2px 6px;color:var(--sl-dim2);text-transform:none;letter-spacing:0}
 .sl-bubble ul{list-style:none;margin:0;padding:0}
 .sl-bubble li{padding:3px 0 3px 18px;position:relative}
 .sl-bubble li:before{content:"\2013";position:absolute;left:2px;color:var(--sl-dim2)}
-.sl-bubble li.sl-warn:before{content:"\26A0";color:#d6a243;font-size:12px}
+.sl-bubble li.sl-warn:before{content:none}
+.sl-bubble li.sl-warn .sl-g{position:absolute;left:1px;top:7px;display:inline-flex;line-height:0;color:#d6a243}
+.sl-bubble li.sl-warn .sl-g svg{width:12px;height:12px}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
   border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}
@@ -206,7 +234,8 @@ html.cc-popups-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
 .sl-bubble .sl-rel + .sl-rel{margin-top:12px}
 .sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
 .sl-bubble .sl-reld{font:400 10px/1 "Segoe UI",sans-serif;color:var(--sl-dim2);letter-spacing:.3px}
-.sl-bubble .sl-relx{color:var(--sl-link);text-decoration:none;font-size:12px;margin-left:auto}
+.sl-bubble .sl-relx{display:inline-flex;color:var(--sl-link);text-decoration:none;margin-left:auto}
+.sl-bubble .sl-relx svg{width:12px;height:12px;display:block}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
 /* The last card has no bottom margin, so the footer brings its own. */
@@ -238,7 +267,9 @@ html.cc-popups-on .sl-bubble .sl-aubar{border-bottom:none;background:var(--sl-ca
 
 /* Update-all button, left of the Basic/Advanced toggle. */
 a.sl-updall {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-right: 6px; /* on top of .ToggleViewMode's flex gap */
   padding: 2px 10px;
   border: 1px solid rgba(128, 128, 128, 0.55);
@@ -250,6 +281,8 @@ a.sl-updall {
   white-space: nowrap;
 }
 a.sl-updall:hover { border-color: rgba(128, 128, 128, 0.95); }
+a.sl-updall .sl-g { display: inline-flex; line-height: 0; }
+a.sl-updall .sl-g svg { width: 12px; height: 12px; }
 
 /* A silent update hides Unraid's download log and its backdrop and releases the
    scroll lock. Only the log carries .nchan, so the confirm prompt is never
