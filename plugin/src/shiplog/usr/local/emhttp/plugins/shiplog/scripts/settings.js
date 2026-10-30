@@ -252,8 +252,12 @@
   function labels() {
     var m = mode();
     if (root.getAttribute("data-sl-labels") !== m) root.setAttribute("data-sl-labels", m);
-    // The coin tiles in the crypto window follow the same mode.
+    // The coin tiles and the buttons of the give windows follow the same mode.
     wins.setAttribute("data-sl-labels", m);
+    wins.querySelectorAll(".sl-win-btn").forEach(function (b) {
+      if (m === "glyph") b.setAttribute("data-sl-tip", b.querySelector(".sl-l").textContent);
+      else b.removeAttribute("data-sl-tip");
+    });
     root.querySelectorAll(".sl-btn").forEach(function (b) {
       var text = b.querySelector(".sl-l").textContent.trim();
       var st = "sl-w-" + stage(labelWidth(text));
@@ -770,6 +774,12 @@
      wait below as tiles. A new coin starts on its own first chain, never on one
      carried over. */
   var cwin = byId("sl-win-crypto"), copyBtn = byId("sl-copy"), note = cwin.querySelector(".sl-note"), copiedTimer = 0;
+  // A copy that landed wears the tick of a passed test until it turns back.
+  function copied(done) {
+    copyBtn.querySelector(".sl-g").innerHTML = done ? GLYPH.Check : GLYPH.Copy;
+    copyBtn.querySelector(".sl-l").textContent = done ? T.s_copied : T.s_copy;
+    if (copyBtn.hasAttribute("data-sl-tip")) copyBtn.setAttribute("data-sl-tip", done ? T.s_copied : T.s_copy);
+  }
   function shownAddress() {
     return Array.prototype.filter.call(cwin.querySelectorAll(".sl-qrpanel"), function (p) { return !p.hidden; })[0].getAttribute("data-address");
   }
@@ -778,7 +788,7 @@
     cwin.querySelectorAll(".sl-qrpanel").forEach(function (p) { p.hidden = p.getAttribute("data-address") !== chip.getAttribute("data-address"); });
     note.hidden = !chip.hasAttribute("data-note");
     clearTimeout(copiedTimer);
-    copyBtn.textContent = T.s_copy;
+    copied(false);
   }
   function pickCoin(tile) {
     var id = tile.getAttribute("data-coin");
@@ -811,9 +821,9 @@
   }
   copyBtn.addEventListener("click", function () {
     copyText(shownAddress()).then(function () {
-      copyBtn.textContent = T.s_copied;
+      copied(true);
       clearTimeout(copiedTimer);
-      copiedTimer = setTimeout(function () { copyBtn.textContent = T.s_copy; }, 1500);
+      copiedTimer = setTimeout(function () { copied(false); }, 1500);
     }, function () { shake(copyBtn); });
   });
 
