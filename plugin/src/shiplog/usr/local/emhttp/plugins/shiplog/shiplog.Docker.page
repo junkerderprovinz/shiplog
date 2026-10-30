@@ -23,7 +23,10 @@ if ($slLang !== 'en' && is_file("$slLangDir/$slLang.json")) {
 }
 $slI18n = array();
 foreach ($slAll as $slK => $slV) { if (substr($slK, 0, 2) === 'd_') $slI18n[$slK] = $slV; }
+/* The changelog window's buttons wear the settings page's glyphs. */
+$slG      = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
+$slGlyphs = array('Update' => $slG['Update'], 'ExternalLink' => $slG['ExternalLink'], 'Close' => $slG['Close'], 'Warning' => $slG['Warning']);
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
-<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>,autoUpdate:{enabled:<?=$slAuEn?'true':'false'?>,exclude:<?=json_encode($slAuExcl, JSON_UNESCAPED_UNICODE)?>}};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;</script>
+<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>,autoUpdate:{enabled:<?=$slAuEn?'true':'false'?>,exclude:<?=json_encode($slAuExcl, JSON_UNESCAPED_UNICODE)?>}};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;window.shiplogGlyphs=<?=json_encode($slGlyphs, JSON_UNESCAPED_SLASHES)?>;</script>
 <script defer src="<?autov('/plugins/shiplog/scripts/docker.js')?>"></script>

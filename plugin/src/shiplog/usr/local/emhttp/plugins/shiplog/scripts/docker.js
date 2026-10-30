@@ -33,9 +33,10 @@
     '<line x1="5.4" y1="5.5" x2="10.6" y2="5.5"/><line x1="5.4" y1="8" x2="10.6" y2="8"/>' +
     '<line x1="5.4" y1="10.5" x2="9" y2="10.5"/></svg>';
 
-  const WARN_ICON =
-    '<svg class="sl-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-    '<path d="M12 2 1 21h22L12 2zm0 6a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1zm0 9.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5z"/></svg>';
+  // GlimStone's drawings, handed over by shiplog.Docker.page from include/glyphs.php.
+  const G = window.shiplogGlyphs;
+  const WARN_ICON = G.Warning.replace("<svg ", '<svg class="sl-ico" ');
+  const WARN_G = `<span class="sl-g">${G.Warning}</span>`;
 
   const AUTO_OFF_ICON =
     '<svg class="sl-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" ' +
@@ -44,9 +45,10 @@
     '<path d="M2.7 8.8a5.4 5.4 0 0 0 9.2 3.1l1.1-1.1"/><path d="M13 13.4v-2.6h-2.6"/>' +
     '<line x1="2.2" y1="2.2" x2="13.8" y2="13.8"/></svg>';
 
+  // The (i) of GlimStone's InfoBubble, the same as on the settings page.
   const INFO_ICON =
-    '<svg class="sl-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7.1" fill="none" stroke="currentColor" stroke-width="1.2"/>' +
-    '<circle cx="8" cy="4.7" r="1.05" fill="currentColor"/><rect x="7.05" y="6.8" width="1.9" height="5" rx=".95" fill="currentColor"/></svg>';
+    '<svg class="sl-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>' +
+    '<circle cx="8" cy="4.6" r="0.9" fill="currentColor"/><path d="M8 7v4.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
 
   const RISK_CLASS = { low: "low", medium: "mid", high: "high", critical: "crit", unknown: "grey" };
 
@@ -56,6 +58,7 @@
     changelog: "Changelog", clickHint: "click for the changelog", update: "Update",
     skips: "skips %n releases", newest: "newest %d",
     summary: "Summary", raw: "Changelog", source: "Source", close: "close", uptodate: "up to date",
+    repository: "Repository",
     deprecated: "DEPRECATED",
     unmaintained: "Not maintained", unmaintainedHint: "No more updates. Consider migrating to a maintained alternative.",
     updateNow: "Update now", updateHint: "triggers Unraid's own update for this container",
@@ -103,6 +106,10 @@
   // esc output lands in quoted attributes as well as in text, so quotes count.
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  // A button's glyph and words, which TowerTorch's label mode shows or hides in docker.css.
+  function labelled(glyph, words) {
+    return `<span class="sl-g">${glyph}</span><span class="sl-l">${esc(words)}</span>`;
   }
 
   // renderMd escapes the whole release body before it rebuilds a few markdown
@@ -444,7 +451,7 @@
     let summary = "";
     if (cl.summary && (cl.summary.bullets || cl.summary.breaking)) {
       const lis = []
-        .concat((cl.summary.breaking || []).map((t) => `<li class="sl-warn">${esc(t)}</li>`))
+        .concat((cl.summary.breaking || []).map((t) => `<li class="sl-warn">${WARN_G}${esc(t)}</li>`))
         .concat((cl.summary.bullets || []).map((t) => `<li>${esc(t)}</li>`))
         .join("");
       summary = `<div class="sl-sec"><h4>⚡ ${esc(T("summary"))} <span class="sl-ai">AI · ${esc(cl.summary.model || "Ollama")}</span></h4><ul>${lis}</ul></div>`;
@@ -463,11 +470,9 @@
     const href = repoRoot(c.source) || repoRoot(cl.url) || ghFromImage(c.repo || c.image);
     // A changelog file is linked as it is, since its repo root may not exist
     // on a raw host.
-    const gh = cl.provider === "file" && cl.url
-      ? `<a class="sl-gh" href="${esc(cl.url)}" target="_blank" rel="noopener">Changelog ↗</a>`
-      : href
-        ? `<a class="sl-gh" href="${esc(href)}" target="_blank" rel="noopener">Repository ↗</a>`
-        : "";
+    const ghLink = (url, words) =>
+      `<a class="sl-gh" href="${esc(url)}" target="_blank" rel="noopener" title="${esc(words)}">${labelled(G.ExternalLink, words)}</a>`;
+    const gh = cl.provider === "file" && cl.url ? ghLink(cl.url, T("changelog")) : href ? ghLink(href, T("repository")) : "";
     const src = cl.source ? `${esc(T("source"))}: ${esc(cl.source)}` : "";
 
     let raw = "";
@@ -477,7 +482,7 @@
       const secs = entries.map((e) => {
         const d = fmtDate(e.published_at);
         const meta = d ? ` <span class="sl-reld">${esc(d)}</span>` : "";
-        const link = e.url ? ` <a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener">↗</a>` : "";
+        const link = e.url ? ` <a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="${esc(e.tag || T("changelog"))}">${G.ExternalLink}</a>` : "";
         return `<div class="sl-rel"><h5>${esc(e.tag || "")}${meta}${link}</h5><div class="sl-raw">${renderMd(e.body || "")}</div></div>`;
       }).join("");
       raw = `<div class="sl-sec"><h4>${esc(T("recent"))}</h4>${secs}</div>`;
@@ -496,18 +501,18 @@
       : esc(nv ? fillV(T("newerPill"), nv) : (noUpstream(st) ? noUpstreamLabel(st) : T("uptodate")));
 
     // A critical pill shows the warning glyph instead of the dot.
-    const dotOrWarn = rc === "crit" ? "⚠ " : '<span class="sl-dot"></span>';
+    const dotOrWarn = rc === "crit" ? WARN_G : '<span class="sl-dot"></span>';
     return `
       <div class="sl-bh">
         <span class="sl-ver">${verHdr}</span>
         <span class="sl-pill sl-${rc}">${dotOrWarn}${pillTxt}</span>
-        ${st.unmaintained ? `<span class="sl-pill sl-unmaint" title="${esc(st.unmaintained_reason || T("unmaintained"))}">⚠ ${esc(T("unmaintained"))}</span>` : ""}
-        ${!st.unmaintained && st.ca_deprecated ? `<span class="sl-pill sl-dep" title="${esc(st.ca_deprecated_note || T("deprecated"))}">⚠ ${esc(T("deprecated"))}</span>` : ""}
+        ${st.unmaintained ? `<span class="sl-pill sl-unmaint" title="${esc(st.unmaintained_reason || T("unmaintained"))}">${WARN_G}${esc(T("unmaintained"))}</span>` : ""}
+        ${!st.unmaintained && st.ca_deprecated ? `<span class="sl-pill sl-dep" title="${esc(st.ca_deprecated_note || T("deprecated"))}">${WARN_G}${esc(T("deprecated"))}</span>` : ""}
         <span class="sl-jump" title="${esc(jump)}">${esc(jump)}</span>
-        <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${esc(T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" title="${esc(T("close"))}">✕</span></span>
+        <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${labelled(G.Update, T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" role="button" tabindex="0" aria-label="${esc(T("close"))}" title="${esc(T("close"))}">${G.Close}</span></span>
       </div>
-      ${st.unmaintained ? `<div class="sl-unmaint-note"><h4>⚠ ${esc(T("unmaintained"))}</h4>${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
-      ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>⚠ ${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
+      ${st.unmaintained ? `<div class="sl-unmaint-note"><h4>${WARN_G}${esc(T("unmaintained"))}</h4>${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
+      ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>${WARN_G}${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${nv ? `<div class="sl-unmaint-note sl-newer-note"><h4>${esc(T("pinned"))}</h4><div>${esc(fillV(T("newerNote"), nv))}</div><div class="sl-newer-why">${esc(fillV(T("newerWhy"), cur))}</div></div>` : ""}
       ${unraidStale(st) ? `<div class="sl-unmaint-note sl-newer-note sl-stale-note">${esc(T("unraidStale").replace("%d", () => fmtStamp(st.checked_at)))}</div>` : ""}
       ${autoHTML(st)}${summary}${raw}
@@ -725,12 +730,14 @@
   }
 
   // armJumpMarquee scrolls the jump line only when it overflows and motion is
-  // allowed. Two identical copies moved by translateX(-50%) loop seamlessly.
+  // allowed, by the system and by TowerTorch's motion level. Two identical
+  // copies moved by translateX(-50%) loop seamlessly.
   function armJumpMarquee(bubble) {
     try {
       const jumpEl = bubble.querySelector(".sl-jump");
       if (!jumpEl) return;
-      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduceMotion = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
+        document.documentElement.getAttribute("data-cc-motion") === "off";
       const full = jumpEl.textContent;
       if (reduceMotion || !full || jumpEl.scrollWidth <= jumpEl.clientWidth) return;
       const track = el("span", "sl-jump-track");
@@ -766,7 +773,9 @@
     } catch (e) {}
     armJumpMarquee(b); // needs the restored width
     // CSS centres the window, so `anchor` goes unused.
-    b.querySelector(".sl-x").addEventListener("click", (e) => { e.stopPropagation(); close(); });
+    const x = b.querySelector(".sl-x");
+    x.addEventListener("click", (e) => { e.stopPropagation(); close(); });
+    x.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); close(); } });
     const updBtn = b.querySelector(".sl-upd");
     if (updBtn) updBtn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation();
@@ -775,7 +784,7 @@
       armUpdateCheck(cname);
       const ok = confirmUpdate ? runNativeUpdateWithConfirm(cname) : runNativeUpdateNoConfirm(cname);
       if (ok) close();
-      else { updBtn.textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
+      else { updBtn.querySelector(".sl-l").textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
     });
     wireAuto(b, st);
     try {
@@ -841,7 +850,7 @@
       const n = nativeUpdateAllAvailable() ? pendingUpdateCount() : 0;
       if (btn.dataset.slN !== String(n)) {
         btn.dataset.slN = String(n);
-        btn.textContent = `${T("updateAll")} (${n})`;
+        btn.innerHTML = labelled(G.Update, `${T("updateAll")} (${n})`);
       }
       const want = n >= 1 ? "" : "none";
       if (btn.style.display !== want) btn.style.display = want;
