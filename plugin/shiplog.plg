@@ -33,6 +33,19 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.7.0
+🎨 **Design**
+- **GlimStone 3.8.0 for the settings page and the changelog window.** The Version card on the Info tab names it and shows version numbers without the leading `v`.
+- **Glyphs in the changelog window.** Update now, Update all, Close, the Repository and changelog links and the warnings show a glyph where they had a text arrow or symbol. With TowerTorch, the buttons follow its label mode, and the pulse on a critical update, the scrolling line and the fade behind the window stop when TowerTorch's Motion is set to Off.
+- **New glyphs on the settings page.** The Updates tab and the Check buttons get new glyphs, as do Send test message on the Notifications tab and Autodetect on the Sources tab. Close and Copy in the coffee, PayPal and crypto windows show glyphs too and follow the label mode.
+
+🐛 **Fixed**
+- With TowerTorch, the changelog window took on its look only while TowerTorch's header area was switched on, which it is not by default. It follows TowerTorch whenever TowerTorch's theming is on.
+- With TowerTorch, the settings page has its look from the start instead of switching over once the page has loaded.
+
+🌐 **Translations**
+- "Repository" in the changelog window is translated into all 26 languages.
+
 ### 3.6.4
 🐛 **Fixed**
 - A quote in a CA deprecation note can no longer break out of the changelog window's tooltip.
