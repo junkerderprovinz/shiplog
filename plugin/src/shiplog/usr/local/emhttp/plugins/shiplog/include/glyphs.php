@@ -1,6 +1,6 @@
 <?php
 /* GlimStone's glyphs for the settings page and the Docker tab, by name, each one SVG in
-   currentColor. Copied from the GlimStone assortment (reference/glyphs.json, v3.7.1). Drawings
+   currentColor. Copied from the GlimStone assortment (reference/glyphs.json, v3.8.0). Drawings
    from Streamline's free Core Solid set (CC BY 4.0, streamlinehq.com), Material Design Icons
    (Apache 2.0), Tabler Icons (MIT) and GlimStone's own. */
 return array(

@@ -2,9 +2,9 @@
  * container list, the info bubbles and the label engine for its buttons.
  *
  * The page reads as Unraid's own without TowerTorch. With TowerTorch, which
- * stamps cc-tools-on on <html> for every settings page, its sheets draw the
- * fields, buttons and switches, and this script hands them the colour mode and
- * the label mode TowerTorch keeps in localStorage. */
+ * sets cc-popups-on on <html> on every page while its theming is on, its sheets
+ * draw the fields, buttons and switches, and this script hands them the colour
+ * mode and the label mode TowerTorch keeps in localStorage. */
 (function () {
   "use strict";
   var root = document.getElementById("sl-cfg");
@@ -19,7 +19,7 @@
   function get(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function put(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function byId(id) { return document.getElementById(id); }
-  function themed() { return html.classList.contains("cc-tools-on"); }
+  function themed() { return html.classList.contains("cc-popups-on"); }
 
   /* The bubble: one element in <body>, shared by every (i), by a button that
      shows only its glyph and by a tab that does. It opens below its trigger,

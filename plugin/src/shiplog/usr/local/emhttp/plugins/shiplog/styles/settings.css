@@ -1,12 +1,12 @@
 /* ShipLog's settings page.
  *
  * One markup, two looks. Without TowerTorch the page follows Unraid: its theme
- * colours, its fields, its buttons and its blue switch. With TowerTorch, which
- * puts cc-tools-on on <html> for every settings page, its sheets draw the
- * fields, the buttons and the switches as GlimStone does, and the second half
- * of this sheet gives the cards, the headings, the tabs and the bubble the same
- * look from TowerTorch's tokens. The geometry is the same in both, so the page
- * does not move when TowerTorch's script arrives after the first paint. */
+ * colours, its fields, its buttons and its blue switch. With TowerTorch, its
+ * sheets draw the fields, the buttons and the switches as GlimStone does, and
+ * the rules under html.cc-popups-on, which TowerTorch sets on every page while
+ * its theming is on, give the cards, the headings, the tabs and the bubble the
+ * same look from TowerTorch's tokens. The geometry is the same in both, so the
+ * page does not move when TowerTorch's script arrives after the first paint. */
 
 .sl-cfg {
   --sl-card: var(--mild-background-color, rgba(128, 128, 128, .08));
@@ -281,7 +281,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #sl-cfg .sl-house-mark { color: var(--sl-hue, var(--sl-house)); }
 #sl-cfg .sl-tile-github { --sl-give: #181717; --sl-give-ink: #fff; }
 #sl-cfg .sl-tile-house { --sl-house: #ff8c2f; --sl-give: var(--sl-hue, var(--sl-house)); --sl-give-ink: var(--sl-hue-ink, #161616); }
-html.cc-tools-on #sl-cfg .sl-tile-house { --sl-house: var(--cc-accent, #FCC419); --sl-give-ink: var(--sl-hue-ink, var(--cc-accent-text, #161616)); }
+html.cc-popups-on #sl-cfg .sl-tile-house { --sl-house: var(--cc-accent, #FCC419); --sl-give-ink: var(--sl-hue-ink, var(--cc-accent-text, #161616)); }
 #sl-cfg .sl-tile-paypal { --sl-give: #003087; --sl-give-ink: #fff; }
 #sl-cfg .sl-tile-bitcoin { --sl-give: #f7931a; --sl-give-ink: #161616; }
 #sl-cfg .sl-tile-coffee { --sl-give: #ffdd00; --sl-give-ink: #0d0c22; }
@@ -343,8 +343,8 @@ html.cc-tools-on #sl-cfg .sl-tile-house { --sl-house: var(--cc-accent, #FCC419);
   --sl-coin-xrp: #fff;
 }
 html:is(.Theme--white, .Theme--azure) #sl-wins { --sl-w-ok: #0e6027; --sl-w-err: #da1e28; --sl-w-warn: #ba4e00; }
-html:is(.Theme--white, .Theme--azure):not(.cc-tools-on) #sl-wins { --sl-coin-xrp: #23292f; }
-html.cc-tools-on #sl-wins {
+html:is(.Theme--white, .Theme--azure):not(.cc-popups-on) #sl-wins { --sl-coin-xrp: #23292f; }
+html.cc-popups-on #sl-wins {
   --sl-w-ground: #1a1a1a;
   --sl-w-card: #222;
   --sl-w-chip: #2e2e2e;
@@ -382,7 +382,7 @@ html.cc-tools-on #sl-wins {
   background: var(--sl-w-ground); color: var(--text-color, #f2f2f2); box-shadow: var(--sl-w-shadow);
   font-size: 14px; line-height: 1.45; text-align: start;
 }
-html.cc-tools-on .sl-win { color: #e6e6e6; }
+html.cc-popups-on .sl-win { color: #e6e6e6; }
 .sl-win:focus { outline: none; }
 /* As tall as the screen allows less a margin: Buy Me a Coffee's payment step
    runs to about 1200px, and every pixel here is scrolling a donor is spared. */
@@ -501,22 +501,22 @@ html.cc-tools-on .sl-win { color: #e6e6e6; }
 
 /* TowerTorch's sheets dress the buttons and fields of the page, not of <body>,
    so the window draws its own in the look of TowerTorch's windows. */
-html.cc-tools-on .sl-win button.sl-win-btn {
+html.cc-popups-on .sl-win button.sl-win-btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 96px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
   border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: #2e2e2e; color: #e6e6e6;
   font-family: inherit; font-size: var(--cc-text-meta, 12px); font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
-html.cc-tools-on .sl-win button.sl-win-btn:hover { background: var(--sl-w-head); color: var(--sl-w-head-ink); }
-html.cc-tools-on .sl-win input.sl-amount {
+html.cc-popups-on .sl-win button.sl-win-btn:hover { background: var(--sl-w-head); color: var(--sl-w-head-ink); }
+html.cc-popups-on .sl-win input.sl-amount {
   height: 32px; padding: 7px 10px; border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none;
   background: #2e2e2e; color: #e6e6e6; font-family: inherit; font-size: 13px;
 }
-html.cc-tools-on .sl-win input.sl-amount:focus { background: #383838; }
-html.cc-tools-on .sl-win input.sl-amount::placeholder { color: #a3a3a3; opacity: 1; }
+html.cc-popups-on .sl-win input.sl-amount:focus { background: #383838; }
+html.cc-popups-on .sl-win input.sl-amount::placeholder { color: #a3a3a3; opacity: 1; }
 
 /* With TowerTorch: GlimStone's look from its tokens. */
-html.cc-tools-on .sl-cfg {
+html.cc-popups-on .sl-cfg {
   --sl-card: var(--cc-fm-card, #222);
   --sl-tile: var(--cc-fm-btn, #353535);
   --sl-tile-ink: var(--cc-text-chip, #cfcfcf);
@@ -536,19 +536,19 @@ html.cc-tools-on .sl-cfg {
 }
 /* The banner's silhouette takes the accent, or the first rainbow position the
    script hands it. */
-html.cc-tools-on .sl-hero { --sl-hero-tint: var(--sl-hero-rb, var(--cc-accent, #FCC419)); }
+html.cc-popups-on .sl-hero { --sl-hero-tint: var(--sl-hero-rb, var(--cc-accent, #FCC419)); }
 /* A card or a tab under the rainbow carries its own position as --sl-hue. */
-html.cc-tools-on .sl-cfg .sl-h { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); font-size: var(--cc-sec-fs, 12px); font-weight: var(--cc-sec-fw, 500); letter-spacing: var(--cc-sec-ls, 1.2px); min-height: var(--cc-sec-h, 22px); }
-html.cc-tools-on .sl-cfg .sl-tab[aria-selected="true"],
-html.cc-tools-on .sl-cfg .sl-tab[aria-selected="true"]:hover { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); }
+html.cc-popups-on .sl-cfg .sl-h { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); font-size: var(--cc-sec-fs, 12px); font-weight: var(--cc-sec-fw, 500); letter-spacing: var(--cc-sec-ls, 1.2px); min-height: var(--cc-sec-h, 22px); }
+html.cc-popups-on .sl-cfg .sl-tab[aria-selected="true"],
+html.cc-popups-on .sl-cfg .sl-tab[aria-selected="true"]:hover { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); }
 /* The tab-strip colour rule: an idle tab's glyph wears its colour, the open tab
    wears it as its fill, and in the reactive mode an idle glyph rests grey until
    the pointer or the focus reaches it. */
-html.cc-tools-on .sl-tab .sl-tabico { color: var(--sl-hue, var(--cc-accent, #FCC419)); }
-html.cc-tools-on .sl-tab[aria-selected="true"] .sl-tabico,
-html.cc-tools-on .sl-reactive .sl-tab .sl-tabico { color: inherit; }
-html.cc-tools-on .sl-reactive .sl-tab:not([aria-selected="true"]):is(:hover, :focus-visible) .sl-tabico { color: var(--sl-hue, var(--cc-accent, #FCC419)); }
-html.cc-tools-on .sl-bubble {
+html.cc-popups-on .sl-tab .sl-tabico { color: var(--sl-hue, var(--cc-accent, #FCC419)); }
+html.cc-popups-on .sl-tab[aria-selected="true"] .sl-tabico,
+html.cc-popups-on .sl-reactive .sl-tab .sl-tabico { color: inherit; }
+html.cc-popups-on .sl-reactive .sl-tab:not([aria-selected="true"]):is(:hover, :focus-visible) .sl-tabico { color: var(--sl-hue, var(--cc-accent, #FCC419)); }
+html.cc-popups-on .sl-bubble {
   --sl-bubble-bg: var(--cc-surface-window, #242424);
   background: var(--sl-bubble-bg); color: var(--cc-text, #e6e6e6);
   border-radius: var(--cc-radius-control, 12px); box-shadow: var(--cc-elev-2, 0 10px 28px rgba(0, 0, 0, .38));
@@ -567,10 +567,10 @@ html.cc-tools-on .sl-bubble {
   #sl-cfg .sl-btn.sl-w-md { min-width: max(184px, var(--sl-w, 0px)) !important; }
   #sl-cfg .sl-btn.sl-w-lg { min-width: max(240px, var(--sl-w, 0px)) !important; }
   #sl-cfg.sl-still .sl-btn, #sl-cfg.sl-still .sl-btn * { transition: none !important; }
-  html.cc-tools-on #sl-cfg .sl-btn.sl-ok { background: var(--cc-ok, #6fdc8c) !important; color: var(--cc-ok-fg, #161616) !important; }
-  html.cc-tools-on #sl-cfg .sl-btn.sl-ok:hover { background: var(--cc-ok-hover, #6fdc8c) !important; }
-  html.cc-tools-on #sl-cfg .sl-btn.sl-err { background: var(--cc-err, #ff8389) !important; color: var(--cc-err-fg, #161616) !important; }
-  html.cc-tools-on #sl-cfg .sl-btn.sl-err:hover { background: var(--cc-err-hover, #ff8389) !important; }
+  html.cc-popups-on #sl-cfg .sl-btn.sl-ok { background: var(--cc-ok, #6fdc8c) !important; color: var(--cc-ok-fg, #161616) !important; }
+  html.cc-popups-on #sl-cfg .sl-btn.sl-ok:hover { background: var(--cc-ok-hover, #6fdc8c) !important; }
+  html.cc-popups-on #sl-cfg .sl-btn.sl-err { background: var(--cc-err, #ff8389) !important; color: var(--cc-err-fg, #161616) !important; }
+  html.cc-popups-on #sl-cfg .sl-btn.sl-err:hover { background: var(--cc-err-hover, #ff8389) !important; }
   #sl-cfg input.sl-sw { margin: 0 !important; }
   #sl-cfg a.sl-rbtn { color: var(--cc-text, #e6e6e6) !important; filter: none !important; }
   @media (hover: hover) {
