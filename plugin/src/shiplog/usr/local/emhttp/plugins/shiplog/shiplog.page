@@ -94,7 +94,7 @@ $slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
 $slVerLink = function ($ver, $repo) use ($slE) {
   $v = preg_replace('/^v/', '', (string)$ver);
   if (!preg_match('/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/', $v)) return '<span class="sl-ver">'.$slE($v !== '' ? $v : '?').'</span>';
-  return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">v'.$slE($v).'</a>';
+  return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">'.$slE($v).'</a>';
 };
 $M = include '/usr/local/emhttp/plugins/shiplog/include/marks.php';
 /* A button in the shape of the README's buttons, as on TowerTorch's Info tab. A give
