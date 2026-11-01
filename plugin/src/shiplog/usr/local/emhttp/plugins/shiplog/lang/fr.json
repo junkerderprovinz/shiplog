@@ -118,7 +118,6 @@
   "d_autoLabel": "Mettre à jour ce conteneur automatiquement",
   "d_autoHintOn": "Inclus dans la mise à jour automatique planifiée de ShipLog.",
   "d_autoHintOff": "Exclu de la mise à jour automatique planifiée de ShipLog. La mise à jour à la main fonctionne toujours.",
-  "d_autoHintDisabled": "La mise à jour automatique planifiée est désactivée dans les réglages de ShipLog.",
   "d_autoSaving": "Enregistrement et redémarrage de ShipLog…",
   "d_autoFailed": "Échec de l'enregistrement. Recharge la page et réessaie.",
   "d_autoOffBadge": "Mise à jour auto désactivée",

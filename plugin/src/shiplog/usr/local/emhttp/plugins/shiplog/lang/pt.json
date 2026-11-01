@@ -118,7 +118,6 @@
   "d_autoLabel": "Atualizar este contêiner automaticamente",
   "d_autoHintOn": "Incluído na atualização automática agendada do ShipLog.",
   "d_autoHintOff": "Fora da atualização automática agendada do ShipLog. Atualizar manualmente continua funcionando.",
-  "d_autoHintDisabled": "A atualização automática agendada está desativada nas configurações do ShipLog.",
   "d_autoSaving": "Salvando e reiniciando o ShipLog…",
   "d_autoFailed": "Não foi possível salvar. Recarregue a página e tente novamente.",
   "d_autoOffBadge": "Atualização automática desativada",

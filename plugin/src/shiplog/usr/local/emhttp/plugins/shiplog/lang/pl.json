@@ -118,7 +118,6 @@
   "d_autoLabel": "Aktualizuj ten kontener automatycznie",
   "d_autoHintOn": "Objęty zaplanowaną automatyczną aktualizacją ShipLog.",
   "d_autoHintOff": "Pominięty w zaplanowanej automatycznej aktualizacji ShipLog. Ręczna aktualizacja nadal działa.",
-  "d_autoHintDisabled": "Zaplanowana automatyczna aktualizacja jest wyłączona w ustawieniach ShipLog.",
   "d_autoSaving": "Zapisywanie i restart ShipLog…",
   "d_autoFailed": "Nie udało się zapisać. Odśwież stronę i spróbuj ponownie.",
   "d_autoOffBadge": "Bez automatycznej aktualizacji",

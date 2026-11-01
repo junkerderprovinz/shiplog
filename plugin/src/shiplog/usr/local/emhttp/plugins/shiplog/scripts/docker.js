@@ -74,7 +74,6 @@
     autoLabel: "Auto-update this container",
     autoHintOn: "Included in ShipLog's scheduled auto-update.",
     autoHintOff: "Left out of ShipLog's scheduled auto-update. Updating it by hand still works.",
-    autoHintDisabled: "Scheduled auto-update is off in ShipLog's settings.",
     autoSaving: "Saving and restarting ShipLog…",
     autoFailed: "Couldn't save. Reload the page and try again.",
     autoOffBadge: "Auto-update off",
@@ -179,18 +178,19 @@
     } catch (e) { return false; }
   }
   function autoHint(excluded) {
-    return T(!auEnabled ? "autoHintDisabled" : (excluded ? "autoHintOff" : "autoHintOn"));
+    return T(excluded ? "autoHintOff" : "autoHintOn");
   }
-  // A pinned container has nothing for auto-update to apply, so its window
-  // shows the newer-version note instead of the switch.
+  // The switch shows only while the scheduled auto-update runs. A pinned
+  // container has nothing for it to apply, so its window shows the
+  // newer-version note instead.
   function autoHTML(st) {
     const name = st.container && st.container.name;
-    if (!AU_NAME_OK.test(name || "") || newerVersion(st)) return "";
+    if (!auEnabled || !AU_NAME_OK.test(name || "") || newerVersion(st)) return "";
     const excluded = auIsExcluded(name);
     const hint = esc(autoHint(excluded));
     return `<div class="sl-aubar" data-au="${excluded ? "off" : "on"}">
-        <label class="sl-au-row${auEnabled ? "" : " sl-au-dis"}">
-          <input type="checkbox" class="sl-au-cb"${excluded ? "" : " checked"}${auEnabled ? "" : " disabled"}>
+        <label class="sl-au-row">
+          <input type="checkbox" class="sl-au-cb"${excluded ? "" : " checked"}>
           <span class="sl-au-track"></span><span>${esc(T("autoLabel"))}</span>
         </label>
         <span class="sl-au-info" tabindex="0" role="img" aria-label="${hint}" title="${hint}">${INFO_ICON}</span>
@@ -507,7 +507,7 @@
         ${st.unmaintained ? `<span class="sl-pill sl-unmaint" title="${esc(st.unmaintained_reason || T("unmaintained"))}">${WARN_G}${esc(T("unmaintained"))}</span>` : ""}
         ${!st.unmaintained && st.ca_deprecated ? `<span class="sl-pill sl-dep" title="${esc(st.ca_deprecated_note || T("deprecated"))}">${WARN_G}${esc(T("deprecated"))}</span>` : ""}
         <span class="sl-jump" title="${esc(jump)}">${esc(jump)}</span>
-        <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${labelled(G.Update, T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" role="button" tabindex="0" aria-label="${esc(T("close"))}" title="${esc(T("close"))}">${G.Close}</span></span>
+        <span class="sl-bh-right">${upd ? `<a class="sl-upd" href="#" title="${esc(T("updateHint"))}">${labelled(G.Sync, T("updateNow"))}</a>` : ""}${gh}<span class="sl-x" role="button" tabindex="0" aria-label="${esc(T("close"))}" title="${esc(T("close"))}">${G.Close}</span></span>
       </div>
       ${st.unmaintained ? `<div class="sl-unmaint-note"><h4>${WARN_G}${esc(T("unmaintained"))}</h4>${esc(st.unmaintained_reason || T("unmaintained"))}. ${esc(T("unmaintainedHint"))}</div>` : ""}
       ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>${WARN_G}${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
@@ -751,6 +751,17 @@
     } catch (e) {}
   }
 
+  // Under TowerTorch's rainbow each button of the window lights up in a palette
+  // position of its own, as GlimStone's takePageHue() does in an app.
+  function tintButtons(b) {
+    const cc = window.CCTheme;
+    let rainbow = false;
+    try { rainbow = localStorage.getItem("cc.rainbow") === "1" && localStorage.getItem("cc.theming") !== "0"; } catch (e) {}
+    if (!rainbow || !cc || !cc.rbColor || !document.documentElement.classList.contains("cc-popups-on")) return;
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--cc-accent").trim() || "#FCC419";
+    b.querySelectorAll(".sl-gh, .sl-x, .sl-relx").forEach((n, i) => n.style.setProperty("--sl-tint", cc.rbColor(i, accent)));
+  }
+
   function openFor(anchor, st) {
     close();
     // The backdrop goes in first so it paints behind the window.
@@ -770,6 +781,7 @@
       if (s && s.h) b.style.height = s.h + "px";
     } catch (e) {}
     armJumpMarquee(b); // needs the restored width
+    tintButtons(b);
     // CSS centres the window, so `anchor` goes unused.
     const x = b.querySelector(".sl-x");
     x.addEventListener("click", (e) => { e.stopPropagation(); close(); });
@@ -848,7 +860,7 @@
       const n = nativeUpdateAllAvailable() ? pendingUpdateCount() : 0;
       if (btn.dataset.slN !== String(n)) {
         btn.dataset.slN = String(n);
-        btn.innerHTML = labelled(G.Update, `${T("updateAll")} (${n})`);
+        btn.innerHTML = labelled(G.Sync, `${T("updateAll")} (${n})`);
       }
       const want = n >= 1 ? "" : "none";
       if (btn.style.display !== want) btn.style.display = want;

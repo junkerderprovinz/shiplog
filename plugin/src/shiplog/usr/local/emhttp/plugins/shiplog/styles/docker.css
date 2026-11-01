@@ -121,8 +121,8 @@ html[data-cc-motion="off"] .sl-backdrop{animation:none}
 .sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;
   padding:12px 16px;border-bottom:1px solid var(--sl-line);
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
-.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:13px;color:var(--sl-dim);flex-shrink:0}
-.sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:600}
+.sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:17px;line-height:1.2;color:var(--sl-dim);flex-shrink:0}
+.sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:700}
 .sl-bubble .sl-pill{flex-shrink:0}
 /* docker.js turns overflowing text into a marquee of two identical copies, so
    translateX(-50%) loops seamlessly. Text that fits, or reduced motion, keeps
@@ -192,12 +192,18 @@ html.cc-popups-on .sl-bubble:not(.sl-light){--sl-bg:#1a1a1a}
 html.cc-popups-on .sl-bubble .sl-bh{border-bottom:none;box-shadow:none}
 /* Like the update window, buttons get no outline: the primary action is filled
    with the accent, the external link with the neutral card colour. */
+html.cc-popups-on .sl-bubble{--sl-tint:var(--cc-accent,#ff8c2f)}
 html.cc-popups-on .sl-bubble .sl-gh,html.cc-popups-on .sl-bubble .sl-upd{border:none;box-shadow:none;background:var(--sl-card)}
+html.cc-popups-on .sl-bubble .sl-gh{color:var(--sl-txt)}
 html.cc-popups-on .sl-bubble .sl-upd{background:#ff8c2f;color:#1a1207}
-/* The hover keeps each button's fill, which the base hover rule would turn
-   orange. */
-html.cc-popups-on .sl-bubble .sl-gh:hover{background:var(--sl-card);filter:brightness(1.14)}
 html.cc-popups-on .sl-bubble .sl-upd:hover{background:#ff8c2f;filter:brightness(1.14)}
+/* GlimStone's rule 40: a filled button's hovered ground takes 22% of the tint
+   and its glyph all of it, while the words keep the text colour. A bare glyph
+   takes the tint alone. docker.js gives each button its own rainbow position. */
+html.cc-popups-on .sl-bubble .sl-gh:is(:hover,:focus-visible){background:color-mix(in srgb,var(--sl-card),var(--sl-tint) 22%);color:var(--sl-txt)}
+html.cc-popups-on .sl-bubble .sl-x:is(:hover,:focus-visible){background:color-mix(in srgb,var(--cc-chip,rgba(128,128,128,.18)),var(--sl-tint) 22%)}
+html.cc-popups-on .sl-bubble :is(.sl-gh,.sl-x):is(:hover,:focus-visible) svg,
+html.cc-popups-on .sl-bubble .sl-relx:is(:hover,:focus-visible){color:var(--sl-tint)}
 html.cc-popups-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:none;background:var(--sl-card);color:var(--sl-dim)}
 /* Each badge overhangs its card's top edge by half its height. Vertical margins
    between siblings collapse, so only the top margin sets the gap, and 18px
@@ -249,7 +255,6 @@ html.cc-popups-on .sl-bubble .sl-bf{margin-top:8px}
   border-bottom:1px solid var(--sl-line)}
 .sl-bubble .sl-au-row{position:relative;display:inline-flex;align-items:center;gap:9px;cursor:pointer;
   user-select:none;color:var(--sl-txt);font-size:13px;font-weight:600}
-.sl-bubble .sl-au-row.sl-au-dis{cursor:default;opacity:.65}
 .sl-bubble .sl-au-cb{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
 .sl-bubble .sl-au-track{position:relative;width:34px;height:18px;flex:none;border-radius:999px;
   background:var(--sl-line2);transition:background .15s}

@@ -507,7 +507,11 @@ html.cc-popups-on .sl-win button.sl-win-btn {
   border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: #2e2e2e; color: #e6e6e6;
   font-family: inherit; font-size: var(--cc-text-meta, 12px); font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
-html.cc-popups-on .sl-win button.sl-win-btn:hover { background: var(--sl-w-head); color: var(--sl-w-head-ink); }
+/* GlimStone's rule 40: the hovered ground takes 22% of the tint and the glyph
+   all of it, while the words keep the text colour. Under rainbow settings.js
+   gives each button its own position. */
+html.cc-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) { background: color-mix(in srgb, #2e2e2e, var(--sl-tint, var(--sl-w-head)) 22%); color: #e6e6e6; }
+html.cc-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) .sl-g { color: var(--sl-tint, var(--sl-w-head)); }
 html.cc-popups-on .sl-win input.sl-amount {
   height: 32px; padding: 7px 10px; border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none;
   background: #2e2e2e; color: #e6e6e6; font-family: inherit; font-size: 13px;
