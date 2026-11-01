@@ -70,7 +70,6 @@
     noSource: "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
     unraidStale: "Unraid still lists an update, but at ShipLog's last check (%d) this container already ran the newest image of its tag.",
     rateLimited: "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
-    recent: "Recent releases",
     pinned: "pinned", localimg: "local image",
     autoLabel: "Auto-update this container",
     autoHintOn: "Included in ShipLog's scheduled auto-update.",
@@ -478,14 +477,13 @@
     let raw = "";
     if (cl.rate_limited) {
       raw = `<div class="sl-sec"><div style="color:var(--sl-dim2)">${esc(T("rateLimited"))}</div></div>`;
-    } else if (cl.recent && entries.length) {
-      const secs = entries.map((e) => {
+    } else if (entries.length) {
+      raw = entries.map((e) => {
         const d = fmtDate(e.published_at);
-        const meta = d ? ` <span class="sl-reld">${esc(d)}</span>` : "";
-        const link = e.url ? ` <a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="${esc(e.tag || T("changelog"))}">${G.ExternalLink}</a>` : "";
-        return `<div class="sl-rel"><h5>${esc(e.tag || "")}${meta}${link}</h5><div class="sl-raw">${renderMd(e.body || "")}</div></div>`;
+        const meta = d ? ` <span class="sl-ai">${esc(d)}</span>` : "";
+        const link = e.url ? `<a class="sl-relx" href="${esc(e.url)}" target="_blank" rel="noopener" aria-label="${esc(e.tag || T("changelog"))}">${G.ExternalLink}</a>` : "";
+        return `<div class="sl-sec sl-rel"><h4>${esc(e.tag || T("raw"))}${meta}</h4>${link}<div class="sl-raw">${renderMd((e.body || "").trim())}</div></div>`;
       }).join("");
-      raw = `<div class="sl-sec"><h4>${esc(T("recent"))}</h4>${secs}</div>`;
     } else if (cl.raw) {
       raw = `<div class="sl-sec"><h4>${esc(T("raw"))}</h4><div class="sl-raw">${renderMd(cl.raw)}</div></div>`;
     } else if (!summary) {

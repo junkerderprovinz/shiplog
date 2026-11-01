@@ -11,7 +11,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
-const maxRawChars = 6000
+const maxRawChars = 12000
 
 // buildPrompt is the one prompt both providers send.
 func buildPrompt(c model.Container, fromTag, toTag, raw string) string {
@@ -20,9 +20,13 @@ func buildPrompt(c model.Container, fromTag, toTag, raw string) string {
 	}
 	return "You summarise a Docker image changelog for a homelab admin. " +
 		"Image " + c.Repo + " from " + fromTag + " to " + toTag + ". " +
-		`Reply ONLY with JSON: {"bullets":[3-5 short strings of what changes],` +
+		"The changelog may cover several releases, each under its own ## heading. " +
+		`Reply with JSON alone: {"bullets":[one string per notable change the changelog names, across all releases, up to 10, most important first, ` +
+		`each a full sentence on what changed and what it means for someone running the container],` +
 		`"breaking":[strings of breaking changes or required migration steps, empty if none],` +
-		`"risk":"one short sentence"}. Be concise and factual. Changelog:` + "\n" + raw
+		`"risk":"one or two sentences on how safe the update is and what to check after it"}. ` +
+		"Links, CI reports and compare views are not changes. Leave out dependency bumps, CI and documentation changes unless a user would notice them. " +
+		"Be factual and add nothing the changelog does not say: a changelog that only names a version bump gets one bullet. Changelog:\n" + raw
 }
 
 // parseSummary decodes the model's JSON answer. An answer with nothing in it

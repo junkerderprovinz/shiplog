@@ -1291,3 +1291,31 @@ func TestSweepUncrawledTemplateVerdicts(t *testing.T) {
 		})
 	}
 }
+
+func TestSummaryInputCoversEveryReleaseOfTheSpan(t *testing.T) {
+	entries := []model.ReleaseEntry{
+		{Tag: "v1.3.0", Body: "newest only"},
+		{Tag: "v1.2.0", Body: "drops the old config format\n"},
+	}
+	span := &model.Changelog{FromTag: "v1.1.0", ToTag: "v1.3.0", Raw: "newest only", Entries: entries}
+	got := releaseNotes(span)
+	for _, want := range []string{"## v1.3.0\nnewest only", "## v1.2.0\ndrops the old config format"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("releaseNotes() = %q, missing %q", got, want)
+		}
+	}
+	single := &model.Changelog{FromTag: "v1.9.0", ToTag: "v2.0.0", Raw: "just one", Entries: entries[:1]}
+	if got := releaseNotes(single); got != "just one" {
+		t.Errorf("single release: releaseNotes() = %q, want the raw text", got)
+	}
+}
+
+func TestSummaryInputOfARollingTagIsTheNewestRelease(t *testing.T) {
+	cl := &model.Changelog{FromTag: "latest", ToTag: "latest", Raw: "35.0.2", Entries: []model.ReleaseEntry{
+		{Tag: "35.0.2-ls460", Body: "35.0.2"},
+		{Tag: "previous-34.0.5-ls125", Body: "34.0.5"},
+	}}
+	if got := releaseNotes(cl); got != "35.0.2" {
+		t.Errorf("releaseNotes() = %q, want only the newest release", got)
+	}
+}

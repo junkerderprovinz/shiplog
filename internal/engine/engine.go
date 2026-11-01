@@ -410,7 +410,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		}
 		if st.HasUpdate() {
 			if e.summarizer != nil && cl.Raw != "" {
-				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, cl.Raw); ok {
+				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, releaseNotes(cl)); ok {
 					cl.Summary = sum
 				} else {
 					log.Printf("shiplog: no AI summary for %s (summaries configured but nothing came back)", c.Name)
@@ -459,6 +459,20 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	}
 	e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
 	return st
+}
+
+// releaseNotes is the summary's input: every release of a version span, since
+// Raw holds only the newest one. A rolling tag's recent releases can belong to
+// other channels, so it keeps Raw.
+func releaseNotes(cl *model.Changelog) string {
+	if len(cl.Entries) < 2 || !isVersion(cl.FromTag) || !isVersion(cl.ToTag) {
+		return cl.Raw
+	}
+	var b strings.Builder
+	for _, en := range cl.Entries {
+		fmt.Fprintf(&b, "## %s\n%s\n\n", en.Tag, strings.TrimSpace(en.Body))
+	}
+	return b.String()
 }
 
 // repoGone confirms a template URL 404. A raw.githubusercontent.com URL also

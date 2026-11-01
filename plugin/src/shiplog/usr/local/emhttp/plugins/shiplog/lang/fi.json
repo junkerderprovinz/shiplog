@@ -73,7 +73,6 @@
   "d_noSource": "Tämä vedos ei kerro lähdekoodivarastoa, joten ShipLogilla ei ole julkaisutietoja näytettäväksi. Jos projekti julkaisee ne GitHubissa tai changelog-tiedostossa, aseta se kohtaan \"source\" sen rivillä ShipLogin tilasivulla.",
   "d_unraidStale": "Unraid näyttää yhä päivityksen, mutta ShipLogin viimeisimmässä tarkistuksessa (%d) tämä kontti ajoi jo tunnisteensa uusinta vedosta.",
   "d_rateLimited": "GitHubin tuntikohtainen pyyntöraja täyttyi, joten julkaisutietoja ei voitu ladata. Nosta rajaa lisäämällä GitHub-token ShipLogin asetuksiin (Lähteet).",
-  "d_recent": "Uusimmat julkaisut",
   "d_pinned": "kiinnitetty",
   "d_localimg": "paikallinen vedos",
   "t_general": "Yleiset",

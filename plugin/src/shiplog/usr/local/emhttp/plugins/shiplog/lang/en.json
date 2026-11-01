@@ -73,7 +73,6 @@
   "d_noSource": "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
   "d_unraidStale": "Unraid still lists an update, but at ShipLog's last check (%d) this container already ran the newest image of its tag.",
   "d_rateLimited": "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
-  "d_recent": "Recent releases",
   "d_pinned": "pinned",
   "d_localimg": "local image",
   "t_general": "General",

@@ -214,7 +214,9 @@ html.cc-popups-on .sl-bubble h4{
   border-radius:var(--cc-b-radius,999px);padding:3px 12px;
   position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
 }
-html.cc-popups-on .sl-bubble .sl-ai{border:none;background:var(--sl-line2)}
+/* On the accent badge the chip takes the badge's text colour, so it reads on
+   any accent. */
+html.cc-popups-on .sl-bubble .sl-ai{border:none;color:inherit;background:color-mix(in srgb,currentColor 22%,transparent)}
 /* A rule of its own, so the native note styling above stays untouched. */
 html.cc-popups-on .sl-bubble .sl-unmaint-note{
   background:var(--sl-card);color:var(--sl-txt);border-radius:min(var(--cc-b-radius,10px),10px);
@@ -231,11 +233,12 @@ html.cc-popups-on .sl-bubble .sl-newer-note h4{background:var(--cc-info,#3b82d0)
 /* Two shades only, frame and card: raw notes blend into their card. */
 html.cc-popups-on .sl-bubble .sl-raw{border:none;background:transparent}
 html.cc-popups-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
-.sl-bubble .sl-rel + .sl-rel{margin-top:12px}
-.sl-bubble h5{font:600 12px/1.4 "Segoe UI",sans-serif;color:var(--sl-txt);margin:0 0 5px;display:flex;align-items:center;gap:8px}
-.sl-bubble .sl-reld{font:400 10px/1 "Segoe UI",sans-serif;color:var(--sl-dim2);letter-spacing:.3px}
-.sl-bubble .sl-relx{display:inline-flex;color:var(--sl-link);text-decoration:none;margin-left:auto}
+/* A release card's badge is its version, which keeps its own case. */
+.sl-bubble .sl-rel{position:relative}
+.sl-bubble .sl-rel h4{text-transform:none;letter-spacing:.2px}
+.sl-bubble .sl-relx{position:absolute;top:13px;right:16px;display:inline-flex;color:var(--sl-link);text-decoration:none}
 .sl-bubble .sl-relx svg{width:12px;height:12px;display:block}
+html.cc-popups-on .sl-bubble .sl-relx{top:9px;right:12px}
 .sl-bubble .sl-bf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 16px;color:var(--sl-dim2);font-size:12px}
 /* The last card has no bottom margin, so the footer brings its own. */
