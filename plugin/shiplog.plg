@@ -33,6 +33,19 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.7.1
+✨ **Added**
+- **Each release gets its own card in the changelog window.** The card is headed by the release's version, with its date beside it and a link to its page in the corner.
+- **Longer AI summaries that cover the whole jump.** When an update skips releases, the summary reads every one of them, not just the newest, and lists up to ten changes, each with a sentence on what it means for the container. A short changelog still gets a short summary. A container on a rolling tag such as `latest` is summarised from its newest release, since its recent releases can belong to other channels.
+
+🎨 **Design**
+- **GlimStone 3.8.5.** Update now and Update all show the two arrows of the sync glyph. With TowerTorch, the Repository, Close and release links take the accent when the pointer reaches them, and under its rainbow each one takes a colour of its own. The buttons in the coffee, PayPal and crypto windows do the same.
+- **The versions at the top of the changelog window are larger,** with the newest version in bold.
+- **The auto-update switch in the changelog window only shows while the scheduled auto-update is on.**
+
+🐛 **Fixed**
+- With TowerTorch, the AI model chip beside Summary was grey on the accent colour and hard to read. It takes the badge's text colour.
+
 ### 3.7.0
 ✨ **Added**
 - **Apprise as a notification channel.** On the Notifications tab, enter the address of an Apprise API server or an Apprise URL and send a test message. ShipLog then sends the same messages it sends to Matrix, which reaches more than 100 services.
