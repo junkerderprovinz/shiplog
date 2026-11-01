@@ -73,7 +73,6 @@
   "d_noSource": "Image này không nêu repo nguồn nào, nên ShipLog không có ghi chú phát hành để hiển thị. Nếu dự án đăng chúng trên GitHub hoặc trong một tệp changelog, hãy đặt ở mục \"source\" trong hàng của nó trên trang trạng thái của ShipLog.",
   "d_unraidStale": "Unraid vẫn hiển thị một bản cập nhật, nhưng ở lần kiểm tra gần nhất của ShipLog (%d) container này đã chạy image mới nhất của tag của nó.",
   "d_rateLimited": "Đã đạt đến giới hạn yêu cầu mỗi giờ của GitHub, nên không thể tải ghi chú phát hành. Thêm token GitHub trong cài đặt của ShipLog (Nguồn) để nâng giới hạn.",
-  "d_recent": "Bản phát hành gần đây",
   "d_pinned": "đã ghim",
   "d_localimg": "image cục bộ",
   "t_general": "Chung",

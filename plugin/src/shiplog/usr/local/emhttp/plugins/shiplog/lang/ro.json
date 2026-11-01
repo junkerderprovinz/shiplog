@@ -73,7 +73,6 @@
   "d_noSource": "Această imagine nu indică niciun repository sursă, așa că ShipLog nu are note de lansare de afișat. Dacă proiectul le publică pe GitHub sau într-un fișier changelog, setează asta la \"source\" pe rândul lui din pagina de stare ShipLog.",
   "d_unraidStale": "Unraid încă arată o actualizare, dar la ultima verificare ShipLog (%d) acest container rula deja cea mai nouă imagine a tag-ului său.",
   "d_rateLimited": "Limita orară de solicitări a GitHub a fost atinsă, așa că notele de lansare nu au putut fi încărcate. Adaugă un token GitHub în setările ShipLog (Surse) pentru a o crește.",
-  "d_recent": "Lansări recente",
   "d_pinned": "fixat",
   "d_localimg": "imagine locală",
   "t_general": "General",

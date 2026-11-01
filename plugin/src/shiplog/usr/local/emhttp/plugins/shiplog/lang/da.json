@@ -73,7 +73,6 @@
   "d_noSource": "Dette image angiver intet kilde-repo, så ShipLog har ingen udgivelsesnoter at vise. Hvis projektet udgiver dem på GitHub eller i en changelog-fil, så angiv det under \"source\" i dets række på ShipLogs statusside.",
   "d_unraidStale": "Unraid viser stadig en opdatering, men ved ShipLogs seneste tjek (%d) kørte denne container allerede det nyeste image for sit tag.",
   "d_rateLimited": "GitHubs timegrænse for forespørgsler blev nået, så udgivelsesnoterne kunne ikke indlæses. Tilføj en GitHub-token i ShipLogs indstillinger (Kilder) for at hæve den.",
-  "d_recent": "Seneste udgivelser",
   "d_pinned": "fastgjort",
   "d_localimg": "lokalt image",
   "t_general": "Generelt",

@@ -73,7 +73,6 @@
   "d_noSource": "Den här avbildningen anger inget källrepo, så ShipLog har ingen versionsinformation att visa. Om projektet publicerar den på GitHub eller i en changelog-fil, ange det under \"source\" på dess rad på ShipLogs statussida.",
   "d_unraidStale": "Unraid visar fortfarande en uppdatering, men vid ShipLogs senaste kontroll (%d) körde den här containern redan den senaste avbildningen för sin tagg.",
   "d_rateLimited": "GitHubs timgräns för förfrågningar nåddes, så versionsinformationen kunde inte läsas in. Lägg till en GitHub-token i ShipLogs inställningar (Källor) för att höja den.",
-  "d_recent": "Senaste utgåvorna",
   "d_pinned": "fäst",
   "d_localimg": "lokal avbildning",
   "t_general": "Allmänt",
