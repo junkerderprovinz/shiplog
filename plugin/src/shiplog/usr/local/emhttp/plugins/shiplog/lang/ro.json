@@ -118,7 +118,6 @@
   "d_autoLabel": "Actualizează automat acest container",
   "d_autoHintOn": "Inclus în actualizarea automată programată a ShipLog.",
   "d_autoHintOff": "Lăsat în afara actualizării automate programate a ShipLog. Actualizarea manuală funcționează în continuare.",
-  "d_autoHintDisabled": "Actualizarea automată programată este oprită în setările ShipLog.",
   "d_autoSaving": "Se salvează și se repornește ShipLog…",
   "d_autoFailed": "Salvarea a eșuat. Reîncarcă pagina și încearcă din nou.",
   "d_autoOffBadge": "Actualizare automată oprită",

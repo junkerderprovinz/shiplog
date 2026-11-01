@@ -118,7 +118,6 @@
   "d_autoLabel": "Päivitä tämä kontti automaattisesti",
   "d_autoHintOn": "Mukana ShipLogin ajastetussa automaattipäivityksessä.",
   "d_autoHintOff": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Käsin päivittäminen toimii edelleen.",
-  "d_autoHintDisabled": "Ajastettu automaattipäivitys on pois päältä ShipLogin asetuksissa.",
   "d_autoSaving": "Tallennetaan ja käynnistetään ShipLog uudelleen…",
   "d_autoFailed": "Tallennus epäonnistui. Lataa sivu uudelleen ja yritä uudestaan.",
   "d_autoOffBadge": "Automaattipäivitys pois",

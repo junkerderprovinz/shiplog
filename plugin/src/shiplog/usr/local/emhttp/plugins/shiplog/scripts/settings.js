@@ -308,6 +308,9 @@
     wins.querySelectorAll(".sl-seg, .sl-nets").forEach(function (g) {
       Array.prototype.forEach.call(g.children, function (b, i) { hue(b, at(i), "--sl-hue", "--sl-hue-ink"); });
     });
+    wins.querySelectorAll(".sl-win").forEach(function (w) {
+      w.querySelectorAll(".sl-win-btn").forEach(function (b, i) { hue(b, at(i), "--sl-tint", "--sl-tint-ink"); });
+    });
     wins.querySelectorAll(".sl-coin").forEach(function (b, i) { hue(b, b.getAttribute("aria-selected") === "true" ? at(i) : "", "--sl-hue", "--sl-hue-ink"); });
     var banner = root.querySelector(".sl-hero");
     if (rb) banner.style.setProperty("--sl-hero-rb", at(0)); else banner.style.removeProperty("--sl-hero-rb");

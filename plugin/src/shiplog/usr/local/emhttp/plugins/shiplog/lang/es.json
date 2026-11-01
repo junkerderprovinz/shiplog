@@ -118,7 +118,6 @@
   "d_autoLabel": "Actualizar este contenedor automáticamente",
   "d_autoHintOn": "Incluido en la actualización automática programada de ShipLog.",
   "d_autoHintOff": "Excluido de la actualización automática programada de ShipLog. Actualizarlo a mano sigue funcionando.",
-  "d_autoHintDisabled": "La actualización automática programada está desactivada en los ajustes de ShipLog.",
   "d_autoSaving": "Guardando y reiniciando ShipLog…",
   "d_autoFailed": "No se pudo guardar. Recarga la página e inténtalo de nuevo.",
   "d_autoOffBadge": "Sin actualización automática",

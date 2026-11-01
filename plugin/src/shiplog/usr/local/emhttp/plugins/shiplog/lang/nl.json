@@ -118,7 +118,6 @@
   "d_autoLabel": "Deze container automatisch bijwerken",
   "d_autoHintOn": "Opgenomen in het geplande automatisch bijwerken van ShipLog.",
   "d_autoHintOff": "Uitgesloten van het geplande automatisch bijwerken van ShipLog. Met de hand bijwerken werkt nog steeds.",
-  "d_autoHintDisabled": "Gepland automatisch bijwerken staat uit in de instellingen van ShipLog.",
   "d_autoSaving": "Opslaan en ShipLog herstarten…",
   "d_autoFailed": "Opslaan mislukt. Laad de pagina opnieuw en probeer het nog eens.",
   "d_autoOffBadge": "Automatisch bijwerken uit",

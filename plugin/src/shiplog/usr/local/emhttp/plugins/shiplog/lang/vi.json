@@ -118,7 +118,6 @@
   "d_autoLabel": "Tự động cập nhật container này",
   "d_autoHintOn": "Nằm trong lịch tự động cập nhật của ShipLog.",
   "d_autoHintOff": "Nằm ngoài lịch tự động cập nhật của ShipLog. Cập nhật thủ công vẫn hoạt động.",
-  "d_autoHintDisabled": "Tự động cập nhật theo lịch đang tắt trong cài đặt của ShipLog.",
   "d_autoSaving": "Đang lưu và khởi động lại ShipLog…",
   "d_autoFailed": "Không lưu được. Hãy tải lại trang rồi thử lại.",
   "d_autoOffBadge": "Tự động cập nhật: tắt",

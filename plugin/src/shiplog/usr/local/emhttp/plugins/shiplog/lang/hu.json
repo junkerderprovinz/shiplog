@@ -118,7 +118,6 @@
   "d_autoLabel": "A konténer automatikus frissítése",
   "d_autoHintOn": "Benne van a ShipLog ütemezett automatikus frissítésében.",
   "d_autoHintOff": "Kimarad a ShipLog ütemezett automatikus frissítéséből. A kézi frissítés továbbra is működik.",
-  "d_autoHintDisabled": "Az ütemezett automatikus frissítés ki van kapcsolva a ShipLog beállításaiban.",
   "d_autoSaving": "Mentés és a ShipLog újraindítása…",
   "d_autoFailed": "A mentés nem sikerült. Töltsd újra az oldalt, és próbáld újra.",
   "d_autoOffBadge": "Automatikus frissítés ki",

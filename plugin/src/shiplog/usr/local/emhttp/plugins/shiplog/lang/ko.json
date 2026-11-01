@@ -118,7 +118,6 @@
   "d_autoLabel": "이 컨테이너 자동 업데이트",
   "d_autoHintOn": "ShipLog의 예약된 자동 업데이트에 포함됩니다.",
   "d_autoHintOff": "ShipLog의 예약된 자동 업데이트에서 제외되었습니다. 수동 업데이트는 계속 가능합니다.",
-  "d_autoHintDisabled": "예약된 자동 업데이트가 ShipLog 설정에서 꺼져 있습니다.",
   "d_autoSaving": "저장하고 ShipLog를 다시 시작하는 중…",
   "d_autoFailed": "저장하지 못했습니다. 페이지를 새로 고친 뒤 다시 시도하세요.",
   "d_autoOffBadge": "자동 업데이트 꺼짐",
