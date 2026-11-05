@@ -126,23 +126,23 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
 🐛 **Fixed**
 - A self-built app (a hand-authored template, or a plain docker run with no template at all) could get permanently branded "Discontinued" - the two-crawl Community Applications absence check treated its natural absence from the CA feed as removal, even though it was never listed there to begin with. Now skipped entirely for any container without a CA TemplateURL.
 - A changelog-source override (telling ShipLog where YOUR app's changelog actually lives) now also exempts that app from the CA verdicts. A template pointing into your own private repo 404s publicly, which used to trip the same false "removed from Community Applications" verdict on top of the override already in place. Credit: nphil, who found and fixed both of these independently.
-- (with CannonadeCommand installed) The topmost section of the changelog bubble — often the AI summary — could lose its card background and blend into the window instead, and a Discontinued container's header could still show a stray drop shadow. Every section now consistently keeps its card styling regardless of position.
+- (with TowerTorch installed) The topmost section of the changelog bubble, often the AI summary, could lose its card background and blend into the window instead, and a Discontinued container's header could still show a stray drop shadow. Every section now consistently keeps its card styling regardless of position.
 
 ### 3.3.0
 🎨 **Design**
 - "Not maintained" is renamed to "Discontinued" throughout (all languages) — the old wording was easy to confuse with the separate "editorially deprecated" state.
 - The "editorially deprecated in Community Applications" state now replaces the Docker-tab changelog chip with its own amber button, the same way the red "Discontinued" button already does for a real dead end. Its own amber pill and explanatory note appear in the changelog bubble too, mirroring "Discontinued" there as well. Still its own colour and wording throughout: the app is still listed and still genuinely receiving updates, so it reads as a lesser warning, not the same severity as a real dead end.
-- **(with CannonadeCommand installed)** The "Removed from Community Applications" / "editorially deprecated" note now renders as its own title-badge card, matching the changelog window's other sections. Only the very first section under the header blends into the window background; every section below it keeps its own card look.
-- **(with CannonadeCommand installed)** Section cards in the changelog window no longer sit close enough for a card's title badge to overlap the card above it.
+- **(with TowerTorch installed)** The "Removed from Community Applications" / "editorially deprecated" note now renders as its own title-badge card, matching the changelog window's other sections. Only the very first section under the header blends into the window background; every section below it keeps its own card look.
+- **(with TowerTorch installed)** Section cards in the changelog window no longer sit close enough for a card's title badge to overlap the card above it.
 
 🐛 **Fixed**
 - **Containers renamed away from their Community Applications template name, or running as a suffixed multi-instance copy, were wrongly flagged "removed from Community Applications."** The catalog lookup matched only your container's own display name against the feed — a container named differently than its template (renaming is common, and so is running several instances of one template with a suffix) could never match, and after two crawls without a name hit was reported as confirmed absent even though it was genuinely still listed. Lookups now also try the container's repository and installed template URL before concluding it's gone. Also fixed: a stale, no-longer-valid template URL could win over a catalog lookup that positively confirms the app is still listed under its current location.
 - The header's "Update now" and "Repository" buttons could shift position from container to container; they now always stay inline, top-right of the header, on every container.
 - A critical-risk badge showed both the plain risk dot and its warning triangle at once; the redundant dot is gone.
 - The risk-reason text next to a badge is now a real scrolling marquee when it's too long to fit, instead of being cut short with an ellipsis.
-- **(with CannonadeCommand installed)** The "Discontinued" and "Editorially deprecated" badges/buttons had washed out to a barely visible tint instead of their intended solid red/amber.
-- The changelog window (with CannonadeCommand installed) now matches CC's own Docker update window exactly: the window background is the correct darker shade instead of a lighter generic surface, a stray third background layer inside the section cards is gone, and the section title badges now sit half on the card's own top edge like a real form legend instead of flush inside the card.
-- **(with CannonadeCommand installed)** The topmost section's background no longer casts a stray drop shadow now that it matches the window behind it.
+- **(with TowerTorch installed)** The "Discontinued" and "Editorially deprecated" badges/buttons had washed out to a barely visible tint instead of their intended solid red/amber.
+- The changelog window (with TowerTorch installed) now matches TowerTorch's own Docker update window exactly: the window background is the correct darker shade instead of a lighter generic surface, a stray third background layer inside the section cards is gone, and the section title badges now sit half on the card's own top edge like a real form legend instead of flush inside the card.
+- **(with TowerTorch installed)** The topmost section's background no longer casts a stray drop shadow now that it matches the window behind it.
 
 ### 3.2.0
 ✨ **Added**
@@ -150,8 +150,8 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
 - **New "editorially deprecated in CA" signal, separate from "Not maintained".** Community Applications also has a softer state: an app hidden from default search with a moderator note pointing at a better-maintained alternative, while still installable and still genuinely receiving updates (the real case that prompted this: HandBrake's `coppit/handbrake` listing, deprecated in favour of `jlesage/handbrake`, still updates fine). Unlike "Not maintained" this never replaces the changelog view — it is exposed as new `ca_deprecated` / `ca_deprecated_note` fields on the status API for now; a visual badge on the Docker-tab chip is a follow-up.
 
 🎨 **Design**
-- **The CannonadeCommand-integrated look is fully border-free again and matches its own locked recipe.** Several elements inside the changelog window and the update-window card (section dividers, the GitHub/Update buttons, the risk/DIGEST pills, the AI-summary badge) had drifted back to literal border lines in follow-up feature work, contradicting GlimStone's shade-only convention; all of them now use the same box-shadow-based shading as the rest of CannonadeCommand, gated behind CC actually being installed so the plain native-Unraid look is untouched without it. Card and button colours now also match CannonadeCommand's own locked update-window recipe (a dark frame holding explicit light cards) instead of a token-driven shade too close to the frame to read as separate.
-- Section headings on the changelog window's cards ("Summary", "Recent releases") are now a filled accent badge, matching CannonadeCommand's own update-window recipe, instead of a full-width text bar.
+- **The TowerTorch-integrated look is fully border-free again and matches its own locked recipe.** Several elements inside the changelog window and the update-window card (section dividers, the GitHub/Update buttons, the risk/DIGEST pills, the AI-summary badge) had drifted back to literal border lines in follow-up feature work, contradicting GlimStone's shade-only convention; all of them now use the same box-shadow-based shading as the rest of TowerTorch, gated behind TowerTorch actually being installed so the plain native-Unraid look is untouched without it. Card and button colours now also match TowerTorch's own locked update-window recipe (a dark frame holding explicit light cards) instead of a token-driven shade too close to the frame to read as separate.
+- Section headings on the changelog window's cards ("Summary", "Recent releases") are now a filled accent badge, matching TowerTorch's own update-window recipe, instead of a full-width text bar.
 
 🐛 **Fixed**
 - **The "Not maintained" warning could re-notify on every single sweep instead of once.** Its dedupe check reads the previous sweep's row back from the database, but the two columns behind it were never actually written there — a leftover gap from when the feature first shipped. An app that stayed unmaintained for days could re-trigger a Matrix / Unraid notification every 6 hours (the default poll interval) for as long as it stayed flagged, instead of exactly once on the transition into the state.
@@ -176,7 +176,7 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
 - New auto-update safety switch (community suggestion): "Never if changelog mentions"  -  a comma-separated word list (e.g. "breaking, migration required"). An update that is otherwise eligible under your level policy is blocked, never applied, when the pending version's own release notes contain one of these words, case-insensitive. Catches an app that calls out a breaking change even in a minor or patch release, which the SemVer level alone can't. Blocked updates are still reported in the run summary (log + Matrix)  -  including in Dry run, so you can see the safety switch working before you trust it live. Off by default; empty word list = no effect.
 
 🎨 **Design**
-- The settings page now looks native to Unraid by default and only becomes the GlimStone look when CannonadeCommand is installed. Without CannonadeCommand you get Unraid's own form styling (native font, inputs, buttons, checkboxes and section titles); with it the page turns into cards, wells, pill tabs and toggles in your accent colour.
+- The settings page now looks native to Unraid by default and only becomes the GlimStone look when TowerTorch is installed. Without TowerTorch you get Unraid's own form styling (native font, inputs, buttons, checkboxes and section titles); with it the page turns into cards, wells, pill tabs and toggles in your accent colour.
 - Token and password fields now carry a reveal eye inside the field on the right, are as wide as every other field, and their check button sits on the line below.
 - The silent-update spinner is now much more visible  -  a translucent WHITE veil over the container's logo (with a higher-contrast ring) instead of the earlier faint dark tint.
 
@@ -198,7 +198,7 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
 
 🐛 **Fixed**
 - Fix: the settings page no longer forces its own font; it inherits Unraid's, so the text matches the rest of the WebGUI.
-- Fix: the changelog window no longer renders as a rounded lozenge when CannonadeCommand's shape is set to pill. The window read the shape token uncapped; it is now capped so a large window keeps tight corners (rounded, square, or a max of 14px at pill), matching the other CannonadeCommand popups.
+- Fix: the changelog window no longer renders as a rounded lozenge when TowerTorch's shape is set to pill. The window read the shape token uncapped; it is now capped so a large window keeps tight corners (rounded, square, or a max of 14px at pill), matching the other TowerTorch popups.
 - Housekeeping: ShipLog now drops the leftover row for a container that was recreated with a new ID (a local rebuild, or an update that replaces the container) or removed entirely, so the list no longer accumulates stale duplicate entries for things that are gone.
 - The changelog popup no longer grew by a couple of pixels every time you opened it. Its remembered size is now applied exactly, so the window stays the size you left it at instead of creeping larger with each click.
 - The daemon no longer prints "shiplog: started (pid, port)" into Unraid's footer status bar on array start. The start line now goes to the ShipLog log only; genuine errors still surface. Purely cosmetic  -  nothing about the service changes.
@@ -422,7 +422,7 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
   view toggle. Unraid's toggle row is a right-packing flex container, so the button
   is placed inside it as the first element; before this it flowed to the far left
   edge of the page.
-- CRITICAL uninstall fix (the same bug found and fixed in CannonadeCommander). The
+- Critical uninstall fix (the same bug found and fixed in TowerTorch). The
   removal script was wrapped in a bare `&lt;REMOVE&gt;` tag, which Unraid's plugin
   manager does NOT execute (it only runs `&lt;FILE Method="remove"&gt;` blocks) - so the
   cleanup silently never ran: the engine daemon kept running and the plugin files,
