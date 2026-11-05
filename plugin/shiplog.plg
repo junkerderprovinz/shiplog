@@ -33,6 +33,18 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.7.2
+⚡ **Improved**
+- **Fewer, more useful notifications.** An update that auto-update will apply anyway now appears only in its run summary, so no notice is left behind for an update that is already installed. Critical updates and updates auto-update will not apply still notify you straight away.
+- **`latest` follows releases.** The container image's `latest` tag is now always the newest release. The tip of development is published as `edge`, and each release also gets version tags.
+
+🐛 **Fixed**
+- **No more false critical alerts on a rebuild.** An image rebuilt without a new release could turn critical because of a word in older release notes. When the running version is unknown, ShipLog now reads only the notes of a version the image is proven to be, so a real breaking release still alerts you.
+- **Notifications name only a version they can vouch for.** A rebuilt image now reads "New image for latest" instead of naming a release it does not contain. The changelog window's header follows the same rule.
+
+🌐 **Translations**
+- The notification help describes the new behaviour in all 26 languages.
+
 ### 3.7.1
 ✨ **Added**
 - **Each release gets its own card in the changelog window.** The card is headed by the release's version, with its date beside it and a link to its page in the corner.
