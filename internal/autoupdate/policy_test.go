@@ -138,3 +138,33 @@ func TestContainerExcluded(t *testing.T) {
 		}
 	}
 }
+
+func TestWillApply(t *testing.T) {
+	update := func(notes string) model.UpdateStatus {
+		return model.UpdateStatus{
+			Container: model.Container{Name: "app"},
+			Kind:      model.KindDigest,
+			Changelog: &model.Changelog{Raw: notes},
+		}
+	}
+	p := Policy{Digest: true, ExcludeWords: []string{"migration"}, ExcludeContainers: []string{"db"}}
+	excluded := update("Bug fixes.")
+	excluded.Container.Name = "DB"
+
+	cases := []struct {
+		name string
+		st   model.UpdateStatus
+		want bool
+	}{
+		{"eligible with quiet notes", update("Bug fixes."), true},
+		{"blocked by a changelog word", update("Run the migration first."), false},
+		{"on the exclude list", excluded, false},
+		{"above the level", model.UpdateStatus{Container: model.Container{Name: "app"}, Kind: model.KindMinor}, false},
+		{"up to date", model.UpdateStatus{Container: model.Container{Name: "app"}, Kind: model.KindNone}, false},
+	}
+	for _, c := range cases {
+		if got := WillApply(c.st, p); got != c.want {
+			t.Errorf("%s: WillApply = %v, want %v", c.name, got, c.want)
+		}
+	}
+}

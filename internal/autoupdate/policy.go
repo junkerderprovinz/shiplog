@@ -111,3 +111,10 @@ func Eligible(st model.UpdateStatus, p Policy) bool {
 		return false
 	}
 }
+
+// WillApply reports whether a run would apply the update rather than skip or
+// block it.
+func WillApply(st model.UpdateStatus, p Policy) bool {
+	return Eligible(st, p) && !ContainerExcluded(st.Container.Name, p.ExcludeContainers) &&
+		MatchedExcludeWord(st.Changelog, p.ExcludeWords) == ""
+}

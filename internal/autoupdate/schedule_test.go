@@ -61,3 +61,11 @@ func TestScheduleDue(t *testing.T) {
 		t.Error("daily 25:70 falls back to 04:00 and is not due again the same day")
 	}
 }
+
+func TestScheduleRecurs(t *testing.T) {
+	for mode, want := range map[string]bool{"daily": true, "hours": true, "days": true, "boot": false, "off": false, "": false} {
+		if got := (Schedule{Mode: mode}).Recurs(); got != want {
+			t.Errorf("mode %q: Recurs = %v, want %v", mode, got, want)
+		}
+	}
+}
