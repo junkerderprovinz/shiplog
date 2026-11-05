@@ -33,6 +33,13 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.7.3
+⚡ **Improved**
+- **Ready for TowerTorch 1.4.1.** ShipLog follows TowerTorch's new internal names, so please update both together to keep the shared look.
+
+🐛 **Fixed**
+- **No unproven version on an up-to-date container.** A rolling tag whose version is unknown now shows the tag, not the newest release.
+
 ### 3.7.2
 ⚡ **Improved**
 - **Fewer, more useful notifications.** An update that auto-update will apply anyway now appears only in its run summary, so no notice is left behind for an update that is already installed. Critical updates and updates auto-update will not apply still notify you straight away.
