@@ -733,7 +733,7 @@
       const jumpEl = bubble.querySelector(".sl-jump");
       if (!jumpEl) return;
       const reduceMotion = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
-        document.documentElement.getAttribute("data-cc-motion") === "off";
+        document.documentElement.getAttribute("data-tt-motion") === "off";
       const full = jumpEl.textContent;
       if (reduceMotion || !full || jumpEl.scrollWidth <= jumpEl.clientWidth) return;
       const track = el("span", "sl-jump-track");
@@ -752,12 +752,12 @@
   // Under TowerTorch's rainbow each button of the window lights up in a palette
   // position of its own, as GlimStone's takePageHue() does in an app.
   function tintButtons(b) {
-    const cc = window.CCTheme;
+    const tt = window.TTTheme;
     let rainbow = false;
-    try { rainbow = localStorage.getItem("cc.rainbow") === "1" && localStorage.getItem("cc.theming") !== "0"; } catch (e) {}
-    if (!rainbow || !cc || !cc.rbColor || !document.documentElement.classList.contains("cc-popups-on")) return;
-    const accent = getComputedStyle(document.documentElement).getPropertyValue("--cc-accent").trim() || "#FCC419";
-    b.querySelectorAll(".sl-gh, .sl-x, .sl-relx").forEach((n, i) => n.style.setProperty("--sl-tint", cc.rbColor(i, accent)));
+    try { rainbow = localStorage.getItem("tt.rainbow") === "1" && localStorage.getItem("tt.theming") !== "0"; } catch (e) {}
+    if (!rainbow || !tt || !tt.rbColor || !document.documentElement.classList.contains("tt-popups-on")) return;
+    const accent = getComputedStyle(document.documentElement).getPropertyValue("--tt-accent").trim() || "#FCC419";
+    b.querySelectorAll(".sl-gh, .sl-x, .sl-relx").forEach((n, i) => n.style.setProperty("--sl-tint", tt.rbColor(i, accent)));
   }
 
   function openFor(anchor, st) {

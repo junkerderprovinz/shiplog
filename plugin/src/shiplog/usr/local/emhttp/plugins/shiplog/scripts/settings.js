@@ -2,7 +2,7 @@
  * container list, the info bubbles and the label engine for its buttons.
  *
  * The page reads as Unraid's own without TowerTorch. With TowerTorch, which
- * sets cc-popups-on on <html> on every page while its theming is on, its sheets
+ * sets tt-popups-on on <html> on every page while its theming is on, its sheets
  * draw the fields, buttons and switches, and this script hands them the colour
  * mode and the label mode TowerTorch keeps in localStorage. */
 (function () {
@@ -19,7 +19,7 @@
   function get(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function put(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function byId(id) { return document.getElementById(id); }
-  function themed() { return html.classList.contains("cc-popups-on"); }
+  function themed() { return html.classList.contains("tt-popups-on"); }
 
   /* The bubble: one element in <body>, shared by every (i), by a button that
      shows only its glyph and by a tab that does. It opens below its trigger,
@@ -246,7 +246,7 @@
   }
   function stage(w) { return w <= 10 ? "xs" : w <= 16 ? "sm" : w <= 26 ? "md" : "lg"; }
   function mode() {
-    var m = themed() ? html.getAttribute("data-cc-labels-buttons") : "";
+    var m = themed() ? html.getAttribute("data-tt-labels-buttons") : "";
     return MODES.indexOf(m) < 0 ? "textGlyph" : m;
   }
   function labels() {
@@ -289,7 +289,7 @@
      banner, and the reactive mode in which an idle tab glyph rests grey.
      Without TowerTorch nothing is set and the page keeps Unraid's colours. */
   function ink(hex) {
-    if (window.CCTheme && window.CCTheme.idealText) return window.CCTheme.idealText(hex);
+    if (window.TTTheme && window.TTTheme.idealText) return window.TTTheme.idealText(hex);
     return "#161616";
   }
   function hue(el, c, a, b) {
@@ -297,11 +297,11 @@
     else { el.style.removeProperty(a); el.style.removeProperty(b); }
   }
   function paint() {
-    var on = themed() && get("cc.theming", "1") !== "0";
-    var rb = on && get("cc.rainbow", "0") === "1" && window.CCTheme && window.CCTheme.rbColor;
-    var accent = (getComputedStyle(html).getPropertyValue("--cc-accent") || "").trim() || "#FCC419";
-    root.classList.toggle("sl-reactive", on && get("cc.rbmode", "all") === "active");
-    function at(i) { return rb ? window.CCTheme.rbColor(i, accent) : ""; }
+    var on = themed() && get("tt.theming", "1") !== "0";
+    var rb = on && get("tt.rainbow", "0") === "1" && window.TTTheme && window.TTTheme.rbColor;
+    var accent = (getComputedStyle(html).getPropertyValue("--tt-accent") || "").trim() || "#FCC419";
+    root.classList.toggle("sl-reactive", on && get("tt.rbmode", "all") === "active");
+    function at(i) { return rb ? window.TTTheme.rbColor(i, accent) : ""; }
     // In the give windows the title, each option and each chain take their own
     // position, and a coin tile its own once it is picked.
     wins.querySelectorAll(".sl-win-title").forEach(function (t) { hue(t, at(0), "--sl-hue", "--sl-hue-ink"); });
@@ -318,13 +318,13 @@
     root.querySelectorAll(".sl-pane").forEach(function (p) {
       p.querySelectorAll(".sl-card").forEach(function (c, i) { hue(c, at(i), "--sl-hue", "--sl-hue-ink"); });
       // TowerTorch draws these checkboxes as its switches and fills a checked
-      // one from --cc-rb-c.
-      p.querySelectorAll("input.sl-sw").forEach(function (s, i) { hue(s, at(i), "--cc-rb-c", "--cc-rb-ct"); });
+      // one from --tt-rb-c.
+      p.querySelectorAll("input.sl-sw").forEach(function (s, i) { hue(s, at(i), "--tt-rb-c", "--tt-rb-ct"); });
     });
   }
   function engines() { labels(); paint(); }
-  new MutationObserver(engines).observe(html, { attributes: true, attributeFilter: ["class", "data-cc-labels-buttons"] });
-  window.addEventListener("storage", function (e) { if (!e.key || /^cc\./.test(e.key)) engines(); });
+  new MutationObserver(engines).observe(html, { attributes: true, attributeFilter: ["class", "data-tt-labels-buttons"] });
+  window.addEventListener("storage", function (e) { if (!e.key || /^tt\./.test(e.key)) engines(); });
 
   /* The checks. A button that runs a test shows the verdict on itself, a tick
      or a cross in the state colour, and the reason stands in one line under

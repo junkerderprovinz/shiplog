@@ -51,7 +51,7 @@ func TestWindowFootButtonsAreFilled(t *testing.T) {
 			v := strings.TrimSpace(d[1])
 			if clear.MatchString(v) {
 				t.Errorf("%s clears the window button's fill", strings.TrimSpace(m[1]))
-			} else if strings.Contains(m[1], "cc-popups-on") && !strings.Contains(m[1], ":hover") {
+			} else if strings.Contains(m[1], "tt-popups-on") && !strings.Contains(m[1], ":hover") {
 				filled = true
 			}
 		}
