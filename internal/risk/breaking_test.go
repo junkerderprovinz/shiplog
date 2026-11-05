@@ -85,6 +85,35 @@ func TestScanBreaking(t *testing.T) {
 			}},
 			"v3.1.0", true, "v3.2.0",
 		},
+		{
+			"unknown running version skips a rolling tag's recent releases",
+			&model.Changelog{FromTag: "latest", ToTag: "latest", Raw: "Bug fixes.", Entries: []model.ReleaseEntry{
+				{Tag: "v6.1.0", Body: "Bug fixes."},
+				{Tag: "v4.0.0", Body: "This is a breaking change to the crypto model."},
+			}},
+			"", false, "",
+		},
+		{
+			"unknown running version does not advance past the raw body's release",
+			&model.Changelog{FromTag: "latest", ToTag: "v6.1.0", Raw: "This is a breaking change to the crypto model."},
+			"", false, "",
+		},
+		{
+			"raw body of the running release is ignored when a rolling tag moves",
+			&model.Changelog{FromTag: "v6.1.0", ToTag: "latest", Raw: "## Breaking change\nConfig format changed.", Entries: []model.ReleaseEntry{
+				{Tag: "v6.1.0", Body: "## Breaking change\nConfig format changed."},
+			}},
+			"v6.1.0", false, "",
+		},
+		{
+			"rolling tag past a breaking release still flags",
+			&model.Changelog{FromTag: "v6.1.0", ToTag: "latest", Raw: "Bug fixes.", Entries: []model.ReleaseEntry{
+				{Tag: "v7.1.0", Body: "Bug fixes."},
+				{Tag: "v7.0.0", Body: "## Breaking change\nConfig format changed."},
+				{Tag: "v6.1.0", Body: "Bug fixes."},
+			}},
+			"v6.1.0", true, "v7.0.0",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

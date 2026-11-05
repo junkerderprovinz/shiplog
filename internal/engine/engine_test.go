@@ -754,7 +754,7 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 // Breaking release notes raise even a low-risk digest move to critical.
 func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
-		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:old", Source: "https://github.com/x/immich"},
+		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:old", ImageVersion: "1.9.0", Source: "https://github.com/x/immich"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
 		"ghcr.io/x/immich": {tag: "latest", dig: "sha256:new"},
@@ -776,6 +776,26 @@ func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 	}
 	if row.Kind != model.KindDigest {
 		t.Errorf("kind = %s, want digest (escalation must not rewrite the kind)", row.Kind)
+	}
+}
+
+func TestSweepRebuildOfUnknownVersionStaysLowRisk(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "fd", Name: "featherdrop", Repo: "docker.io/x/featherdrop", Tag: "latest", Digest: "sha256:old", Source: "https://github.com/x/featherdrop"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"docker.io/x/featherdrop": {tag: "latest", dig: "sha256:rebuilt", verTag: "v6.1.0", verDig: "sha256:release"},
+	}}
+	cl := &fakeChangelog{raw: "Bug fixes.", entries: []model.ReleaseEntry{
+		{Tag: "v6.1.0", Body: "Bug fixes."},
+		{Tag: "v4.0.0", Body: "This is a breaking change to the crypto model."},
+	}}
+	st := &fakeStore{}
+	if err := New(col, res, cl, st, time.Hour).Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if row := st.rows["fd"]; row.Kind != model.KindDigest || row.Risk != model.RiskLow {
+		t.Fatalf("want a low-risk digest move, got kind=%s risk=%s reason=%q", row.Kind, row.Risk, row.RiskReason)
 	}
 }
 
