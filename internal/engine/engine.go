@@ -79,8 +79,11 @@ type Engine struct {
 	now        func() time.Time
 
 	ignoreUnmanaged bool
-	projectPages    func() map[string]string // container name -> template <Project>
-	templateURLs    func() map[string]string // container name -> template <TemplateURL>
+	// autoApplies reports whether the scheduled auto-update run will apply an
+	// update. Without a run it stays nil.
+	autoApplies  func(model.UpdateStatus) bool
+	projectPages func() map[string]string // container name -> template <Project>
+	templateURLs func() map[string]string // container name -> template <TemplateURL>
 	// checkURL returns the HTTP status of a GET, or 0 on a transport error.
 	checkURL func(ctx context.Context, url string) int
 	// repoStatus is checkURL without following redirects, so a moved
@@ -116,6 +119,13 @@ func (e *Engine) WithSummarizer(s Summarizer) *Engine {
 // WithNotifier enables update notifications.
 func (e *Engine) WithNotifier(n Notifier) *Engine {
 	e.notifier = n
+	return e
+}
+
+// WithAutoApply tells the engine which updates the scheduled auto-update run will
+// apply.
+func (e *Engine) WithAutoApply(applies func(model.UpdateStatus) bool) *Engine {
+	e.autoApplies = applies
 	return e
 }
 
@@ -651,6 +661,12 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 		return
 	}
 	if prior.HasUpdate() && prior.NewestDigest == st.NewestDigest {
+		return
+	}
+	// The run applies it and its summary reports the result, while a notice sent
+	// now would sit unread after the update is gone. Breaking notes ask for a step
+	// before the pull, so they still go out ahead of the run.
+	if e.autoApplies != nil && e.autoApplies(st) && st.Risk != model.RiskCritical {
 		return
 	}
 	_ = e.notifier.Notify(ctx, st)

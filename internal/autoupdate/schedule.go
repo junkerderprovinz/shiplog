@@ -57,3 +57,8 @@ func max1(n int) int {
 	}
 	return n
 }
+
+// Recurs reports whether runs keep coming without a restart.
+func (s Schedule) Recurs() bool {
+	return s.Mode == "daily" || s.Mode == "hours" || s.Mode == "days"
+}

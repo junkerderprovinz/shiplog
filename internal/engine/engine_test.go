@@ -1339,3 +1339,49 @@ func TestSummaryInputOfARollingTagIsTheNewestRelease(t *testing.T) {
 		t.Errorf("releaseNotes() = %q, want only the newest release", got)
 	}
 }
+
+func sweepMovedDigest(t *testing.T, entries []model.ReleaseEntry, applies func(model.UpdateStatus) bool) int {
+	t.Helper()
+	col := fakeCollector{list: []model.Container{
+		{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "latest", Digest: "sha256:old", ImageVersion: "1.9.0"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/app": {tag: "latest", dig: "sha256:new"},
+	}}
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"a": {Container: model.Container{ID: "a", Name: "app", Digest: "sha256:old"}, NewestDigest: "sha256:old", Kind: model.KindNone},
+	}}
+	nf := &fakeNotifier{}
+	e := New(col, res, &fakeChangelog{entries: entries}, st, time.Hour).WithNotifier(nf).WithAutoApply(applies)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	return nf.count()
+}
+
+func TestSweepLeavesAnAutoAppliedUpdateToTheRunSummary(t *testing.T) {
+	if n := sweepMovedDigest(t, nil, func(model.UpdateStatus) bool { return true }); n != 0 {
+		t.Errorf("got %d notifications, want none", n)
+	}
+}
+
+func TestSweepNotifiesAnUpdateAutoUpdateWillNotApply(t *testing.T) {
+	if n := sweepMovedDigest(t, nil, func(model.UpdateStatus) bool { return false }); n != 1 {
+		t.Errorf("got %d notifications, want 1", n)
+	}
+}
+
+func TestSweepNotifiesWithoutAutoUpdate(t *testing.T) {
+	if n := sweepMovedDigest(t, nil, nil); n != 1 {
+		t.Errorf("got %d notifications, want 1", n)
+	}
+}
+
+// Breaking notes ask for a step before the pull, so the run must not be the first
+// the admin hears of them.
+func TestSweepNotifiesACriticalUpdateAutoUpdateWouldApply(t *testing.T) {
+	breaking := []model.ReleaseEntry{{Tag: "v2.0.0", Body: "## Breaking change\nConfig format changed."}}
+	if n := sweepMovedDigest(t, breaking, func(model.UpdateStatus) bool { return true }); n != 1 {
+		t.Errorf("got %d notifications, want 1", n)
+	}
+}

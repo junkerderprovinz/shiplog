@@ -22,6 +22,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/config"
 	"github.com/junkerderprovinz/shiplog/internal/dockercli"
 	"github.com/junkerderprovinz/shiplog/internal/engine"
+	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/notify"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/store"
@@ -98,22 +99,30 @@ func main() {
 		eng.WithNotifier(notifier)
 	}
 
+	upd := updater.Unraid{}
+	autoUpdating := cfg.AutoUpdate.Enabled && upd.Supported()
+	policy := autoUpdatePolicy(cfg.AutoUpdate)
+	sched := autoupdate.Schedule{Mode: cfg.AutoUpdate.SchedMode, Time: cfg.AutoUpdate.SchedTime, Every: cfg.AutoUpdate.SchedEvery}
+	// A "boot" run may be months away and a dry run applies nothing, so their
+	// updates keep their notifications.
+	if autoUpdating && !cfg.AutoUpdate.DryRun && sched.Recurs() {
+		eng.WithAutoApply(func(st model.UpdateStatus) bool { return autoupdate.WillApply(st, policy) })
+	}
+
 	// The binary is PID 1 in the container.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
 	go eng.Run(ctx)
 
-	if cfg.AutoUpdate.Enabled {
-		upd := updater.Unraid{}
-		if !upd.Supported() {
-			log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir); skipping")
-		} else {
-			exec := autoupdate.NewExecutor(db, upd).WithInspector(docker)
-			go runAutoUpdate(ctx, cfg.AutoUpdate, exec, db, notifier)
-			log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
-				cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
-		}
+	switch {
+	case autoUpdating:
+		exec := autoupdate.NewExecutor(db, upd).WithInspector(docker)
+		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier)
+		log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
+			cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
+	case cfg.AutoUpdate.Enabled:
+		log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir); skipping")
 	}
 
 	srv := &http.Server{
@@ -141,14 +150,7 @@ func main() {
 
 // runAutoUpdate checks every minute whether a run is due. The first check waits
 // one tick, so the initial sweep has filled the store before a "boot" run.
-func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autoupdate.Executor, st *store.Store, notifier *notify.Fanout) {
-	sched := autoupdate.Schedule{Mode: cfg.SchedMode, Time: cfg.SchedTime, Every: cfg.SchedEvery}
-	policy := autoupdate.Policy{
-		Level:             autoupdate.ParseLevel(cfg.Level),
-		Digest:            cfg.Digest,
-		ExcludeWords:      autoupdate.ParseExcludeWords(cfg.ExcludeWords),
-		ExcludeContainers: autoupdate.ParseExcludeContainers(cfg.ExcludeContainers),
-	}
+func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autoupdate.Schedule, policy autoupdate.Policy, exec *autoupdate.Executor, st *store.Store, notifier *notify.Fanout) {
 	if len(policy.ExcludeContainers) > 0 {
 		log.Printf("shiplog: auto-update leaves these to manual updates: %s", strings.Join(policy.ExcludeContainers, ", "))
 	}
@@ -203,6 +205,15 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, exec *autou
 				}
 			}
 		}
+	}
+}
+
+func autoUpdatePolicy(cfg config.AutoUpdateConfig) autoupdate.Policy {
+	return autoupdate.Policy{
+		Level:             autoupdate.ParseLevel(cfg.Level),
+		Digest:            cfg.Digest,
+		ExcludeWords:      autoupdate.ParseExcludeWords(cfg.ExcludeWords),
+		ExcludeContainers: autoupdate.ParseExcludeContainers(cfg.ExcludeContainers),
 	}
 }
 
