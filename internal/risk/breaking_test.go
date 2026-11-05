@@ -7,6 +7,42 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
+func TestScanRelease(t *testing.T) {
+	notes := &model.Changelog{ToTag: "2.0.0", Raw: "## Breaking change Old release.", Entries: []model.ReleaseEntry{
+		{Tag: "v2.0.0", Body: "ACTION REQUIRED: run the script."},
+		{Tag: "v1.0.0", Body: "## Breaking change Old release."},
+	}}
+	quiet := &model.Changelog{ToTag: "1.5.0", Raw: "## Breaking change Old release.", Entries: []model.ReleaseEntry{
+		{Tag: "v1.5.0", Body: "Bug fixes."},
+		{Tag: "v1.0.0", Body: "## Breaking change Old release."},
+	}}
+	cases := []struct {
+		name    string
+		cl      *model.Changelog
+		tag     string
+		wantHit bool
+		wantIn  string
+	}{
+		{"nil changelog", nil, "v2.0.0", false, ""},
+		{"no vouched version", notes, "", false, ""},
+		{"the version's own notes flag", notes, "2.0.0", true, "v2.0.0"},
+		{"an older release's notes do not flag", quiet, "1.5.0", false, ""},
+		{"a version without notes reads nothing else", notes, "3.0.0", false, ""},
+		{"the raw body is not read", &model.Changelog{Raw: "## Breaking change Old release."}, "2.0.0", false, ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			reason, hit := ScanRelease(c.cl, c.tag)
+			if hit != c.wantHit {
+				t.Fatalf("ScanRelease hit = %v, want %v (reason %q)", hit, c.wantHit, reason)
+			}
+			if hit && !strings.Contains(reason, c.wantIn) {
+				t.Errorf("reason %q does not mention %q", reason, c.wantIn)
+			}
+		})
+	}
+}
+
 func TestScanBreaking(t *testing.T) {
 	cases := []struct {
 		name    string

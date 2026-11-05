@@ -70,6 +70,25 @@ func ScanBreaking(cl *model.Changelog, fromTag string) (string, bool) {
 	return "", false
 }
 
+// ScanRelease looks for a breaking signal in the notes of tag alone, for a
+// container whose running version is unknown: tag is the one release known to be
+// on offer, and every other entry may be behind what the container runs.
+func ScanRelease(cl *model.Changelog, tag string) (string, bool) {
+	if cl == nil || tag == "" {
+		return "", false
+	}
+	for _, e := range cl.Entries {
+		if !model.SameVersion(e.Tag, tag) {
+			continue
+		}
+		if sig, ok := findSignal(e.Body); ok {
+			return breakingReason(e.Tag, sig), true
+		}
+		break
+	}
+	return "", false
+}
+
 // advancesVersion reports whether toTag is newer than fromTag, falling back to
 // plain inequality when either is not semver.
 func advancesVersion(fromTag, toTag string) bool {

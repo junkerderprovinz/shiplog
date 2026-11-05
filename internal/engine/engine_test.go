@@ -751,13 +751,14 @@ func TestSweepClassifiesAndCapturesPerContainerErrors(t *testing.T) {
 	}
 }
 
-// Breaking release notes raise even a low-risk digest move to critical.
+// A rolling tag that serves a newly released version raises the alarm on that
+// release's notes, even though the running version is unknown.
 func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 	col := fakeCollector{list: []model.Container{
-		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:old", ImageVersion: "1.9.0", Source: "https://github.com/x/immich"},
+		{ID: "im", Name: "immich", Repo: "ghcr.io/x/immich", Tag: "latest", Digest: "sha256:old", Source: "https://github.com/x/immich"},
 	}}
 	res := fakeResolver{byRepo: map[string]resolveResult{
-		"ghcr.io/x/immich": {tag: "latest", dig: "sha256:new"},
+		"ghcr.io/x/immich": {tag: "latest", dig: "sha256:new", verTag: "v2.0.0", verDig: "sha256:new"},
 	}}
 	cl := &fakeChangelog{entries: []model.ReleaseEntry{
 		{Tag: "v2.0.0", Body: "## Breaking change\nWe removed support for pgvecto.rs. You must migrate to VectorChord before updating."},
@@ -779,23 +780,51 @@ func TestSweepEscalatesBreakingChangelogToCritical(t *testing.T) {
 	}
 }
 
-func TestSweepRebuildOfUnknownVersionStaysLowRisk(t *testing.T) {
-	col := fakeCollector{list: []model.Container{
-		{ID: "fd", Name: "featherdrop", Repo: "docker.io/x/featherdrop", Tag: "latest", Digest: "sha256:old", Source: "https://github.com/x/featherdrop"},
-	}}
-	res := fakeResolver{byRepo: map[string]resolveResult{
-		"docker.io/x/featherdrop": {tag: "latest", dig: "sha256:rebuilt", verTag: "v6.1.0", verDig: "sha256:release"},
-	}}
-	cl := &fakeChangelog{raw: "Bug fixes.", entries: []model.ReleaseEntry{
+func TestSweepUnknownRunningVersionStaysLowRisk(t *testing.T) {
+	oldBreaking := []model.ReleaseEntry{
 		{Tag: "v6.1.0", Body: "Bug fixes."},
 		{Tag: "v4.0.0", Body: "This is a breaking change to the crypto model."},
-	}}
-	st := &fakeStore{}
-	if err := New(col, res, cl, st, time.Hour).Sweep(context.Background()); err != nil {
-		t.Fatal(err)
 	}
-	if row := st.rows["fd"]; row.Kind != model.KindDigest || row.Risk != model.RiskLow {
-		t.Fatalf("want a low-risk digest move, got kind=%s risk=%s reason=%q", row.Kind, row.Risk, row.RiskReason)
+	cases := []struct {
+		name    string
+		res     resolveResult
+		entries []model.ReleaseEntry
+	}{
+		{
+			"rolling tag moved, the version tag serves another image",
+			resolveResult{tag: "latest", dig: "sha256:rebuilt", verTag: "v6.1.0", verDig: "sha256:release"},
+			oldBreaking,
+		},
+		{
+			"rolling tag moved, the registry has no version tags",
+			resolveResult{tag: "latest", dig: "sha256:rebuilt"},
+			oldBreaking,
+		},
+		{
+			"rolling tag serves a release, only an older one is breaking",
+			resolveResult{tag: "latest", dig: "sha256:new", verTag: "v6.1.0", verDig: "sha256:new"},
+			oldBreaking,
+		},
+		{
+			"rolling tag serves a version without release notes",
+			resolveResult{tag: "latest", dig: "sha256:new", verTag: "v6.2.0", verDig: "sha256:new"},
+			oldBreaking,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			col := fakeCollector{list: []model.Container{
+				{ID: "fd", Name: "featherdrop", Repo: "docker.io/x/featherdrop", Tag: "latest", Digest: "sha256:old"},
+			}}
+			res := fakeResolver{byRepo: map[string]resolveResult{"docker.io/x/featherdrop": c.res}}
+			st := &fakeStore{}
+			if err := New(col, res, &fakeChangelog{raw: "Bug fixes.", entries: c.entries}, st, time.Hour).Sweep(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			if row := st.rows["fd"]; row.Kind != model.KindDigest || row.Risk != model.RiskLow {
+				t.Fatalf("want a low-risk digest move, got kind=%s risk=%s reason=%q", row.Kind, row.Risk, row.RiskReason)
+			}
+		})
 	}
 }
 
@@ -1383,5 +1412,29 @@ func TestSweepNotifiesACriticalUpdateAutoUpdateWouldApply(t *testing.T) {
 	breaking := []model.ReleaseEntry{{Tag: "v2.0.0", Body: "## Breaking change\nConfig format changed."}}
 	if n := sweepMovedDigest(t, breaking, func(model.UpdateStatus) bool { return true }); n != 1 {
 		t.Errorf("got %d notifications, want 1", n)
+	}
+}
+
+func TestSweepNotifiesABreakingReleaseOfAnUnknownRunningVersion(t *testing.T) {
+	col := fakeCollector{list: []model.Container{
+		{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "latest", Digest: "sha256:old"},
+	}}
+	res := fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/app": {tag: "latest", dig: "sha256:new", verTag: "v2.0.0", verDig: "sha256:new"},
+	}}
+	cl := &fakeChangelog{entries: []model.ReleaseEntry{{Tag: "v2.0.0", Body: "Breaking change: the config format changed."}}}
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"a": {Container: model.Container{ID: "a", Name: "app", Digest: "sha256:old"}, NewestDigest: "sha256:old", Kind: model.KindNone},
+	}}
+	nf := &fakeNotifier{}
+	e := New(col, res, cl, st, time.Hour).WithNotifier(nf).WithAutoApply(func(model.UpdateStatus) bool { return true })
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if row := st.rows["a"]; row.Risk != model.RiskCritical {
+		t.Fatalf("want critical, got risk=%s reason=%q", row.Risk, row.RiskReason)
+	}
+	if nf.count() != 1 {
+		t.Errorf("got %d notifications, want 1", nf.count())
 	}
 }
