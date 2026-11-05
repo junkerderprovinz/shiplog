@@ -65,6 +65,36 @@ func TestNotify_ResolvesAliasAndSends(t *testing.T) {
 	}
 }
 
+func TestFormat_RollingMoveWithoutKnownVersionNamesNoTarget(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "featherdrop", Tag: "latest"},
+		NewestTag: "latest", Risk: model.RiskLow,
+		Changelog: &model.Changelog{FromTag: "latest", ToTag: "latest", Recent: true, Entries: []model.ReleaseEntry{{Tag: "v6.1.0"}}},
+	}
+	text, html := format(st)
+	if want := "🚢 ShipLog · featherdrop: new image for latest (risk: LOW)"; text != want {
+		t.Errorf("text = %q, want %q", text, want)
+	}
+	if want := "🚢 <b>ShipLog</b> · <b>featherdrop</b>: new image for <code>latest</code> (risk: LOW)"; html != want {
+		t.Errorf("html = %q, want %q", html, want)
+	}
+}
+
+func TestFormat_RollingMoveNamesTheVouchedVersion(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "planka", Tag: "latest"},
+		NewestTag: "latest", Risk: model.RiskMedium,
+		Changelog: &model.Changelog{FromTag: "2.2.1", ToTag: "2.3.0", Entries: []model.ReleaseEntry{{Tag: "v2.3.0"}}},
+	}
+	text, html := format(st)
+	if want := "🚢 ShipLog · planka: update latest → v2.3.0 (risk: MEDIUM)"; text != want {
+		t.Errorf("text = %q, want %q", text, want)
+	}
+	if want := "<code>latest</code> → <code>v2.3.0</code>"; !strings.Contains(html, want) {
+		t.Errorf("html = %q, want it to contain %q", html, want)
+	}
+}
+
 func TestWhoami(t *testing.T) {
 	ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/account/whoami") {

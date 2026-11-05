@@ -75,10 +75,7 @@ func updateArgs(st model.UpdateStatus) []string {
 		return args
 	}
 	from := st.Container.Tag
-	to := st.NewestTag
-	if st.Changelog != nil && len(st.Changelog.Entries) > 0 && st.Changelog.Entries[0].Tag != "" {
-		to = st.Changelog.Entries[0].Tag
-	}
+	to := updateTarget(st)
 	risk := strings.ToUpper(string(st.Risk))
 
 	// A breaking change needs a manual migration before the pull, so it raises an
@@ -93,6 +90,9 @@ func updateArgs(st model.UpdateStatus) []string {
 
 	subject := fmt.Sprintf("%s: update available", name)
 	desc := fmt.Sprintf("%s → %s (risk: %s)", from, to, risk)
+	if to == "" {
+		desc = fmt.Sprintf("New image for %s (risk: %s)", from, risk)
+	}
 	args := []string{"-e", "ShipLog", "-s", subject, "-d", desc, "-i", importance}
 	if link := updateLink(st); link != "" {
 		args = append(args, "-l", link)

@@ -148,17 +148,19 @@ func format(st model.UpdateStatus) (text, html string) {
 		return text, html
 	}
 	from := st.Container.Tag
-	to := st.NewestTag
-	if st.Changelog != nil && len(st.Changelog.Entries) > 0 && st.Changelog.Entries[0].Tag != "" {
-		to = st.Changelog.Entries[0].Tag
-	}
+	to := updateTarget(st)
 	risk := strings.ToUpper(string(st.Risk))
 
 	link := updateLink(st)
 
-	text = fmt.Sprintf("🚢 ShipLog · %s: update %s → %s (risk: %s)", name, from, to, risk)
-	html = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: update <code>%s</code> → <code>%s</code> (risk: %s)",
-		esc(name), esc(from), esc(to), esc(risk))
+	if to == "" {
+		text = fmt.Sprintf("🚢 ShipLog · %s: new image for %s (risk: %s)", name, from, risk)
+		html = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: new image for <code>%s</code> (risk: %s)", esc(name), esc(from), esc(risk))
+	} else {
+		text = fmt.Sprintf("🚢 ShipLog · %s: update %s → %s (risk: %s)", name, from, to, risk)
+		html = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: update <code>%s</code> → <code>%s</code> (risk: %s)",
+			esc(name), esc(from), esc(to), esc(risk))
+	}
 	if link != "" {
 		text += "\n" + link
 		html += `<br/><a href="` + esc(link) + `">` + esc(link) + `</a>`

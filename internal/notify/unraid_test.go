@@ -81,6 +81,52 @@ func TestUpdateArgs_CriticalRiskIsAlert(t *testing.T) {
 	}
 }
 
+func TestUpdateArgs_RollingMoveWithoutKnownVersionNamesNoTarget(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "featherdrop", Tag: "latest"},
+		NewestTag: "latest", Risk: model.RiskLow,
+		Changelog: &model.Changelog{FromTag: "latest", ToTag: "latest", Recent: true, Entries: []model.ReleaseEntry{
+			{Tag: "v6.1.0"}, {Tag: "v6.0.0"},
+		}},
+	}
+	if got, want := argValue(updateArgs(st), "-d"), "New image for latest (risk: LOW)"; got != want {
+		t.Errorf("description = %q, want %q", got, want)
+	}
+}
+
+func TestUpdateArgs_RollingMoveNamesTheVouchedVersion(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "planka", Tag: "latest"},
+		NewestTag: "latest", Risk: model.RiskMedium,
+		Changelog: &model.Changelog{FromTag: "2.2.1", ToTag: "2.3.0", Entries: []model.ReleaseEntry{{Tag: "v2.3.0"}}},
+	}
+	if got, want := argValue(updateArgs(st), "-d"), "latest → v2.3.0 (risk: MEDIUM)"; got != want {
+		t.Errorf("description = %q, want %q", got, want)
+	}
+}
+
+func TestUpdateArgs_VersionWithoutReleaseIsNotReplacedByAnOlderOne(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "planka", Tag: "latest"},
+		NewestTag: "latest", Risk: model.RiskMedium,
+		Changelog: &model.Changelog{FromTag: "2.2.1", ToTag: "2.3.0", Recent: true, Entries: []model.ReleaseEntry{{Tag: "v2.2.9"}}},
+	}
+	if got, want := argValue(updateArgs(st), "-d"), "latest → 2.3.0 (risk: MEDIUM)"; got != want {
+		t.Errorf("description = %q, want %q", got, want)
+	}
+}
+
+func TestUpdateArgs_RebuiltPinnedTagNamesNoTarget(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "app", Tag: "6.1.0"},
+		NewestTag: "6.1.0", Risk: model.RiskLow,
+		Changelog: &model.Changelog{FromTag: "6.1.0", ToTag: "6.1.0", Entries: []model.ReleaseEntry{{Tag: "v6.1.0"}}},
+	}
+	if got, want := argValue(updateArgs(st), "-d"), "New image for 6.1.0 (risk: LOW)"; got != want {
+		t.Errorf("description = %q, want %q", got, want)
+	}
+}
+
 func TestUnraid_NilSafe(t *testing.T) {
 	var u *Unraid
 	if err := u.Notify(context.Background(), model.UpdateStatus{}); err != nil {
