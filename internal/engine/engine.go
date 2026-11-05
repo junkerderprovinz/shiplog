@@ -414,7 +414,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// Release notes can demand a migration that the version delta does not
 		// show. They only ever raise the verdict.
 		if st.HasUpdate() {
-			if reason, breaking := risk.ScanBreaking(cl, st.RunningVersion); breaking && model.RiskCritical.MoreSevere(st.Risk) {
+			if reason, breaking := scanBreaking(cl, st.RunningVersion, v.to); breaking && model.RiskCritical.MoreSevere(st.Risk) {
 				st.Risk, st.RiskReason = model.RiskCritical, reason
 			}
 		}
@@ -469,6 +469,15 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	}
 	e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
 	return st
+}
+
+// scanBreaking reads the release notes that are still ahead of the container.
+// Without a running version that is only the release classify vouched for.
+func scanBreaking(cl *model.Changelog, running, vouched string) (string, bool) {
+	if running == "" {
+		return risk.ScanRelease(cl, vouched)
+	}
+	return risk.ScanBreaking(cl, running)
 }
 
 // releaseNotes is the summary's input: every release of a version span, since
