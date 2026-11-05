@@ -416,13 +416,11 @@
     const rc = upd ? (seUpd ? riskClass(st) : "low") : (nv ? "info" : (noUpstream(st) ? "grey" : "ok"));
     const verLike = (t) => /^v?\d+\.\d+/.test(t || "");
     const entries = Array.isArray(cl.entries) ? cl.entries : [];
-    const newestRel = entries[0] && entries[0].tag ? entries[0].tag : "";
     // A tag like "latest" is not a version, so the running version the engine
     // remembers comes first.
     const shortDig = (d) => (d ? d.replace(/^sha256:/, "").slice(0, 12) : "");
     const cur = (verLike(st.running_version) ? st.running_version : "")
       || (verLike(c.tag) ? c.tag : "")
-      || (!upd && verLike(newestRel) ? newestRel : "")
       // A digest pin without a tag shows the pin, not "latest".
       || (c.tag || shortDig(c.pinned_digest) || "latest");
     // The end of the changelog span is the version behind a rolling tag, when
