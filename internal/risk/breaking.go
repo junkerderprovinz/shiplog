@@ -41,10 +41,11 @@ var breakingSignals = []string{
 // ScanBreaking looks for a breaking signal in the notes of every release newer
 // than fromTag, since a multi-version span can hide it in an intermediate
 // release. A note in a release already running describes a change already in
-// effect and does not count. It returns a reason naming the signal and the
-// release.
+// effect and does not count. With fromTag empty nothing shows that a release is
+// still ahead of the container, since a rolling tag's recent releases may all be
+// behind it. It returns a reason naming the signal and the release.
 func ScanBreaking(cl *model.Changelog, fromTag string) (string, bool) {
-	if cl == nil {
+	if cl == nil || fromTag == "" {
 		return "", false
 	}
 	from, fromOK := parseSemver(fromTag)
@@ -59,9 +60,9 @@ func ScanBreaking(cl *model.Changelog, fromTag string) (string, bool) {
 			return breakingReason(e.Tag, sig), true
 		}
 	}
-	// The raw body cannot be filtered by version. On a same-version rebuild it
-	// holds the running release's own notes, which would raise a false critical.
-	if advancesVersion(fromTag, cl.ToTag) {
+	// The raw body cannot be filtered by version, and beside entries it only repeats
+	// the newest one, which may be the running release's own notes.
+	if len(cl.Entries) == 0 && advancesVersion(fromTag, cl.ToTag) {
 		if sig, ok := findSignal(cl.Raw); ok {
 			return breakingReason("", sig), true
 		}
