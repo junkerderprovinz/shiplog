@@ -118,7 +118,7 @@ The status page has no login, so keep port 8484 inside your network.
 
 ### Notifications
 
-ShipLog can tell you when it first sees an update. Under **Settings → ShipLog → Notifications** you pick the channels: Unraid's own notifications, which reach every agent you set up there, a Matrix room, or an [Apprise API](https://github.com/caronc/apprise-api) server.
+ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications** you pick the channels: Unraid's own notifications, which reach every agent you set up there, a Matrix room, or an [Apprise API](https://github.com/caronc/apprise-api) server.
 
 For Apprise, save your services in Apprise API under a key of your choosing and enter the notify address with that key, for example `http://192.168.1.10:8000/notify/shiplog`. Apprise passes each message on to all of them, be it Discord, ntfy, Gotify, Telegram or email. **Send test message** tries the address right away, so you know it works before the first update comes in. ShipLog keeps the key out of its log and names only the server.
 

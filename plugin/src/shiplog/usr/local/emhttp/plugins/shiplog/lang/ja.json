@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "一般的なローカルのOllamaポートを調べてここに入力します。",
   "s_ollama_model": "Ollamaモデル",
   "s_notif": "通知",
-  "s_notif_sub": "任意：新しい更新が初めて検出されたときに Matrix または Apprise でメッセージを送ります。",
+  "s_notif_sub": "任意：新しい更新が初めて検出されたときに Matrix または Apprise でメッセージを送ります。自動更新で適用される更新は、重大なものを除き、代わりに実行の要約に表示されます。",
   "s_unraid_notify": "ネイティブ Unraid 通知",
   "s_unraid_notify_desc": "更新のお知らせを Unraid 自身の通知システム（通知センターと、設定したすべてのエージェント：メール、Discord、Telegram など）でも送信します（Matrix や Apprise 通知に加えて）。既定ではオフです。",
   "s_mx_home": "Matrixホームサーバー",

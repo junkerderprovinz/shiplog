@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Yaygın yerel Ollama portlarını yoklar ve bunu doldurur.",
   "s_ollama_model": "Ollama modeli",
   "s_notif": "Bildirimler",
-  "s_notif_sub": "İsteğe bağlı: yeni bir güncelleme ilk kez görüldüğünde Matrix veya Apprise üzerinden mesaj.",
+  "s_notif_sub": "İsteğe bağlı: yeni bir güncelleme ilk kez görüldüğünde Matrix veya Apprise üzerinden mesaj. Otomatik güncellemenin uygulayacağı bir güncelleme, kritik olmadıkça bunun yerine çalıştırma özetinde görünür.",
   "s_unraid_notify": "Yerel Unraid bildirimleri",
   "s_unraid_notify_desc": "Güncelleme uyarılarını Unraid'in kendi bildirim sistemi üzerinden de gönderir (bildirim merkezi ve yapılandırdığınız her aracı, ör. e-posta, Discord, Telegram), Matrix veya Apprise uyarılarına ek olarak. Varsayılan olarak kapalı.",
   "s_mx_home": "Matrix ana sunucusu",

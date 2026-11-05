@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Sonde les ports Ollama locaux courants et remplit ce champ.",
   "s_ollama_model": "Modèle Ollama",
   "s_notif": "Notifications",
-  "s_notif_sub": "Optionnel : message via Matrix ou Apprise lorsqu'une nouvelle mise à jour est détectée pour la première fois.",
+  "s_notif_sub": "Optionnel : message via Matrix ou Apprise lorsqu'une nouvelle mise à jour est détectée pour la première fois. Une mise à jour que la mise à jour automatique appliquera figure plutôt dans le résumé de l'exécution, sauf si elle est critique.",
   "s_unraid_notify": "Notifications natives Unraid",
   "s_unraid_notify_desc": "Envoie les alertes de mise à jour via le système de notifications d'Unraid (le centre de notifications et chaque agent que vous avez configuré, p. ex. e-mail, Discord, Telegram), en plus des alertes Matrix ou Apprise. Désactivé par défaut.",
   "s_mx_home": "Serveur d'accueil Matrix",

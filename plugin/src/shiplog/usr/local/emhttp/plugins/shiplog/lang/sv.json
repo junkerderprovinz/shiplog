@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Söker av vanliga lokala Ollama-portar och fyller i detta.",
   "s_ollama_model": "Ollama-modell",
   "s_notif": "Aviseringar",
-  "s_notif_sub": "Valfritt: meddelande via Matrix eller Apprise när en ny uppdatering upptäcks första gången.",
+  "s_notif_sub": "Valfritt: meddelande via Matrix eller Apprise när en ny uppdatering upptäcks första gången. En uppdatering som automatisk uppdatering kommer att tillämpa visas i stället i körningens sammanfattning, om den inte är kritisk.",
   "s_unraid_notify": "Inbyggda Unraid-aviseringar",
   "s_unraid_notify_desc": "Skicka uppdateringsaviseringar även via Unraids eget aviseringssystem (aviseringscentret och varje agent du konfigurerat, t.ex. e-post, Discord, Telegram), utöver eventuella Matrix- eller Apprise-aviseringar. Av som standard.",
   "s_mx_home": "Matrix-hemserver",
