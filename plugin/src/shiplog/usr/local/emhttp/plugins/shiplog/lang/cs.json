@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Prohledá běžné místní porty Ollama a doplní to sem.",
   "s_ollama_model": "Model Ollama",
   "s_notif": "Oznámení",
-  "s_notif_sub": "Volitelné: zpráva přes Matrix nebo Apprise, když je nová aktualizace poprvé zjištěna.",
+  "s_notif_sub": "Volitelné: zpráva přes Matrix nebo Apprise, když je nová aktualizace poprvé zjištěna. Aktualizace, kterou použije automatická aktualizace, se místo toho objeví v souhrnu jejího běhu, pokud není kritická.",
   "s_unraid_notify": "Nativní oznámení Unraidu",
   "s_unraid_notify_desc": "Posílat upozornění na aktualizace i přes vlastní systém oznámení Unraidu (centrum oznámení a každý nastavený agent, např. e-mail, Discord, Telegram), vedle případných upozornění Matrix nebo Apprise. Ve výchozím stavu vypnuto.",
   "s_mx_home": "Domovský server Matrix",

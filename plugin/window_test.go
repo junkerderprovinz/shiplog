@@ -60,3 +60,17 @@ func TestWindowFootButtonsAreFilled(t *testing.T) {
 		t.Error("settings.css gives sl-win-btn no fill of its own under TowerTorch")
 	}
 }
+
+// TestBubbleNamesOnlyAVouchedVersion keeps the window's "running → next" header
+// to tags the engine could prove. A rolling tag's newest changelog entry says
+// nothing about the image it serves.
+func TestBubbleNamesOnlyAVouchedVersion(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	m := regexp.MustCompile(`(?s)const next = (.*?);`).FindStringSubmatch(js[strings.Index(js, "function bubbleHTML"):])
+	if m == nil {
+		t.Fatal("no next version in bubbleHTML")
+	}
+	if strings.Contains(m[1], "newestRel") || strings.Contains(m[1], "entries") {
+		t.Errorf("the next version reads a changelog entry: %s", m[1])
+	}
+}

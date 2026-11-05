@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Sonda as portas locais comuns do Ollama e preenche isto.",
   "s_ollama_model": "Modelo do Ollama",
   "s_notif": "Notificações",
-  "s_notif_sub": "Opcional: mensagem pelo Matrix ou Apprise quando uma nova atualização é vista pela primeira vez.",
+  "s_notif_sub": "Opcional: mensagem pelo Matrix ou Apprise quando uma nova atualização é vista pela primeira vez. Uma atualização que a atualização automática vai aplicar aparece antes no resumo da execução, a menos que seja crítica.",
   "s_unraid_notify": "Notificações nativas do Unraid",
   "s_unraid_notify_desc": "Envia os alertas de atualização através do sistema de notificações do próprio Unraid (o centro de notificações e cada agente que configurou, p. ex. e-mail, Discord, Telegram), além dos alertas do Matrix ou do Apprise. Desativado por predefinição.",
   "s_mx_home": "Homeserver do Matrix",

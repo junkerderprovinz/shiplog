@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Probes common local Ollama ports and fills this in.",
   "s_ollama_model": "Ollama model",
   "s_notif": "Notifications",
-  "s_notif_sub": "Optional: a message through Matrix or Apprise when a new update is first seen.",
+  "s_notif_sub": "Optional: a message through Matrix or Apprise when a new update is first seen. An update that auto-update will apply appears in its run summary instead, unless it is critical.",
   "s_unraid_notify": "Native Unraid notifications",
   "s_unraid_notify_desc": "Send update alerts through Unraid's own notification system (the notification centre and every agent you configured, e.g. email, Discord, Telegram), alongside any Matrix or Apprise alerts. Off by default.",
   "s_mx_home": "Matrix homeserver",

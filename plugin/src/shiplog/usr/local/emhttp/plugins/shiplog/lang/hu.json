@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Megvizsgálja a szokásos helyi Ollama-portokat és kitölti ezt.",
   "s_ollama_model": "Ollama modell",
   "s_notif": "Értesítések",
-  "s_notif_sub": "Opcionális: üzenet Matrixon vagy Apprise-on keresztül, amikor egy új frissítést először észlel.",
+  "s_notif_sub": "Opcionális: üzenet Matrixon vagy Apprise-on keresztül, amikor egy új frissítést először észlel. Az automatikus frissítés által telepítendő frissítés ehelyett a futás összefoglalójában jelenik meg, kivéve, ha kritikus.",
   "s_unraid_notify": "Natív Unraid-értesítések",
   "s_unraid_notify_desc": "Frissítési értesítések küldése az Unraid saját értesítési rendszerén keresztül is (az értesítési központ és minden beállított ügynök, pl. e-mail, Discord, Telegram), a Matrix- vagy Apprise-értesítések mellett. Alapértelmezetten kikapcsolva.",
   "s_mx_home": "Matrix honszerver",

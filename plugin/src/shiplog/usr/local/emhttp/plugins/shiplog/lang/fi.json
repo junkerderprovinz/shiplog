@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Luotaa yleiset paikalliset Ollama-portit ja täyttää tämän.",
   "s_ollama_model": "Ollama-malli",
   "s_notif": "Ilmoitukset",
-  "s_notif_sub": "Valinnainen: viesti Matrixin tai Apprisen kautta, kun uusi päivitys havaitaan ensimmäisen kerran.",
+  "s_notif_sub": "Valinnainen: viesti Matrixin tai Apprisen kautta, kun uusi päivitys havaitaan ensimmäisen kerran. Päivitys, jonka automaattipäivitys asentaa, näkyy sen sijaan ajon yhteenvedossa, ellei se ole kriittinen.",
   "s_unraid_notify": "Unraidin natiivi-ilmoitukset",
   "s_unraid_notify_desc": "Lähetä päivitysilmoitukset myös Unraidin omalla ilmoitusjärjestelmällä (ilmoituskeskus ja jokainen määrittämäsi agentti, esim. sähköposti, Discord, Telegram), Matrix- tai Apprise-ilmoitusten lisäksi. Oletuksena pois päältä.",
   "s_mx_home": "Matrix-kotipalvelin",

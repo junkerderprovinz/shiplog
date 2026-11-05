@@ -428,9 +428,7 @@
     // The end of the changelog span is the version behind a rolling tag, when
     // the engine could prove it.
     const next = (verLike(st.newest_tag) ? st.newest_tag : "")
-      || (upd && verLike(cl.to_tag) ? cl.to_tag : "")
-      || (verLike(newestRel) ? newestRel : "")
-      || newestRel || st.newest_tag || "?";
+      || (verLike(cl.to_tag) ? cl.to_tag : "");
     const fmtDate = (iso) => {
       const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
       // A changelog file section without a date carries Go's zero time.
@@ -492,7 +490,7 @@
     }
 
     // A rebuild of the same version shows just the version.
-    const haveNext = verLike(next) && next !== "?" && !sameVersion(next, cur);
+    const haveNext = next && !sameVersion(next, cur);
     const verHdr = (upd && haveNext) ? `${esc(cur)} → <b>${esc(next)}</b>` : `<b>${esc(cur)}</b>`;
     const pillTxt = upd
       ? esc(seUpd ? kindLabel(st) : T("update"))

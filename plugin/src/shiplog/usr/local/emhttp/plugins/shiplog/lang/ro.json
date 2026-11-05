@@ -28,7 +28,7 @@
   "s_ollama_url_hint": "Sondează porturile Ollama locale obișnuite și completează acest câmp.",
   "s_ollama_model": "Model Ollama",
   "s_notif": "Notificări",
-  "s_notif_sub": "Opțional: mesaj prin Matrix sau Apprise când o nouă actualizare este văzută prima dată.",
+  "s_notif_sub": "Opțional: mesaj prin Matrix sau Apprise când o nouă actualizare este văzută prima dată. O actualizare pe care o va aplica actualizarea automată apare în schimb în rezumatul rulării, cu excepția cazului în care este critică.",
   "s_unraid_notify": "Notificări native Unraid",
   "s_unraid_notify_desc": "Trimite alertele de actualizare și prin sistemul de notificări propriu al Unraid (centrul de notificări și fiecare agent configurat, ex. e-mail, Discord, Telegram), pe lângă alertele Matrix sau Apprise. Dezactivat implicit.",
   "s_mx_home": "Homeserver Matrix",
