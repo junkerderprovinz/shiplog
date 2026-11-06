@@ -2,6 +2,8 @@ module github.com/junkerderprovinz/shiplog
 
 go 1.25.0
 
+toolchain go1.27.3
+
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
