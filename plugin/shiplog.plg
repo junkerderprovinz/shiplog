@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.7.4
+🐛 **Fixed**
+- **Release builds use Go 1.27.3.** They had used the Go version named in go.mod, which was 1.25.0.
+
 ### 3.7.3
 ⚡ **Improved**
 - **Ready for TowerTorch 1.4.1.** ShipLog follows TowerTorch's new internal names, so please update both together to keep the shared look.
