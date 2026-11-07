@@ -329,3 +329,48 @@ func TestListResolvesImageIDFromContainerConfig(t *testing.T) {
 		t.Errorf("container on a superseded image = repo %q tag %q digest %q, want the configured repo with its old digest", nc.Repo, nc.Tag, nc.Digest)
 	}
 }
+
+func TestStartPostsToTheContainer(t *testing.T) {
+	sock := filepath.Join(t.TempDir(), "d.sock")
+	ln, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Skipf("AF_UNIX unavailable on this host (net.Listen unix failed): %v", err)
+	}
+	var started []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/containers/{name}/start", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		name := r.PathValue("name")
+		started = append(started, name)
+		switch name {
+		case "Repo Watch":
+			w.WriteHeader(http.StatusNoContent)
+		case "Immich":
+			w.WriteHeader(http.StatusNotModified)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"No such container: ` + name + `"}`))
+		}
+	})
+	srv := &http.Server{Handler: mux}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	c := New(sock)
+	if err := c.Start(context.Background(), "Repo Watch"); err != nil {
+		t.Errorf("Start of a stopped container = %v, want nil", err)
+	}
+	if err := c.Start(context.Background(), "Immich"); err != nil {
+		t.Errorf("Start of a running container = %v, want nil", err)
+	}
+	err = c.Start(context.Background(), "gone")
+	if err == nil || !strings.Contains(err.Error(), "No such container: gone") {
+		t.Errorf("Start of a missing container = %v, want Docker's message", err)
+	}
+	if want := []string{"Repo Watch", "Immich", "gone"}; strings.Join(started, ",") != strings.Join(want, ",") {
+		t.Errorf("started %q, want %q", started, want)
+	}
+}
