@@ -1,5 +1,6 @@
-// Package dockercli is a read-only Docker Engine API client over the unix
-// socket. It issues GET requests only, so it cannot change container state.
+// Package dockercli is a Docker Engine API client over the unix socket. Apart
+// from starting a container it only reads, so it cannot stop, remove or create
+// one.
 package dockercli
 
 import (
@@ -9,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -30,7 +32,7 @@ var ubuntuRelease = regexp.MustCompile(`^\d{2}\.\d{2}$`)
 // from a template.
 const managedLabel = "net.unraid.docker.managed"
 
-// Client is a read-only Docker Engine API client over a unix socket.
+// Client is a Docker Engine API client over a unix socket.
 type Client struct {
 	http    *http.Client
 	baseURL string // e.g. "http://docker/v1.43"; the host is ignored (unix dial)
@@ -143,6 +145,27 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 		})
 	}
 	return out, nil
+}
+
+// Start starts the named container. Docker answers 304 for one that already
+// runs, which counts as started.
+func (c *Client) Start(ctx context.Context, name string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/containers/"+url.PathEscape(name)+"/start", nil)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotModified {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+	return nil
 }
 
 // ghcrSource maps ghcr.io/owner/repo to github.com/owner/repo, so an image
