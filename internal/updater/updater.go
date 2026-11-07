@@ -36,7 +36,8 @@ const (
 	// and keeps its settings and net.unraid.docker.* labels. It has been stable
 	// since Unraid 6.10.
 	updateScript = "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container"
-	// outputLimit keeps a log line readable; the script ends with what went wrong.
+	// outputLimit keeps a log line readable. The end of the output is kept, since
+	// the script ends with what went wrong.
 	outputLimit = 4 << 10
 )
 

@@ -37,8 +37,9 @@ func RenderSummary(res Result) (text, html string) {
 	if len(updated) > 0 {
 		var tp, hp []string
 		for _, o := range updated {
-			tp = append(tp, fmt.Sprintf("%s %s→%s (%s)", o.Name, verOr(o.From), verOr(o.To), o.Level))
-			hp = append(hp, fmt.Sprintf("<b>%s</b> <code>%s→%s</code> (%s)", esc(o.Name), esc(verOr(o.From)), esc(verOr(o.To)), esc(o.Level)))
+			note := withKept(o.Level, o)
+			tp = append(tp, fmt.Sprintf("%s %s→%s (%s)", o.Name, verOr(o.From), verOr(o.To), note))
+			hp = append(hp, fmt.Sprintf("<b>%s</b> <code>%s→%s</code> (%s)", esc(o.Name), esc(verOr(o.From)), esc(verOr(o.To)), esc(note)))
 		}
 		fmt.Fprintf(&t, "%s %d: %s", verb, len(updated), strings.Join(tp, ", "))
 		fmt.Fprintf(&h, "%s %d: %s", verb, len(updated), strings.Join(hp, ", "))
@@ -49,8 +50,9 @@ func RenderSummary(res Result) (text, html string) {
 	if len(failed) > 0 {
 		var tp, hp []string
 		for _, o := range failed {
-			tp = append(tp, fmt.Sprintf("%s (%s)", o.Name, o.Err.Error()))
-			hp = append(hp, fmt.Sprintf("%s (%s)", esc(o.Name), esc(o.Err.Error())))
+			note := withKept(o.Err.Error(), o)
+			tp = append(tp, fmt.Sprintf("%s (%s)", o.Name, note))
+			hp = append(hp, fmt.Sprintf("%s (%s)", esc(o.Name), esc(note)))
 		}
 		fmt.Fprintf(&t, ". %d failed: %s", len(failed), strings.Join(tp, ", "))
 		fmt.Fprintf(&h, ". %d failed: %s", len(failed), strings.Join(hp, ", "))
@@ -83,6 +85,19 @@ func RenderSummary(res Result) (text, html string) {
 		fmt.Fprintf(&h, ". %d already up to date: %s", len(current), strings.Join(hp, ", "))
 	}
 	return t.String(), h.String()
+}
+
+// withKept adds to note what the run did to keep the container after its update.
+func withKept(note string, o Outcome) string {
+	switch {
+	case o.Recreated && o.Started:
+		return note + ", recreated from its template and started"
+	case o.Recreated:
+		return note + ", recreated from its template"
+	case o.Started:
+		return note + ", started again"
+	}
+	return note
 }
 
 func verOr(v string) string {
