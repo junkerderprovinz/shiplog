@@ -73,9 +73,9 @@ type Docker interface {
 	Start(ctx context.Context, name string) error
 }
 
-// Unraid's update script gives up on a Docker call after PHP's 60 second socket
-// timeout while Docker carries on stopping and removing the old container, so
-// the run waits for that to finish before it looks at the result.
+// Unraid's update script exits 0 whatever happened to the container, and Docker
+// can still be stopping or removing the old one when it returns, so the run
+// waits for Docker to settle before it looks at the result.
 const (
 	settleTimeout = 5 * time.Minute
 	settlePoll    = 5 * time.Second
@@ -192,8 +192,8 @@ func (e *Executor) apply(ctx context.Context, a *applied, o *Outcome) error {
 	if verr == nil || (!errors.Is(verr, ErrNoChange) && after.Digest != "") {
 		return verr
 	}
-	// Docker can still list the old container while it stops it for a removal
-	// the script gave up waiting on.
+	// A container that looks unchanged may still be on its way out, and Docker
+	// can remove it after the script has returned.
 	leaving, err := e.watch(ctx, o.Name)
 	if err != nil {
 		return fmt.Errorf("could not confirm the update: %w", err)
