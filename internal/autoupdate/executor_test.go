@@ -159,12 +159,19 @@ type fakeHost struct {
 	live   map[string]model.Container
 	pulled map[string][]string
 	// removing makes the next update leave the container half removed for that
-	// many lists, after which it is gone.
+	// many lists, after which it is gone. vanish does the same with the
+	// container still looking as it did.
 	removing map[string]int
+	vanish   map[string]int
 	left     map[string]int
+	// stale makes the next update keep the old image, and orphaned leaves the
+	// container on an image Docker can no longer inspect.
+	stale    map[string]bool
+	orphaned map[string]bool
 	// created makes an update leave the container created but not started.
 	created   map[string]bool
-	exitErr   error // returned once, after the update had its effect
+	exitErr   error  // returned once, after the update had its effect
+	onSleep   func() // runs once, at the next sleep
 	started   []string
 	startErr  error
 	slept     time.Duration
@@ -183,7 +190,6 @@ func (h *fakeHost) Update(ctx context.Context, name string) (string, error) {
 	n, lose := h.removing[name]
 	switch {
 	case ok && lose:
-		delete(h.removing, name)
 		c.State = "removing"
 		h.left[name] = n
 	case !ok:
@@ -191,9 +197,22 @@ func (h *fakeHost) Update(ctx context.Context, name string) (string, error) {
 	case h.created[name]:
 		c.State = "created"
 	}
-	if ds, ok := h.pulled[name]; ok && c.State != "removing" {
-		c.Digest, c.Digests = ds[0], ds
+	switch {
+	case c.State == "removing" || h.stale[name]:
+	case h.orphaned[name]:
+		c.Digest, c.Digests = "", nil
+	default:
+		if ds, ok := h.pulled[name]; ok {
+			c.Digest, c.Digests = ds[0], ds
+		}
 	}
+	if n, ok := h.vanish[name]; ok {
+		h.left[name] = n
+	}
+	delete(h.removing, name)
+	delete(h.vanish, name)
+	delete(h.stale, name)
+	delete(h.orphaned, name)
 	h.live[name] = c
 	if err := h.exitErr; err != nil {
 		h.exitErr = nil
@@ -208,12 +227,13 @@ func (h *fakeHost) List(context.Context) ([]model.Container, error) {
 	}
 	var out []model.Container
 	for name, c := range h.live {
-		if c.State == "removing" {
-			if h.left[name] == 0 {
+		if n, ok := h.left[name]; ok {
+			if n == 0 {
 				delete(h.live, name)
+				delete(h.left, name)
 				continue
 			}
-			h.left[name]--
+			h.left[name] = n - 1
 		}
 		out = append(out, c)
 	}
@@ -231,6 +251,10 @@ func (h *fakeHost) Start(_ context.Context, name string) error {
 
 func (h *fakeHost) sleep(_ context.Context, d time.Duration) error {
 	h.slept += d
+	if f := h.onSleep; f != nil {
+		h.onSleep = nil
+		f()
+	}
 	return nil
 }
 
@@ -246,7 +270,10 @@ func newHost(running map[string]string) *fakeHost {
 		live:        map[string]model.Container{},
 		pulled:      map[string][]string{},
 		removing:    map[string]int{},
+		vanish:      map[string]int{},
 		left:        map[string]int{},
+		stale:       map[string]bool{},
+		orphaned:    map[string]bool{},
 		created:     map[string]bool{},
 	}
 	for name, d := range running {
@@ -287,8 +314,8 @@ func TestExecutorReportsAContainerItCouldNotRecreate(t *testing.T) {
 	h := newHost(map[string]string{"a": "sha256:a"})
 	upd := &goneAfterUpdate{h: h}
 	res := runWith(upd, h, false, stWithDigest("a", "sha256:b"))
-	if upd.calls != 2 {
-		t.Errorf("update script ran %d times, want a second run to recreate the container", upd.calls)
+	if upd.calls != 3 {
+		t.Errorf("update script ran %d times, want a run to recreate the container after the update and another in the final check", upd.calls)
 	}
 	if o := res.Outcomes[0]; o.Updated || o.Recreated || o.Err == nil || o.Err.Error() != "container gone after the update and could not be recreated" {
 		t.Fatalf("outcome = %+v, want the container reported gone", o)
@@ -413,8 +440,114 @@ func TestExecutorGivesUpOnAContainerThatStaysInRemoval(t *testing.T) {
 	if len(h.calls) != 1 {
 		t.Errorf("update script ran %d times, want no recreation while the old container holds the name", len(h.calls))
 	}
-	if h.slept < settleTimeout || h.slept > settleTimeout+settlePoll {
-		t.Errorf("waited %s, want about %s", h.slept, settleTimeout)
+	if h.slept != 3*settleTimeout {
+		t.Errorf("waited %s, want one settle period after the update and two for the final check", h.slept)
+	}
+}
+
+func TestExecutorRecreatesAContainerThatVanishesAfterLookingUnchanged(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.stale["a"] = true
+	h.vanish["a"] = 2
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if !o.Updated || !o.Recreated || !o.Started || o.Err != nil {
+		t.Fatalf("outcome = %+v, want an update that recreated and started the container", o)
+	}
+	if !reflect.DeepEqual(h.calls, []string{"a", "a"}) {
+		t.Errorf("updates %v, want a second run to recreate the container", h.calls)
+	}
+	if c := h.live["a"]; c.State != "running" || c.Digest != "sha256:b" {
+		t.Errorf("container = %+v, want it running on the newest image", c)
+	}
+}
+
+func TestExecutorRecreatesAContainerThatVanishesOnAnUnknownImage(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.orphaned["a"] = true
+	h.vanish["a"] = 2
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; !o.Updated || !o.Recreated || !o.Started || o.Err != nil {
+		t.Fatalf("outcome = %+v, want an update that recreated and started the container", o)
+	}
+}
+
+func TestExecutorWatchesAnUnchangedContainerForOneSettlePeriod(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; o.Updated || o.Recreated || !errors.Is(o.Err, ErrNoChange) {
+		t.Fatalf("outcome = %+v, want ErrNoChange", o)
+	}
+	if h.slept != 2*settleTimeout {
+		t.Errorf("waited %s, want one settle period of watching and one before the final check", h.slept)
+	}
+	if len(h.calls) != 1 {
+		t.Errorf("update script ran %d times, want once for a container that stayed", len(h.calls))
+	}
+}
+
+func TestExecutorFinalCheckRecreatesAContainerThatVanishedLater(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.onSleep = func() { delete(h.live, "a") }
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if !o.Updated || !o.Recreated || !o.Started || o.Err != nil {
+		t.Fatalf("outcome = %+v, want the final check to recreate and start the container", o)
+	}
+	if h.slept < settleTimeout {
+		t.Errorf("final check waited %s, want one settle period", h.slept)
+	}
+	if c := h.live["a"]; c.State != "running" || c.Digest != "sha256:b" {
+		t.Errorf("container = %+v, want it running on the newest image", c)
+	}
+	if o.Output != "script updated a\nscript updated a" {
+		t.Errorf("Output = %q, want what both script runs printed", o.Output)
+	}
+}
+
+func TestExecutorFinalCheckStartsAContainerThatStoppedLater(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.onSleep = func() { h.setState("a", "exited") }
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; !o.Updated || !o.Started || o.Recreated || o.Err != nil {
+		t.Fatalf("outcome = %+v, want the final check to start the container", o)
+	}
+	if h.live["a"].State != "running" || len(h.calls) != 1 {
+		t.Errorf("state %q after %d updates, want running after one", h.live["a"].State, len(h.calls))
+	}
+}
+
+func TestExecutorFinalCheckKeepsAStoppedContainerStopped(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.setState("a", "exited")
+	h.pulled["a"] = []string{"sha256:b"}
+	h.onSleep = func() { delete(h.live, "a") }
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; !o.Updated || !o.Recreated || o.Started || o.Err != nil {
+		t.Fatalf("outcome = %+v, want the final check to recreate the container only", o)
+	}
+	if len(h.started) != 0 || h.live["a"].State != "created" {
+		t.Errorf("starts %v, state %q, want a stopped container to stay stopped", h.started, h.live["a"].State)
+	}
+}
+
+func TestExecutorFinalCheckWaitsOnlyAfterAnUpdate(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	res := runHost(h, true, stWithDigest("a", "sha256:b"))
+	if len(h.calls) != 0 || h.slept != 0 || !res.Outcomes[0].Updated {
+		t.Fatalf("dry run: updates %v, waited %s, outcome %+v, want neither", h.calls, h.slept, res.Outcomes[0])
+	}
+	res = runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; !o.Updated || o.Recreated || o.Started || o.Output != "" {
+		t.Fatalf("outcome = %+v, want a plain update", o)
+	}
+	if h.slept != settleTimeout {
+		t.Errorf("waited %s, want exactly one settle period for the final check", h.slept)
 	}
 }
 
