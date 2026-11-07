@@ -35,8 +35,8 @@ func TestHelperScript(t *testing.T) {
 	if mode == "" {
 		return
 	}
-	fmt.Fprint(os.Stdout, strings.Repeat("pulling layer\n", 1000))
-	fmt.Fprint(os.Stderr, "docker: Error response from daemon: Conflict. The container name \"/Immich\" is already in use.")
+	_, _ = fmt.Fprint(os.Stdout, strings.Repeat("pulling layer\n", 1000))
+	_, _ = fmt.Fprint(os.Stderr, "docker: Error response from daemon: Conflict. The container name \"/Immich\" is already in use.")
 	if mode == "fail" {
 		os.Exit(3)
 	}

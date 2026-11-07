@@ -117,7 +117,7 @@ func main() {
 
 	switch {
 	case autoUpdating:
-		exec := autoupdate.NewExecutor(db, upd).WithInspector(docker)
+		exec := autoupdate.NewExecutor(db, upd).WithDocker(docker)
 		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier)
 		log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
 			cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)

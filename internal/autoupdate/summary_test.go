@@ -117,3 +117,24 @@ func TestRenderSummary_UpToDate(t *testing.T) {
 		t.Errorf("dry run with nothing to do reads wrong: %s", dry)
 	}
 }
+
+func TestRenderSummary_KeptContainers(t *testing.T) {
+	res := Result{Outcomes: []Outcome{
+		{Name: "Immich", From: "1.1", To: "1.2", Level: "minor", Updated: true, Recreated: true, Started: true},
+		{Name: "Repo-Watch", Level: "digest", Err: ErrNoChange, Started: true},
+		{Name: "OpenCloud", From: "2.0", To: "2.1", Level: "minor", Updated: true, Recreated: true},
+	}}
+	text, html := RenderSummary(res)
+	for _, want := range []string{
+		"Immich 1.1→1.2 (minor, recreated from its template and started)",
+		"Repo-Watch (still on the old image after the update, started again)",
+		"OpenCloud 2.0→2.1 (minor, recreated from its template)",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text missing %q: %s", want, text)
+		}
+	}
+	if !strings.Contains(html, "(minor, recreated from its template and started)") {
+		t.Errorf("html missing what was done to keep Immich: %s", html)
+	}
+}

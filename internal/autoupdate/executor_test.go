@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
+	"github.com/junkerderprovinz/shiplog/internal/updater"
 )
 
 type fakeLister struct{ sts []model.UpdateStatus }
@@ -148,12 +151,23 @@ func TestExecutorNoExcludeWordsConfiguredUpdatesNormally(t *testing.T) {
 	}
 }
 
-// fakeHost is the updater and the Docker view in one: an update leaves the
-// container on pulled[name], or keeps the old image when that is unset.
+// fakeHost is the updater and Docker in one: an update leaves the container on
+// pulled[name], or keeps the old image when that is unset, and creates the
+// container when it is missing, as Unraid's script does.
 type fakeHost struct {
 	fakeUpdater
-	live      map[string]model.Container
-	pulled    map[string][]string
+	live   map[string]model.Container
+	pulled map[string][]string
+	// removing makes the next update leave the container half removed for that
+	// many lists, after which it is gone.
+	removing map[string]int
+	left     map[string]int
+	// created makes an update leave the container created but not started.
+	created   map[string]bool
+	exitErr   error // returned once, after the update had its effect
+	started   []string
+	startErr  error
+	slept     time.Duration
 	listErr   error
 	errAfter  bool // List fails once an update ran
 	updatedAt int
@@ -165,10 +179,25 @@ func (h *fakeHost) Update(ctx context.Context, name string) (string, error) {
 		return out, err
 	}
 	h.updatedAt++
-	if ds, ok := h.pulled[name]; ok {
-		c := h.live[name]
+	c, ok := h.live[name]
+	n, lose := h.removing[name]
+	switch {
+	case ok && lose:
+		delete(h.removing, name)
+		c.State = "removing"
+		h.left[name] = n
+	case !ok:
+		c = model.Container{Name: name, State: "created"}
+	case h.created[name]:
+		c.State = "created"
+	}
+	if ds, ok := h.pulled[name]; ok && c.State != "removing" {
 		c.Digest, c.Digests = ds[0], ds
-		h.live[name] = c
+	}
+	h.live[name] = c
+	if err := h.exitErr; err != nil {
+		h.exitErr = nil
+		return out, err
 	}
 	return out, nil
 }
@@ -178,16 +207,50 @@ func (h *fakeHost) List(context.Context) ([]model.Container, error) {
 		return nil, errors.New("docker socket gone")
 	}
 	var out []model.Container
-	for _, c := range h.live {
+	for name, c := range h.live {
+		if c.State == "removing" {
+			if h.left[name] == 0 {
+				delete(h.live, name)
+				continue
+			}
+			h.left[name]--
+		}
 		out = append(out, c)
 	}
 	return out, nil
 }
 
+func (h *fakeHost) Start(_ context.Context, name string) error {
+	h.started = append(h.started, name)
+	if h.startErr != nil {
+		return h.startErr
+	}
+	h.setState(name, "running")
+	return nil
+}
+
+func (h *fakeHost) sleep(_ context.Context, d time.Duration) error {
+	h.slept += d
+	return nil
+}
+
+func (h *fakeHost) setState(name, state string) {
+	c := h.live[name]
+	c.State = state
+	h.live[name] = c
+}
+
 func newHost(running map[string]string) *fakeHost {
-	h := &fakeHost{fakeUpdater: fakeUpdater{sup: true}, live: map[string]model.Container{}, pulled: map[string][]string{}}
+	h := &fakeHost{
+		fakeUpdater: fakeUpdater{sup: true},
+		live:        map[string]model.Container{},
+		pulled:      map[string][]string{},
+		removing:    map[string]int{},
+		left:        map[string]int{},
+		created:     map[string]bool{},
+	}
 	for name, d := range running {
-		h.live[name] = model.Container{Name: name, Digest: d}
+		h.live[name] = model.Container{Name: name, Digest: d, State: "running"}
 	}
 	return h
 }
@@ -199,7 +262,13 @@ func stWithDigest(name, newest string) model.UpdateStatus {
 }
 
 func runHost(h *fakeHost, dryRun bool, sts ...model.UpdateStatus) Result {
-	return NewExecutor(fakeLister{sts: sts}, h).WithInspector(h).Run(context.Background(), Policy{Digest: true}, dryRun)
+	return runWith(h, h, dryRun, sts...)
+}
+
+func runWith(u updater.Updater, h *fakeHost, dryRun bool, sts ...model.UpdateStatus) Result {
+	e := NewExecutor(fakeLister{sts: sts}, u).WithDocker(h)
+	e.sleep = h.sleep
+	return e.Run(context.Background(), Policy{Digest: true}, dryRun)
 }
 
 func TestExecutorConfirmsUpdateAgainstRunningDigest(t *testing.T) {
@@ -214,22 +283,139 @@ func TestExecutorConfirmsUpdateAgainstRunningDigest(t *testing.T) {
 	}
 }
 
-func TestExecutorReportsAContainerGoneAfterTheUpdate(t *testing.T) {
+func TestExecutorReportsAContainerItCouldNotRecreate(t *testing.T) {
 	h := newHost(map[string]string{"a": "sha256:a"})
-	upd := &goneAfterUpdate{h}
-	res := NewExecutor(fakeLister{sts: []model.UpdateStatus{stWithDigest("a", "sha256:b")}}, upd).WithInspector(h).
-		Run(context.Background(), Policy{Digest: true}, false)
-	if o := res.Outcomes[0]; o.Updated || o.Err == nil || o.Err.Error() != "container gone after the update" {
+	upd := &goneAfterUpdate{h: h}
+	res := runWith(upd, h, false, stWithDigest("a", "sha256:b"))
+	if upd.calls != 2 {
+		t.Errorf("update script ran %d times, want a second run to recreate the container", upd.calls)
+	}
+	if o := res.Outcomes[0]; o.Updated || o.Recreated || o.Err == nil || o.Err.Error() != "container gone after the update and could not be recreated" {
 		t.Fatalf("outcome = %+v, want the container reported gone", o)
 	}
 }
 
-type goneAfterUpdate struct{ h *fakeHost }
+type goneAfterUpdate struct {
+	h     *fakeHost
+	calls int
+}
 
 func (g *goneAfterUpdate) Supported() bool { return true }
 func (g *goneAfterUpdate) Update(_ context.Context, name string) (string, error) {
+	g.calls++
 	delete(g.h.live, name)
 	return "", nil
+}
+
+func TestExecutorRecreatesAContainerTheUpdateLost(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.removing["a"] = 3
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if !o.Updated || !o.Recreated || !o.Started || o.Err != nil {
+		t.Fatalf("outcome = %+v, want an update that recreated and started the container", o)
+	}
+	if !reflect.DeepEqual(h.calls, []string{"a", "a"}) || !reflect.DeepEqual(h.started, []string{"a"}) {
+		t.Errorf("updates %v, starts %v, want two updates and one start", h.calls, h.started)
+	}
+	if c := h.live["a"]; c.State != "running" || c.Digest != "sha256:b" {
+		t.Errorf("container = %+v, want it running on the newest image", c)
+	}
+	if h.slept == 0 {
+		t.Error("the run did not wait for Docker to finish the removal")
+	}
+	if o.Output != "script updated a\nscript updated a" {
+		t.Errorf("Output = %q, want what both script runs printed", o.Output)
+	}
+}
+
+func TestExecutorRecreatesALostStoppedContainerWithoutStartingIt(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.setState("a", "exited")
+	h.pulled["a"] = []string{"sha256:b"}
+	h.removing["a"] = 0
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; !o.Updated || !o.Recreated || o.Started || o.Err != nil {
+		t.Fatalf("outcome = %+v, want an update that recreated the container", o)
+	}
+	if len(h.started) != 0 || h.live["a"].State != "created" {
+		t.Errorf("starts %v, state %q, want a stopped container to stay stopped", h.started, h.live["a"].State)
+	}
+}
+
+func TestExecutorRecreatesALostContainerEvenWhenTheScriptFailed(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.removing["a"] = 0
+	h.exitErr = errors.New("exit status 1")
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if o.Updated || !o.Recreated || !o.Started || o.Err == nil || o.Err.Error() != "exit status 1" {
+		t.Fatalf("outcome = %+v, want the script's failure with the container recreated and started", o)
+	}
+	if h.live["a"].State != "running" {
+		t.Errorf("container state %q, want running", h.live["a"].State)
+	}
+}
+
+func TestExecutorStartsARunningContainerTheUpdateLeftCreated(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.created["a"] = true
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if !o.Updated || !o.Started || o.Recreated || o.Err != nil {
+		t.Fatalf("outcome = %+v, want an update that started the container", o)
+	}
+	if h.live["a"].State != "running" || len(h.calls) != 1 {
+		t.Errorf("state %q after %d updates, want running after one", h.live["a"].State, len(h.calls))
+	}
+	if o.Output == "" {
+		t.Error("an update that left the container stopped lost the script output")
+	}
+}
+
+func TestExecutorLeavesAStoppedContainerStopped(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.setState("a", "exited")
+	h.pulled["a"] = []string{"sha256:b"}
+	h.created["a"] = true
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	if o := res.Outcomes[0]; !o.Updated || o.Started || o.Recreated || o.Err != nil || o.Output != "" {
+		t.Fatalf("outcome = %+v, want a plain update", o)
+	}
+	if len(h.started) != 0 {
+		t.Errorf("started %v, want a stopped container left stopped", h.started)
+	}
+}
+
+func TestExecutorReportsAContainerItCouldNotStart(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.pulled["a"] = []string{"sha256:b"}
+	h.created["a"] = true
+	h.startErr = errors.New("port is already allocated")
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if o.Updated || o.Started || o.Err == nil || !strings.Contains(o.Err.Error(), "port is already allocated") {
+		t.Fatalf("outcome = %+v, want the start failure", o)
+	}
+}
+
+func TestExecutorGivesUpOnAContainerThatStaysInRemoval(t *testing.T) {
+	h := newHost(map[string]string{"a": "sha256:a"})
+	h.removing["a"] = 1 << 30
+	res := runHost(h, false, stWithDigest("a", "sha256:b"))
+	o := res.Outcomes[0]
+	if o.Updated || o.Recreated || o.Err == nil || !strings.Contains(o.Err.Error(), "removed") {
+		t.Fatalf("outcome = %+v, want a failure naming the removal", o)
+	}
+	if len(h.calls) != 1 {
+		t.Errorf("update script ran %d times, want no recreation while the old container holds the name", len(h.calls))
+	}
+	if h.slept < settleTimeout || h.slept > settleTimeout+settlePoll {
+		t.Errorf("waited %s, want about %s", h.slept, settleTimeout)
+	}
 }
 
 func TestExecutorLeavesAContainerOnTheNewestImageAlone(t *testing.T) {
