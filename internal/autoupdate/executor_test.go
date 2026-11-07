@@ -20,12 +20,12 @@ type fakeUpdater struct {
 }
 
 func (f *fakeUpdater) Supported() bool { return f.sup }
-func (f *fakeUpdater) Update(_ context.Context, name string) error {
+func (f *fakeUpdater) Update(_ context.Context, name string) (string, error) {
 	f.calls = append(f.calls, name)
 	if name == f.failOn {
-		return errors.New("boom")
+		return "script said boom", errors.New("boom")
 	}
-	return nil
+	return "script updated " + name, nil
 }
 
 func stNamed(name string, k model.Kind) model.UpdateStatus {
@@ -159,9 +159,10 @@ type fakeHost struct {
 	updatedAt int
 }
 
-func (h *fakeHost) Update(ctx context.Context, name string) error {
-	if err := h.fakeUpdater.Update(ctx, name); err != nil {
-		return err
+func (h *fakeHost) Update(ctx context.Context, name string) (string, error) {
+	out, err := h.fakeUpdater.Update(ctx, name)
+	if err != nil {
+		return out, err
 	}
 	h.updatedAt++
 	if ds, ok := h.pulled[name]; ok {
@@ -169,7 +170,7 @@ func (h *fakeHost) Update(ctx context.Context, name string) error {
 		c.Digest, c.Digests = ds[0], ds
 		h.live[name] = c
 	}
-	return nil
+	return out, nil
 }
 
 func (h *fakeHost) List(context.Context) ([]model.Container, error) {
@@ -226,9 +227,9 @@ func TestExecutorReportsAContainerGoneAfterTheUpdate(t *testing.T) {
 type goneAfterUpdate struct{ h *fakeHost }
 
 func (g *goneAfterUpdate) Supported() bool { return true }
-func (g *goneAfterUpdate) Update(_ context.Context, name string) error {
+func (g *goneAfterUpdate) Update(_ context.Context, name string) (string, error) {
 	delete(g.h.live, name)
-	return nil
+	return "", nil
 }
 
 func TestExecutorLeavesAContainerOnTheNewestImageAlone(t *testing.T) {
@@ -296,6 +297,19 @@ func TestExecutorSkipsConfirmationOnUpdateError(t *testing.T) {
 	res := runHost(h, false, stWithDigest("a", "sha256:b"))
 	if o := res.Outcomes[0]; o.Updated || o.Err == nil || o.Err.Error() != "boom" {
 		t.Fatalf("outcome = %+v, want the updater's own error", o)
+	}
+}
+
+func TestExecutorKeepsTheScriptOutputOfAnUpdateThatDidNotSucceed(t *testing.T) {
+	h := newHost(map[string]string{"done": "sha256:a", "stale": "sha256:a", "broken": "sha256:a"})
+	h.pulled["done"] = []string{"sha256:b"}
+	h.failOn = "broken"
+	res := runHost(h, false, stWithDigest("done", "sha256:b"), stWithDigest("stale", "sha256:b"), stWithDigest("broken", "sha256:b"))
+	want := map[string]string{"done": "", "stale": "script updated stale", "broken": "script said boom"}
+	for _, o := range res.Outcomes {
+		if o.Output != want[o.Name] {
+			t.Errorf("%s: Output = %q, want %q", o.Name, o.Output, want[o.Name])
+		}
 	}
 }
 

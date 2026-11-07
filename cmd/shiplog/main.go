@@ -184,6 +184,9 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autou
 				if o.Blocked || o.Skipped || o.UpToDate {
 					continue
 				}
+				if o.Output != "" {
+					log.Printf("shiplog: auto-update of %s, the update script printed:\n%s", o.Name, o.Output)
+				}
 				errStr := ""
 				if o.Err != nil {
 					errStr = o.Err.Error()
