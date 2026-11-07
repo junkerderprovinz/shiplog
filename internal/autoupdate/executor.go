@@ -39,6 +39,9 @@ type Outcome struct {
 	// UpToDate marks an eligible update whose container already ran the newest
 	// image when the run looked, because the stored status was older.
 	UpToDate bool
+	// Output is what the update script printed, kept only for an update that
+	// did not cleanly succeed, so the log shows what went wrong.
+	Output string
 }
 
 // Result aggregates one auto-update run.
@@ -125,11 +128,15 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 		case dryRun:
 			o.Updated = true
 		default:
-			o.Err = e.upd.Update(ctx, o.Name)
+			var out string
+			out, o.Err = e.upd.Update(ctx, o.Name)
 			if o.Err == nil {
 				o.Err = e.verify(ctx, st, before)
 			}
 			o.Updated = o.Err == nil
+			if !o.Updated {
+				o.Output = out
+			}
 		}
 		res.Outcomes = append(res.Outcomes, o)
 	}
