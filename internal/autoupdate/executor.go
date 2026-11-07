@@ -114,6 +114,7 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 	if err != nil {
 		return res
 	}
+	var done []applied
 	for _, st := range statuses {
 		if !Eligible(st, p) {
 			continue
@@ -147,55 +148,138 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 		case dryRun:
 			o.Updated = true
 		default:
-			var out string
-			out, o.Err = e.apply(ctx, st, before, &o)
+			a := applied{i: len(res.Outcomes), st: st, before: before}
+			o.Err = e.apply(ctx, &a, &o)
 			o.Updated = o.Err == nil
-			if !o.Updated || o.Recreated || o.Started {
-				o.Output = out
-			}
+			done = append(done, a)
 		}
 		res.Outcomes = append(res.Outcomes, o)
 	}
+	e.recheck(ctx, res.Outcomes, done)
+	for _, a := range done {
+		if o := &res.Outcomes[a.i]; !o.Updated || o.Recreated || o.Started {
+			o.Output = a.out
+		}
+	}
 	return res
+}
+
+// applied is one update the run ran, kept for the check at the end of the run.
+type applied struct {
+	i         int // into Result.Outcomes
+	st        model.UpdateStatus
+	before    model.Container
+	out       string
+	scriptErr error
 }
 
 // apply runs the update and brings the container back to the run state it had
 // before. The script exits 0 even when it lost the container on the way, so the
 // container is checked whatever the script reported.
-func (e *Executor) apply(ctx context.Context, st model.UpdateStatus, before model.Container, o *Outcome) (string, error) {
-	out, err := e.upd.Update(ctx, o.Name)
+func (e *Executor) apply(ctx context.Context, a *applied, o *Outcome) error {
+	a.out, a.scriptErr = e.upd.Update(ctx, o.Name)
 	if e.docker == nil {
-		return out, err
+		return a.scriptErr
 	}
-	after, found, serr := e.settle(ctx, o.Name)
-	if serr != nil {
-		return out, fmt.Errorf("could not confirm the update: %w", serr)
+	after, _, err := e.keep(ctx, a, o)
+	if err != nil {
+		return err
 	}
+	if a.scriptErr != nil {
+		return a.scriptErr
+	}
+	verr := verify(a.st, a.before, after)
+	if verr == nil || (!errors.Is(verr, ErrNoChange) && after.Digest != "") {
+		return verr
+	}
+	// Docker can still list the old container while it stops it for a removal
+	// the script gave up waiting on.
+	leaving, err := e.watch(ctx, o.Name)
+	if err != nil {
+		return fmt.Errorf("could not confirm the update: %w", err)
+	}
+	if !leaving {
+		return verr
+	}
+	if after, _, err = e.keep(ctx, a, o); err != nil {
+		return err
+	}
+	return verify(a.st, a.before, after)
+}
+
+// keep waits for Docker to settle on the container, recreates it from its
+// template when it is gone and starts it when it ran before the update. It
+// reports whether it had to do either.
+func (e *Executor) keep(ctx context.Context, a *applied, o *Outcome) (model.Container, bool, error) {
+	after, found, err := e.settle(ctx, o.Name)
+	if err != nil {
+		return after, false, fmt.Errorf("could not confirm the update: %w", err)
+	}
+	fixed := false
 	if !found {
 		// With no old container left, the script creates one from the template.
-		more, rerr := e.upd.Update(ctx, o.Name)
-		out = strings.TrimSpace(out + "\n" + more)
-		if rerr != nil {
-			return out, fmt.Errorf("container gone after the update, recreating it failed: %w", rerr)
+		more, err := e.upd.Update(ctx, o.Name)
+		a.out = strings.TrimSpace(a.out + "\n" + more)
+		if err != nil {
+			return after, false, fmt.Errorf("container gone after the update, recreating it failed: %w", err)
 		}
-		if after, found, serr = e.settle(ctx, o.Name); serr != nil {
-			return out, fmt.Errorf("could not confirm the recreated container: %w", serr)
+		if after, found, err = e.settle(ctx, o.Name); err != nil {
+			return after, false, fmt.Errorf("could not confirm the recreated container: %w", err)
 		}
 		if !found {
-			return out, errors.New("container gone after the update and could not be recreated")
+			return after, false, errors.New("container gone after the update and could not be recreated")
 		}
-		o.Recreated = true
+		o.Recreated, fixed = true, true
 	}
-	if before.State == "running" && (after.State == "created" || after.State == "exited") {
-		if serr := e.docker.Start(ctx, o.Name); serr != nil {
-			return out, fmt.Errorf("container %s after the update, starting it failed: %w", after.State, serr)
+	if a.before.State == "running" && (after.State == "created" || after.State == "exited") {
+		if err := e.docker.Start(ctx, o.Name); err != nil {
+			return after, fixed, fmt.Errorf("container %s after the update, starting it failed: %w", after.State, err)
 		}
-		o.Started = true
+		o.Started, fixed = true, true
 	}
-	if err != nil {
-		return out, err
+	return after, fixed, nil
+}
+
+// recheck looks at every container the run updated once more after a settle
+// period, since Docker can finish a removal long after the script returned.
+func (e *Executor) recheck(ctx context.Context, outcomes []Outcome, done []applied) {
+	if e.docker == nil || len(done) == 0 || e.sleep(ctx, settleTimeout) != nil {
+		return
 	}
-	return out, verify(st, before, after)
+	for k := range done {
+		a := &done[k]
+		o := &outcomes[a.i]
+		after, fixed, err := e.keep(ctx, a, o)
+		switch {
+		case err != nil:
+			o.Err = err
+		case !fixed:
+			continue
+		case a.scriptErr != nil:
+			o.Err = a.scriptErr
+		default:
+			o.Err = verify(a.st, a.before, after)
+		}
+		o.Updated = o.Err == nil
+	}
+}
+
+// watch looks at the container for one settle period and reports whether
+// Docker began removing it or it went away.
+func (e *Executor) watch(ctx context.Context, name string) (bool, error) {
+	for waited := time.Duration(0); waited < settleTimeout; waited += settlePoll {
+		if err := e.sleep(ctx, settlePoll); err != nil {
+			return false, err
+		}
+		c, found, err := e.running(ctx, name)
+		if err != nil {
+			return false, err
+		}
+		if !found || c.State == "removing" {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // settle returns the named container once Docker is done removing it, or
