@@ -752,3 +752,25 @@ func TestResultNotable(t *testing.T) {
 		}
 	}
 }
+
+func TestExecutorNamesEachContainerBeforeItsUpdate(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	var named []string
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+		stNamed("a", model.KindPatch), stNamed("b", model.KindMajor), stNamed("d", model.KindPatch),
+	}}, upd).WithProgress(func(name string) {
+		if len(upd.calls) != len(named) {
+			t.Errorf("%s named after its update started", name)
+		}
+		named = append(named, name)
+	})
+	e.Run(context.Background(), Policy{Level: LevelPatch}, false)
+	if !reflect.DeepEqual(named, []string{"a", "d"}) {
+		t.Errorf("named %v, want [a d]", named)
+	}
+	named = nil
+	e.Run(context.Background(), Policy{Level: LevelPatch}, true)
+	if len(named) != 0 {
+		t.Errorf("a dry run named %v", named)
+	}
+}

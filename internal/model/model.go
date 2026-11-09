@@ -129,6 +129,53 @@ func (c Container) HasDigest(d string) bool {
 // HasUpdate reports whether this status represents an actionable update.
 func (s UpdateStatus) HasUpdate() bool { return s.Kind != KindNone && s.Kind != "" }
 
+// Target names the version an update delivers, or "" when all that is known is
+// a new image behind the running tag. The changelog's ToTag is the version the
+// engine could vouch for. Its newest entry only supplies the spelling, because a
+// rolling tag's recent releases say nothing about the image it serves.
+func (s UpdateStatus) Target() string {
+	to := s.NewestTag
+	if cl := s.Changelog; cl != nil && cl.ToTag != "" {
+		to = cl.ToTag
+		if len(cl.Entries) > 0 && SameVersion(cl.Entries[0].Tag, to) {
+			to = cl.Entries[0].Tag
+		}
+	}
+	if SameVersion(to, s.Container.Tag) {
+		return ""
+	}
+	return to
+}
+
+// Link returns the changelog file or the changelog's repo root, else the
+// container's OCI source repo root, so every message links to the same place.
+func (s UpdateStatus) Link() string {
+	link := ""
+	switch {
+	case s.Changelog != nil && s.Changelog.Provider == "file":
+		link = s.Changelog.URL
+	case s.Changelog != nil:
+		link = repoRoot(s.Changelog.URL)
+	}
+	if link == "" {
+		link = repoRoot(s.Container.Source)
+	}
+	return link
+}
+
+// repoRoot keeps only scheme://host/owner/repo from a URL (drops /compare/...).
+func repoRoot(u string) string {
+	u = strings.TrimSpace(u)
+	if u == "" {
+		return ""
+	}
+	parts := strings.SplitN(u, "/", 7) // scheme,"",host,owner,repo,...
+	if len(parts) < 5 || !strings.HasPrefix(u, "http") {
+		return strings.TrimSuffix(u, ".git")
+	}
+	return strings.TrimSuffix(strings.Join(parts[:5], "/"), ".git")
+}
+
 var versionPrefix = regexp.MustCompile(`^(release-)?[vV]?\d`)
 
 // VersionCore strips what projects put around a version in one place and not in

@@ -33,6 +33,15 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.8.0
+✨ **Added**
+- **ShipLog tells the other apps of your fortress how it is doing.** They can read how many containers have an update, which of them are a major jump or come with a breaking change, an auto-update that failed, the auto-update that is running and the auto-update log. They read it only through ShipLog's local socket and your Unraid login, never from the network.
+
+⚡ **Improved**
+- **Notifications have a file of their own.** On its first start, ShipLog moves your Matrix, Apprise and Unraid settings from shiplog.cfg to notify.json next to it, and the settings page saves them there from then on. A channel that was only partly filled in comes over switched off, so nothing you typed is lost.
+- **A message that does not get through is tried three times** instead of once. ShipLog no longer follows a redirect to another host, because the request can carry your token.
+- **Unraid shows a failed update as a warning.** That goes for an auto-update run in which an update failed and for an update that did not apply. Apprise messages now carry a title.
+
 ### 3.7.6
 🐛 **Fixed**
 - **Only the Unraid web UI reaches ShipLog's engine.** The engine answered on port 8484 to anyone on your network, without a login, so any device there could start a check or change a changelog source. It now listens on a local socket, and the Docker tab, the settings page and the status page reach it through your Unraid login. The status page opens from ShipLog's settings page, and the port setting is gone.

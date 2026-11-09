@@ -19,11 +19,16 @@ $ourl   = isset($cfg['OLLAMA_URL'])        ? $cfg['OLLAMA_URL']        : '';
 $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $lsurl  = isset($cfg['LLAMASWAP_URL'])     ? $cfg['LLAMASWAP_URL']     : '';
 $lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
-$mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
-$mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
-$mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
-$apprise= isset($cfg['APPRISE_URL'])       ? $cfg['APPRISE_URL']       : '';
-$unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true'); // default off
+/* Notifications live in notify.json beside shiplog.cfg, which still holds them
+   until the engine or this page has moved them (server/notify.php). */
+$N = include '/usr/local/emhttp/plugins/shiplog/include/notify.php';
+$nf = '/boot/config/plugins/shiplog/notify.json';
+$NV = $N['fields'](is_file($nf) ? json_decode((string)@file_get_contents($nf), true) : null, $cfg);
+$mhs    = $NV['hs'];
+$mtok   = $NV['token'];
+$mroom  = $NV['room'];
+$apprise= $NV['apprise'];
+$unraidNotify = $NV['unraid'];
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off

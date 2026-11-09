@@ -30,18 +30,17 @@ type Config struct {
 	DockerHubUser  string // DOCKERHUB_USERNAME
 	DockerHubToken string // DOCKERHUB_TOKEN (access token or password)
 
-	OllamaURL        string // OLLAMA_URL
-	OllamaModel      string // OLLAMA_MODEL
-	LlamaSwapURL     string // LLAMASWAP_URL, used instead of Ollama when set
-	LlamaSwapModel   string // LLAMASWAP_MODEL
-	MatrixHomeserver string // MATRIX_HOMESERVER
-	MatrixToken      string // MATRIX_TOKEN
-	MatrixRoom       string // MATRIX_ROOM
-	AppriseURL       string // APPRISE_URL, an Apprise API notify URL with its key
+	OllamaURL      string // OLLAMA_URL
+	OllamaModel    string // OLLAMA_MODEL
+	LlamaSwapURL   string // LLAMASWAP_URL, used instead of Ollama when set
+	LlamaSwapModel string // LLAMASWAP_MODEL
 
-	// UnraidNotify (UNRAID_NOTIFY) also sends native Unraid notifications, which
-	// fan out to every agent configured on the host.
-	UnraidNotify bool
+	// NotifyFile (NOTIFY_FILE) holds the notification channels. Without it,
+	// as in the container, OldNotify sets them up on every start.
+	NotifyFile string
+	// OldNotify holds the variables notifications were set up with before
+	// NotifyFile, which the plugin reads once to build it.
+	OldNotify map[string]string
 
 	// AutoUpdate holds the scheduled auto-update settings of the Unraid plugin.
 	AutoUpdate AutoUpdateConfig
@@ -68,25 +67,22 @@ type AutoUpdateConfig struct {
 // Load reads the environment, applying the documented defaults.
 func Load() Config {
 	return Config{
-		DockerSocket:     env("DOCKER_SOCKET", "/var/run/docker.sock"),
-		DockerConfigDir:  dockerConfigDir(),
-		Port:             env("PORT", "8484"),
-		Socket:           os.Getenv("SOCKET"),
-		DataDir:          env("DATA_DIR", "/config"),
-		PollInterval:     dur("POLL_INTERVAL", 6*time.Hour),
-		GithubToken:      os.Getenv("GITHUB_TOKEN"),
-		IgnoreUnmanaged:  truthy("IGNORE_UNMANAGED"),
-		DockerHubUser:    os.Getenv("DOCKERHUB_USERNAME"),
-		DockerHubToken:   os.Getenv("DOCKERHUB_TOKEN"),
-		OllamaURL:        os.Getenv("OLLAMA_URL"),
-		OllamaModel:      os.Getenv("OLLAMA_MODEL"),
-		LlamaSwapURL:     os.Getenv("LLAMASWAP_URL"),
-		LlamaSwapModel:   os.Getenv("LLAMASWAP_MODEL"),
-		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),
-		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
-		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
-		AppriseURL:       os.Getenv("APPRISE_URL"),
-		UnraidNotify:     truthy("UNRAID_NOTIFY"),
+		DockerSocket:    env("DOCKER_SOCKET", "/var/run/docker.sock"),
+		DockerConfigDir: dockerConfigDir(),
+		Port:            env("PORT", "8484"),
+		Socket:          os.Getenv("SOCKET"),
+		DataDir:         env("DATA_DIR", "/config"),
+		PollInterval:    dur("POLL_INTERVAL", 6*time.Hour),
+		GithubToken:     os.Getenv("GITHUB_TOKEN"),
+		IgnoreUnmanaged: truthy("IGNORE_UNMANAGED"),
+		DockerHubUser:   os.Getenv("DOCKERHUB_USERNAME"),
+		DockerHubToken:  os.Getenv("DOCKERHUB_TOKEN"),
+		OllamaURL:       os.Getenv("OLLAMA_URL"),
+		OllamaModel:     os.Getenv("OLLAMA_MODEL"),
+		LlamaSwapURL:    os.Getenv("LLAMASWAP_URL"),
+		LlamaSwapModel:  os.Getenv("LLAMASWAP_MODEL"),
+		NotifyFile:      os.Getenv("NOTIFY_FILE"),
+		OldNotify:       oldNotify(),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:           truthy("AUTOUPDATE_ENABLED"),
 			Level:             levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
@@ -99,6 +95,14 @@ func Load() Config {
 			ExcludeContainers: os.Getenv("AUTOUPDATE_EXCLUDE_CONTAINERS"),
 		},
 	}
+}
+
+func oldNotify() map[string]string {
+	m := map[string]string{}
+	for _, k := range []string{"MATRIX_HOMESERVER", "MATRIX_TOKEN", "MATRIX_ROOM", "APPRISE_URL", "UNRAID_NOTIFY"} {
+		m[k] = os.Getenv(k)
+	}
+	return m
 }
 
 // truthy accepts the settings page's "true" as well as "yes", "1" and "on".
