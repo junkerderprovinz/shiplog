@@ -1,7 +1,6 @@
 {
   "s_engine": "엔진",
   "s_enable": "활성화",
-  "s_port": "포트",
   "s_datadir": "데이터 디렉터리",
   "s_datadir_hint": "SQLite 캐시: flash가 아닌 appdata에 두세요",
   "s_poll": "폴링 간격",

@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Activează",
-  "s_port": "Port",
   "s_datadir": "Director de date",
   "s_datadir_hint": "Cache SQLite: ține-l pe appdata, nu pe flash",
   "s_poll": "Interval de interogare",

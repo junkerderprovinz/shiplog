@@ -24,6 +24,6 @@ func Init(w io.Writer) {
 // in build.yml greps `docker logs` for "SHIPLOG IS READY"; changing the phrase
 // means changing it there too.
 func Ready(w io.Writer, addr string) {
-	_, _ = fmt.Fprintf(w, "  \033[0;32m✓ SHIPLOG IS READY\033[0m - listening on http://%s\n", addr)
+	_, _ = fmt.Fprintf(w, "  \033[0;32m✓ SHIPLOG IS READY\033[0m - listening on %s\n", addr)
 	_, _ = fmt.Fprintln(w)
 }

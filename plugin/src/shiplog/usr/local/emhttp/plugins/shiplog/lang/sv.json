@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Aktivera",
-  "s_port": "Port",
   "s_datadir": "Datakatalog",
   "s_datadir_hint": "SQLite-cache: håll på appdata, inte på flash",
   "s_poll": "Avfrågningsintervall",

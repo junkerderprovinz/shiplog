@@ -50,11 +50,11 @@
 </head>
 <body>
 <header>
-  <div class="brand"><img src="/logo.svg" alt="" width="26" height="26"><span><b>Ship</b>Log</span></div>
+  <div class="brand"><img src="{{if .Proxy}}{{.Proxy}}?path=logo{{else}}/logo.svg{{end}}" alt="" width="26" height="26"><span><b>Ship</b>Log</span></div>
   <div class="spacer"></div>
   <div class="meta">{{.Count}} containers &middot; {{.Updates}} with updates</div>
-  <a class="btn" href="?{{if .Mono}}{{else}}mono=1{{end}}">{{if .Mono}}colour badges{{else}}monochrome{{end}}</a>
-  <a class="btn" href="/api/refresh" onclick="fetch('/api/refresh',{method:'POST'});return false">refresh</a>
+  <a class="btn" href="{{.Proxy}}?{{if .Proxy}}path=page{{if not .Mono}}&amp;mono=1{{end}}{{else if not .Mono}}mono=1{{end}}">{{if .Mono}}colour badges{{else}}monochrome{{end}}</a>
+  <a class="btn" href="#" id="refresh">refresh</a>
 </header>
 <main>
 {{if .Statuses}}
@@ -99,9 +99,21 @@
 // Per-image changelog source override and unmaintained mute.
 (function(){
   "use strict";
+  var proxy = {{.Proxy}}, csrf = {{.CSRF}};
+  // Behind the plugin's proxy a write goes out as a POST, the one method Unraid
+  // checks the csrf_token of, and the proxy passes its method on.
+  function api(path, method, body){
+    var data = body ? JSON.stringify(body) : "";
+    if(!proxy){
+      return method ? fetch("/api/"+path,{method:method,headers:{"Content-Type":"application/json"},body:data||undefined}) : fetch("/api/"+path);
+    }
+    if(!method){ return fetch(proxy+"?path="+encodeURIComponent(path)); }
+    return fetch(proxy,{method:"POST",body:new URLSearchParams({csrf_token:csrf,path:path,method:method,data:data})});
+  }
+  document.getElementById("refresh").addEventListener("click", function(e){ e.preventDefault(); api("refresh","POST"); });
   function msg(td,t){ var m=td.querySelector(".srcmsg"); if(m){ m.textContent=t; } }
   function reloadSoon(td,t){ msg(td,t); setTimeout(function(){ location.reload(); }, 2500); }
-  fetch("/api/overrides").then(function(r){ return r.json(); }).then(function(m){
+  api("overrides").then(function(r){ return r.json(); }).then(function(m){
     m = m || {};
     document.querySelectorAll("td.clog[data-repo]").forEach(function(td){
       var repo = td.getAttribute("data-repo"); if(!repo || !m[repo]) return;
@@ -118,7 +130,7 @@
     btn.setAttribute("data-active", active ? "1" : "0");
     btn.textContent = active ? "unmaintained muted ✓" : "mute unmaintained";
   }
-  fetch("/api/unmaintained-suppressions").then(function(r){ return r.json(); }).then(function(m){
+  api("unmaintained-suppressions").then(function(r){ return r.json(); }).then(function(m){
     m = m || {};
     document.querySelectorAll("td.clog[data-repo]").forEach(function(td){
       var repo = td.getAttribute("data-repo"); if(!repo) return;
@@ -134,14 +146,13 @@
       var repo = td.getAttribute("data-repo"), inp = td.querySelector(".srcin");
       var src = inp ? inp.value.trim() : "";
       if(!src){ msg(td,"enter a repo, e.g. owner/repo, or a changelog file URL"); return; }
-      fetch("/api/override",{method:"PUT",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({repo:repo,source:src})}).then(function(r){
+      api("override","PUT",{repo:repo,source:src}).then(function(r){
           if(r.ok){ reloadSoon(td,"saved, refreshing…"); }
           else { r.text().then(function(x){ msg(td, x || "invalid source"); }); }
         }).catch(function(){ msg(td,"network error"); });
     } else if(t.classList.contains("srcreset")){
       var rp = td.getAttribute("data-repo");
-      fetch("/api/override?repo="+encodeURIComponent(rp),{method:"DELETE"}).then(function(r){
+      api("override","DELETE",{repo:rp}).then(function(r){
         if(r.ok){ reloadSoon(td,"cleared, refreshing…"); }
         else { msg(td,"error"); }
       }).catch(function(){ msg(td,"network error"); });
@@ -149,9 +160,8 @@
       var repo2 = td.getAttribute("data-repo"), sm = td.querySelector(".supmsg");
       var nowActive = t.getAttribute("data-active") === "1";
       var req = nowActive
-        ? fetch("/api/unmaintained-suppression?repo="+encodeURIComponent(repo2),{method:"DELETE"})
-        : fetch("/api/unmaintained-suppression",{method:"PUT",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({repo:repo2})});
+        ? api("unmaintained-suppression","DELETE",{repo:repo2})
+        : api("unmaintained-suppression","PUT",{repo:repo2});
       req.then(function(r){
         if(r.ok){ setToggleState(t, !nowActive); if(sm){ sm.textContent = "saved, refreshing…"; } setTimeout(function(){ location.reload(); }, 2500); }
         else { r.text().then(function(x){ if(sm){ sm.textContent = x || "error"; } }); }

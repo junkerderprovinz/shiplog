@@ -10,7 +10,6 @@ Icon="shiplog.png"
    blank page. */
 $cfg    = parse_plugin_cfg("shiplog");
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
-$port   = !empty($cfg['PORT'])          ? $cfg['PORT']          : '8484';
 $ddir   = !empty($cfg['DATA_DIR'])      ? $cfg['DATA_DIR']      : '/mnt/user/appdata/shiplog';
 $poll   = !empty($cfg['POLL_INTERVAL']) ? $cfg['POLL_INTERVAL'] : '6h';
 $ghtok  = isset($cfg['GITHUB_TOKEN'])      ? $cfg['GITHUB_TOKEN']      : '';
@@ -50,13 +49,6 @@ if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
   if (is_array($tr)) $L = array_merge($L, $tr);
 }
 
-/* The LAN IP for the status page link, because location.hostname cannot reach
-   :PORT when the GUI is opened through myunraid.net. */
-$lanip = '';
-$net = '/var/local/emhttp/network.ini';
-if (is_file($net) && preg_match('/IPADDR(?::0)?\s*=\s*"?([0-9.]+)/', file_get_contents($net), $mip)) $lanip = $mip[1];
-if ($lanip === '' && !empty($_SERVER['SERVER_ADDR'])) $lanip = $_SERVER['SERVER_ADDR'];
-
 $slVer = '';
 if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
 $slGlimstoneVer = '3.8.5';
@@ -89,7 +81,6 @@ $slSwitch = function ($id, $name, $on) {
 $slEye = function ($id) use ($G, $slE, $L) {
   return '<span class="sl-eye" role="button" tabindex="0" data-sl-eye="'.$id.'" aria-label="'.$slE($L['s_show']).'" aria-pressed="false">'.$G['Eye'].'</span>';
 };
-$slStatusUrl = $lanip !== '' ? 'http://'.$lanip.':'.$port.'/' : '';
 /* A version links to its release page. A build without a release behind it shows its name alone. */
 $slVerLink = function ($ver, $repo) use ($slE) {
   $v = preg_replace('/^v/', '', (string)$ver);
@@ -153,10 +144,6 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
         <div class="sl-ctl"><?=$slSwitch('sl-enable', 'ENABLE', $enable !== 'false')?></div>
       </div>
       <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-PORT"><?=$slE($L['s_port'])?></label></div>
-        <div class="sl-ctl"><input type="text" class="sl-f sl-f-s" id="sl-PORT" name="PORT" value="<?=$slE($port)?>" inputmode="numeric" dir="ltr"></div>
-      </div>
-      <div class="sl-row">
         <div class="sl-lbl"><label for="sl-DATA_DIR"><?=$slE($L['s_datadir'])?></label><?=$slInfo($L['s_datadir_hint'])?></div>
         <div class="sl-ctl"><input type="text" class="sl-f" id="sl-DATA_DIR" name="DATA_DIR" value="<?=$slE($ddir)?>" dir="ltr"></div>
       </div>
@@ -172,7 +159,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
         <div class="sl-lbl"><span id="sl-status-lbl"><?=$slE($L['s_status'])?></span></div>
         <div class="sl-ctl">
           <span class="sl-stat" id="sl-stat" data-state="run" role="status" aria-labelledby="sl-status-lbl sl-stat-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-stat-txt"><?=$slE($L['s_checking'])?></span></span>
-          <span class="sl-act"><a class="button sl-btn" id="sl-statuslink" href="<?=$slE($slStatusUrl)?>" target="_blank" rel="noopener noreferrer" data-sl-port="<?=$slE($port)?>"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a></span>
+          <span class="sl-act"><a class="button sl-btn" id="sl-statuslink" href="/plugins/shiplog/server/status.php?path=page" target="_blank" rel="noopener noreferrer"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a></span>
         </div>
       </div>
     </section>
@@ -458,7 +445,6 @@ $slGroup = function ($label, $control) use ($slE) {
 <script>
 var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
 var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Copy' => $G['Copy'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
-var SL_STATUS_HOST = <?=json_encode($lanip)?>;
 var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 </script>
 <script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>

@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Activar",
-  "s_port": "Puerto",
   "s_datadir": "Directorio de datos",
   "s_datadir_hint": "Caché SQLite: mantenlo en appdata, no en el flash",
   "s_poll": "Intervalo de sondeo",

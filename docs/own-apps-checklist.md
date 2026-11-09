@@ -19,6 +19,6 @@ Go through these points for every app you build or publish yourself.
    curl -s -o /dev/null -w '%{http_code}\n' "https://ghcr.io/token?service=ghcr.io&scope=repository:<you>/<app>:pull"
    # Unraid's view: a status and a remote digest mean the login works
    jq '."ghcr.io/<you>/<app>:latest"' /var/lib/docker/unraid-update-status.json
-   # ShipLog's view: no "unmaintained" field and a kind of none or an update
-   curl -s http://<server>:8484/api/containers | jq '.[] | select(.container.name=="<App>") | {kind, unmaintained, unmaintained_reason}'
+   # ShipLog's view, run on the server: no "unmaintained" field and a kind of none or an update
+   curl -s --unix-socket /var/run/shiplog.sock http://localhost/api/containers | jq '.[] | select(.container.name=="<App>") | {kind, unmaintained, unmaintained_reason}'
    ```

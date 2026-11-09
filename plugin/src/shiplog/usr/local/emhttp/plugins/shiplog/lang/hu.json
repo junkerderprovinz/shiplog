@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Engedélyezés",
-  "s_port": "Port",
   "s_datadir": "Adatkönyvtár",
   "s_datadir_hint": "SQLite-gyorsítótár: az appdata-n tartsd, ne a flashen",
   "s_poll": "Lekérdezési időköz",

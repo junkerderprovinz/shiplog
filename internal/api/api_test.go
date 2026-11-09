@@ -205,6 +205,21 @@ func TestSuppressionEndpoints(t *testing.T) {
 	}
 }
 
+func TestDeleteTakesTheRepoFromTheBody(t *testing.T) {
+	ovr := &fakeOverrides{m: map[string]string{"x/y": "https://github.com/o/r"}, s: map[string]bool{"x/y": true}}
+	h := New(fakeSource{}, ovr, &fakeRefresher{}, "").Handler()
+	for _, path := range []string{"/api/override", "/api/unmaintained-suppression"} {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest("DELETE", path, strings.NewReader(`{"repo":"x/y"}`)))
+		if rr.Code != 200 {
+			t.Fatalf("DELETE %s: code %d (%s)", path, rr.Code, rr.Body.String())
+		}
+	}
+	if len(ovr.m) != 0 || len(ovr.s) != 0 {
+		t.Fatalf("not cleared: overrides %v, suppressions %v", ovr.m, ovr.s)
+	}
+}
+
 func TestStatusPageRenders(t *testing.T) {
 	h, _ := testAPI()
 	rr := httptest.NewRecorder()
@@ -274,6 +289,41 @@ func TestStatusPage(t *testing.T) {
 	}
 	if strings.Contains(rr.Body.String(), "&#9875;") {
 		t.Error("status page header uses the anchor glyph instead of the logo")
+	}
+}
+
+func TestStatusPageBehindTheProxyCallsThroughIt(t *testing.T) {
+	h, _ := testAPI()
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-ShipLog-Proxy", "/plugins/shiplog/server/status.php")
+	req.Header.Set("X-ShipLog-CSRF", "tok123")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	body := rr.Body.String()
+	for _, want := range []string{
+		`src="/plugins/shiplog/server/status.php?path=logo"`,
+		`href="/plugins/shiplog/server/status.php?path=page&amp;mono=1"`,
+		`"tok123"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("status page behind the proxy lacks %s", want)
+		}
+	}
+	if strings.Contains(body, `src="/logo.svg"`) {
+		t.Error("status page behind the proxy loads the logo from the engine's own path")
+	}
+}
+
+func TestStatusPageServedByTheEngineCallsItDirectly(t *testing.T) {
+	h, _ := testAPI()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/?mono=1", nil))
+	body := rr.Body.String()
+	if !strings.Contains(body, `href="?"`) {
+		t.Error("the colour toggle does not point at the page itself")
+	}
+	if strings.Contains(body, "status.php") {
+		t.Error("status page served by the engine refers to the plugin's proxy")
 	}
 }
 

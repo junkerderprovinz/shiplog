@@ -26,6 +26,17 @@ func TestLoadOverrides(t *testing.T) {
 	}
 }
 
+func TestLoadSocket(t *testing.T) {
+	t.Setenv("SOCKET", "")
+	if got := Load().Socket; got != "" {
+		t.Fatalf("SOCKET unset: got %q, want TCP", got)
+	}
+	t.Setenv("SOCKET", "/var/run/shiplog.sock")
+	if got := Load().Socket; got != "/var/run/shiplog.sock" {
+		t.Fatalf("SOCKET: got %q", got)
+	}
+}
+
 func TestBadDurationFallsBack(t *testing.T) {
 	t.Setenv("POLL_INTERVAL", "not-a-duration")
 	if Load().PollInterval != 6*time.Hour {

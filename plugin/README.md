@@ -8,7 +8,7 @@ injects a discreet changelog control and bubble into Unraid's **native Docker ta
 |------|------------|-------------|
 | **Engine** | The read-only Go binary: reads the Docker socket, resolves running→newest, computes the risk, fetches the changelog, serves a small REST API and status page. | Started by the plugin as a host daemon (`scripts/rc.shiplog`). Same binary as the container image; the container is still buildable for non-Unraid hosts. |
 | **Injection** | A `*.Docker.page` that emhttp renders into the Docker tab and that loads `scripts/docker.js` and `styles/docker.css`. | In the browser, on the Docker tab. |
-| **Proxy** | `server/status.php`, the same-origin bridge from the browser to the local engine (`127.0.0.1:<port>`), so there's no CORS and no token in the browser. | On the Unraid webserver. |
+| **Proxy** | `server/status.php`, the same-origin bridge from the browser to the engine's unix socket (`/var/run/shiplog.sock`). The engine has no login of its own and opens no port, so every call goes through Unraid's login, and every write needs Unraid's CSRF token. | On the Unraid webserver. |
 
 **Why a plugin (and why the engine isn't separate PHP).** Unraid's Docker tab is
 server-rendered by emhttp; only a plugin can draw into it. The data work
@@ -27,13 +27,13 @@ plugin/
   spike/docker-tab-inject.js  the feasibility spike (paste-in-console; proven on a real box)
   src/shiplog/usr/local/emhttp/plugins/shiplog/
     shiplog.Docker.page       Menu="Docker" → injected into the Docker tab
-    shiplog.page              Settings → ShipLog (port, enable, token, Ollama/Matrix)
+    shiplog.page              Settings → ShipLog (enable, token, Ollama/Matrix)
     scripts/settings.js       the settings page: tabs, switches, checks, bubbles, label modes
     styles/settings.css       the settings page, native without TowerTorch, GlimStone with it
     include/glyphs.php        the GlimStone glyphs the settings page draws
     scripts/docker.js         the injection: proxy fetch → per-row chip + bubble
     styles/docker.css         the chip + bubble styles
-    server/status.php         same-origin proxy → the local engine
+    server/status.php         same-origin proxy → the engine's socket
     scripts/rc.shiplog        daemon control (start/stop/restart/status, PID file)
     event/started             array start → start the daemon
     event/stopping_svcs       array stop → stop the daemon
@@ -46,7 +46,7 @@ plugin/
   `/mnt/user/appdata/shiplog`), never on the flash.
 - The chip appears **only for containers with an update**; up-to-date rows are
   left untouched. If the engine is down, nothing renders and the Docker tab is
-  unaffected (the engine status page `http://<host>:<port>/` is the fallback).
+  unaffected (the engine's status page, linked from the settings page, is the fallback).
 
 ## Build and release
 

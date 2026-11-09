@@ -9,7 +9,9 @@ LOG="/var/log/${NAME}.log"
 
 # Defaults, overridden by the cfg the settings page writes as KEY="value".
 ENABLE="true"
-PORT="8484"
+# The API has no login of its own, so it listens on a socket that only root
+# and the WebGUI's proxy (server/status.php) reach.
+SOCKET="/var/run/shiplog.sock"
 DATA_DIR="/mnt/user/appdata/shiplog"
 DOCKER_SOCKET="/var/run/docker.sock"
 # Unraid keeps the registry logins of its own update check here. HOME differs
@@ -59,7 +61,7 @@ start() {
   [ -f "$BIN" ] && chmod +x "$BIN" 2>/dev/null
   if [ ! -x "$BIN" ]; then echo "shiplog: binary missing or not executable at $BIN"; return 1; fi
   mkdir -p "$DATA_DIR"
-  export PORT DATA_DIR DOCKER_SOCKET DOCKER_CONFIG POLL_INTERVAL GITHUB_TOKEN IGNORE_UNMANAGED \
+  export SOCKET DATA_DIR DOCKER_SOCKET DOCKER_CONFIG POLL_INTERVAL GITHUB_TOKEN IGNORE_UNMANAGED \
          DOCKERHUB_USERNAME DOCKERHUB_TOKEN \
          OLLAMA_URL OLLAMA_MODEL LLAMASWAP_URL LLAMASWAP_MODEL \
          MATRIX_HOMESERVER MATRIX_TOKEN MATRIX_ROOM APPRISE_URL UNRAID_NOTIFY \
@@ -70,7 +72,7 @@ start() {
   echo $! >"$PIDFILE"
   # Unraid shows an rc script's stdout during array start in the footer, so the
   # start line goes to the daemon log only.
-  echo "shiplog: started (pid $(cat "$PIDFILE"), port $PORT)" >>"$LOG"
+  echo "shiplog: started (pid $(cat "$PIDFILE"), socket $SOCKET)" >>"$LOG"
 }
 
 stop() {
@@ -79,7 +81,7 @@ stop() {
   [ -n "$pid" ] && kill "$pid" 2>/dev/null
   pkill -f "$BIN" 2>/dev/null
   # A graceful shutdown takes a few seconds, and a following start needs the
-  # port free.
+  # old process gone.
   for _ in $(seq 1 20); do
     pgrep -f "$BIN" >/dev/null 2>&1 || break
     sleep 0.5
@@ -90,7 +92,7 @@ stop() {
 }
 
 status() {
-  if is_running; then echo "shiplog: running (pid $(cat "$PIDFILE"), port $PORT)";
+  if is_running; then echo "shiplog: running (pid $(cat "$PIDFILE"), socket $SOCKET)";
   else echo "shiplog: stopped"; fi
 }
 

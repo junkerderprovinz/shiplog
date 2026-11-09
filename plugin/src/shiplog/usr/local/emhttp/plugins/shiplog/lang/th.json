@@ -1,7 +1,6 @@
 {
   "s_engine": "เอนจิน",
   "s_enable": "เปิดใช้งาน",
-  "s_port": "พอร์ต",
   "s_datadir": "ไดเรกทอรีข้อมูล",
   "s_datadir_hint": "แคช SQLite: เก็บไว้บน appdata ไม่ใช่บน flash",
   "s_poll": "ช่วงเวลาสำรวจ",

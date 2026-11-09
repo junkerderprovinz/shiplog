@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Bật",
-  "s_port": "Cổng",
   "s_datadir": "Thư mục dữ liệu",
   "s_datadir_hint": "Bộ nhớ đệm SQLite: giữ trên appdata, không phải trên flash",
   "s_poll": "Khoảng thời gian thăm dò",

@@ -382,6 +382,11 @@ type pageData struct {
 	Count    int
 	Updates  int
 	Mono     bool
+	// Proxy is the plugin's proxy that fetched the page, empty when the page
+	// comes straight from the engine. CSRF is Unraid's token for the writes the
+	// page sends back through it.
+	Proxy string
+	CSRF  string
 }
 
 func (a *API) statusPage(w http.ResponseWriter, r *http.Request) {
@@ -407,6 +412,8 @@ func (a *API) statusPage(w http.ResponseWriter, r *http.Request) {
 		Count:    len(rows),
 		Updates:  updates,
 		Mono:     r.URL.Query().Get("mono") == "1",
+		Proxy:    r.Header.Get("X-ShipLog-Proxy"),
+		CSRF:     r.Header.Get("X-ShipLog-CSRF"),
 	})
 }
 

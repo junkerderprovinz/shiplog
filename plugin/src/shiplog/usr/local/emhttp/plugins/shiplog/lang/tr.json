@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Etkinleştir",
-  "s_port": "Port",
   "s_datadir": "Veri dizini",
   "s_datadir_hint": "SQLite önbelleği: flash'ta değil appdata'da tut",
   "s_poll": "Sorgulama aralığı",

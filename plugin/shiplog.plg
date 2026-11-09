@@ -33,6 +33,10 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.7.6
+🐛 **Fixed**
+- **Only the Unraid web UI reaches ShipLog's engine.** The engine answered on port 8484 to anyone on your network, without a login, so any device there could start a check or change a changelog source. It now listens on a local socket, and the Docker tab, the settings page and the status page reach it through your Unraid login. The status page opens from ShipLog's settings page, and the port setting is gone.
+
 ### 3.7.5
 🐛 **Fixed**
 - **Auto-update keeps your containers.** If a container is missing after Unraid's update script has run, or disappears a few minutes later, ShipLog recreates it from its template. A container that was running before is started again, and a stopped one stays stopped.

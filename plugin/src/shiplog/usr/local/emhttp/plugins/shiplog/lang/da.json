@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Aktivér",
-  "s_port": "Port",
   "s_datadir": "Datamappe",
   "s_datadir_hint": "SQLite-cache: hold på appdata, ikke på flash",
   "s_poll": "Pollinginterval",

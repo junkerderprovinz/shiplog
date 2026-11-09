@@ -84,7 +84,7 @@ The containers in these pictures run public images at older versions in a test s
 
 <p align="center">
   <img src=".github/assets/screenshots/shiplog-2.png" alt="The ShipLog status page listing seven containers with their running and newest version, a risk badge and the changelog source" width="100%">
-  <br><em>The engine's status page on port 8484, the same data without Unraid</em>
+  <br><em>The engine's status page, the same data outside the Docker tab</em>
 </p>
 
 <br>
