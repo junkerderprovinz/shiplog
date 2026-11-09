@@ -4,7 +4,9 @@ name: Build & Push Docker Image
 # DOCKERHUB_USERNAME variable and DOCKERHUB_TOKEN secret are both set. Nothing
 # is pushed before both arches have booted and served a request. A push to main
 # gets :edge and :sha-<short>. A vX.Y.Z tag gets :X.Y.Z, :X.Y, :X and
-# :sha-<short>, plus :latest when it is the newest tag.
+# :sha-<short>, plus :latest when it is the newest tag. The weekly cron and a
+# manual run rebuild the newest release without the layer cache, under its
+# version tags and :latest.
 
 on:
   push:
@@ -14,6 +16,9 @@ on:
       - "**.md"
       - "LICENSE"
       - "docs/**"
+  # Weekly, to rebuild the newest release on fresh base images and packages.
+  schedule:
+    - cron: '40 5 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -26,11 +31,34 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Rebuilds refresh the newest release, which is what people run, not the
+  # tip of main.
+  release:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.newest.outputs.tag }}
+    steps:
+      - name: Find the newest release
+        id: newest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          echo "rebuilding $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: release
+    if: ${{ !failure() && !cancelled() }}
     name: Build & Push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.release.outputs.tag }}
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
@@ -77,8 +105,9 @@ jobs:
             ${{ env.IMAGE_NAME }}
             name=docker.io/${{ vars.DOCKERHUB_USERNAME }}/shiplog,enable=${{ vars.DOCKERHUB_USERNAME != '' }}
           # latest is the newest release, so an unreleased merge never reaches
-          # people who pull it. The tip of main goes to edge. The action adds
-          # latest on its own for any semver tag unless the flavor turns that off.
+          # people who pull it, and a rebuild of that release moves it too. The
+          # tip of main goes to edge. The action adds latest on its own for any
+          # semver tag unless the flavor turns that off.
           #
           # {{major}} and {{major}}.{{minor}} follow whichever tag built last, so
           # re-cutting an old version moves them back. After that, re-run the
@@ -86,12 +115,12 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=sha,prefix=sha-,format=short
-            type=raw,value=edge,enable=${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
-            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && steps.newest.outputs.is_newest == 'true' }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=sha,prefix=sha-,format=short,enable=${{ needs.release.outputs.tag == '' }}
+            type=raw,value=edge,enable=${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && needs.release.outputs.tag == '' }}
+            type=raw,value=latest,enable=${{ (github.ref_type == 'tag' && steps.newest.outputs.is_newest == 'true') || needs.release.outputs.tag != '' }}
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.tag }}
+            type=semver,pattern={{major}},value=${{ needs.release.outputs.tag }}
 
       - name: Build amd64 image for smoke test
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -103,6 +132,7 @@ jobs:
           tags: shiplog:smoke-amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          no-cache: ${{ needs.release.outputs.tag != '' }}
 
       - name: Build arm64 image for smoke test
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -114,6 +144,7 @@ jobs:
           tags: shiplog:smoke-arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          no-cache: ${{ needs.release.outputs.tag != '' }}
 
       # The logs go into a variable because `docker logs | grep -q` dies of
       # SIGPIPE under pipefail once the log grows.
@@ -173,6 +204,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          no-cache: ${{ needs.release.outputs.tag != '' }}
           # Attestations are safe here because this is a plain multi-arch push,
           # not a push by digest with a manifest merge.
           provenance: true
