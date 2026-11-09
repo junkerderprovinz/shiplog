@@ -19,6 +19,10 @@ func runPHP(t *testing.T, body string, out any) {
 	t.Helper()
 	php, err := exec.LookPath("php")
 	if err != nil {
+		// The runners have php, so CI never skips the page's half of the move.
+		if os.Getenv("CI") != "" {
+			t.Fatal("php is not installed")
+		}
 		t.Skip("php is not installed")
 	}
 	inc, err := filepath.Abs(filepath.Join(pluginDir, "include", "notify.php"))
