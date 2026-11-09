@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Ota käyttöön",
-  "s_port": "Portti",
   "s_datadir": "Datahakemisto",
   "s_datadir_hint": "SQLite-välimuisti: pidä appdatassa, ei flashissa",
   "s_poll": "Kyselyväli",

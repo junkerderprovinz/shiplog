@@ -1,7 +1,6 @@
 {
   "s_engine": "المحرّك",
   "s_enable": "تفعيل",
-  "s_port": "المنفذ",
   "s_datadir": "دليل البيانات",
   "s_datadir_hint": "ذاكرة SQLite المؤقتة: احتفظ بها على appdata، وليس على flash",
   "s_poll": "فترة الاستعلام",

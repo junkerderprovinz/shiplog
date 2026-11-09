@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Aktiver",
-  "s_port": "Port",
   "s_datadir": "Datakatalog",
   "s_datadir_hint": "SQLite-buffer: hold på appdata, ikke på flash",
   "s_poll": "Spørreintervall",

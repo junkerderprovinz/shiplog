@@ -1,7 +1,6 @@
 {
   "s_engine": "Рушій",
   "s_enable": "Увімкнути",
-  "s_port": "Порт",
   "s_datadir": "Каталог даних",
   "s_datadir_hint": "Кеш SQLite — тримайте на appdata, не на flash",
   "s_poll": "Інтервал опитування",

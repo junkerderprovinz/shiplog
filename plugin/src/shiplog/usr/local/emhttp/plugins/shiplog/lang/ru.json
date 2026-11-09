@@ -1,7 +1,6 @@
 {
   "s_engine": "Движок",
   "s_enable": "Включить",
-  "s_port": "Порт",
   "s_datadir": "Каталог данных",
   "s_datadir_hint": "Кэш SQLite — держите на appdata, не на flash",
   "s_poll": "Интервал опроса",

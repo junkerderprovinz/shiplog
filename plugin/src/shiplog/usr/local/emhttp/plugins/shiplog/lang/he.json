@@ -1,7 +1,6 @@
 {
   "s_engine": "מנוע",
   "s_enable": "הפעלה",
-  "s_port": "פורט",
   "s_datadir": "ספריית נתונים",
   "s_datadir_hint": "מטמון SQLite: שמור על appdata, לא על flash",
   "s_poll": "מרווח בדיקה",

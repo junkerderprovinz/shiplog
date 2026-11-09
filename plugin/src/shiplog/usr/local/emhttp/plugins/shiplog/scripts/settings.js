@@ -397,10 +397,7 @@
     return i;
   }
 
-  /* The engine's state and the address of its status page. The state is read
-     again after a save that restarted the engine. */
-  var statusLink = byId("sl-statuslink");
-  if (!statusLink.getAttribute("href")) statusLink.href = "http://" + (window.SL_STATUS_HOST || location.hostname) + ":" + statusLink.getAttribute("data-sl-port") + "/";
+  /* The engine's state, read again after a save that restarted the engine. */
   function loadStatus() {
     var stat = byId("sl-stat"), txt = byId("sl-stat-txt");
     function show(state, text, hint) {

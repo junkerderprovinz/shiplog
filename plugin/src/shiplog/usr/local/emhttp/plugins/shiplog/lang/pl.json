@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Włącz",
-  "s_port": "Port",
   "s_datadir": "Katalog danych",
   "s_datadir_hint": "Pamięć podręczna SQLite: trzymaj na appdata, nie na flashu",
   "s_poll": "Interwał odpytywania",

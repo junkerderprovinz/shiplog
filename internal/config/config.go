@@ -17,6 +17,7 @@ type Config struct {
 	// whose registry logins the resolver reuses.
 	DockerConfigDir string
 	Port            string        // PORT
+	Socket          string        // SOCKET, a unix socket the API listens on instead of PORT
 	DataDir         string        // DATA_DIR (SQLite + curated-mapping override)
 	PollInterval    time.Duration // POLL_INTERVAL
 	GithubToken     string        // GITHUB_TOKEN (optional; raises GitHub API limit for changelogs)
@@ -70,6 +71,7 @@ func Load() Config {
 		DockerSocket:     env("DOCKER_SOCKET", "/var/run/docker.sock"),
 		DockerConfigDir:  dockerConfigDir(),
 		Port:             env("PORT", "8484"),
+		Socket:           os.Getenv("SOCKET"),
 		DataDir:          env("DATA_DIR", "/config"),
 		PollInterval:     dur("POLL_INTERVAL", 6*time.Hour),
 		GithubToken:      os.Getenv("GITHUB_TOKEN"),

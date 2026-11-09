@@ -1,7 +1,6 @@
 {
   "s_engine": "引擎",
   "s_enable": "启用",
-  "s_port": "端口",
   "s_datadir": "数据目录",
   "s_datadir_hint": "SQLite 缓存：放在 appdata 上，而不是 flash 上",
   "s_poll": "轮询间隔",

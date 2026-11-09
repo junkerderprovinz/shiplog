@@ -130,11 +130,11 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	ln, err := net.Listen("tcp", ":"+cfg.Port)
+	ln, addr, err := listen(cfg)
 	if err != nil {
 		log.Fatalf("shiplog: listen: %v", err)
 	}
-	bannerlog.Ready(os.Stdout, "0.0.0.0:"+cfg.Port)
+	bannerlog.Ready(os.Stdout, addr)
 
 	go func() {
 		if serr := srv.Serve(ln); serr != nil && serr != http.ErrServerClosed {
@@ -146,6 +146,27 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// listen opens the API's socket when one is configured, since the API has no
+// login of its own, and the port on every interface otherwise, as the container
+// image needs.
+func listen(cfg config.Config) (net.Listener, string, error) {
+	if cfg.Socket == "" {
+		ln, err := net.Listen("tcp", ":"+cfg.Port)
+		return ln, "http://0.0.0.0:" + cfg.Port, err
+	}
+	// A socket left by an unclean stop would fail the listen.
+	_ = os.Remove(cfg.Socket)
+	ln, err := net.Listen("unix", cfg.Socket)
+	if err != nil {
+		return nil, "", err
+	}
+	if err := os.Chmod(cfg.Socket, 0o660); err != nil {
+		_ = ln.Close()
+		return nil, "", err
+	}
+	return ln, "unix:" + cfg.Socket, nil
 }
 
 // runAutoUpdate checks every minute whether a run is due. The first check waits

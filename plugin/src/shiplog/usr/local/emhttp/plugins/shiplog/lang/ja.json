@@ -1,7 +1,6 @@
 {
   "s_engine": "エンジン",
   "s_enable": "有効化",
-  "s_port": "ポート",
   "s_datadir": "データディレクトリ",
   "s_datadir_hint": "SQLiteキャッシュ：flashではなくappdataに置いてください",
   "s_poll": "ポーリング間隔",

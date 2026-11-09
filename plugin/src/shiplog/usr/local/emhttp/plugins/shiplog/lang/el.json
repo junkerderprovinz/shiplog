@@ -1,7 +1,6 @@
 {
   "s_engine": "Μηχανή",
   "s_enable": "Ενεργοποίηση",
-  "s_port": "Θύρα",
   "s_datadir": "Κατάλογος δεδομένων",
   "s_datadir_hint": "Κρυφή μνήμη SQLite: κράτησέ την στο appdata, όχι στο flash",
   "s_poll": "Διάστημα ελέγχου",

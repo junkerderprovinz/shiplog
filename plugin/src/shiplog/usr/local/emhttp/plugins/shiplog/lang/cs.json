@@ -1,7 +1,6 @@
 {
   "s_engine": "Engine",
   "s_enable": "Povolit",
-  "s_port": "Port",
   "s_datadir": "Datový adresář",
   "s_datadir_hint": "Cache SQLite: držte na appdata, ne na flashi",
   "s_poll": "Interval dotazování",
