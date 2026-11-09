@@ -4,16 +4,22 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
+
+	kitnotify "github.com/junkerderprovinz/parleyport/kit/notify"
+	"github.com/junkerderprovinz/parleyport/kit/status"
 
 	"github.com/junkerderprovinz/shiplog/internal/api"
 	"github.com/junkerderprovinz/shiplog/internal/autoupdate"
@@ -22,6 +28,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/config"
 	"github.com/junkerderprovinz/shiplog/internal/dockercli"
 	"github.com/junkerderprovinz/shiplog/internal/engine"
+	"github.com/junkerderprovinz/shiplog/internal/fortress"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/notify"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
@@ -71,30 +78,7 @@ func main() {
 		logSummarizerPing("Ollama", cfg.OllamaURL, cfg.OllamaModel, o.Ping)
 	}
 
-	var sinks []notify.Sink
-	if m := notify.New(cfg.MatrixHomeserver, cfg.MatrixToken, cfg.MatrixRoom); m != nil {
-		sinks = append(sinks, m)
-		whoCtx, cancelWho := context.WithTimeout(context.Background(), 10*time.Second)
-		if werr := m.Whoami(whoCtx); werr != nil {
-			log.Printf("shiplog: Matrix configured (%s) but not working: %v", cfg.MatrixHomeserver, werr)
-		} else {
-			log.Printf("shiplog: Matrix OK, notifications enabled (%s, room %s)", cfg.MatrixHomeserver, cfg.MatrixRoom)
-		}
-		cancelWho()
-	}
-	if a := notify.NewApprise(cfg.AppriseURL); a != nil {
-		sinks = append(sinks, a)
-		log.Printf("shiplog: Apprise notifications enabled (%s)", a.Where())
-	} else if strings.TrimSpace(cfg.AppriseURL) != "" {
-		log.Printf("shiplog: APPRISE_URL is not an http(s) URL; Apprise notifications off")
-	}
-	if u := notify.NewUnraid(cfg.UnraidNotify); u != nil {
-		sinks = append(sinks, u)
-		log.Printf("shiplog: native Unraid notifications enabled")
-	} else if cfg.UnraidNotify {
-		log.Printf("shiplog: Unraid notifications requested but the notify tool (%s) was not found; skipping (Unraid host only)", notify.UnraidScriptPath)
-	}
-	notifier := notify.NewFanout(sinks...)
+	notifier := loadNotifier(cfg)
 	if notifier != nil {
 		eng.WithNotifier(notifier)
 	}
@@ -115,20 +99,25 @@ func main() {
 
 	go eng.Run(ctx)
 
+	run := &fortress.Run{}
 	switch {
 	case autoUpdating:
-		exec := autoupdate.NewExecutor(db, upd).WithDocker(docker)
-		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier)
+		exec := autoupdate.NewExecutor(db, upd).WithDocker(docker).WithProgress(run.Updating)
+		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier, run)
 		log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
 			cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
 	case cfg.AutoUpdate.Enabled:
 		log.Printf("shiplog: auto-update is enabled but not supported here (needs the Unraid plugin / template dir); skipping")
 	}
 
-	srv := &http.Server{
-		Handler:           api.New(db, db, eng, cfg.GithubToken).WithUpdateCheck(docker, notifier).Handler(),
-		ReadHeaderTimeout: 10 * time.Second,
+	var msg api.Messenger
+	if notifier != nil {
+		msg = notifier
 	}
+	srv := api.New(db, db, eng, cfg.GithubToken).
+		WithUpdateCheck(docker, msg).
+		WithFortress(&fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}).
+		Server()
 
 	ln, addr, err := listen(cfg)
 	if err != nil {
@@ -171,7 +160,7 @@ func listen(cfg config.Config) (net.Listener, string, error) {
 
 // runAutoUpdate checks every minute whether a run is due. The first check waits
 // one tick, so the initial sweep has filled the store before a "boot" run.
-func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autoupdate.Schedule, policy autoupdate.Policy, exec *autoupdate.Executor, st *store.Store, notifier *notify.Fanout) {
+func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autoupdate.Schedule, policy autoupdate.Policy, exec *autoupdate.Executor, st *store.Store, notifier *notify.Notifier, run *fortress.Run) {
 	if len(policy.ExcludeContainers) > 0 {
 		log.Printf("shiplog: auto-update leaves these to manual updates: %s", strings.Join(policy.ExcludeContainers, ", "))
 	}
@@ -199,7 +188,11 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autou
 		}
 		last = now
 		_ = st.SetMeta(lastRunKey, strconv.FormatInt(now.Unix(), 10))
+		if !cfg.DryRun {
+			run.Begin(now)
+		}
 		res := exec.Run(ctx, policy, cfg.DryRun)
+		run.End()
 		if !res.DryRun {
 			for _, o := range res.Outcomes {
 				if o.Blocked || o.Skipped || o.UpToDate {
@@ -223,8 +216,8 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autou
 		// not worth a message every night.
 		if text, html := autoupdate.RenderSummary(res); text != "" {
 			log.Printf("shiplog: %s", text)
-			if notifier != nil && res.Notable() {
-				if nerr := notifier.SendMessage(ctx, text, html); nerr != nil {
+			if res.Notable() {
+				if nerr := notifier.Send(ctx, notify.Summary(text, html, res.Failed())); nerr != nil {
 					log.Printf("shiplog: auto-update notify: %v", nerr)
 				}
 			}
@@ -252,4 +245,74 @@ func logSummarizerPing(name, url, model string, ping func(context.Context) error
 		return
 	}
 	log.Printf("shiplog: %s OK, AI summaries enabled (%s, model %s)", name, url, model)
+}
+
+// version is set by plugin/pkg_build.sh.
+var version = "dev"
+
+func app() status.App {
+	a := status.App{ID: "shiplog", Name: "ShipLog", Version: strings.TrimPrefix(version, "v")}
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.revision" && len(s.Value) >= 7 {
+				a.Commit = s.Value[:7]
+			}
+		}
+	}
+	return a
+}
+
+// instanceKey holds the id this ShipLog was given on its first start.
+const instanceKey = "instance_id"
+
+// instance names this ShipLog. The id is made once and kept in the store, so a
+// reader can tell this server from another one with the same name.
+func instance(db *store.Store) status.Instance {
+	id, _ := db.GetMeta(instanceKey)
+	if id == "" {
+		b := make([]byte, 16)
+		_, _ = rand.Read(b)
+		id = hex.EncodeToString(b)
+		if err := db.SetMeta(instanceKey, id); err != nil {
+			log.Printf("shiplog: keep the instance id: %v", err)
+		}
+	}
+	name, err := os.Hostname()
+	if err != nil || name == "" {
+		name = "ShipLog"
+	}
+	return status.Instance{ID: id, Name: name}
+}
+
+// loadNotifier returns nil when no channel is switched on or the channels
+// cannot be read; ShipLog then runs without notifications.
+func loadNotifier(cfg config.Config) *notify.Notifier {
+	channels, migrated, err := notify.Load(cfg.NotifyFile, cfg.OldNotify)
+	if err != nil {
+		log.Printf("shiplog: notifications off: %v", err)
+		return nil
+	}
+	if migrated {
+		log.Printf("shiplog: notification settings moved to %s", cfg.NotifyFile)
+	}
+	var on, off []string
+	for _, c := range channels {
+		if c.Enabled {
+			on = append(on, c.ID)
+		} else {
+			off = append(off, c.ID)
+		}
+	}
+	if len(off) > 0 {
+		log.Printf("shiplog: notification channels switched off: %s", strings.Join(off, ", "))
+	}
+	n, err := notify.New(channels, kitnotify.Options{})
+	if err != nil {
+		log.Printf("shiplog: notifications off: %v", err)
+		return nil
+	}
+	if n != nil {
+		log.Printf("shiplog: notifications on: %s", strings.Join(on, ", "))
+	}
+	return n
 }

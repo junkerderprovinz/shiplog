@@ -59,3 +59,65 @@ func TestMetaRoundTrip(t *testing.T) {
 		t.Fatalf("upsert did not overwrite: got %q", v)
 	}
 }
+
+func openAutoUpdates(t *testing.T, recs ...store.AutoUpdateRecord) *store.Store {
+	t.Helper()
+	s, err := store.Open(filepath.Join(t.TempDir(), "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	for _, r := range recs {
+		if err := s.LogAutoUpdate(r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return s
+}
+
+func TestAutoUpdatesAfterPagesOldestFirst(t *testing.T) {
+	s := openAutoUpdates(t,
+		store.AutoUpdateRecord{Name: "plex", Success: true, At: 300},
+		store.AutoUpdateRecord{Name: "radarr", Success: false, Err: "pull error", At: 100},
+		store.AutoUpdateRecord{Name: "sonarr", Success: true, At: 200},
+	)
+	first, err := s.AutoUpdatesAfter(0, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 2 || first[0].Name != "plex" || first[1].Name != "radarr" {
+		t.Fatalf("first page = %+v, want plex and radarr in the order they were logged", first)
+	}
+	if first[0].ID >= first[1].ID {
+		t.Fatalf("ids do not rise: %d then %d", first[0].ID, first[1].ID)
+	}
+	rest, err := s.AutoUpdatesAfter(first[1].ID, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rest) != 1 || rest[0].Name != "sonarr" || rest[0].At != 200 {
+		t.Fatalf("second page = %+v, want sonarr alone", rest)
+	}
+	if none, _ := s.AutoUpdatesAfter(rest[0].ID, 2); len(none) != 0 {
+		t.Fatalf("after the last entry = %+v, want nothing", none)
+	}
+}
+
+func TestLatestAutoUpdatesKeepsTheLastTryOfEachContainer(t *testing.T) {
+	s := openAutoUpdates(t,
+		store.AutoUpdateRecord{Name: "plex", Success: false, Err: "pull error", At: 100},
+		store.AutoUpdateRecord{Name: "radarr", Success: false, Err: "gone", At: 150},
+		store.AutoUpdateRecord{Name: "plex", Success: true, ToVer: "1.2.4", At: 200},
+	)
+	got, err := s.LatestAutoUpdates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	byName := map[string]store.AutoUpdateRecord{}
+	for _, r := range got {
+		byName[r.Name] = r
+	}
+	if len(got) != 2 || !byName["plex"].Success || byName["plex"].ToVer != "1.2.4" || byName["radarr"].Err != "gone" {
+		t.Fatalf("latest = %+v, want plex's success and radarr's failure", got)
+	}
+}

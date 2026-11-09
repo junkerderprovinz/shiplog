@@ -32,6 +32,7 @@ type HistoryEntry struct {
 // AutoUpdateRecord is one auto-update ShipLog applied or tried to apply, as
 // opposed to the observed version changes in History.
 type AutoUpdateRecord struct {
+	ID      int64 // set by the store, rising with every record
 	Name    string
 	FromVer string
 	ToVer   string
@@ -417,10 +418,28 @@ func (s *Store) LogAutoUpdate(rec AutoUpdateRecord) error {
 
 // AutoUpdateHistory returns up to limit recent auto-update actions, newest first.
 func (s *Store) AutoUpdateHistory(limit int) ([]AutoUpdateRecord, error) {
-	rows, err := s.db.Query(
-		`SELECT name, from_ver, to_ver, level, success, err, at FROM autoupdate_log ORDER BY at DESC, id DESC LIMIT ?`, limit)
+	return s.autoUpdates(
+		`SELECT id, name, from_ver, to_ver, level, success, err, at FROM autoupdate_log ORDER BY at DESC, id DESC LIMIT ?`, limit)
+}
+
+// AutoUpdatesAfter returns up to limit auto-update actions logged after the
+// one with id after, oldest first. An after of 0 starts at the first.
+func (s *Store) AutoUpdatesAfter(after int64, limit int) ([]AutoUpdateRecord, error) {
+	return s.autoUpdates(
+		`SELECT id, name, from_ver, to_ver, level, success, err, at FROM autoupdate_log WHERE id > ? ORDER BY id LIMIT ?`, after, limit)
+}
+
+// LatestAutoUpdates returns the last auto-update action of every container.
+func (s *Store) LatestAutoUpdates() ([]AutoUpdateRecord, error) {
+	return s.autoUpdates(
+		`SELECT id, name, from_ver, to_ver, level, success, err, at FROM autoupdate_log
+		 WHERE id IN (SELECT MAX(id) FROM autoupdate_log GROUP BY name) ORDER BY id`)
+}
+
+func (s *Store) autoUpdates(query string, args ...any) ([]AutoUpdateRecord, error) {
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("store: auto-update history: %w", err)
+		return nil, fmt.Errorf("store: auto-updates: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
@@ -428,14 +447,14 @@ func (s *Store) AutoUpdateHistory(limit int) ([]AutoUpdateRecord, error) {
 	for rows.Next() {
 		var r AutoUpdateRecord
 		var succ int
-		if err := rows.Scan(&r.Name, &r.FromVer, &r.ToVer, &r.Level, &succ, &r.Err, &r.At); err != nil {
-			return nil, fmt.Errorf("store: scan auto-update history: %w", err)
+		if err := rows.Scan(&r.ID, &r.Name, &r.FromVer, &r.ToVer, &r.Level, &succ, &r.Err, &r.At); err != nil {
+			return nil, fmt.Errorf("store: scan auto-updates: %w", err)
 		}
 		r.Success = succ != 0
 		out = append(out, r)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("store: auto-update history iterate: %w", err)
+		return nil, fmt.Errorf("store: auto-updates iterate: %w", err)
 	}
 	return out, nil
 }

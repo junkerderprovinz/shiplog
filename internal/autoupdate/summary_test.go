@@ -138,3 +138,14 @@ func TestRenderSummary_KeptContainers(t *testing.T) {
 		t.Errorf("html missing what was done to keep Immich: %s", html)
 	}
 }
+
+func TestResultFailedOnlyWhenAnUpdateFailed(t *testing.T) {
+	ok := Result{Outcomes: []Outcome{{Name: "a", Updated: true}, {Name: "b", Skipped: true}}}
+	if ok.Failed() {
+		t.Error("a clean run counts as failed")
+	}
+	bad := Result{Outcomes: []Outcome{{Name: "a", Updated: true}, {Name: "b", Err: errors.New("pull error")}}}
+	if !bad.Failed() {
+		t.Error("a run with a failed update does not count as failed")
+	}
+}

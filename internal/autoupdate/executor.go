@@ -66,6 +66,16 @@ func (r Result) Notable() bool {
 	return false
 }
 
+// Failed reports whether an update of the run failed.
+func (r Result) Failed() bool {
+	for _, o := range r.Outcomes {
+		if o.Err != nil {
+			return true
+		}
+	}
+	return false
+}
+
 // Docker reads the containers as Docker sees them and starts one an update left
 // stopped (the Docker client).
 type Docker interface {
@@ -83,10 +93,11 @@ const (
 
 // Executor applies eligible updates serially.
 type Executor struct {
-	list   Lister
-	upd    updater.Updater
-	docker Docker
-	sleep  func(context.Context, time.Duration) error
+	list     Lister
+	upd      updater.Updater
+	docker   Docker
+	progress func(name string)
+	sleep    func(context.Context, time.Duration) error
 }
 
 // NewExecutor builds an Executor over a status lister and an updater.
@@ -100,6 +111,12 @@ func NewExecutor(l Lister, u updater.Updater) *Executor {
 // container runs the newest image.
 func (e *Executor) WithDocker(d Docker) *Executor {
 	e.docker = d
+	return e
+}
+
+// WithProgress has the run name each container right before it updates it.
+func (e *Executor) WithProgress(f func(name string)) *Executor {
+	e.progress = f
 	return e
 }
 
@@ -148,6 +165,9 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 		case dryRun:
 			o.Updated = true
 		default:
+			if e.progress != nil {
+				e.progress(o.Name)
+			}
 			a := applied{i: len(res.Outcomes), st: st, before: before}
 			o.Err = e.apply(ctx, &a, &o)
 			o.Updated = o.Err == nil

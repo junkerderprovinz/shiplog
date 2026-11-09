@@ -9,6 +9,8 @@
  *   GET  status.php?applied=<name>&digest=<sha256:...>  -> /api/applied
  *   GET  status.php?path=page[&mono=1]                  -> the status page
  *   GET  status.php?path=logo|overrides|unmaintained-suppressions
+ *   GET  status.php?path=fortress-status[&lang=de]      -> the status contract
+ *   GET  status.php?path=fortress-log[&after=<id>&limit=<n>&lang=de]
  *   POST status.php  path=refresh|override|unmaintained-suppression,
  *                    method=POST|PUT|DELETE, data=<JSON body>
  */
@@ -16,7 +18,8 @@
 $sock   = '/var/run/shiplog.sock';
 $self   = '/plugins/shiplog/server/status.php';
 $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides',
-           'unmaintained-suppressions' => '/api/unmaintained-suppressions'];
+           'unmaintained-suppressions' => '/api/unmaintained-suppressions',
+           'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
            'unmaintained-suppression' => ['PUT', 'DELETE']];
 
@@ -49,6 +52,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deny(400);
         }
         $url = $reads[$path];
+        if ($path === 'fortress-status' || $path === 'fortress-log') {
+            $q = [];
+            if (isset($_GET['lang']) && preg_match('/^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$/', $_GET['lang'])) {
+                $q['lang'] = $_GET['lang'];
+            } elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+                $headers[] = 'Accept-Language: ' . preg_replace('/[^A-Za-z0-9,;=.\- ]/', '', $_SERVER['HTTP_ACCEPT_LANGUAGE']);
+            }
+            if ($path === 'fortress-log') {
+                foreach (['after', 'limit'] as $k) {
+                    if (isset($_GET[$k]) && preg_match('/^\d{1,19}$/', $_GET[$k])) {
+                        $q[$k] = $_GET[$k];
+                    }
+                }
+            }
+            if ($q) {
+                $url .= '?' . http_build_query($q);
+            }
+        }
         if ($path === 'page') {
             // The page sends its calls back here, and its writes need the token.
             if (isset($_GET['mono']) && $_GET['mono'] === '1') {
