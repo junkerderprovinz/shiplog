@@ -13,6 +13,10 @@ $slAuExcl  = array();
 if (isset($slcfg['AUTOUPDATE_EXCLUDE_CONTAINERS'])) {
   foreach (explode(',', $slcfg['AUTOUPDATE_EXCLUDE_CONTAINERS']) as $slN) { $slN = trim($slN); if ($slN !== '') $slAuExcl[] = $slN; }
 }
+$slAuWob   = array();
+if (isset($slcfg['AUTOUPDATE_WITHOUT_BACKUP'])) {
+  foreach (explode(',', $slcfg['AUTOUPDATE_WITHOUT_BACKUP']) as $slN) { $slN = trim($slN); if ($slN !== '') $slAuWob[] = $slN; }
+}
 $slLang    = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2)); // Unraid's configured language
 /* The d_* strings for the active language, over the English ones. */
 $slLangDir = '/usr/local/emhttp/plugins/shiplog/lang';
@@ -28,5 +32,5 @@ $slG      = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
 $slGlyphs = array('Sync' => $slG['Sync'], 'ExternalLink' => $slG['ExternalLink'], 'Close' => $slG['Close'], 'Warning' => $slG['Warning']);
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
-<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>,autoUpdate:{enabled:<?=$slAuEn?'true':'false'?>,exclude:<?=json_encode($slAuExcl, JSON_UNESCAPED_UNICODE)?>}};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;window.shiplogGlyphs=<?=json_encode($slGlyphs, JSON_UNESCAPED_SLASHES)?>;</script>
+<script>window.shiplogPrefs={confirmUpdate:<?=$slConfirm?'true':'false'?>,silentUpdate:<?=$slSilent?'true':'false'?>,lang:<?=json_encode($slLang)?>,autoUpdate:{enabled:<?=$slAuEn?'true':'false'?>,exclude:<?=json_encode($slAuExcl, JSON_UNESCAPED_UNICODE)?>,withoutBackup:<?=json_encode($slAuWob, JSON_UNESCAPED_UNICODE)?>}};window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;window.shiplogGlyphs=<?=json_encode($slGlyphs, JSON_UNESCAPED_SLASHES)?>;</script>
 <script defer src="<?autov('/plugins/shiplog/scripts/docker.js')?>"></script>
