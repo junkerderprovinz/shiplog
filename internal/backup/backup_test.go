@@ -190,6 +190,31 @@ func TestSaveGivesUpAfterTheTimeout(t *testing.T) {
 	}
 }
 
+type hangingFortress struct{ fakeFortress }
+
+func (h *hangingFortress) Call(ctx context.Context, _, _, _ string, _ []byte) (int, []byte, error) {
+	<-ctx.Done()
+	return 0, nil, ctx.Err()
+}
+
+func TestSaveGivesUpOnACallThatHangs(t *testing.T) {
+	c, _ := newClient(&hangingFortress{fakeFortress{members: []Member{vaultMember("m1", "Tower")}}})
+	c.CallTimeout = 20 * time.Millisecond
+	done := make(chan error, 1)
+	go func() {
+		_, err := c.Save(context.Background(), "nextcloud")
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("err = %v, want the call's deadline", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Save still waits on a call that hangs")
+	}
+}
+
 func TestSavePrefersTheBackupAppOnThisServer(t *testing.T) {
 	here, there := &fakeVault{final: "done"}, &fakeVault{final: "done"}
 	f := &fakeFortress{
