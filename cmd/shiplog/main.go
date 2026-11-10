@@ -23,6 +23,7 @@ import (
 
 	"github.com/junkerderprovinz/shiplog/internal/api"
 	"github.com/junkerderprovinz/shiplog/internal/autoupdate"
+	"github.com/junkerderprovinz/shiplog/internal/backup"
 	"github.com/junkerderprovinz/shiplog/internal/bannerlog"
 	"github.com/junkerderprovinz/shiplog/internal/changelog"
 	"github.com/junkerderprovinz/shiplog/internal/config"
@@ -34,6 +35,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 	"github.com/junkerderprovinz/shiplog/internal/summarize"
+	"github.com/junkerderprovinz/shiplog/internal/templates"
 	"github.com/junkerderprovinz/shiplog/internal/updater"
 )
 
@@ -100,9 +102,20 @@ func main() {
 	go eng.Run(ctx)
 
 	run := &fortress.Run{}
+	report := &fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}
+	backups := joinFortress(cfg, report)
 	switch {
 	case autoUpdating:
 		exec := autoupdate.NewExecutor(db, upd).WithDocker(docker).WithProgress(run.Updating)
+		if backups != nil {
+			exec.WithSafeguard(&autoupdate.Safeguard{
+				Backup:        backups,
+				Images:        docker,
+				Templates:     templates.Folder(templates.Dir),
+				Guards:        db,
+				WithoutBackup: autoupdate.ParseExcludeContainers(cfg.AutoUpdate.WithoutBackup),
+			})
+		}
 		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier, run)
 		log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
 			cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
@@ -116,7 +129,8 @@ func main() {
 	}
 	srv := api.New(db, db, eng, cfg.GithubToken).
 		WithUpdateCheck(docker, msg).
-		WithFortress(&fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}).
+		WithFortress(report).
+		WithGuards(db, func() bool { return backups != nil && backups.Available() }).
 		Server()
 
 	ln, addr, err := listen(cfg)
@@ -135,6 +149,27 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// joinFortress takes part in the fortress the plugin joined and returns how to
+// reach its backup app, or nil outside a fortress. The membership lasts as
+// long as the process.
+func joinFortress(cfg config.Config, report *fortress.Source) *backup.Client {
+	m, err := fortress.Join(cfg.FortressDir, report.App, report)
+	if err != nil {
+		log.Printf("shiplog: not taking part in the fortress: %v", err)
+		return nil
+	}
+	if m == nil {
+		return nil
+	}
+	log.Printf("shiplog: in a fortress as %s; with a backup app on this server, every auto-update is backed up first", m.Device)
+	return &backup.Client{
+		Fortress: backup.Kit{Fortress: m.Fortress},
+		Device:   m.Device,
+		Timeout:  cfg.AutoUpdate.BackupTimeout,
+		Poll:     10 * time.Second,
+	}
 }
 
 // listen opens the API's socket when one is configured, since the API has no

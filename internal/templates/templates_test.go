@@ -76,11 +76,11 @@ const nextcloudTemplate = `<?xml version="1.0"?>
 func TestRepositoryReadsTheTemplatesImage(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "my-Nextcloud.xml", nextcloudTemplate)
-	got, err := Repository(dir, "Nextcloud")
+	got, err := Folder(dir).Repository("Nextcloud")
 	if err != nil || got != "lscr.io/linuxserver/nextcloud:latest" {
 		t.Fatalf("Repository = %q, %v", got, err)
 	}
-	if _, err := Repository(dir, "Missing"); err == nil {
+	if _, err := Folder(dir).Repository("Missing"); err == nil {
 		t.Fatal("a container without a template must be an error")
 	}
 }
@@ -89,7 +89,7 @@ func TestSetRepositoryChangesOnlyTheImage(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "my-Nextcloud.xml", nextcloudTemplate)
 	const ref = "lscr.io/linuxserver/nextcloud:latest@sha256:aaaa"
-	if err := SetRepository(dir, "Nextcloud", ref); err != nil {
+	if err := Folder(dir).SetRepository("Nextcloud", ref); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(filepath.Join(dir, "my-Nextcloud.xml"))
@@ -109,10 +109,10 @@ func TestSetRepositoryChangesOnlyTheImage(t *testing.T) {
 func TestSetRepositoryEscapesTheReference(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "my-Web.xml", `<Container><Name>Web</Name><Repository>nginx</Repository></Container>`)
-	if err := SetRepository(dir, "Web", "a&b<c"); err != nil {
+	if err := Folder(dir).SetRepository("Web", "a&b<c"); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := Repository(dir, "Web"); err != nil || got != "a&b<c" {
+	if got, err := Folder(dir).Repository("Web"); err != nil || got != "a&b<c" {
 		t.Fatalf("Repository after setting = %q, %v", got, err)
 	}
 }
@@ -121,7 +121,7 @@ func TestSetRepositoryRefusesATemplateWithoutAnImage(t *testing.T) {
 	dir := t.TempDir()
 	const plain = `<Container><Name>Web</Name></Container>`
 	write(t, dir, "my-Web.xml", plain)
-	if err := SetRepository(dir, "Web", "nginx"); err == nil {
+	if err := Folder(dir).SetRepository("Web", "nginx"); err == nil {
 		t.Fatal("want an error")
 	}
 	if got, _ := os.ReadFile(filepath.Join(dir, "my-Web.xml")); string(got) != plain {
