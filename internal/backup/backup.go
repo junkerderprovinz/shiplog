@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -67,7 +69,12 @@ type Client struct {
 	// CallTimeout bounds each call, so a relay that never answers cannot
 	// hold the update run. Zero means a minute.
 	CallTimeout time.Duration
-	sleep       func(context.Context, time.Duration) error
+	// Log says once that the fortress has a backup app only under another
+	// device name, since the updates here then go on without a backup. Nil
+	// means the standard log.
+	Log   func(format string, args ...any)
+	told  sync.Once
+	sleep func(context.Context, time.Duration) error
 }
 
 // Save backs up container and returns the snapshot once the run is done.
@@ -136,12 +143,27 @@ func (c *Client) Available() bool {
 // backup.
 func (c *Client) member() (string, error) {
 	var here []Member
+	var elsewhere []string
 	for _, m := range c.Fortress.Members() {
-		if offers(m, Action) && sameDevice(m.Device, c.Device) {
+		switch {
+		case !offers(m, Action):
+		case sameDevice(m.Device, c.Device):
 			here = append(here, m)
+		default:
+			elsewhere = append(elsewhere, m.Device)
 		}
 	}
 	if len(here) == 0 {
+		if len(elsewhere) > 0 {
+			c.told.Do(func() {
+				say := c.Log
+				if say == nil {
+					say = log.Printf
+				}
+				say("shiplog: the fortress has a backup app on %s, but none on %s, so auto-updates here go on without a backup. "+
+					"If that app runs on this server too, give it and ShipLog the same device name.", strings.Join(elsewhere, ", "), c.Device)
+			})
+		}
 		return "", ErrNoMember
 	}
 	sort.Slice(here, func(i, j int) bool { return here[i].ID < here[j].ID })
