@@ -2,8 +2,11 @@ package autoupdate
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/junkerderprovinz/shiplog/internal/backup"
 )
 
 func TestRenderSummary(t *testing.T) {
@@ -26,6 +29,34 @@ func TestRenderSummary(t *testing.T) {
 	dt, _ := RenderSummary(Result{DryRun: true, Outcomes: []Outcome{{Name: "plex", Level: "patch", Updated: true}}})
 	if !strings.Contains(dt, "Would auto-update") {
 		t.Errorf("dry-run wording missing: %s", dt)
+	}
+}
+
+func TestRenderSummaryTellsWhatTheBackupDid(t *testing.T) {
+	snap := backup.Snapshot{ID: "4f2a9c1e", Link: "https://tower.lan/snap/4f2a9c1e"}
+	res := Result{Outcomes: []Outcome{
+		{Name: "plex", From: "1.2.3", To: "1.2.4", Level: "patch", Updated: true, Snapshot: snap},
+		{Name: "sonarr", From: "4.0", To: "4.1", Level: "minor", Updated: true, WithoutBackup: true},
+		{Name: "radarr", From: "5.0", To: "5.1", Level: "minor", Err: errors.New("unhealthy after the update"), RolledBack: true, Snapshot: snap},
+		{Name: "mariadb", From: "11.4", To: "11.5", Level: "minor", NoBackup: true, Err: fmt.Errorf("held back without a backup: %w", errors.New("the backup failed: repository locked"))},
+	}}
+	text, html := RenderSummary(res)
+	for _, want := range []string{
+		"plex 1.2.3→1.2.4 (patch, backed up first)",
+		"sonarr 4.0→4.1 (minor, without a backup)",
+		"1 failed: radarr (unhealthy after the update, back on its old image and pinned to it in the template, backup 4f2a9c1e)",
+		"1 held back without a backup: mariadb (the backup failed: repository locked)",
+		`"Update without a backup"`,
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text missing %q:\n%s", want, text)
+		}
+	}
+	if !strings.Contains(html, `<a href="https://tower.lan/snap/4f2a9c1e">backup 4f2a9c1e</a>`) {
+		t.Errorf("html does not link the snapshot:\n%s", html)
+	}
+	if strings.Count(text, "mariadb") != 1 {
+		t.Errorf("a held update must not count as failed too:\n%s", text)
 	}
 }
 

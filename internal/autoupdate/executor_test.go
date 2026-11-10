@@ -169,7 +169,9 @@ type fakeHost struct {
 	stale    map[string]bool
 	orphaned map[string]bool
 	// created makes an update leave the container created but not started.
-	created   map[string]bool
+	created map[string]bool
+	// health is what the healthcheck says after the next update.
+	health    map[string]string
 	exitErr   error  // returned once, after the update had its effect
 	onSleep   func() // runs once, at the next sleep
 	started   []string
@@ -196,7 +198,11 @@ func (h *fakeHost) Update(ctx context.Context, name string) (string, error) {
 		c = model.Container{Name: name, State: "created"}
 	case h.created[name]:
 		c.State = "created"
+	case c.State == "restarting":
+		c.State = "running"
 	}
+	c.Health = h.health[name]
+	delete(h.health, name)
 	switch {
 	case c.State == "removing" || h.stale[name]:
 	case h.orphaned[name]:
