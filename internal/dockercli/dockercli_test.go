@@ -374,3 +374,76 @@ func TestStartPostsToTheContainer(t *testing.T) {
 		t.Errorf("started %q, want %q", started, want)
 	}
 }
+
+func serveDocker(t *testing.T, mux *http.ServeMux) *Client {
+	t.Helper()
+	sock := filepath.Join(t.TempDir(), "d.sock")
+	ln, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Skipf("AF_UNIX unavailable on this host (net.Listen unix failed): %v", err)
+	}
+	srv := &http.Server{Handler: mux}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+	return New(sock)
+}
+
+func TestListReadsTheImageIDAndTheHealth(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/containers/json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[
+			{"Id":"1","Names":["/web"],"Image":"nginx","ImageID":"sha256:1111","State":"running","Status":"Up 2 minutes (unhealthy)"},
+			{"Id":"2","Names":["/db"],"Image":"mariadb","ImageID":"sha256:2222","State":"running","Status":"Up 5 seconds (health: starting)"},
+			{"Id":"3","Names":["/cache"],"Image":"redis","ImageID":"sha256:3333","State":"running","Status":"Up 3 hours (healthy)"},
+			{"Id":"4","Names":["/plain"],"Image":"busybox","ImageID":"sha256:4444","State":"exited","Status":"Exited (0) 5 minutes ago"}]`))
+	})
+	mux.HandleFunc("/v1.43/images/", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{}`)) })
+	got, err := serveDocker(t, mux).List(context.Background())
+	if err != nil || len(got) != 4 {
+		t.Fatalf("List() = %v, %v", got, err)
+	}
+	want := map[string][2]string{"web": {"sha256:1111", "unhealthy"}, "db": {"sha256:2222", "starting"}, "cache": {"sha256:3333", "healthy"}, "plain": {"sha256:4444", ""}}
+	for _, c := range got {
+		if w := want[c.Name]; c.ImageID != w[0] || c.Health != w[1] {
+			t.Errorf("%s: image %q health %q, want %q %q", c.Name, c.ImageID, c.Health, w[0], w[1])
+		}
+	}
+}
+
+func TestHoldTagsTheImageForTheContainer(t *testing.T) {
+	var got string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/images/{id}/tag", func(w http.ResponseWriter, r *http.Request) {
+		got = r.Method + " " + r.PathValue("id") + " " + r.URL.RawQuery
+		w.WriteHeader(http.StatusCreated)
+	})
+	if err := serveDocker(t, mux).Hold(context.Background(), "sha256:1111", "Nextcloud"); err != nil {
+		t.Fatal(err)
+	}
+	if want := "POST sha256:1111 repo=shiplog%2Fbefore-update&tag=Nextcloud"; got != want {
+		t.Errorf("request = %q, want %q", got, want)
+	}
+}
+
+func TestReleaseUntagsTheImageAndAcceptsOneAlreadyGone(t *testing.T) {
+	var got []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/images/{ref...}", func(w http.ResponseWriter, r *http.Request) {
+		got = append(got, r.Method+" "+r.PathValue("ref"))
+		if strings.HasSuffix(r.URL.Path, ":gone") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write([]byte(`[{"Untagged":"shiplog/before-update:Nextcloud"}]`))
+	})
+	c := serveDocker(t, mux)
+	if err := c.Release(context.Background(), "Nextcloud"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Release(context.Background(), "gone"); err != nil {
+		t.Fatalf("Release of a tag that is gone = %v, want nil", err)
+	}
+	if want := "DELETE shiplog/before-update:Nextcloud"; len(got) != 2 || got[0] != want {
+		t.Errorf("requests = %q, want %q first", got, want)
+	}
+}

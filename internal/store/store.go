@@ -99,6 +99,16 @@ CREATE TABLE IF NOT EXISTS unmaintained_suppressions (
 	repo       TEXT PRIMARY KEY,
 	updated_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS guards (
+	name       TEXT PRIMARY KEY,
+	state      TEXT NOT NULL,
+	repository TEXT NOT NULL DEFAULT '',
+	digest     TEXT NOT NULL DEFAULT '',
+	snapshot   TEXT NOT NULL DEFAULT '',
+	link       TEXT NOT NULL DEFAULT '',
+	reason     TEXT NOT NULL DEFAULT '',
+	at         INTEGER NOT NULL
+);
 `
 
 // Open opens (creating if needed) the SQLite database at path, applies the

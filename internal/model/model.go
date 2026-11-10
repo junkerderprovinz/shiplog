@@ -28,6 +28,10 @@ type Container struct {
 	IsLocal bool   `json:"is_local,omitempty"`
 	Source  string `json:"source"` // org.opencontainers.image.source label, may be ""
 	State   string `json:"state"`  // "running" / "exited" / ...
+	// Health is what the image's healthcheck says: "starting", "healthy",
+	// "unhealthy", or "" for an image without one.
+	Health  string `json:"health,omitempty"`
+	ImageID string `json:"image_id,omitempty"`
 	// Managed is true when the container carries Unraid's net.unraid.docker.managed
 	// label, i.e. it was created from an Unraid template.
 	Managed bool `json:"managed"`
