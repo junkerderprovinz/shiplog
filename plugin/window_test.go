@@ -2,6 +2,7 @@
 package plugin
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -58,6 +59,42 @@ func TestWindowFootButtonsAreFilled(t *testing.T) {
 	}
 	if !filled {
 		t.Error("settings.css gives sl-win-btn no fill of its own under TowerTorch")
+	}
+}
+
+// TestEveryLanguageExplainsTheBackupBeforeAnUpdate keeps the backup and
+// rollback texts of the Docker tab in every language, and its English fallback
+// equal to en.json.
+func TestEveryLanguageExplainsTheBackupBeforeAnUpdate(t *testing.T) {
+	keys := []string{"wobLabel", "wobHintOn", "wobHintOff", "heldTitle", "heldNote", "rolledTitle", "rolledNote", "rolledUnpin", "snapshot", "guardHint"}
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
+	if err != nil || len(files) < 26 {
+		t.Fatalf("lang files = %d, %v", len(files), err)
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]string
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, k := range keys {
+			v := texts["d_"+k]
+			switch {
+			case v == "":
+				t.Errorf("%s lacks d_%s", filepath.Base(f), k)
+			case strings.HasSuffix(k, "Note") && !strings.Contains(v, "%s"):
+				t.Errorf("%s: d_%s drops the reason (%%s): %q", filepath.Base(f), k, v)
+			case filepath.Base(f) == "en.json":
+				want, _ := json.Marshal(v)
+				if !strings.Contains(js, k+": "+string(want)) {
+					t.Errorf("docker.js falls back to another English d_%s than en.json's %s", k, want)
+				}
+			}
+		}
 	}
 }
 
