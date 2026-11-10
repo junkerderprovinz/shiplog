@@ -79,6 +79,8 @@ type API struct {
 	// when the file reads fine or the check was inconclusive.
 	verifyFile func(ctx context.Context, url string) (problem string)
 	fortress   status.Source
+	guards     GuardLister
+	backup     func() bool
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -173,6 +175,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/unmaintained-suppressions", a.listSuppressions)
 	mux.HandleFunc("PUT /api/unmaintained-suppression", a.setSuppression)
 	mux.HandleFunc("DELETE /api/unmaintained-suppression", a.deleteSuppression)
+	mux.HandleFunc("GET /api/guards", a.listGuards)
 	if a.fortress != nil {
 		h := status.Handler(a.fortress, fromSocket)
 		mux.Handle("GET "+status.StatusPath, h)

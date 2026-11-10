@@ -121,6 +121,13 @@ func (c *Client) Save(ctx context.Context, container string) (Snapshot, error) {
 	}
 }
 
+// Available reports whether the fortress knows a backup app on this server,
+// reachable or not.
+func (c *Client) Available() bool {
+	_, err := c.member()
+	return !errors.Is(err, ErrNoMember)
+}
+
 // member picks the backup app on this server. One that is known but offline
 // still counts, so the update waits for it instead of going on without a
 // backup.

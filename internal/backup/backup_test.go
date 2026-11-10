@@ -203,6 +203,25 @@ func TestSavePrefersTheBackupAppOnThisServer(t *testing.T) {
 	}
 }
 
+func TestAvailableCountsABackupAppOnThisServerEvenWhileOffline(t *testing.T) {
+	off := vaultMember("m1", "Tower")
+	off.Online = false
+	for _, tc := range []struct {
+		members []Member
+		want    bool
+	}{
+		{nil, false},
+		{[]Member{vaultMember("a", "Elsewhere")}, false},
+		{[]Member{off}, true},
+		{[]Member{vaultMember("m1", "tower.lan")}, true},
+	} {
+		c, _ := newClient(&fakeFortress{members: tc.members})
+		if got := c.Available(); got != tc.want {
+			t.Errorf("Available with %+v = %v, want %v", tc.members, got, tc.want)
+		}
+	}
+}
+
 func TestSaveLeavesABackupAppOnAnotherServerAlone(t *testing.T) {
 	there := &fakeVault{final: "done"}
 	f := &fakeFortress{members: []Member{vaultMember("a", "Elsewhere"), vaultMember("c", "Third")},

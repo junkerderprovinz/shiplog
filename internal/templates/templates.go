@@ -53,11 +53,14 @@ func ProjectPages(dir string) map[string]string {
 	return pages
 }
 
-func path(dir, name string) string { return filepath.Join(dir, "my-"+name+".xml") }
+// Folder is a directory of user templates, such as Folder(Dir).
+type Folder string
+
+func (f Folder) path(name string) string { return filepath.Join(string(f), "my-"+name+".xml") }
 
 // Repository returns the image the named container's template runs.
-func Repository(dir, name string) (string, error) {
-	data, err := os.ReadFile(path(dir, name))
+func (f Folder) Repository(name string) (string, error) {
+	data, err := os.ReadFile(f.path(name))
 	if err != nil {
 		return "", err
 	}
@@ -75,8 +78,8 @@ var repositoryElement = regexp.MustCompile(`(?s)(<Repository>)(.*?)(</Repository
 // SetRepository has the named container's template run ref and leaves the rest
 // of the file byte for byte as Unraid wrote it. The file is replaced in one
 // rename, so a crash leaves the old template or the new one.
-func SetRepository(dir, name, ref string) error {
-	p := path(dir, name)
+func (f Folder) SetRepository(name, ref string) error {
+	p := f.path(name)
 	data, err := os.ReadFile(p)
 	if err != nil {
 		return err
@@ -89,7 +92,7 @@ func SetRepository(dir, name, ref string) error {
 	_ = xml.EscapeText(&esc, []byte(ref))
 	out := append(append(append([]byte{}, data[:loc[4]]...), esc.Bytes()...), data[loc[5]:]...)
 
-	tmp, err := os.CreateTemp(dir, ".shiplog-*.tmp")
+	tmp, err := os.CreateTemp(string(f), ".shiplog-*.tmp")
 	if err != nil {
 		return err
 	}

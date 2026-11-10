@@ -44,6 +44,11 @@ type Config struct {
 
 	// AutoUpdate holds the scheduled auto-update settings of the Unraid plugin.
 	AutoUpdate AutoUpdateConfig
+
+	// FortressDir (FORTRESS_DIR) keeps ShipLog's membership in a fortress, as
+	// the kit's fortress join writes it. Empty or without a membership, ShipLog
+	// is in no fortress.
+	FortressDir string
 }
 
 // AutoUpdateConfig configures scheduled auto-updates (all AUTOUPDATE_* env vars).
@@ -62,6 +67,12 @@ type AutoUpdateConfig struct {
 	// ExcludeContainers (AUTOUPDATE_EXCLUDE_CONTAINERS, comma-separated names)
 	// are never auto-updated; the admin updates them by hand.
 	ExcludeContainers string
+	// BackupTimeout (AUTOUPDATE_BACKUP_MINUTES) is how long an update waits for
+	// the fortress's backup app to back the container up.
+	BackupTimeout time.Duration
+	// WithoutBackup (AUTOUPDATE_WITHOUT_BACKUP, comma-separated names) update
+	// even when their backup fails.
+	WithoutBackup string
 }
 
 // Load reads the environment, applying the documented defaults.
@@ -82,6 +93,7 @@ func Load() Config {
 		LlamaSwapURL:    os.Getenv("LLAMASWAP_URL"),
 		LlamaSwapModel:  os.Getenv("LLAMASWAP_MODEL"),
 		NotifyFile:      os.Getenv("NOTIFY_FILE"),
+		FortressDir:     os.Getenv("FORTRESS_DIR"),
 		OldNotify:       oldNotify(),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:           truthy("AUTOUPDATE_ENABLED"),
@@ -93,6 +105,8 @@ func Load() Config {
 			SchedEvery:        atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
 			ExcludeWords:      os.Getenv("AUTOUPDATE_EXCLUDE_WORDS"),
 			ExcludeContainers: os.Getenv("AUTOUPDATE_EXCLUDE_CONTAINERS"),
+			BackupTimeout:     time.Duration(atoiMin1("AUTOUPDATE_BACKUP_MINUTES", 30)) * time.Minute,
+			WithoutBackup:     os.Getenv("AUTOUPDATE_WITHOUT_BACKUP"),
 		},
 	}
 }

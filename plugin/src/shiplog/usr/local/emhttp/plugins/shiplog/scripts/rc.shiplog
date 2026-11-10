@@ -43,6 +43,12 @@ AUTOUPDATE_SCHED_TIME="04:00"
 AUTOUPDATE_SCHED_EVERY="6"
 AUTOUPDATE_EXCLUDE_WORDS=""
 AUTOUPDATE_EXCLUDE_CONTAINERS=""
+# With a backup app of the fortress on this server, an update waits this long
+# for its backup. The containers listed below update even when it fails.
+AUTOUPDATE_BACKUP_MINUTES="30"
+AUTOUPDATE_WITHOUT_BACKUP=""
+# The fortress membership, as the kit's "fortress join -dir" writes it.
+FORTRESS_DIR="/boot/config/plugins/${NAME}/fortress"
 [ -f "$CFG" ] && . "$CFG"
 
 is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }
@@ -70,7 +76,8 @@ start() {
          NOTIFY_FILE MATRIX_HOMESERVER MATRIX_TOKEN MATRIX_ROOM APPRISE_URL UNRAID_NOTIFY \
          AUTOUPDATE_ENABLED AUTOUPDATE_LEVEL AUTOUPDATE_DIGEST AUTOUPDATE_DRYRUN \
          AUTOUPDATE_SCHED_MODE AUTOUPDATE_SCHED_TIME AUTOUPDATE_SCHED_EVERY \
-         AUTOUPDATE_EXCLUDE_WORDS AUTOUPDATE_EXCLUDE_CONTAINERS
+         AUTOUPDATE_EXCLUDE_WORDS AUTOUPDATE_EXCLUDE_CONTAINERS \
+         AUTOUPDATE_BACKUP_MINUTES AUTOUPDATE_WITHOUT_BACKUP FORTRESS_DIR
   setsid "$BIN" >>"$LOG" 2>&1 &
   echo $! >"$PIDFILE"
   # Unraid shows an rc script's stdout during array start in the footer, so the
