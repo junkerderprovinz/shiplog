@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -245,6 +246,26 @@ func TestAvailableCountsABackupAppOnThisServerEvenWhileOffline(t *testing.T) {
 			t.Errorf("Available with %+v = %v, want %v", tc.members, got, tc.want)
 		}
 	}
+}
+
+func TestABackupAppUnderAnotherDeviceNameIsSaidOnce(t *testing.T) {
+	f := &fakeFortress{members: []Member{vaultMember("a", "Bottich")}}
+	c, _ := newClient(f)
+	var said []string
+	c.Log = func(format string, args ...any) { said = append(said, fmt.Sprintf(format, args...)) }
+	for range 3 {
+		if _, err := c.Save(context.Background(), "nextcloud"); !errors.Is(err, ErrNoMember) {
+			t.Fatalf("err = %v, want ErrNoMember", err)
+		}
+		c.Available()
+	}
+	if len(said) != 1 || !strings.Contains(said[0], "Bottich") || !strings.Contains(said[0], "Tower") {
+		t.Fatalf("said %q, want one line naming both devices", said)
+	}
+
+	quiet, _ := newClient(&fakeFortress{})
+	quiet.Log = func(string, ...any) { t.Error("a fortress without a backup app is nothing to mention") }
+	_, _ = quiet.Save(context.Background(), "nextcloud")
 }
 
 func TestSaveLeavesABackupAppOnAnotherServerAlone(t *testing.T) {
