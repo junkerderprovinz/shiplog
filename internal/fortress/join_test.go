@@ -2,33 +2,22 @@ package fortress
 
 import (
 	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	kitfortress "github.com/junkerderprovinz/parleyport/kit/fortress"
-	"github.com/junkerderprovinz/parleyport/kit/member"
 	"github.com/junkerderprovinz/parleyport/kit/status"
 )
 
-// joined writes dir the way the kit's "fortress join" does, off the network.
-func joined(t *testing.T, dir string) {
+// joined lets dir join a fortress the way the plugin does, with the kit's
+// fortress join.
+func joined(t *testing.T, dir string, lan bool) {
 	t.Helper()
 	secret := make([]byte, 16)
 	_, _ = rand.Read(secret)
-	set := kitfortress.Domain.Keys(secret)
-	id, err := member.NewIdentity(member.KindInstance)
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, _ := json.Marshal(map[string]any{
-		"app": "shiplog", "name": "Tower", "relay": "off",
-		"seed": hex.EncodeToString(id.Seed()), "group": set.Group,
-		"frame": hex.EncodeToString(set.Frame), "peerAuth": hex.EncodeToString(set.PeerAuth),
-	})
-	if err := os.WriteFile(filepath.Join(dir, "fortress.json"), raw, 0o600); err != nil {
+	m := kitfortress.Membership{App: "shiplog", Device: "Tower", Relay: "off", LAN: lan}
+	if err := kitfortress.Join(dir, secret, m); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -44,7 +33,7 @@ func TestJoinWithoutAMembershipIsInNoFortress(t *testing.T) {
 
 func TestJoinTakesPartWithTheKeptMembership(t *testing.T) {
 	dir := t.TempDir()
-	joined(t, dir)
+	joined(t, dir, false)
 	m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog", Version: "3.8.0"}, nil)
 	if err != nil || m == nil {
 		t.Fatalf("Join = %v, %v", m, err)
@@ -55,6 +44,18 @@ func TestJoinTakesPartWithTheKeptMembership(t *testing.T) {
 	}
 	if got := m.Fortress.Members(); len(got) != 0 {
 		t.Errorf("members off the network = %v, want none", got)
+	}
+}
+
+func TestJoinTakesPartOnThisNetworkAndLeavesIt(t *testing.T) {
+	dir := t.TempDir()
+	joined(t, dir, true)
+	m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog"}, nil)
+	if err != nil || m == nil {
+		t.Fatalf("Join = %v, %v", m, err)
+	}
+	if err := m.Close(); err != nil {
+		t.Fatalf("Close = %v", err)
 	}
 }
 
