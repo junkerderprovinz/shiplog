@@ -64,7 +64,10 @@ type Client struct {
 	Device  string
 	Timeout time.Duration
 	Poll    time.Duration
-	sleep   func(context.Context, time.Duration) error
+	// CallTimeout bounds each call, so a relay that never answers cannot
+	// hold the update run. Zero means a minute.
+	CallTimeout time.Duration
+	sleep       func(context.Context, time.Duration) error
 }
 
 // Save backs up container and returns the snapshot once the run is done.
@@ -151,6 +154,12 @@ func (c *Client) member() (string, error) {
 }
 
 func (c *Client) call(ctx context.Context, member, method, path string, body []byte, out any) error {
+	limit := c.CallTimeout
+	if limit == 0 {
+		limit = time.Minute
+	}
+	ctx, cancel := context.WithTimeout(ctx, limit)
+	defer cancel()
 	code, raw, err := c.Fortress.Call(ctx, member, method, path, body)
 	if err != nil {
 		return fmt.Errorf("the backup app did not answer: %w", err)
