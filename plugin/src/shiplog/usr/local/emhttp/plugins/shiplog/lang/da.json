@@ -178,6 +178,7 @@
   "s_fortress_in": "I fæstningen som %s",
   "s_fortress_out": "Ikke i en fæstning",
   "s_fortress_removed": "Et andet medlem af fæstningen tog denne server ud. Indtil du er med igen med din frase, kører automatiske opdateringer uden backup.",
+  "s_fortress_changed": "Din fæstning har en ny frase, som ShipLog ikke kunne følge af sig selv. Skriv de nye ord nedenfor, så fortsætter den som det samme medlem. Indtil da kører automatiske opdateringer uden backup.",
   "s_fortress_join": "Bliv medlem med frasen",
   "s_fortress_join_desc": "Indtast din fæstnings frase, de tolv ord. ShipLog gemmer kun sine egne nøgler, aldrig frasen.",
   "s_fortress_join_ph": "tolv ord",

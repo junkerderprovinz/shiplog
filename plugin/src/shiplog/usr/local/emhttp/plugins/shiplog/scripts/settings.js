@@ -447,16 +447,20 @@
   loadStatus();
 
   /* ShipLog's place in a fortress. The card shows only when the engine answers
-     on its socket, and says so when another member took this server out. The
-     phrase goes to the engine and is never kept, here or there. */
+     on its socket, and says so when another member took this server out or
+     the fortress has a new phrase ShipLog could not follow, which the new
+     words fix as the same member. The phrase goes to the engine and is never
+     kept, here or there. */
   var fort = byId("sl-fortress"), phraseEl = byId("sl-fortress-phrase"), joinBtn = byId("sl-fortress-join");
   function showFortress(s) {
     fort.hidden = false;
     var stat = byId("sl-fortress-stat");
     stat.setAttribute("data-state", s.joined ? "ok" : "");
     byId("sl-fortress-txt").textContent = s.joined ? T.s_fortress_in.replace("%s", function () { return s.device || ""; }) : T.s_fortress_out;
+    var changed = !!(s.joined && s.phraseChanged);
     byId("sl-fortress-removed").hidden = !s.removed || s.joined;
-    byId("sl-fortress-joinrow").hidden = !!s.joined;
+    byId("sl-fortress-changed").hidden = !changed;
+    byId("sl-fortress-joinrow").hidden = !!s.joined && !changed;
   }
   function loadFortress() {
     fetch("/plugins/shiplog/server/status.php?path=fortress", { headers: { Accept: "application/json" } })

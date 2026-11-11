@@ -178,6 +178,7 @@
   "s_fortress_in": "Az erődben, mint %s",
   "s_fortress_out": "Nincs erődben",
   "s_fortress_removed": "Az erőd egy másik tagja kivette ezt a szervert. Amíg a kifejezéseddel újra be nem lépsz, az automatikus frissítések mentés nélkül futnak.",
+  "s_fortress_changed": "Az erődödnek új kifejezése van, amelyet a ShipLog nem tudott magától követni. Írd be lent az új szavakat, és ugyanaz a tag marad. Addig az automatikus frissítések mentés nélkül futnak.",
   "s_fortress_join": "Belépés a kifejezéssel",
   "s_fortress_join_desc": "Írd be az erőd kifejezését, a tizenkét szót. A ShipLog csak a saját kulcsait tartja meg, a kifejezést soha.",
   "s_fortress_join_ph": "tizenkét szó",
