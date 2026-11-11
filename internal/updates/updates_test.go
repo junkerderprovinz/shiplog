@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -224,6 +226,77 @@ func TestAnUnreadableRequestIsRefused(t *testing.T) {
 	var no *fortress.Refusal
 	if !errors.As(err, &no) || no.Code != "bad_request" {
 		t.Fatalf("err = %v, want the refusal bad_request", err)
+	}
+}
+
+func restarted(t *testing.T, file string) *Runs {
+	t.Helper()
+	r := newRuns(fakeStore{status("web", model.KindPatch)}, &fakeExec{})
+	r.File = file
+	if err := r.Restore(); err != nil {
+		t.Fatal(err)
+	}
+	return r
+}
+
+func TestAFinishedRunIsStillKnownAfterARestart(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "runs.json")
+	r := newRuns(fakeStore{status("web", model.KindPatch)}, &fakeExec{})
+	r.File = file
+	id := ask(t, r, `{"containers":["web"]}`).Run
+	finished(t, r, id)
+
+	a := ask(t, restarted(t, file), `{"run":"`+id+`"}`)
+	if a.State != "done" || len(a.Containers) != 1 || a.Containers[0].Result != "updated" {
+		t.Fatalf("after a restart = %+v, want the finished run", a)
+	}
+	entries, _ := os.ReadDir(filepath.Dir(file))
+	if len(entries) != 1 {
+		t.Errorf("the directory holds %d files, want runs.json alone", len(entries))
+	}
+}
+
+func TestARunCutShortByARestartFailedWithItsReason(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "runs.json")
+	// The run never ends, as if ShipLog stopped in the middle of it.
+	exec := &fakeExec{release: make(chan struct{})}
+	r := newRuns(fakeStore{status("web", model.KindPatch)}, exec)
+	r.File = file
+	id := ask(t, r, `{"containers":["web"]}`).Run
+
+	again := restarted(t, file)
+	a := ask(t, again, `{"run":"`+id+`"}`)
+	if a.State != "failed" || a.Error != "ShipLog restarted during the run" {
+		t.Fatalf("after a restart = %+v, want failed with the reason", a)
+	}
+	if a := ask(t, restarted(t, file), `{"run":"`+id+`"}`); a.State != "failed" {
+		t.Fatalf("after a second restart = %+v, want it failed still", a)
+	}
+}
+
+func TestOnlyTheLastRunsAreKept(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "runs.json")
+	r := newRuns(fakeStore{status("web", model.KindPatch)}, &fakeExec{})
+	r.File = file
+	var ids []string
+	for range keep + 3 {
+		id := ask(t, r, `{"containers":["web"]}`).Run
+		finished(t, r, id)
+		ids = append(ids, id)
+	}
+	again := restarted(t, file)
+	if _, err := act(t, again, `{"run":"`+ids[2]+`"}`); err == nil {
+		t.Error("an old run outlived the limit")
+	}
+	if a := ask(t, again, `{"run":"`+ids[3]+`"}`); a.State != "done" {
+		t.Errorf("the oldest kept run = %+v", a)
+	}
+}
+
+func TestAMissingRunsFileIsAFreshStart(t *testing.T) {
+	r := restarted(t, filepath.Join(t.TempDir(), "runs.json"))
+	if _, err := act(t, r, `{"run":"x"}`); err == nil {
+		t.Fatal("want no_such_run")
 	}
 }
 

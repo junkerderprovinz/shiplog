@@ -49,6 +49,8 @@ AUTOUPDATE_BACKUP_MINUTES="30"
 AUTOUPDATE_WITHOUT_BACKUP=""
 # The fortress membership, as the kit's "fortress join -dir" writes it.
 FORTRESS_DIR="/boot/config/plugins/${NAME}/fortress"
+# The update runs other apps of the fortress asked for, kept across restarts.
+RUNS_FILE="/boot/config/plugins/${NAME}/runs.json"
 [ -f "$CFG" ] && . "$CFG"
 
 is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }
@@ -77,7 +79,7 @@ start() {
          AUTOUPDATE_ENABLED AUTOUPDATE_LEVEL AUTOUPDATE_DIGEST AUTOUPDATE_DRYRUN \
          AUTOUPDATE_SCHED_MODE AUTOUPDATE_SCHED_TIME AUTOUPDATE_SCHED_EVERY \
          AUTOUPDATE_EXCLUDE_WORDS AUTOUPDATE_EXCLUDE_CONTAINERS \
-         AUTOUPDATE_BACKUP_MINUTES AUTOUPDATE_WITHOUT_BACKUP FORTRESS_DIR
+         AUTOUPDATE_BACKUP_MINUTES AUTOUPDATE_WITHOUT_BACKUP FORTRESS_DIR RUNS_FILE
   setsid "$BIN" >>"$LOG" 2>&1 &
   echo $! >"$PIDFILE"
   # Unraid shows an rc script's stdout during array start in the footer, so the

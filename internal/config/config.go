@@ -49,6 +49,9 @@ type Config struct {
 	// the kit's fortress join writes it. Empty or without a membership, ShipLog
 	// is in no fortress.
 	FortressDir string
+	// RunsFile (RUNS_FILE, else runs.json in DataDir) keeps the update runs
+	// other apps asked for, so they get their answer after a restart.
+	RunsFile string
 }
 
 // AutoUpdateConfig configures scheduled auto-updates (all AUTOUPDATE_* env vars).
@@ -77,7 +80,7 @@ type AutoUpdateConfig struct {
 
 // Load reads the environment, applying the documented defaults.
 func Load() Config {
-	return Config{
+	c := Config{
 		DockerSocket:    env("DOCKER_SOCKET", "/var/run/docker.sock"),
 		DockerConfigDir: dockerConfigDir(),
 		Port:            env("PORT", "8484"),
@@ -94,6 +97,7 @@ func Load() Config {
 		LlamaSwapModel:  os.Getenv("LLAMASWAP_MODEL"),
 		NotifyFile:      os.Getenv("NOTIFY_FILE"),
 		FortressDir:     os.Getenv("FORTRESS_DIR"),
+		RunsFile:        os.Getenv("RUNS_FILE"),
 		OldNotify:       oldNotify(),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:           truthy("AUTOUPDATE_ENABLED"),
@@ -109,6 +113,10 @@ func Load() Config {
 			WithoutBackup:     os.Getenv("AUTOUPDATE_WITHOUT_BACKUP"),
 		},
 	}
+	if c.RunsFile == "" {
+		c.RunsFile = filepath.Join(c.DataDir, "runs.json")
+	}
+	return c
 }
 
 func oldNotify() map[string]string {

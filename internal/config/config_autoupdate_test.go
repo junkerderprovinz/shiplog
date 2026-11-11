@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -55,6 +56,18 @@ func TestLoadBackupSettings(t *testing.T) {
 	t.Setenv("AUTOUPDATE_BACKUP_MINUTES", "0")
 	if got := config.Load().AutoUpdate.BackupTimeout; got != 30*time.Minute {
 		t.Errorf("a timeout below a minute = %s, want the 30m default", got)
+	}
+}
+
+func TestRunsFileDefaultsToTheDataDir(t *testing.T) {
+	t.Setenv("DATA_DIR", "/config")
+	t.Setenv("RUNS_FILE", "")
+	if got := config.Load().RunsFile; got != filepath.Join("/config", "runs.json") {
+		t.Fatalf("RunsFile = %q", got)
+	}
+	t.Setenv("RUNS_FILE", "/boot/config/plugins/shiplog/runs.json")
+	if got := config.Load().RunsFile; got != "/boot/config/plugins/shiplog/runs.json" {
+		t.Fatalf("RunsFile = %q", got)
 	}
 }
 

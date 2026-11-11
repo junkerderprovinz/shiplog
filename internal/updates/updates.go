@@ -51,6 +51,9 @@ type Runs struct {
 	Lock  sync.Locker
 	Began func(time.Time)
 	Ended func(autoupdate.Result)
+	// File keeps the last runs, so a caller still gets its answer after
+	// ShipLog restarted. Empty keeps them in memory alone.
+	File string
 
 	mu    sync.Mutex
 	runs  map[string]*run
@@ -58,6 +61,7 @@ type Runs struct {
 }
 
 type run struct {
+	ID         string   `json:"-"`
 	State      string   `json:"state"`
 	Containers []result `json:"containers"`
 	Error      string   `json:"error,omitempty"`
@@ -115,15 +119,9 @@ func (r *Runs) start(req request) ([]byte, error) {
 	id := newID()
 	ru := &run{State: "running", Containers: []result{}}
 	r.mu.Lock()
-	if r.runs == nil {
-		r.runs = map[string]*run{}
-	}
-	r.runs[id] = ru
-	r.order = append(r.order, id)
-	if len(r.order) > keep {
-		delete(r.runs, r.order[0])
-		r.order = r.order[1:]
-	}
+	ru.ID = id
+	r.add(ru)
+	r.save()
 	r.mu.Unlock()
 	go r.carryOut(ru, req)
 	return json.Marshal(map[string]string{"run": id})
@@ -216,6 +214,7 @@ func (r *Runs) finish(ru *run, results []result, err string) {
 	if err != "" {
 		ru.State = "failed"
 	}
+	r.save()
 }
 
 func refuse(code string) error {
