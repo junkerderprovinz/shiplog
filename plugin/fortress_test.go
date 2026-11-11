@@ -17,6 +17,7 @@ func TestEveryLanguageOffersTheFortressAgain(t *testing.T) {
 		"s_fortress": false, "s_fortress_member": false, "s_fortress_in": true, "s_fortress_out": false,
 		"s_fortress_removed": false, "s_fortress_join": false, "s_fortress_join_desc": false, "s_fortress_join_ph": false,
 		"s_fortress_join_btn": false, "s_fortress_joined": false, "s_fortress_bad_phrase": false, "s_fortress_failed": true,
+		"s_fortress_changed": false,
 	}
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
 	if err != nil || len(files) < 26 {
@@ -61,7 +62,14 @@ func TestTheSettingsPageJoinsThroughTheProxy(t *testing.T) {
 	if !strings.Contains(page, "s_fortress_removed") {
 		t.Error("the page never says that ShipLog was taken out")
 	}
-	if !strings.Contains(read(t, "scripts/settings.js"), `"fortress/join"`) {
+	if !strings.Contains(page, "s_fortress_changed") {
+		t.Error("the page never says that the fortress phrase changed")
+	}
+	js := read(t, "scripts/settings.js")
+	if !strings.Contains(js, `"fortress/join"`) {
 		t.Error("settings.js does not post the phrase to fortress/join")
+	}
+	if !strings.Contains(js, "s.phraseChanged") {
+		t.Error("settings.js never offers the new words after a phrase change")
 	}
 }

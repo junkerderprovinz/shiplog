@@ -130,6 +130,7 @@ func main() {
 	door, backups := openFortress(cfg, report, actions...)
 	if door != nil {
 		defer func() { _ = door.Close() }()
+		go door.Watch(ctx)
 		exec.WithSafeguard(&autoupdate.Safeguard{
 			Backup:        backups,
 			Images:        docker,

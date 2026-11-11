@@ -178,6 +178,7 @@
   "s_fortress_in": "In de vesting als %s",
   "s_fortress_out": "In geen vesting",
   "s_fortress_removed": "Een ander lid van de vesting heeft deze server eruit gehaald. Tot je weer meedoet met je zin, lopen automatische updates zonder back-up.",
+  "s_fortress_changed": "Je vesting heeft een nieuwe zin die ShipLog niet zelf kon volgen. Vul hieronder de nieuwe woorden in, dan blijft het hetzelfde lid. Tot die tijd lopen automatische updates zonder back-up.",
   "s_fortress_join": "Meedoen met de zin",
   "s_fortress_join_desc": "Voer de zin van je vesting in, de twaalf woorden. ShipLog bewaart alleen zijn eigen sleutels, nooit de zin.",
   "s_fortress_join_ph": "twaalf woorden",

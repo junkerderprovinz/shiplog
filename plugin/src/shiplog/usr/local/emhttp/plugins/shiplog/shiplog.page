@@ -171,6 +171,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
     <section class="sl-card" id="sl-fortress" aria-labelledby="sl-h-fortress" hidden>
       <h3 class="sl-h"><span id="sl-h-fortress"><?=$slE($L['s_fortress'])?></span></h3>
       <p class="sl-warn" id="sl-fortress-removed" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_fortress_removed'])?></span></p>
+      <p class="sl-warn" id="sl-fortress-changed" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_fortress_changed'])?></span></p>
       <div class="sl-row">
         <div class="sl-lbl"><span id="sl-fortress-lbl"><?=$slE($L['s_fortress_member'])?></span></div>
         <div class="sl-ctl"><span class="sl-stat" id="sl-fortress-stat" role="status" aria-labelledby="sl-fortress-lbl sl-fortress-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-fortress-txt"></span></span></div>

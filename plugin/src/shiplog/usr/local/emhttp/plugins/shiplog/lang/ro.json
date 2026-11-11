@@ -178,6 +178,7 @@
   "s_fortress_in": "În fortăreață ca %s",
   "s_fortress_out": "În nicio fortăreață",
   "s_fortress_removed": "Un alt membru al fortăreței a scos acest server din ea. Până intri din nou cu fraza ta, actualizările automate rulează fără backup.",
+  "s_fortress_changed": "Fortăreața ta are o frază nouă pe care ShipLog n-a putut s-o urmeze singur. Scrie mai jos cuvintele noi și rămâne același membru. Până atunci, actualizările automate rulează fără backup.",
   "s_fortress_join": "Intră cu fraza",
   "s_fortress_join_desc": "Introdu fraza fortăreței tale, cele douăsprezece cuvinte. ShipLog își păstrează doar propriile chei, niciodată fraza.",
   "s_fortress_join_ph": "douăsprezece cuvinte",

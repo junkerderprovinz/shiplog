@@ -178,6 +178,7 @@
   "s_fortress_in": "Na fortaleza como %s",
   "s_fortress_out": "Fora de qualquer fortaleza",
   "s_fortress_removed": "Outro membro da fortaleza tirou este servidor dela. Até você entrar de novo com a sua frase, as atualizações automáticas rodam sem backup.",
+  "s_fortress_changed": "Sua fortaleza tem uma frase nova que o ShipLog não conseguiu acompanhar sozinho. Digite as palavras novas abaixo e ele continua como o mesmo membro. Até lá, as atualizações automáticas rodam sem backup.",
   "s_fortress_join": "Entrar com a frase",
   "s_fortress_join_desc": "Digite a frase da sua fortaleza, as doze palavras. O ShipLog guarda só as próprias chaves, nunca a frase.",
   "s_fortress_join_ph": "doze palavras",
