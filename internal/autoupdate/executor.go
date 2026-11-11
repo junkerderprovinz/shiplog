@@ -154,12 +154,7 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 		if !Eligible(st, p) {
 			continue
 		}
-		o := Outcome{
-			Name:  st.Container.Name,
-			From:  st.RunningVersion,
-			To:    st.NewestTag,
-			Level: string(st.Kind),
-		}
+		o := outcomeOf(st)
 		if ContainerExcluded(o.Name, p.ExcludeContainers) {
 			o.Skipped = true
 			res.Outcomes = append(res.Outcomes, o)
@@ -171,43 +166,79 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 			res.Outcomes = append(res.Outcomes, o)
 			continue
 		}
-		before, found, ierr := e.running(ctx, o.Name)
-		switch {
-		case ierr != nil:
-			// What cannot be looked at before cannot be confirmed after.
-			o.Err = fmt.Errorf("could not inspect the container before the update: %w", ierr)
-		case e.docker != nil && !found:
-			o.Err = errors.New("container not found")
-		case e.docker != nil && st.NewestDigest != "" && before.HasDigest(st.NewestDigest):
-			o.UpToDate = true
-		case dryRun:
-			o.Updated = true
-		default:
-			if e.progress != nil {
-				e.progress(o.Name)
-			}
-			a := applied{i: len(res.Outcomes), st: st, before: before}
-			if e.safe != nil {
-				if a.guard, o.Err = e.safe.before(ctx, &o, before); o.Err != nil {
-					o.NoBackup = true
-					break
-				}
-			}
-			o.Err = e.apply(ctx, &a, &o)
-			if a.guard != nil {
-				if o.Err == nil {
-					o.Err = e.ready(ctx, o.Name, before)
-				}
-				if o.Err != nil {
-					e.rollBack(ctx, &a, &o)
-					a.wentBack = true
-				}
-			}
-			o.Updated = o.Err == nil
-			done = append(done, a)
-		}
-		res.Outcomes = append(res.Outcomes, o)
+		e.one(ctx, &res, &done, st, o, false)
 	}
+	e.end(ctx, &res, done)
+	return res
+}
+
+// Update applies the updates of sts one at a time, whatever the policy says,
+// as another app of the fortress asked. backedUp names the containers that
+// app backed up just before, so the safeguard takes no second backup of them
+// and still rolls them back.
+func (e *Executor) Update(ctx context.Context, sts []model.UpdateStatus, backedUp []string) Result {
+	var res Result
+	var done []applied
+	for _, st := range sts {
+		o := outcomeOf(st)
+		if !e.upd.Supported() {
+			o.Err = updater.ErrUnsupported
+			res.Outcomes = append(res.Outcomes, o)
+			continue
+		}
+		e.one(ctx, &res, &done, st, o, ContainerExcluded(o.Name, backedUp))
+	}
+	e.end(ctx, &res, done)
+	return res
+}
+
+func outcomeOf(st model.UpdateStatus) Outcome {
+	return Outcome{Name: st.Container.Name, From: st.RunningVersion, To: st.NewestTag, Level: string(st.Kind)}
+}
+
+// one updates a single container and adds its outcome to res. backedUp says
+// its backup was taken just before.
+func (e *Executor) one(ctx context.Context, res *Result, done *[]applied, st model.UpdateStatus, o Outcome, backedUp bool) {
+	before, found, ierr := e.running(ctx, o.Name)
+	switch {
+	case ierr != nil:
+		// What cannot be looked at before cannot be confirmed after.
+		o.Err = fmt.Errorf("could not inspect the container before the update: %w", ierr)
+	case e.docker != nil && !found:
+		o.Err = errors.New("container not found")
+	case e.docker != nil && st.NewestDigest != "" && before.HasDigest(st.NewestDigest):
+		o.UpToDate = true
+	case res.DryRun:
+		o.Updated = true
+	default:
+		if e.progress != nil {
+			e.progress(o.Name)
+		}
+		a := applied{i: len(res.Outcomes), st: st, before: before}
+		if e.safe != nil {
+			if a.guard, o.Err = e.safe.before(ctx, &o, before, backedUp); o.Err != nil {
+				o.NoBackup = true
+				break
+			}
+		}
+		o.Err = e.apply(ctx, &a, &o)
+		if a.guard != nil {
+			if o.Err == nil {
+				o.Err = e.ready(ctx, o.Name, before)
+			}
+			if o.Err != nil {
+				e.rollBack(ctx, &a, &o)
+				a.wentBack = true
+			}
+		}
+		o.Updated = o.Err == nil
+		*done = append(*done, a)
+	}
+	res.Outcomes = append(res.Outcomes, o)
+}
+
+// end looks at every update of the run once more and settles its guard.
+func (e *Executor) end(ctx context.Context, res *Result, done []applied) {
 	e.recheck(ctx, res.Outcomes, done)
 	for k := range done {
 		a := &done[k]
@@ -225,7 +256,6 @@ func (e *Executor) Run(ctx context.Context, p Policy, dryRun bool) Result {
 			o.Output = a.out
 		}
 	}
-	return res
 }
 
 // applied is one update the run ran, kept for the check at the end of the run.

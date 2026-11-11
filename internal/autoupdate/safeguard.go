@@ -64,10 +64,15 @@ type guarded struct {
 	onOld      bool // the container ended up on its old image
 }
 
-// before backs the container up and holds its image. It returns no guard when
-// there is no backup app, and an error when the update has to wait.
-func (s *Safeguard) before(ctx context.Context, o *Outcome, c model.Container) (*guarded, error) {
-	snap, err := s.Backup.Save(ctx, o.Name)
+// before backs the container up, unless it was backed up just before, and
+// holds its image. It returns no guard when there is no backup app, and an
+// error when the update has to wait.
+func (s *Safeguard) before(ctx context.Context, o *Outcome, c model.Container, backedUp bool) (*guarded, error) {
+	var snap backup.Snapshot
+	var err error
+	if !backedUp {
+		snap, err = s.Backup.Save(ctx, o.Name)
+	}
 	switch {
 	case errors.Is(err, backup.ErrNoMember):
 		return nil, nil

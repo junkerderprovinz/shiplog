@@ -297,6 +297,38 @@ func TestSafeguardLeavesAContainerThatStayedOnItsOldImage(t *testing.T) {
 	}
 }
 
+func (g *guardedHost) apply(backedUp ...string) Outcome {
+	st := stWithDigest("nextcloud", newDigest)
+	st.Kind = model.KindMajor
+	e := NewExecutor(fakeLister{}, g.fakeHost).WithDocker(g.fakeHost).WithSafeguard(g.safe)
+	e.sleep = g.sleep
+	res := e.Update(context.Background(), []model.UpdateStatus{st}, backedUp)
+	if len(res.Outcomes) != 1 {
+		panic("want one outcome")
+	}
+	return res.Outcomes[0]
+}
+
+func TestUpdateTakesTheGivenContainerWhateverThePolicy(t *testing.T) {
+	g := newGuardedHost()
+	o := g.apply()
+	if !o.Updated || o.Snapshot.ID != "4f2a9c1e" || len(g.backup.saved) != 1 {
+		t.Fatalf("outcome = %+v with backups %v, want a major update backed up first", o, g.backup.saved)
+	}
+}
+
+func TestUpdateTakesNoSecondBackupOfAFreshlyBackedUpContainer(t *testing.T) {
+	g := newGuardedHost()
+	g.health = map[string]string{"nextcloud": "unhealthy"}
+	o := g.apply("NextCloud")
+	if len(g.backup.saved) != 0 {
+		t.Errorf("backups = %v, want none for a container backed up just before", g.backup.saved)
+	}
+	if !o.RolledBack || len(g.images.held) != 1 {
+		t.Fatalf("outcome = %+v, held %v; want it guarded and rolled back all the same", o, g.images.held)
+	}
+}
+
 func TestPinReplacesAnExistingDigest(t *testing.T) {
 	for in, want := range map[string]string{
 		"nginx":                    "nginx@sha256:a",
