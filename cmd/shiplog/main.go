@@ -112,7 +112,9 @@ func main() {
 	// while the fortress opens wait for its safeguard.
 	updating := &sync.Mutex{}
 	updating.Lock()
-	var actions []kitfortress.Action
+	managed := &updates.Managed{Store: db, Policy: policy,
+		On: autoUpdating && !cfg.AutoUpdate.DryRun && cfg.AutoUpdate.SchedMode != "off"}
+	actions := []kitfortress.Action{managed.Action()}
 	if upd.Supported() {
 		runs := &updates.Runs{
 			Store: db, Exec: exec, Exclude: policy.ExcludeContainers, Context: ctx, Lock: updating,
