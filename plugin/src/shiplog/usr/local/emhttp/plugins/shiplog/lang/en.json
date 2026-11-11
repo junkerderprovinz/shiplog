@@ -172,5 +172,17 @@
   "s_give_networks": "Networks",
   "s_give_no_tag": "No destination tag and no memo needed.",
   "s_copy": "Copy",
-  "s_copied": "Copied"
+  "s_copied": "Copied",
+  "s_fortress": "Fortress",
+  "s_fortress_member": "Membership",
+  "s_fortress_in": "In the fortress as %s",
+  "s_fortress_out": "Not in a fortress",
+  "s_fortress_removed": "Another member of the fortress took this server out of it. Until you join again with your phrase, auto-updates run without a backup.",
+  "s_fortress_join": "Join with the phrase",
+  "s_fortress_join_desc": "Enter your fortress phrase, the twelve words. ShipLog keeps its own keys only, never the phrase.",
+  "s_fortress_join_ph": "twelve words",
+  "s_fortress_join_btn": "Join",
+  "s_fortress_joined": "Welcome to your fortress.",
+  "s_fortress_bad_phrase": "Those words aren't a fortress phrase. Check each one once more.",
+  "s_fortress_failed": "Joining didn't work: %s"
 }

@@ -172,5 +172,17 @@
   "s_give_networks": "ネットワーク",
   "s_give_no_tag": "destination tag も memo も不要です。",
   "s_copy": "コピー",
-  "s_copied": "コピーしました"
+  "s_copied": "コピーしました",
+  "s_fortress": "要塞",
+  "s_fortress_member": "メンバーシップ",
+  "s_fortress_in": "%s として要塞に参加中",
+  "s_fortress_out": "要塞に参加していません",
+  "s_fortress_removed": "要塞の別のメンバーがこのサーバーを要塞から外しました。フレーズで参加し直すまで、自動更新はバックアップなしで実行されます。",
+  "s_fortress_join": "フレーズで参加",
+  "s_fortress_join_desc": "要塞のフレーズ、12 個の単語を入力してください。ShipLog が保存するのは自分の鍵だけで、フレーズは保存しません。",
+  "s_fortress_join_ph": "12 個の単語",
+  "s_fortress_join_btn": "参加",
+  "s_fortress_joined": "要塞へようこそ。",
+  "s_fortress_bad_phrase": "その単語は要塞のフレーズではありません。もう一度ひとつずつ確認してください。",
+  "s_fortress_failed": "参加できませんでした: %s"
 }

@@ -172,5 +172,17 @@
   "s_give_networks": "Hálózatok",
   "s_give_no_tag": "Nem kell sem destination tag, sem memo.",
   "s_copy": "Másolás",
-  "s_copied": "Másolva"
+  "s_copied": "Másolva",
+  "s_fortress": "Erőd",
+  "s_fortress_member": "Tagság",
+  "s_fortress_in": "Az erődben, mint %s",
+  "s_fortress_out": "Nincs erődben",
+  "s_fortress_removed": "Az erőd egy másik tagja kivette ezt a szervert. Amíg a kifejezéseddel újra be nem lépsz, az automatikus frissítések mentés nélkül futnak.",
+  "s_fortress_join": "Belépés a kifejezéssel",
+  "s_fortress_join_desc": "Írd be az erőd kifejezését, a tizenkét szót. A ShipLog csak a saját kulcsait tartja meg, a kifejezést soha.",
+  "s_fortress_join_ph": "tizenkét szó",
+  "s_fortress_join_btn": "Belépés",
+  "s_fortress_joined": "Üdv az erődödben.",
+  "s_fortress_bad_phrase": "Ezek a szavak nem erődkifejezést adnak ki. Nézd át még egyszer mindegyiket.",
+  "s_fortress_failed": "A belépés nem sikerült: %s"
 }

@@ -172,5 +172,17 @@
   "s_give_networks": "Verkot",
   "s_give_no_tag": "Destination tagia tai memoa ei tarvita.",
   "s_copy": "Kopioi",
-  "s_copied": "Kopioitu"
+  "s_copied": "Kopioitu",
+  "s_fortress": "Linnoitus",
+  "s_fortress_member": "Jäsenyys",
+  "s_fortress_in": "Linnoituksessa nimellä %s",
+  "s_fortress_out": "Ei missään linnoituksessa",
+  "s_fortress_removed": "Toinen linnoituksen jäsen otti tämän palvelimen pois siitä. Kunnes liityt uudelleen lauseellasi, automaattiset päivitykset tehdään ilman varmuuskopiota.",
+  "s_fortress_join": "Liity lauseella",
+  "s_fortress_join_desc": "Kirjoita linnoituksesi lause, kaksitoista sanaa. ShipLog säilyttää vain omat avaimensa, ei koskaan lausetta.",
+  "s_fortress_join_ph": "kaksitoista sanaa",
+  "s_fortress_join_btn": "Liity",
+  "s_fortress_joined": "Tervetuloa linnoitukseesi.",
+  "s_fortress_bad_phrase": "Nuo sanat eivät ole linnoituksen lause. Tarkista jokainen sana vielä kerran.",
+  "s_fortress_failed": "Liittyminen ei onnistunut: %s"
 }

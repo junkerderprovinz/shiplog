@@ -172,5 +172,17 @@
   "s_give_networks": "Rețele",
   "s_give_no_tag": "Nu sunt necesare destination tag sau memo.",
   "s_copy": "Copiază",
-  "s_copied": "Copiat"
+  "s_copied": "Copiat",
+  "s_fortress": "Fortăreață",
+  "s_fortress_member": "Apartenență",
+  "s_fortress_in": "În fortăreață ca %s",
+  "s_fortress_out": "În nicio fortăreață",
+  "s_fortress_removed": "Un alt membru al fortăreței a scos acest server din ea. Până intri din nou cu fraza ta, actualizările automate rulează fără backup.",
+  "s_fortress_join": "Intră cu fraza",
+  "s_fortress_join_desc": "Introdu fraza fortăreței tale, cele douăsprezece cuvinte. ShipLog își păstrează doar propriile chei, niciodată fraza.",
+  "s_fortress_join_ph": "douăsprezece cuvinte",
+  "s_fortress_join_btn": "Intră",
+  "s_fortress_joined": "Bine ai venit în fortăreața ta.",
+  "s_fortress_bad_phrase": "Aceste cuvinte nu sunt o frază de fortăreață. Verifică fiecare cuvânt încă o dată.",
+  "s_fortress_failed": "Intrarea nu a reușit: %s"
 }

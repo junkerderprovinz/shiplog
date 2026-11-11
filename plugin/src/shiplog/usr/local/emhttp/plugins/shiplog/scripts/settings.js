@@ -446,6 +446,50 @@
   }
   loadStatus();
 
+  /* ShipLog's place in a fortress. The card shows only when the engine answers
+     on its socket, and says so when another member took this server out. The
+     phrase goes to the engine and is never kept, here or there. */
+  var fort = byId("sl-fortress"), phraseEl = byId("sl-fortress-phrase"), joinBtn = byId("sl-fortress-join");
+  function showFortress(s) {
+    fort.hidden = false;
+    var stat = byId("sl-fortress-stat");
+    stat.setAttribute("data-state", s.joined ? "ok" : "");
+    byId("sl-fortress-txt").textContent = s.joined ? T.s_fortress_in.replace("%s", function () { return s.device || ""; }) : T.s_fortress_out;
+    byId("sl-fortress-removed").hidden = !s.removed || s.joined;
+    byId("sl-fortress-joinrow").hidden = !!s.joined;
+  }
+  function loadFortress() {
+    fetch("/plugins/shiplog/server/status.php?path=fortress", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) { if (s && typeof s.joined === "boolean") showFortress(s); })
+      .catch(function () {});
+  }
+  function joinFortress() {
+    var words = phraseEl.value.trim();
+    if (!words) { note("err", T.s_fortress_bad_phrase); phraseEl.focus(); return; }
+    joinBtn.disabled = true;
+    var body = new URLSearchParams({ path: "fortress/join", method: "POST", data: JSON.stringify({ phrase: words }), csrf_token: window.csrf_token || "" });
+    fetch("/plugins/shiplog/server/status.php", { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d || {} }; }, function () { return { ok: false, d: {} }; }); })
+      .then(function (res) {
+        if (res.ok) {
+          phraseEl.value = "";
+          note("ok", T.s_fortress_joined);
+          showFortress(res.d);
+        } else if (res.d.error === "member") {
+          phraseEl.value = "";
+          loadFortress();
+        } else {
+          note("err", res.d.error === "phrase" ? T.s_fortress_bad_phrase : T.s_fortress_failed.replace("%s", function () { return res.d.error || ""; }));
+        }
+      })
+      .catch(function (e) { note("err", T.s_fortress_failed.replace("%s", function () { return e.message; })); })
+      .then(function () { joinBtn.disabled = false; });
+  }
+  joinBtn.addEventListener("click", joinFortress);
+  phraseEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); joinFortress(); } });
+  loadFortress();
+
   /* Auto-update. Everything below the main switch only matters while it is on,
      so those rows are left out while it is off. */
   function auShown() {

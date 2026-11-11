@@ -172,5 +172,17 @@
   "s_give_networks": "Nettverk",
   "s_give_no_tag": "Verken destination tag eller memo trengs.",
   "s_copy": "Kopier",
-  "s_copied": "Kopiert"
+  "s_copied": "Kopiert",
+  "s_fortress": "Festning",
+  "s_fortress_member": "Medlemskap",
+  "s_fortress_in": "I festningen som %s",
+  "s_fortress_out": "Ikke i noen festning",
+  "s_fortress_removed": "Et annet medlem av festningen tok denne serveren ut. Til du blir med igjen med frasen din, kjører automatiske oppdateringer uten sikkerhetskopi.",
+  "s_fortress_join": "Bli med med frasen",
+  "s_fortress_join_desc": "Skriv inn frasen til festningen din, de tolv ordene. ShipLog tar bare vare på sine egne nøkler, aldri frasen.",
+  "s_fortress_join_ph": "tolv ord",
+  "s_fortress_join_btn": "Bli med",
+  "s_fortress_joined": "Velkommen til festningen din.",
+  "s_fortress_bad_phrase": "De ordene er ikke en festningsfrase. Sjekk hvert ord en gang til.",
+  "s_fortress_failed": "Det gikk ikke å bli med: %s"
 }

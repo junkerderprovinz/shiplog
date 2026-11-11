@@ -11,7 +11,8 @@
  *   GET  status.php?path=logo|overrides|unmaintained-suppressions|guards
  *   GET  status.php?path=fortress-status[&lang=de]      -> the status contract
  *   GET  status.php?path=fortress-log[&after=<id>&limit=<n>&lang=de]
- *   POST status.php  path=refresh|override|unmaintained-suppression,
+ *   GET  status.php?path=fortress                       -> ShipLog's place in a fortress
+ *   POST status.php  path=refresh|override|unmaintained-suppression|fortress/join,
  *                    method=POST|PUT|DELETE, data=<JSON body>
  */
 
@@ -19,9 +20,10 @@ $sock   = '/var/run/shiplog.sock';
 $self   = '/plugins/shiplog/server/status.php';
 $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides',
            'unmaintained-suppressions' => '/api/unmaintained-suppressions', 'guards' => '/api/guards',
-           'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log'];
+           'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
+           'fortress' => '/api/fortress'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
-           'unmaintained-suppression' => ['PUT', 'DELETE']];
+           'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST']];
 
 $deny = function ($code) {
     http_response_code($code);

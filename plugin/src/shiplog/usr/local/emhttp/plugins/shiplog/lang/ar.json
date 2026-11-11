@@ -172,5 +172,17 @@
   "s_give_networks": "الشبكات",
   "s_give_no_tag": "لا حاجة إلى Destination Tag ولا إلى Memo.",
   "s_copy": "نسخ",
-  "s_copied": "تم النسخ"
+  "s_copied": "تم النسخ",
+  "s_fortress": "الحصن",
+  "s_fortress_member": "العضوية",
+  "s_fortress_in": "في الحصن باسم %s",
+  "s_fortress_out": "ليس في حصن",
+  "s_fortress_removed": "أخرج عضو آخر في الحصن هذا الخادم منه. إلى أن تنضم مجددًا بعبارتك، تعمل التحديثات التلقائية دون نسخة احتياطية.",
+  "s_fortress_join": "الانضمام بالعبارة",
+  "s_fortress_join_desc": "أدخل عبارة حصنك، الكلمات الاثنتي عشرة. يحتفظ ShipLog بمفاتيحه فقط، وليس بالعبارة أبدًا.",
+  "s_fortress_join_ph": "اثنتا عشرة كلمة",
+  "s_fortress_join_btn": "انضمام",
+  "s_fortress_joined": "مرحبًا بك في حصنك.",
+  "s_fortress_bad_phrase": "هذه الكلمات ليست عبارة حصن. راجع كل كلمة مرة أخرى.",
+  "s_fortress_failed": "لم ينجح الانضمام: %s"
 }
