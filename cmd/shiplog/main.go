@@ -15,9 +15,11 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
+	kitfortress "github.com/junkerderprovinz/parleyport/kit/fortress"
 	kitnotify "github.com/junkerderprovinz/parleyport/kit/notify"
 	"github.com/junkerderprovinz/parleyport/kit/status"
 
@@ -37,6 +39,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/summarize"
 	"github.com/junkerderprovinz/shiplog/internal/templates"
 	"github.com/junkerderprovinz/shiplog/internal/updater"
+	"github.com/junkerderprovinz/shiplog/internal/updates"
 )
 
 func main() {
@@ -103,20 +106,35 @@ func main() {
 
 	run := &fortress.Run{}
 	report := &fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}
-	backups := joinFortress(cfg, report)
+	exec := autoupdate.NewExecutor(db, upd).WithDocker(docker).WithProgress(run.Updating)
+	// The scheduled auto-update and the runs other apps ask for take turns.
+	// Held until the executor is complete, it also makes a run asked for
+	// while the fortress opens wait for its safeguard.
+	updating := &sync.Mutex{}
+	updating.Lock()
+	var actions []kitfortress.Action
+	if upd.Supported() {
+		runs := &updates.Runs{
+			Store: db, Exec: exec, Exclude: policy.ExcludeContainers, Context: ctx, Lock: updating,
+			Began: run.Begin,
+			Ended: func(res autoupdate.Result) { run.End(); keepOutcomes(db, res, time.Now()) },
+		}
+		actions = append(actions, runs.Action())
+	}
+	backups := joinFortress(cfg, report, actions...)
+	if backups != nil {
+		exec.WithSafeguard(&autoupdate.Safeguard{
+			Backup:        backups,
+			Images:        docker,
+			Templates:     templates.Folder(templates.Dir),
+			Guards:        db,
+			WithoutBackup: autoupdate.ParseExcludeContainers(cfg.AutoUpdate.WithoutBackup),
+		})
+	}
+	updating.Unlock()
 	switch {
 	case autoUpdating:
-		exec := autoupdate.NewExecutor(db, upd).WithDocker(docker).WithProgress(run.Updating)
-		if backups != nil {
-			exec.WithSafeguard(&autoupdate.Safeguard{
-				Backup:        backups,
-				Images:        docker,
-				Templates:     templates.Folder(templates.Dir),
-				Guards:        db,
-				WithoutBackup: autoupdate.ParseExcludeContainers(cfg.AutoUpdate.WithoutBackup),
-			})
-		}
-		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier, run)
+		go runAutoUpdate(ctx, cfg.AutoUpdate, sched, policy, exec, db, notifier, run, updating)
 		log.Printf("shiplog: auto-update enabled (level=%s, digest=%v, schedule=%s, dry-run=%v)",
 			cfg.AutoUpdate.Level, cfg.AutoUpdate.Digest, cfg.AutoUpdate.SchedMode, cfg.AutoUpdate.DryRun)
 	case cfg.AutoUpdate.Enabled:
@@ -154,8 +172,8 @@ func main() {
 // joinFortress takes part in the fortress the plugin joined and returns how to
 // reach its backup app, or nil outside a fortress. The membership lasts as
 // long as the process.
-func joinFortress(cfg config.Config, report *fortress.Source) *backup.Client {
-	m, err := fortress.Join(cfg.FortressDir, report.App, report)
+func joinFortress(cfg config.Config, report *fortress.Source, actions ...kitfortress.Action) *backup.Client {
+	m, err := fortress.Join(cfg.FortressDir, report.App, report, actions...)
 	if err != nil {
 		log.Printf("shiplog: not taking part in the fortress: %v", err)
 		return nil
@@ -195,7 +213,7 @@ func listen(cfg config.Config) (net.Listener, string, error) {
 
 // runAutoUpdate checks every minute whether a run is due. The first check waits
 // one tick, so the initial sweep has filled the store before a "boot" run.
-func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autoupdate.Schedule, policy autoupdate.Policy, exec *autoupdate.Executor, st *store.Store, notifier *notify.Notifier, run *fortress.Run) {
+func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autoupdate.Schedule, policy autoupdate.Policy, exec *autoupdate.Executor, st *store.Store, notifier *notify.Notifier, run *fortress.Run, updating sync.Locker) {
 	if len(policy.ExcludeContainers) > 0 {
 		log.Printf("shiplog: auto-update leaves these to manual updates: %s", strings.Join(policy.ExcludeContainers, ", "))
 	}
@@ -223,28 +241,15 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autou
 		}
 		last = now
 		_ = st.SetMeta(lastRunKey, strconv.FormatInt(now.Unix(), 10))
+		updating.Lock()
 		if !cfg.DryRun {
 			run.Begin(now)
 		}
 		res := exec.Run(ctx, policy, cfg.DryRun)
 		run.End()
+		updating.Unlock()
 		if !res.DryRun {
-			for _, o := range res.Outcomes {
-				if o.Blocked || o.Skipped || o.UpToDate {
-					continue
-				}
-				if o.Output != "" {
-					log.Printf("shiplog: auto-update of %s, the update script printed:\n%s", o.Name, o.Output)
-				}
-				errStr := ""
-				if o.Err != nil {
-					errStr = o.Err.Error()
-				}
-				_ = st.LogAutoUpdate(store.AutoUpdateRecord{
-					Name: o.Name, FromVer: o.From, ToVer: o.To, Level: o.Level,
-					Success: o.Err == nil, Err: errStr, At: now.Unix(),
-				})
-			}
+			keepOutcomes(st, res, now)
 		}
 		// The summary also goes to the log, so a dry run shows its plan without any
 		// notification channel. A run that only skipped excluded containers is
@@ -257,6 +262,27 @@ func runAutoUpdate(ctx context.Context, cfg config.AutoUpdateConfig, sched autou
 				}
 			}
 		}
+	}
+}
+
+// keepOutcomes logs every update a run tried, which the fortress's log and
+// the Docker tab read back.
+func keepOutcomes(st *store.Store, res autoupdate.Result, now time.Time) {
+	for _, o := range res.Outcomes {
+		if o.Blocked || o.Skipped || o.UpToDate {
+			continue
+		}
+		if o.Output != "" {
+			log.Printf("shiplog: update of %s, the update script printed:\n%s", o.Name, o.Output)
+		}
+		errStr := ""
+		if o.Err != nil {
+			errStr = o.Err.Error()
+		}
+		_ = st.LogAutoUpdate(store.AutoUpdateRecord{
+			Name: o.Name, FromVer: o.From, ToVer: o.To, Level: o.Level,
+			Success: o.Err == nil, Err: errStr, At: now.Unix(),
+		})
 	}
 }
 
