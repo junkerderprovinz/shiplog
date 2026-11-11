@@ -23,9 +23,9 @@ type Membership struct {
 func (m *Membership) Close() error { return m.close() }
 
 // Join takes part in the fortress whose membership the kit's fortress join
-// kept in dir, as app, and answers the other members about ShipLog's status
-// from src. It returns nil when nobody joined there.
-func Join(dir string, app status.App, src status.Source) (*Membership, error) {
+// kept in dir, as app, answers the other members about ShipLog's status from
+// src and offers them actions. It returns nil when nobody joined there.
+func Join(dir string, app status.App, src status.Source, actions ...kitfortress.Action) (*Membership, error) {
 	if dir == "" {
 		return nil, nil
 	}
@@ -38,6 +38,7 @@ func Join(dir string, app status.App, src status.Source) (*Membership, error) {
 	}
 	cfg.App = kitfortress.App{ID: app.ID, Name: app.Name, Version: app.Version}
 	cfg.Status = src
+	cfg.Actions = append(cfg.Actions, actions...)
 	if !slices.Contains(cfg.Uses, backup.Action) {
 		cfg.Uses = append(cfg.Uses, backup.Action)
 	}
