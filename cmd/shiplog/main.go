@@ -118,6 +118,10 @@ func main() {
 			Store: db, Exec: exec, Exclude: policy.ExcludeContainers, Context: ctx, Lock: updating,
 			Began: run.Begin,
 			Ended: func(res autoupdate.Result) { run.End(); keepOutcomes(db, res, time.Now()) },
+			File:  cfg.RunsFile,
+		}
+		if err := runs.Restore(); err != nil {
+			log.Printf("shiplog: could not read the update runs from %s, starting without them: %v", cfg.RunsFile, err)
 		}
 		actions = append(actions, runs.Action())
 	}
