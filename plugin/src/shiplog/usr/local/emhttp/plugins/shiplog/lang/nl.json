@@ -172,5 +172,17 @@
   "s_give_networks": "Netwerken",
   "s_give_no_tag": "Een destination tag of memo is niet nodig.",
   "s_copy": "Kopiëren",
-  "s_copied": "Gekopieerd"
+  "s_copied": "Gekopieerd",
+  "s_fortress": "Vesting",
+  "s_fortress_member": "Lidmaatschap",
+  "s_fortress_in": "In de vesting als %s",
+  "s_fortress_out": "In geen vesting",
+  "s_fortress_removed": "Een ander lid van de vesting heeft deze server eruit gehaald. Tot je weer meedoet met je zin, lopen automatische updates zonder back-up.",
+  "s_fortress_join": "Meedoen met de zin",
+  "s_fortress_join_desc": "Voer de zin van je vesting in, de twaalf woorden. ShipLog bewaart alleen zijn eigen sleutels, nooit de zin.",
+  "s_fortress_join_ph": "twaalf woorden",
+  "s_fortress_join_btn": "Meedoen",
+  "s_fortress_joined": "Welkom in je vesting.",
+  "s_fortress_bad_phrase": "Die woorden zijn geen vestingzin. Kijk elk woord nog eens na.",
+  "s_fortress_failed": "Meedoen is niet gelukt: %s"
 }

@@ -127,8 +127,9 @@ func main() {
 		}
 		actions = append(actions, runs.Action())
 	}
-	backups := joinFortress(cfg, report, actions...)
-	if backups != nil {
+	door, backups := openFortress(cfg, report, actions...)
+	if door != nil {
+		defer func() { _ = door.Close() }()
 		exec.WithSafeguard(&autoupdate.Safeguard{
 			Backup:        backups,
 			Images:        docker,
@@ -151,11 +152,14 @@ func main() {
 	if notifier != nil {
 		msg = notifier
 	}
-	srv := api.New(db, db, eng, cfg.GithubToken).
+	a := api.New(db, db, eng, cfg.GithubToken).
 		WithUpdateCheck(docker, msg).
 		WithFortress(report).
-		WithGuards(db, func() bool { return backups != nil && backups.Available() }).
-		Server()
+		WithGuards(db, func() bool { return backups != nil && backups.Available() })
+	if door != nil && cfg.Socket != "" {
+		a.WithDoor(door)
+	}
+	srv := a.Server()
 
 	ln, addr, err := listen(cfg)
 	if err != nil {
@@ -175,22 +179,24 @@ func main() {
 	_ = srv.Shutdown(shutdownCtx)
 }
 
-// joinFortress takes part in the fortress the plugin joined and returns how to
-// reach its backup app, or nil outside a fortress. The membership lasts as
-// long as the process.
-func joinFortress(cfg config.Config, report *fortress.Source, actions ...kitfortress.Action) *backup.Client {
-	m, err := fortress.Join(cfg.FortressDir, report.App, report, actions...)
-	if err != nil {
+// openFortress takes part in the fortress the plugin joined and returns the
+// door to it with the way to its backup app, or nil without a place for a
+// membership. The backup finds no app while ShipLog is out of the fortress,
+// so the updates then go on as they did before it.
+func openFortress(cfg config.Config, report *fortress.Source, actions ...kitfortress.Action) (*fortress.Door, *backup.Client) {
+	if cfg.FortressDir == "" {
+		return nil, nil
+	}
+	door := &fortress.Door{Dir: cfg.FortressDir, App: report.App, Src: report, Actions: actions, Device: report.Instance.Name}
+	if err := door.Open(); err != nil {
 		log.Printf("shiplog: not taking part in the fortress: %v", err)
-		return nil
 	}
-	if m == nil {
-		return nil
+	if door.State().Joined {
+		log.Printf("shiplog: in a fortress as %s; with a backup app on this server, every auto-update is backed up first", door.Device)
 	}
-	log.Printf("shiplog: in a fortress as %s; with a backup app on this server, every auto-update is backed up first", m.Device)
-	return &backup.Client{
-		Fortress: backup.Kit{Fortress: m.Fortress},
-		Device:   m.Device,
+	return door, &backup.Client{
+		Fortress: backup.Kit{Fortress: door},
+		Device:   door.Device,
 		Timeout:  cfg.AutoUpdate.BackupTimeout,
 		Poll:     10 * time.Second,
 	}

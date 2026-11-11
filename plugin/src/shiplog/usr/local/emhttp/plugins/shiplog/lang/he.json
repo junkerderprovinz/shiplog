@@ -172,5 +172,17 @@
   "s_give_networks": "רשתות",
   "s_give_no_tag": "אין צורך ב-destination tag ולא ב-memo.",
   "s_copy": "העתק",
-  "s_copied": "הועתק"
+  "s_copied": "הועתק",
+  "s_fortress": "מבצר",
+  "s_fortress_member": "חברות",
+  "s_fortress_in": "במבצר בתור %s",
+  "s_fortress_out": "לא במבצר",
+  "s_fortress_removed": "חבר אחר במבצר הוציא ממנו את השרת הזה. עד שתצטרף שוב עם הביטוי שלך, עדכונים אוטומטיים רצים בלי גיבוי.",
+  "s_fortress_join": "הצטרפות עם הביטוי",
+  "s_fortress_join_desc": "הזן את הביטוי של המבצר שלך, שתים עשרה המילים. ShipLog שומר רק את המפתחות שלו, אף פעם לא את הביטוי.",
+  "s_fortress_join_ph": "שתים עשרה מילים",
+  "s_fortress_join_btn": "הצטרפות",
+  "s_fortress_joined": "ברוך הבא למבצר שלך.",
+  "s_fortress_bad_phrase": "המילים האלה אינן ביטוי של מבצר. בדוק שוב כל מילה.",
+  "s_fortress_failed": "ההצטרפות לא הצליחה: %s"
 }

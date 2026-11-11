@@ -81,6 +81,7 @@ type API struct {
 	fortress   status.Source
 	guards     GuardLister
 	backup     func() bool
+	door       Door
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -180,6 +181,10 @@ func (a *API) Handler() http.Handler {
 		h := status.Handler(a.fortress, fromSocket)
 		mux.Handle("GET "+status.StatusPath, h)
 		mux.Handle("GET "+status.LogPath, h)
+	}
+	if a.door != nil {
+		mux.HandleFunc("GET /api/fortress", a.fortressState)
+		mux.HandleFunc("POST /api/fortress/join", a.fortressJoin)
 	}
 	mux.HandleFunc("GET /logo.svg", a.logo)
 	mux.HandleFunc("GET /", a.statusPage)

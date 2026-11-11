@@ -172,5 +172,17 @@
   "s_give_networks": "Réseaux",
   "s_give_no_tag": "Ni destination tag ni memo ne sont nécessaires.",
   "s_copy": "Copier",
-  "s_copied": "Copié"
+  "s_copied": "Copié",
+  "s_fortress": "Forteresse",
+  "s_fortress_member": "Adhésion",
+  "s_fortress_in": "Dans la forteresse en tant que %s",
+  "s_fortress_out": "Dans aucune forteresse",
+  "s_fortress_removed": "Un autre membre de la forteresse en a retiré ce serveur. Tant que vous ne la rejoignez pas avec votre phrase, les mises à jour automatiques se font sans sauvegarde.",
+  "s_fortress_join": "Rejoindre avec la phrase",
+  "s_fortress_join_desc": "Saisissez la phrase de votre forteresse, les douze mots. ShipLog ne garde que ses propres clés, jamais la phrase.",
+  "s_fortress_join_ph": "douze mots",
+  "s_fortress_join_btn": "Rejoindre",
+  "s_fortress_joined": "Bienvenue dans votre forteresse.",
+  "s_fortress_bad_phrase": "Ces mots ne forment pas une phrase de forteresse. Vérifiez chacun une fois de plus.",
+  "s_fortress_failed": "Impossible de rejoindre : %s"
 }

@@ -172,5 +172,17 @@
   "s_give_networks": "Mạng",
   "s_give_no_tag": "Không cần destination tag hay memo.",
   "s_copy": "Sao chép",
-  "s_copied": "Đã sao chép"
+  "s_copied": "Đã sao chép",
+  "s_fortress": "Pháo đài",
+  "s_fortress_member": "Thành viên",
+  "s_fortress_in": "Trong pháo đài với tên %s",
+  "s_fortress_out": "Không ở trong pháo đài nào",
+  "s_fortress_removed": "Một thành viên khác của pháo đài đã đưa máy chủ này ra khỏi pháo đài. Cho đến khi bạn tham gia lại bằng cụm từ của mình, cập nhật tự động sẽ chạy mà không sao lưu.",
+  "s_fortress_join": "Tham gia bằng cụm từ",
+  "s_fortress_join_desc": "Nhập cụm từ của pháo đài, mười hai từ. ShipLog chỉ giữ khóa của riêng nó, không bao giờ giữ cụm từ.",
+  "s_fortress_join_ph": "mười hai từ",
+  "s_fortress_join_btn": "Tham gia",
+  "s_fortress_joined": "Chào mừng đến với pháo đài của bạn.",
+  "s_fortress_bad_phrase": "Những từ đó không phải cụm từ pháo đài. Hãy kiểm tra lại từng từ.",
+  "s_fortress_failed": "Không tham gia được: %s"
 }
