@@ -20,7 +20,7 @@
 <p align="center">
 ⚓ <b>ShipLog</b> reads the changelog before you update, right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major) and the real <b>version jump</b> (e.g. 1.7 → 1.8).<br>
 <br>
-<b>Read-only</b>: it never pulls, recreates or stops anything. Optional: AI changelog summaries from a local Ollama or llama-swap, and notifications through Matrix or Apprise.
+<b>Read-only</b> until you switch on its auto-update, which hands the work to Unraid's own update and backs up first when your fortress has a backup app. Optional: AI changelog summaries from a local Ollama or llama-swap, and notifications through Matrix or Apprise.
 </p>
 
 <br>
@@ -97,7 +97,8 @@ The containers in these pictures run public images at older versions in a test s
 - **Honest when it does not know.** If no changelog can be found, it says so and shows what it does know. Digest-pinned and locally built images are labelled as such instead of showing a bogus update.
 - **Fix a wrong changelog source.** Point any image at the right GitHub repository or at a changelog file such as `CHANGELOG.md`; the choice survives container recreation.
 - **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one. Both Community Applications verdicts go only to apps that came from there, never to your own images and templates.
-- **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog skips a container that already runs the newest image and checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself never writes to the Docker socket.
+- **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog skips a container that already runs the newest image and checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself touches Docker only to start a container an update lost and to hold the old image while an update runs.
+- **A backup first, and a way back.** In a fortress with a backup app on the same server, every auto-update waits for a backup of its container. If the new image fails its check or turns unhealthy, ShipLog puts the container back on the old image. Your appdata stays as it is, and the changelog window links the backup.
 - **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, and messages through Matrix, Apprise or Unraid's own notifications.
 - **26 languages**, following Unraid's own setting.
 
@@ -133,6 +134,14 @@ ShipLog can tell you when it first sees an update. An update that auto-update wi
 For Apprise, save your services in Apprise API under a key of your choosing and enter the notify address with that key, for example `http://192.168.1.10:8000/notify/shiplog`. Apprise passes each message on to all of them, be it Discord, ntfy, Gotify, Telegram or email. **Send test message** tries the address right away, so you know it works before the first update comes in. ShipLog keeps the key out of its log and names only the server.
 
 Without Unraid, set `APPRISE_URL` on the container, or `MATRIX_HOMESERVER`, `MATRIX_TOKEN` and `MATRIX_ROOM` for Matrix.
+
+### Fortress
+
+ShipLog can join the fortress your other apps share. Under **Settings → ShipLog → General**, the Fortress card takes your phrase, the twelve words. ShipLog keeps its own keys only, never the phrase.
+
+Once it is in, the other apps of the fortress can see how ShipLog is doing: how many containers have an update, which ones look risky, and the auto-update log. A backup app on the same server backs up each container before ShipLog's auto-update touches it. If the backup fails, the update waits and ShipLog tells you why. A container that needs no backup gets **Update without a backup** in its changelog window. ShipLog waits 30 minutes at most for a backup. To change that, set `AUTOUPDATE_BACKUP_MINUTES` in `/boot/config/plugins/shiplog/shiplog.cfg`.
+
+A maintenance plan in another app can also ask ShipLog to update chosen containers, with the same backup and the same way back.
 
 <br>
 

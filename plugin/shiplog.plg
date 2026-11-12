@@ -30,66 +30,50 @@
 
 <CHANGES>
 Shows the changelog of your installed Docker containers, right in the Docker tab:
-what changed from your running image to the newest, with a risk badge. Read-only,
-optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
+what changed from your running image to the newest, with a risk badge. Optional
+AI summaries (Ollama or llama-swap), Matrix or Apprise alerts, and an auto-update
+that backs up first when your fortress has a backup app.
 
 ### 3.8.0
+ShipLog moves into the fortress: a backup before every auto-update, and a way back when one goes sideways.
+
 ✨ **Added**
-- **ShipLog tells the other apps of your fortress how it is doing.** They can read how many containers have an update, which of them are a major jump or come with a breaking change, an auto-update that failed, the auto-update that is running and the auto-update log. Only members of your fortress can read it, and the engine still opens no port on your network.
 - **Every auto-update is backed up first.** When ShipLog is in a fortress with a backup app on the same server, it asks that app to back up each container before the update and waits until the backup is done (30 minutes at most, adjustable). If the backup fails or the app doesn't answer, the update waits and ShipLog tells you why. For a container that needs no backup, turn on "Update without a backup" in its ShipLog window.
 - **A failed auto-update goes back to the old image.** ShipLog keeps the old image while the update runs. If the new one fails its check, turns unhealthy or stops, ShipLog points the template at the old image and recreates the container from it. Your appdata stays as it is, and the message links the backup from before the update. Without a backup app in your fortress, auto-updates run as they always did.
-- **Other apps of your fortress can have ShipLog update containers.** A maintenance plan names the containers it wants, or none for every container with an update, and ShipLog updates them one at a time with the same backup and rollback as its own auto-update. It never runs two updates at once.
-- **ShipLog joins your fortress with the phrase.** The General tab has a Fortress card for the twelve words. ShipLog keeps its own keys only, never the phrase. When another member takes ShipLog out, the card says so and the phrase brings it back.
-
-⚡ **Improved**
-- **Notifications have a file of their own.** On its first start, ShipLog moves your Matrix, Apprise and Unraid settings from shiplog.cfg to notify.json next to it, and the settings page saves them there from then on. A channel that was only partly filled in comes over switched off, so nothing you typed is lost.
-- **A message that does not get through is tried three times** instead of once. ShipLog no longer follows a redirect to another host, because the request can carry your token.
-- **Unraid shows a failed update as a warning.** That goes for an auto-update run in which an update failed and for an update that did not apply. Apprise messages now carry a title.
-
-### 3.7.6
-🐛 **Fixed**
-- **Only the Unraid web UI reaches ShipLog's engine.** The engine answered on port 8484 to anyone on your network, without a login, so any device there could start a check or change a changelog source. It now listens on a local socket, and the Docker tab, the settings page and the status page reach it through your Unraid login. The status page opens from ShipLog's settings page, and the port setting is gone.
-
-### 3.7.5
-🐛 **Fixed**
-- **Auto-update keeps your containers.** If a container is missing after Unraid's update script has run, or disappears a few minutes later, ShipLog recreates it from its template. A container that was running before is started again, and a stopped one stays stopped.
-- **The update script's output goes to the log** whenever an update does not go through cleanly, so a failed update can be traced.
-
-### 3.7.4
-🐛 **Fixed**
-- **Release builds use Go 1.27.3.** They had used the Go version named in go.mod, which was 1.25.0.
-
-### 3.7.3
-⚡ **Improved**
-- **Ready for TowerTorch 1.4.1.** ShipLog follows TowerTorch's new internal names, so please update both together to keep the shared look.
-
-🐛 **Fixed**
-- **No unproven version on an up-to-date container.** A rolling tag whose version is unknown now shows the tag, not the newest release.
-
-### 3.7.2
-⚡ **Improved**
-- **Fewer, more useful notifications.** An update that auto-update will apply anyway now appears only in its run summary, so no notice is left behind for an update that is already installed. Critical updates and updates auto-update will not apply still notify you straight away.
-- **`latest` follows releases.** The container image's `latest` tag is now always the newest release. The tip of development is published as `edge`, and each release also gets version tags.
-
-🐛 **Fixed**
-- **No more false critical alerts on a rebuild.** An image rebuilt without a new release could turn critical because of a word in older release notes. When the running version is unknown, ShipLog now reads only the notes of a version the image is proven to be, so a real breaking release still alerts you.
-- **Notifications name only a version they can vouch for.** A rebuilt image now reads "New image for latest" instead of naming a release it does not contain. The changelog window's header follows the same rule.
-
-🌐 **Translations**
-- The notification help describes the new behaviour in all 26 languages.
-
-### 3.7.1
-✨ **Added**
+- **ShipLog joins your fortress with the phrase.** The General tab has a Fortress card for the twelve words. ShipLog keeps its own keys only, never the phrase. When the fortress gets a new phrase, ShipLog follows along, and if it can't, the card asks you for the new words. If another member takes ShipLog out, the card says so, and the phrase brings it back.
+- **ShipLog tells the other apps of your fortress how it is doing.** They can read how many containers have an update, which of them are a major jump or come with a breaking change, an auto-update that failed, the auto-update that is running and the auto-update log. Only members of your fortress can read it, and the engine still opens no port on your network.
+- **Other apps of your fortress can have ShipLog update containers.** A maintenance plan names the containers it wants, or none for every container with an update, and ShipLog updates them one at a time with the same backup and rollback as its own auto-update. It never runs two updates at once. A backup app can also ask which containers ShipLog's auto-update looks after, so the two of them never update the same one.
 - **Each release gets its own card in the changelog window.** The card is headed by the release's version, with its date beside it and a link to its page in the corner.
 - **Longer AI summaries that cover the whole jump.** When an update skips releases, the summary reads every one of them, not just the newest, and lists up to ten changes, each with a sentence on what it means for the container. A short changelog still gets a short summary. A container on a rolling tag such as `latest` is summarised from its newest release, since its recent releases can belong to other channels.
 
 🎨 **Design**
-- **GlimStone 3.8.5.** Update now and Update all show the two arrows of the sync glyph. With TowerTorch, the Repository, Close and release links take the accent when the pointer reaches them, and under its rainbow each one takes a colour of its own. The buttons in the coffee, PayPal and crypto windows do the same.
+- **GlimStone 4.4.0.** Update now and Update all show the two arrows of the sync glyph. With TowerTorch, the Repository, Close and release links take the accent when the pointer reaches them, and under its rainbow each one takes a colour of its own. The buttons in the coffee, PayPal and crypto windows do the same. A held or rolled back update shows in orange, the colour of a warning, and the badges in the changelog window keep readable text on every accent.
+- **True black for OLED screens.** When TowerTorch puts its dark look on true black, the changelog window and the coffee, PayPal and crypto windows follow, each surface one step darker.
 - **The versions at the top of the changelog window are larger,** with the newest version in bold.
 - **The auto-update switch in the changelog window only shows while the scheduled auto-update is on.**
 
+⚡ **Improved**
+- **Saving says so.** A switch in the changelog window shows "Saved" for a moment. With TowerTorch, a setting that couldn't be saved also tells you why in a toast, on the settings page and in the changelog window.
+- **Fewer, more useful notifications.** An update that auto-update will apply anyway now appears only in its run summary, so no notice is left behind for an update that is already installed. Critical updates and updates auto-update will not apply still notify you straight away.
+- **Notifications have a file of their own.** On its first start, ShipLog moves your Matrix, Apprise and Unraid settings from shiplog.cfg to notify.json next to it, and the settings page saves them there from then on. A channel that was only partly filled in comes over switched off, so nothing you typed is lost.
+- **A message that does not get through is tried three times** instead of once. ShipLog no longer follows a redirect to another host, because the request can carry your token.
+- **Unraid shows a failed update as a warning.** That goes for an auto-update run in which an update failed and for an update that did not apply. Apprise messages now carry a title.
+- **`latest` follows releases.** The container image's `latest` tag is always the newest release. The tip of development is published as `edge`, and each release also gets version tags.
+- **Made for TowerTorch 1.4.1 and newer.** ShipLog follows TowerTorch's new internal names, so please update both together to keep the shared look.
+
 🐛 **Fixed**
-- With TowerTorch, the AI model chip beside Summary was grey on the accent colour and hard to read. It takes the badge's text colour.
+- **Only the Unraid web UI reaches ShipLog's engine.** The engine answered on port 8484 to anyone on your network, without a login, so any device there could start a check or change a changelog source. It now listens on a local socket, and the Docker tab, the settings page and the status page reach it through your Unraid login. The status page opens from ShipLog's settings page, and the port setting is gone.
+- **Auto-update keeps your containers.** If a container is missing after Unraid's update script has run, or disappears a few minutes later, ShipLog recreates it from its template. A container that was running before is started again, and a stopped one stays stopped.
+- **The update script's output goes to the log** whenever an update does not go through cleanly, so a failed update can be traced.
+- **Built with Go 1.27.4.** Release builds had used the older Go version named in go.mod. The new one also brings Go's fix for a crash in its web server.
+- **No more false critical alerts on a rebuild.** An image rebuilt without a new release could turn critical because of a word in older release notes. When the running version is unknown, ShipLog now reads only the notes of a version the image is proven to be, so a real breaking release still alerts you.
+- **Notifications name only a version they can vouch for.** A rebuilt image reads "New image for latest" instead of naming a release it does not contain. The changelog window's header follows the same rule.
+- **No unproven version on an up-to-date container.** A rolling tag whose version is unknown shows the tag, not the newest release.
+- **The AI model chip reads again with TowerTorch.** Beside Summary it was grey on the accent colour. It takes the badge's text colour.
+
+🌐 **Translations**
+- **The notification help and the new fortress, backup and rollback texts** are there in all 26 languages.
+- **The same words as the other apps.** Fortress, phrase, member and backup read the same in ShipLog as in the rest of your fortress, in every language.
 
 ### 3.7.0
 ✨ **Added**
