@@ -178,7 +178,7 @@
   "s_fortress_member": "Tagság",
   "s_fortress_in": "Az erődben, mint %s",
   "s_fortress_out": "Nincs erődben",
-  "s_fortress_removed": "Az erőd egy másik tagja kivette ezt a szervert. Amíg a jelmondatoddal újra be nem lépsz, az automatikus frissítések mentés nélkül futnak.",
+  "s_fortress_removed": "Az erőd egy másik tagja kivette ezt a szervert. Amíg az aktuális jelmondattal újra be nem lépsz, az automatikus frissítések mentés nélkül futnak.",
   "s_fortress_changed": "Az erődödnek új jelmondata van, amelyet a ShipLog nem tudott magától követni. Írd be lent az új szavakat, és ugyanaz a tag marad. Addig az automatikus frissítések mentés nélkül futnak.",
   "s_fortress_join": "Belépés a jelmondattal",
   "s_fortress_join_desc": "Írd be a jelmondatodat, a tizenkét szót. A ShipLog csak a saját kulcsait tartja meg, a jelmondatot soha.",

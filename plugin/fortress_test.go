@@ -47,6 +47,24 @@ func TestEveryLanguageOffersTheFortressAgain(t *testing.T) {
 	}
 }
 
+// TestARemovedServerIsSentToTheCurrentPhrase holds the removed note to the
+// current phrase, since the one ShipLog knew may have changed since.
+func TestARemovedServerIsSentToTheCurrentPhrase(t *testing.T) {
+	for lang, want := range map[string]string{"en": "the current phrase", "de": "der aktuellen Phrase"} {
+		raw, err := os.ReadFile(filepath.Join(pluginDir, "lang", lang+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]string
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(texts["s_fortress_removed"], want) {
+			t.Errorf("%s: s_fortress_removed = %q, want %q in it", lang, texts["s_fortress_removed"], want)
+		}
+	}
+}
+
 func TestTheSettingsPageJoinsThroughTheProxy(t *testing.T) {
 	proxy := read(t, "server/status.php")
 	for _, want := range []string{"'fortress' => '/api/fortress'", "'fortress/join' => ['POST']"} {
