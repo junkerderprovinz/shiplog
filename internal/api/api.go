@@ -31,6 +31,10 @@ var statusHTML string
 //go:embed logo.svg
 var logoSVG []byte
 
+// Icon is the ShipLog mark as the fortress status and the other members
+// carry it.
+var Icon, _ = status.IconFromSVG(logoSVG)
+
 var statusTmpl = template.Must(template.New("status").Parse(statusHTML))
 
 // StatusSource is the read side of the store the API exposes.

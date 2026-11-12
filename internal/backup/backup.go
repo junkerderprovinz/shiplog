@@ -32,6 +32,8 @@ type Member struct {
 	ID     string
 	App    string
 	Device string
+	// Host is the server it runs on, empty for a member that names none.
+	Host   string
 	Online bool
 	// Actions are what its app does for the other members.
 	Actions []string
@@ -63,7 +65,11 @@ type Client struct {
 	Fortress Fortress
 	// Device is the server ShipLog runs on. Only a backup app on the same
 	// server can back up its containers.
-	Device  string
+	Device string
+	// Host is the server as every app on it names it, whatever each calls
+	// itself. A member that names its host is matched by it, any other by
+	// its device name.
+	Host    string
 	Timeout time.Duration
 	Poll    time.Duration
 	// CallTimeout bounds each call, so a relay that never answers cannot
@@ -147,7 +153,7 @@ func (c *Client) member() (string, error) {
 	for _, m := range c.Fortress.Members() {
 		switch {
 		case !offers(m, Action):
-		case sameDevice(m.Device, c.Device):
+		case c.here(m):
 			here = append(here, m)
 		default:
 			elsewhere = append(elsewhere, m.Device)
@@ -173,6 +179,13 @@ func (c *Client) member() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("the backup app on %s is not reachable", c.Device)
+}
+
+func (c *Client) here(m Member) bool {
+	if m.Host != "" && c.Host != "" {
+		return sameDevice(m.Host, c.Host)
+	}
+	return sameDevice(m.Device, c.Device)
 }
 
 func (c *Client) call(ctx context.Context, member, method, path string, body []byte, out any) error {
