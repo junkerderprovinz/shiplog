@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "เข้าร่วม",
   "s_fortress_joined": "ยินดีต้อนรับสู่ป้อมปราการของคุณ",
   "s_fortress_bad_phrase": "คำเหล่านี้ไม่ใช่วลีที่ถูกต้อง ลองตรวจดูทีละคำอีกครั้ง",
-  "s_fortress_failed": "เข้าร่วมไม่สำเร็จ: %s"
+  "s_fortress_failed": "เข้าร่วมไม่สำเร็จ: %s",
+  "s_fortress_others": "แอปอื่น",
+  "s_fortress_online": "เชื่อมต่อแล้ว",
+  "s_fortress_away": "เข้าถึงไม่ได้",
+  "s_fortress_remove": "นำออก",
+  "s_fortress_member_on": "{app} บน {device}",
+  "s_fortress_remove_title": "นำ {device} ออกไหม",
+  "s_fortress_remove_body": "{device} จะเข้าถึงไม่ได้ทันที และย้อนกลับไม่ได้",
+  "s_fortress_remove_failed": "ไม่สำเร็จ โปรดลองอีกครั้ง",
+  "s_fortress_cancel": "ยกเลิก",
+  "s_fortress_removed_title": "เปลี่ยนวลีตอนนี้ไหม",
+  "s_fortress_removed_body": "{device} ออกไปแล้ว แต่ตราบใดที่วลียังเหมือนเดิม ทางกลับเข้ามาก็ยังเปิดอยู่",
+  "s_fortress_change_in": "ShipLog ไม่เก็บวลีไว้ จึงต้องเปลี่ยนวลีใน {app}",
+  "s_fortress_change_any": "ShipLog ไม่เก็บวลีไว้ เปลี่ยนวลีได้ในแอปของป้อมปราการที่แสดงวลี",
+  "s_fortress_change": "เปลี่ยนวลี",
+  "s_fortress_later": "ไว้ทีหลัง",
+  "s_fortress_removed_note": "นำออกแล้ว: {devices} เปลี่ยนวลีเพื่อปิดทางกลับเข้ามา"
 }

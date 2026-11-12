@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Intră",
   "s_fortress_joined": "Bine ai venit în fortăreața ta.",
   "s_fortress_bad_phrase": "Aceste cuvinte nu sunt o frază validă. Verifică fiecare cuvânt încă o dată.",
-  "s_fortress_failed": "Intrarea nu a reușit: %s"
+  "s_fortress_failed": "Intrarea nu a reușit: %s",
+  "s_fortress_others": "Alte aplicații",
+  "s_fortress_online": "Conectat",
+  "s_fortress_away": "Inaccesibil",
+  "s_fortress_remove": "Elimină",
+  "s_fortress_member_on": "{app} pe {device}",
+  "s_fortress_remove_title": "Elimini {device}?",
+  "s_fortress_remove_body": "{device} își pierde accesul imediat. Acțiunea nu poate fi anulată.",
+  "s_fortress_remove_failed": "Nu a mers. Încearcă din nou.",
+  "s_fortress_cancel": "Anulează",
+  "s_fortress_removed_title": "Schimbi fraza acum?",
+  "s_fortress_removed_body": "{device} e afară. Cât timp fraza rămâne aceeași, drumul înapoi e încă deschis.",
+  "s_fortress_change_in": "ShipLog nu păstrează fraza, așa că o schimbi în {app}.",
+  "s_fortress_change_any": "ShipLog nu păstrează fraza. Schimb-o într-o aplicație din fortăreață care o arată.",
+  "s_fortress_change": "Schimbă fraza",
+  "s_fortress_later": "Mai târziu",
+  "s_fortress_removed_note": "Eliminate: {devices}. Schimbă fraza ca să închizi drumul înapoi."
 }

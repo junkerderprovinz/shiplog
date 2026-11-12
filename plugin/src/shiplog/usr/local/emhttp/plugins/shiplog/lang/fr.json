@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Rejoindre",
   "s_fortress_joined": "Bienvenue dans votre forteresse.",
   "s_fortress_bad_phrase": "Ces mots ne forment pas une phrase valide. Vérifiez chacun une fois de plus.",
-  "s_fortress_failed": "Impossible de rejoindre : %s"
+  "s_fortress_failed": "Impossible de rejoindre : %s",
+  "s_fortress_others": "Autres apps",
+  "s_fortress_online": "Connecté",
+  "s_fortress_away": "Injoignable",
+  "s_fortress_remove": "Retirer",
+  "s_fortress_member_on": "{app} sur {device}",
+  "s_fortress_remove_title": "Retirer {device} ?",
+  "s_fortress_remove_body": "{device} perd son accès immédiatement. C'est irréversible.",
+  "s_fortress_remove_failed": "Cela n'a pas fonctionné. Veuillez réessayer.",
+  "s_fortress_cancel": "Annuler",
+  "s_fortress_removed_title": "Changer la phrase maintenant ?",
+  "s_fortress_removed_body": "{device} est dehors. Tant que la phrase reste la même, le chemin du retour reste ouvert.",
+  "s_fortress_change_in": "ShipLog ne garde pas la phrase, vous la changez donc dans {app}.",
+  "s_fortress_change_any": "ShipLog ne garde pas la phrase. Changez-la dans une app de la forteresse qui l'affiche.",
+  "s_fortress_change": "Changer la phrase",
+  "s_fortress_later": "Plus tard",
+  "s_fortress_removed_note": "Retirés : {devices}. Changez la phrase pour fermer le chemin du retour."
 }

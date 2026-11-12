@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Entrar",
   "s_fortress_joined": "Bem-vindo à sua fortaleza.",
   "s_fortress_bad_phrase": "Essas palavras não são uma frase válida. Confira cada uma mais uma vez.",
-  "s_fortress_failed": "Não foi possível entrar: %s"
+  "s_fortress_failed": "Não foi possível entrar: %s",
+  "s_fortress_others": "Outras apps",
+  "s_fortress_online": "Ligado",
+  "s_fortress_away": "Inacessível",
+  "s_fortress_remove": "Remover",
+  "s_fortress_member_on": "{app} em {device}",
+  "s_fortress_remove_title": "Remover {device}?",
+  "s_fortress_remove_body": "{device} perde o acesso de imediato. Isto não pode ser anulado.",
+  "s_fortress_remove_failed": "Não funcionou. Tente novamente.",
+  "s_fortress_cancel": "Cancelar",
+  "s_fortress_removed_title": "Alterar a frase agora?",
+  "s_fortress_removed_body": "{device} já está fora. Enquanto a frase se mantiver, o caminho de volta continua aberto.",
+  "s_fortress_change_in": "O ShipLog não guarda a frase, por isso altere-a em {app}.",
+  "s_fortress_change_any": "O ShipLog não guarda a frase. Altere-a numa app da fortaleza que a mostre.",
+  "s_fortress_change": "Alterar frase",
+  "s_fortress_later": "Mais tarde",
+  "s_fortress_removed_note": "Removidos: {devices}. Altere a frase para fechar o caminho de volta."
 }

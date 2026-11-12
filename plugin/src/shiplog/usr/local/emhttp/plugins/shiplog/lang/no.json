@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Bli med",
   "s_fortress_joined": "Velkommen til festningen din.",
   "s_fortress_bad_phrase": "De ordene er ikke en gyldig frase. Sjekk hvert ord en gang til.",
-  "s_fortress_failed": "Det gikk ikke å bli med: %s"
+  "s_fortress_failed": "Det gikk ikke å bli med: %s",
+  "s_fortress_others": "Andre apper",
+  "s_fortress_online": "Tilkoblet",
+  "s_fortress_away": "Ikke tilgjengelig",
+  "s_fortress_remove": "Fjern",
+  "s_fortress_member_on": "{app} på {device}",
+  "s_fortress_remove_title": "Fjerne {device}?",
+  "s_fortress_remove_body": "{device} mister tilgangen med en gang. Dette kan ikke angres.",
+  "s_fortress_remove_failed": "Det gikk ikke. Prøv igjen.",
+  "s_fortress_cancel": "Avbryt",
+  "s_fortress_removed_title": "Bytte frasen nå?",
+  "s_fortress_removed_body": "{device} er ute. Så lenge frasen er den samme, står veien tilbake fortsatt åpen.",
+  "s_fortress_change_in": "ShipLog tar ikke vare på frasen, så du bytter den i {app}.",
+  "s_fortress_change_any": "ShipLog tar ikke vare på frasen. Bytt den i en app i festningen som viser den.",
+  "s_fortress_change": "Bytt frase",
+  "s_fortress_later": "Senere",
+  "s_fortress_removed_note": "Fjernet: {devices}. Bytt frasen for å stenge veien tilbake."
 }

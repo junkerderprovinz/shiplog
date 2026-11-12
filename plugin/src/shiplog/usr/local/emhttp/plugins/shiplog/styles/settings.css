@@ -239,6 +239,22 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 .sl-warn .sl-g { padding-top: 2px; }
 
+/* The other members of the fortress, one a line with its state and Remove,
+   in a well, and the quiet line naming those removed while the phrase still
+   lets them back in. */
+.sl-fm { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 4px 12px; border-radius: var(--sl-r-ctl); background: var(--sl-well); list-style: none; }
+.sl-fm-item { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 40px; margin: 0; }
+.sl-fm-item .sl-stat { flex: 1 1 180px; min-width: 0; color: inherit; }
+.sl-fm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.sl-fm-item small { flex: none; color: var(--sl-dim); font-size: 12px; }
+.sl-fm-item .sl-btn { margin: 0; margin-inline-start: auto; }
+.sl-quiet {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 6px; padding: 9px 12px;
+  border-radius: var(--sl-r-ctl); background: var(--sl-well); color: var(--sl-dim); font-size: 13px; line-height: 1.45;
+}
+.sl-quiet-txt { flex: 1 1 200px; min-width: 0; }
+.sl-quiet .sl-btn { margin: 0; }
+
 /* The auto-update container list: a switch per container, in a well. */
 .sl-ct {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 16px;
@@ -417,6 +433,7 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
 .sl-win-coffee .sl-win-body { overflow: hidden; }
 .sl-win .sl-win-text { margin: 0; text-align: start; }
 .sl-win .sl-win-sub { color: var(--sl-w-dim); }
+.sl-win .sl-rm-err { color: var(--sl-w-err); }
 .sl-win-act { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
 .sl-win-act > button { margin: 0; }
 /* A window's buttons wear their glyph like the page's and follow the same label mode. */
@@ -520,7 +537,7 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
 html.tt-popups-on .sl-win button.sl-win-btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 88px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
-  border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: var(--sl-w-raised); color: #e6e6e6;
+  border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none; background: var(--sl-w-raised); color: #e6e6e6;
   font-family: inherit; font-size: var(--tt-text-meta, 12px); font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
 /* GlimStone's rule 40: the hovered ground takes 22% of the tint and the glyph

@@ -457,6 +457,7 @@
      words fix as the same member. The phrase goes to the engine and is never
      kept, here or there. */
   var fort = byId("sl-fortress"), phraseEl = byId("sl-fortress-phrase"), joinBtn = byId("sl-fortress-join");
+  var PROXY = "/plugins/shiplog/server/status.php";
   function showFortress(s) {
     fort.hidden = false;
     var stat = byId("sl-fortress-stat");
@@ -466,9 +467,113 @@
     byId("sl-fortress-removed").hidden = !s.removed || s.joined;
     byId("sl-fortress-changed").hidden = !changed;
     byId("sl-fortress-joinrow").hidden = !!s.joined && !changed;
+    showMembers(s.joined && Array.isArray(s.members) ? s.members : [], s.joined && Array.isArray(s.removedMembers) ? s.removedMembers : []);
   }
+
+  /* The other members, each with Remove. A removed member gets back in with
+     the phrase until it changes, so the window offers that next and a quiet
+     line keeps the names until then. ShipLog keeps only its keys, so the
+     phrase changes in an app that keeps it: an instance that is no plugin and
+     has a page to open. */
+  var list = byId("sl-fortress-list"), outChange = byId("sl-fortress-out-change");
+  var rmGo = byId("sl-rm-go"), rmCancel = byId("sl-rm-cancel"), rmLater = byId("sl-rm-later"), rmChange = byId("sl-rm-change");
+  var rmFor = null, keeper = null;
+  function fill(text, v) { return String(text).replace(/\{(\w+)\}/g, function (m, k) { return k in v ? v[k] : m; }); }
+  function memberName(m) {
+    var app = m.name || m.app || "";
+    return m.device ? fill(T.s_fortress_member_on, { app: app, device: m.device }) : app;
+  }
+  function listOf(names) {
+    try { return new Intl.ListFormat(window.SL_LANG, { type: "conjunction" }).format(names); } catch (e) { return names.join(", "); }
+  }
+  function phraseKeeper(members) {
+    var at = members.filter(function (m) { return m.kind === "instance" && m.deployment !== "plugin" && /^https?:\/\//.test(m.address || ""); });
+    at.sort(function (a, b) { return (b.online ? 1 : 0) - (a.online ? 1 : 0); });
+    return at[0] || null;
+  }
+  function openKeeper() { if (keeper) window.open(keeper.address, "_blank", "noopener"); }
+  function memberRow(m, i) {
+    var li = document.createElement("li"), st = document.createElement("span"), dot = document.createElement("span");
+    var name = document.createElement("span"), state = document.createElement("small"), b = document.createElement("button");
+    li.className = "sl-fm-item";
+    st.className = "sl-stat";
+    st.setAttribute("data-state", m.online ? "ok" : "");
+    dot.className = "sl-dot";
+    dot.setAttribute("aria-hidden", "true");
+    name.className = "sl-fm-name";
+    name.id = "sl-fm-" + i;
+    name.textContent = memberName(m);
+    state.textContent = m.online ? T.s_fortress_online : T.s_fortress_away;
+    st.append(dot, name);
+    b.type = "button";
+    b.className = "sl-btn";
+    b.innerHTML = '<span class="sl-g">' + GLYPH.Trash + '</span><span class="sl-l"></span>';
+    b.querySelector(".sl-l").textContent = T.s_fortress_remove;
+    b.setAttribute("aria-describedby", name.id);
+    b.addEventListener("click", function () { rmFor = m; showWin("remove", b); });
+    li.append(st, state, b);
+    return li;
+  }
+  function showMembers(members, gone) {
+    keeper = phraseKeeper(members);
+    list.textContent = "";
+    members.forEach(function (m, i) { list.appendChild(memberRow(m, i)); });
+    byId("sl-fortress-others").hidden = !members.length;
+    byId("sl-fortress-out").hidden = !gone.length;
+    byId("sl-fortress-out-txt").textContent = fill(T.s_fortress_removed_note, { devices: listOf(gone.map(memberName)) });
+    outChange.hidden = !keeper;
+    labels();
+  }
+  // removeStep fills the window to ask, or once the member is out to offer
+  // the new phrase, and returns the button that goes on.
+  function removeStep(done) {
+    var who = memberName(rmFor), sub = byId("sl-rm-sub");
+    byId("sl-win-remove-t").textContent = done ? T.s_fortress_removed_title : fill(T.s_fortress_remove_title, { device: who });
+    byId("sl-rm-text").textContent = fill(done ? T.s_fortress_removed_body : T.s_fortress_remove_body, { device: who });
+    sub.textContent = keeper ? fill(T.s_fortress_change_in, { app: memberName(keeper) }) : T.s_fortress_change_any;
+    sub.hidden = !done;
+    byId("sl-rm-err").hidden = true;
+    rmCancel.hidden = rmGo.hidden = done;
+    rmLater.hidden = !done;
+    rmChange.hidden = !done || !keeper;
+    return done ? (keeper ? rmChange : rmLater) : rmGo;
+  }
+  var removeWin = { open: function () { return removeStep(false); }, close: function () { rmFor = null; } };
+  function removeFailed() {
+    var err = byId("sl-rm-err");
+    err.textContent = T.s_fortress_remove_failed;
+    err.hidden = false;
+  }
+  function removeMember() {
+    if (!rmFor) return;
+    rmGo.disabled = true;
+    var body = new URLSearchParams({ path: "fortress/member", method: "DELETE", id: rmFor.id, csrf_token: window.csrf_token || "" });
+    fetch(PROXY, { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d || {} }; }, function () { return { ok: false, d: {} }; }); })
+      .then(function (res) {
+        if (res.ok) {
+          showFortress(res.d);
+          // The row that opened the window is gone, so Later lands on the line.
+          opener = outChange.hidden ? null : outChange;
+          var next = removeStep(true);
+          paint();
+          next.focus();
+        } else if (res.d.error === "noMember") {
+          closeWin();
+          loadFortress();
+        } else {
+          removeFailed();
+        }
+      })
+      .catch(removeFailed)
+      .then(function () { rmGo.disabled = false; });
+  }
+  rmGo.addEventListener("click", removeMember);
+  rmChange.addEventListener("click", function () { openKeeper(); closeWin(); });
+  outChange.addEventListener("click", openKeeper);
+
   function loadFortress() {
-    fetch("/plugins/shiplog/server/status.php?path=fortress", { headers: { Accept: "application/json" } })
+    fetch(PROXY + "?path=fortress", { headers: { Accept: "application/json" } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (s) { if (s && typeof s.joined === "boolean") showFortress(s); })
       .catch(function () {});
@@ -478,7 +583,7 @@
     if (!words) { note("err", T.s_fortress_bad_phrase); phraseEl.focus(); return; }
     joinBtn.disabled = true;
     var body = new URLSearchParams({ path: "fortress/join", method: "POST", data: JSON.stringify({ phrase: words }), csrf_token: window.csrf_token || "" });
-    fetch("/plugins/shiplog/server/status.php", { method: "POST", body: body, credentials: "same-origin" })
+    fetch(PROXY, { method: "POST", body: body, credentials: "same-origin" })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d || {} }; }, function () { return { ok: false, d: {} }; }); })
       .then(function (res) {
         if (res.ok) {
@@ -668,6 +773,7 @@
   }
 
   var GIVE = {
+    remove: removeWin,
     coffee: {
       open: function (w) {
         var box = w.querySelector(".sl-frame"), f = document.createElement("iframe");

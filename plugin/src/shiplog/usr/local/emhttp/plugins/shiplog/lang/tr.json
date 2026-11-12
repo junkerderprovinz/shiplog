@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Katıl",
   "s_fortress_joined": "Kalene hoş geldin.",
   "s_fortress_bad_phrase": "Bu kelimeler geçerli bir ifade değil. Her birini bir kez daha kontrol et.",
-  "s_fortress_failed": "Katılım olmadı: %s"
+  "s_fortress_failed": "Katılım olmadı: %s",
+  "s_fortress_others": "Diğer uygulamalar",
+  "s_fortress_online": "Bağlı",
+  "s_fortress_away": "Ulaşılamıyor",
+  "s_fortress_remove": "Kaldır",
+  "s_fortress_member_on": "{device} üzerinde {app}",
+  "s_fortress_remove_title": "{device} kaldırılsın mı?",
+  "s_fortress_remove_body": "{device} erişimini hemen kaybeder. Bu geri alınamaz.",
+  "s_fortress_remove_failed": "Olmadı. Lütfen yeniden dene.",
+  "s_fortress_cancel": "İptal",
+  "s_fortress_removed_title": "İfade şimdi değiştirilsin mi?",
+  "s_fortress_removed_body": "{device} artık dışarıda. Ama ifade aynı kaldıkça geri dönüş yolu hâlâ açık.",
+  "s_fortress_change_in": "ShipLog ifadeyi saklamaz, bu yüzden ifadeyi {app} içinde değiştirirsin.",
+  "s_fortress_change_any": "ShipLog ifadeyi saklamaz. İfadeyi kalede onu gösteren bir uygulamada değiştir.",
+  "s_fortress_change": "İfadeyi değiştir",
+  "s_fortress_later": "Sonra",
+  "s_fortress_removed_note": "Kaldırılanlar: {devices}. Geri dönüş yolunu kapatmak için ifadeyi değiştir."
 }

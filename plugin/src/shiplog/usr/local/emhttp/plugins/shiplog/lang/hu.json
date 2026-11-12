@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Belépés",
   "s_fortress_joined": "Üdv az erődödben.",
   "s_fortress_bad_phrase": "Ezek a szavak nem adnak ki érvényes jelmondatot. Nézd át még egyszer mindegyiket.",
-  "s_fortress_failed": "A belépés nem sikerült: %s"
+  "s_fortress_failed": "A belépés nem sikerült: %s",
+  "s_fortress_others": "Többi alkalmazás",
+  "s_fortress_online": "Csatlakozva",
+  "s_fortress_away": "Nem érhető el",
+  "s_fortress_remove": "Eltávolítás",
+  "s_fortress_member_on": "{app} itt: {device}",
+  "s_fortress_remove_title": "Eltávolítod: {device}?",
+  "s_fortress_remove_body": "{device} azonnal elveszíti a hozzáférését. Ez nem vonható vissza.",
+  "s_fortress_remove_failed": "Ez nem sikerült. Próbáld újra.",
+  "s_fortress_cancel": "Mégse",
+  "s_fortress_removed_title": "Megváltoztatod most a jelmondatot?",
+  "s_fortress_removed_body": "{device} kint van. Amíg a jelmondat ugyanaz marad, a visszaút még nyitva áll.",
+  "s_fortress_change_in": "A ShipLog nem őrzi a jelmondatot, ezért itt változtatod meg: {app}.",
+  "s_fortress_change_any": "A ShipLog nem őrzi a jelmondatot. Változtasd meg az erőd egyik alkalmazásában, amely mutatja.",
+  "s_fortress_change": "Jelmondat módosítása",
+  "s_fortress_later": "Később",
+  "s_fortress_removed_note": "Eltávolítva: {devices}. Változtasd meg a jelmondatot, és a visszaút bezárul."
 }

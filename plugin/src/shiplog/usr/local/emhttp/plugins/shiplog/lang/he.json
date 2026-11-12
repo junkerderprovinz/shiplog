@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "הצטרפות",
   "s_fortress_joined": "ברוך הבא למבצר שלך.",
   "s_fortress_bad_phrase": "המילים האלה אינן ביטוי תקף. בדוק שוב כל מילה.",
-  "s_fortress_failed": "ההצטרפות לא הצליחה: %s"
+  "s_fortress_failed": "ההצטרפות לא הצליחה: %s",
+  "s_fortress_others": "אפליקציות אחרות",
+  "s_fortress_online": "מחובר",
+  "s_fortress_away": "לא נגיש",
+  "s_fortress_remove": "הסרה",
+  "s_fortress_member_on": "{app} ב-{device}",
+  "s_fortress_remove_title": "להסיר את {device}?",
+  "s_fortress_remove_body": "{device} מאבד את הגישה מיד. אי אפשר לבטל את זה.",
+  "s_fortress_remove_failed": "זה לא הצליח. כדאי לנסות שוב.",
+  "s_fortress_cancel": "ביטול",
+  "s_fortress_removed_title": "לשנות את הביטוי עכשיו?",
+  "s_fortress_removed_body": "{device} בחוץ. כל עוד הביטוי נשאר אותו דבר, הדרך חזרה עדיין פתוחה.",
+  "s_fortress_change_in": "ShipLog לא שומר את הביטוי, לכן משנים אותו ב-{app}.",
+  "s_fortress_change_any": "ShipLog לא שומר את הביטוי. אפשר לשנות אותו באפליקציה במבצר שמציגה אותו.",
+  "s_fortress_change": "שינוי הביטוי",
+  "s_fortress_later": "אחר כך",
+  "s_fortress_removed_note": "הוסרו: {devices}. כדי לסגור את הדרך חזרה, צריך לשנות את הביטוי."
 }
