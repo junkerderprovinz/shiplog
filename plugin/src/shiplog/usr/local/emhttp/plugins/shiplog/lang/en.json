@@ -180,10 +180,10 @@
   "s_fortress_removed": "Another member of the fortress took this server out of it. Until you join again with your phrase, auto-updates run without a backup.",
   "s_fortress_changed": "Your fortress has a new phrase that ShipLog couldn't follow on its own. Enter the new words below and it carries on as the same member. Until then, auto-updates run without a backup.",
   "s_fortress_join": "Join with the phrase",
-  "s_fortress_join_desc": "Enter your fortress phrase, the twelve words. ShipLog keeps its own keys only, never the phrase.",
+  "s_fortress_join_desc": "Enter your phrase, the twelve words. ShipLog keeps its own keys only, never the phrase.",
   "s_fortress_join_ph": "twelve words",
   "s_fortress_join_btn": "Join",
   "s_fortress_joined": "Welcome to your fortress.",
-  "s_fortress_bad_phrase": "Those words aren't a fortress phrase. Check each one once more.",
+  "s_fortress_bad_phrase": "Those words aren't a valid phrase. Check each one once more.",
   "s_fortress_failed": "Joining didn't work: %s"
 }
