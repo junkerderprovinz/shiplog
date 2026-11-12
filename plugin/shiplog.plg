@@ -478,12 +478,14 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
 </CHANGES>
 
 <!-- Pre-install: installpkg never deletes files a newer version dropped, so the
-     plugin dir is wiped first. Appdata and the .cfg on the flash stay. -->
+     plugin dir is wiped first. Appdata and the .cfg on the flash stay, and so does
+     this version's package: Unraid installs every .plg again at boot, often before
+     the network is up. -->
 <FILE Run="/bin/bash">
 <INLINE>
 &emhttp;/scripts/rc.shiplog stop 2>/dev/null
 rm -rf &emhttp;
-rm -f &plgPath;/*.txz
+find &plgPath; -maxdepth 1 -name '&slug;-*.txz' ! -name '&txz;' -delete 2>/dev/null
 </INLINE>
 </FILE>
 
