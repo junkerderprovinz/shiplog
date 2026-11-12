@@ -177,7 +177,7 @@
   "s_fortress_member": "Adhésion",
   "s_fortress_in": "Dans la forteresse en tant que %s",
   "s_fortress_out": "Dans aucune forteresse",
-  "s_fortress_removed": "Un autre membre de la forteresse en a retiré ce serveur. Tant que vous ne la rejoignez pas avec votre phrase, les mises à jour automatiques se font sans sauvegarde.",
+  "s_fortress_removed": "Un autre membre de la forteresse en a retiré ce serveur. Tant que vous ne la rejoignez pas avec la phrase actuelle, les mises à jour automatiques se font sans sauvegarde.",
   "s_fortress_changed": "Votre forteresse a une nouvelle phrase que ShipLog n'a pas pu suivre tout seul. Saisissez les nouveaux mots ci-dessous et il reste le même membre. D'ici là, les mises à jour automatiques se font sans sauvegarde.",
   "s_fortress_join": "Rejoindre avec la phrase",
   "s_fortress_join_desc": "Saisissez la phrase de votre forteresse, les douze mots. ShipLog ne garde que ses propres clés, jamais la phrase.",
