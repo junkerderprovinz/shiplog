@@ -74,12 +74,12 @@ func TestKitKnowsNoOtherRoute(t *testing.T) {
 
 func TestKitListsInstancesOnly(t *testing.T) {
 	k := &fakeKit{members: []fortress.Member{
-		{ID: "m1", Kind: member.KindInstance, App: fortress.App{ID: "vault"}, Device: "Tower", Relay: true, Actions: []string{Action}},
+		{ID: "m1", Kind: member.KindInstance, App: fortress.App{ID: "vault"}, Device: "My vault", Host: "Tower", Relay: true, Actions: []string{Action}},
 		{ID: "v1", Kind: member.KindViewer, Device: "Tower", Relay: true},
 		{ID: "m2", Kind: member.KindInstance, App: fortress.App{ID: "vault"}, Device: "Tower"},
 	}}
 	got := Kit{Fortress: k}.Members()
-	if len(got) != 2 || got[0].ID != "m1" || !got[0].Online || got[0].App != "vault" || got[0].Actions[0] != Action || got[1].Online {
+	if len(got) != 2 || got[0].ID != "m1" || !got[0].Online || got[0].App != "vault" || got[0].Actions[0] != Action || got[0].Host != "Tower" || got[1].Online {
 		t.Fatalf("members = %+v", got)
 	}
 }

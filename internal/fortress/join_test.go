@@ -24,7 +24,7 @@ func joined(t *testing.T, dir string, lan bool) {
 
 func TestJoinWithoutAMembershipIsInNoFortress(t *testing.T) {
 	for _, dir := range []string{"", t.TempDir()} {
-		m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog"}, nil, nil)
+		m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog"}, "", nil, nil)
 		if err != nil || m != nil {
 			t.Fatalf("Join(%q) = %v, %v, want no fortress", dir, m, err)
 		}
@@ -34,7 +34,7 @@ func TestJoinWithoutAMembershipIsInNoFortress(t *testing.T) {
 func TestJoinTakesPartWithTheKeptMembership(t *testing.T) {
 	dir := t.TempDir()
 	joined(t, dir, false)
-	m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog", Version: "3.8.0"}, nil, nil)
+	m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog", Version: "3.8.0"}, "", nil, nil)
 	if err != nil || m == nil {
 		t.Fatalf("Join = %v, %v", m, err)
 	}
@@ -50,7 +50,7 @@ func TestJoinTakesPartWithTheKeptMembership(t *testing.T) {
 func TestJoinTakesPartOnThisNetworkAndLeavesIt(t *testing.T) {
 	dir := t.TempDir()
 	joined(t, dir, true)
-	m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog"}, nil, nil)
+	m, err := Join(dir, status.App{ID: "shiplog", Name: "ShipLog"}, "", nil, nil)
 	if err != nil || m == nil {
 		t.Fatalf("Join = %v, %v", m, err)
 	}
@@ -64,7 +64,7 @@ func TestJoinRefusesADamagedMembership(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "fortress.json"), []byte(`{"seed":"zz"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if m, err := Join(dir, status.App{ID: "shiplog"}, nil, nil); err == nil {
+	if m, err := Join(dir, status.App{ID: "shiplog"}, "", nil, nil); err == nil {
 		_ = m.Close()
 		t.Fatal("want an error")
 	}

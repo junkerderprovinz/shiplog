@@ -188,7 +188,8 @@ func openFortress(cfg config.Config, report *fortress.Source, actions ...kitfort
 	if cfg.FortressDir == "" {
 		return nil, nil
 	}
-	door := &fortress.Door{Dir: cfg.FortressDir, App: report.App, Src: report, Actions: actions, Device: report.Instance.Name}
+	host, _ := os.Hostname()
+	door := &fortress.Door{Dir: cfg.FortressDir, App: report.App, Src: report, Actions: actions, Device: report.Instance.Name, Host: host}
 	if err := door.Open(); err != nil {
 		log.Printf("shiplog: not taking part in the fortress: %v", err)
 	}
@@ -198,6 +199,7 @@ func openFortress(cfg config.Config, report *fortress.Source, actions ...kitfort
 	return door, &backup.Client{
 		Fortress: backup.Kit{Fortress: door},
 		Device:   door.Device,
+		Host:     host,
 		Timeout:  cfg.AutoUpdate.BackupTimeout,
 		Poll:     10 * time.Second,
 	}
@@ -325,7 +327,7 @@ func logSummarizerPing(name, url, model string, ping func(context.Context) error
 var version = "dev"
 
 func app() status.App {
-	a := status.App{ID: "shiplog", Name: "ShipLog", Version: strings.TrimPrefix(version, "v")}
+	a := status.App{ID: "shiplog", Name: "ShipLog", Version: strings.TrimPrefix(version, "v"), Icon: api.Icon}
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, s := range info.Settings {
 			if s.Key == "vcs.revision" && len(s.Value) >= 7 {

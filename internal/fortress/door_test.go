@@ -174,3 +174,33 @@ func TestRemovedByAnotherMemberShipLogForgetsTheFortress(t *testing.T) {
 		t.Errorf("joined again: %+v", s)
 	}
 }
+
+func TestTheOtherMembersSeeShipLogsLogoAndServer(t *testing.T) {
+	srv := httptest.NewServer(relay.New())
+	t.Cleanup(srv.CloseClientConnections)
+	t.Cleanup(srv.Close)
+	secret, w, err := phrase.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bv := vault(t, srv.URL, secret)
+	icon, err := status.IconFromSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := shiplog
+	app.Icon = icon
+	d := &Door{Dir: filepath.Join(t.TempDir(), "fortress"), App: app, Device: "Shipyard", Host: "Tower", Relay: srv.URL}
+	t.Cleanup(func() { _ = d.Close() })
+	if err := d.Enter(w); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "BombVault to see ShipLog's logo on Tower", func() bool {
+		for _, m := range bv.Members() {
+			if m.App.ID == "shiplog" && m.App.Icon == icon && m.Host == "Tower" {
+				return true
+			}
+		}
+		return false
+	})
+}

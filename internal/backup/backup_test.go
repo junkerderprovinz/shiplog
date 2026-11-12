@@ -277,3 +277,25 @@ func TestSaveLeavesABackupAppOnAnotherServerAlone(t *testing.T) {
 		t.Fatalf("err = %v, want ErrNoMember while no backup app runs on this server", err)
 	}
 }
+
+func TestSaveFindsTheBackupAppOnThisServerWhateverItIsCalled(t *testing.T) {
+	v := &fakeVault{final: "done"}
+	renamed := vaultMember("m1", "My vault")
+	renamed.Host = "tower.lan"
+	f := &fakeFortress{members: []Member{renamed}, serve: map[string]http.Handler{"m1": v.handler()}}
+	c, _ := newClient(f)
+	c.Host = "Tower"
+	if snap, err := c.Save(context.Background(), "nextcloud"); err != nil || snap.Member != "m1" {
+		t.Fatalf("Save = %+v, %v; want the backup app on this server", snap, err)
+	}
+}
+
+func TestABackupAppOnAnotherServerUnderTheSameNameIsLeftAlone(t *testing.T) {
+	there := vaultMember("a", "Tower")
+	there.Host = "Barn"
+	c, _ := newClient(&fakeFortress{members: []Member{there}})
+	c.Host = "Tower"
+	if c.Available() {
+		t.Fatal("a backup app on another server counts because it shares the name")
+	}
+}

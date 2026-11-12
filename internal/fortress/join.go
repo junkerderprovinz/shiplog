@@ -23,10 +23,10 @@ type Membership struct {
 func (m *Membership) Close() error { return m.close() }
 
 // Join takes part in the fortress whose membership the kit's fortress join
-// kept in dir, as app, answers the other members about ShipLog's status from
+// kept in dir, as app on host, answers the other members about ShipLog's status from
 // src and offers them actions. removed runs once another member takes ShipLog
 // out. It returns nil when nobody joined there.
-func Join(dir string, app status.App, src status.Source, removed func(), actions ...kitfortress.Action) (*Membership, error) {
+func Join(dir string, app status.App, host string, src status.Source, removed func(), actions ...kitfortress.Action) (*Membership, error) {
 	if dir == "" {
 		return nil, nil
 	}
@@ -37,7 +37,8 @@ func Join(dir string, app status.App, src status.Source, removed func(), actions
 	if err != nil {
 		return nil, err
 	}
-	cfg.App = kitfortress.App{ID: app.ID, Name: app.Name, Version: app.Version}
+	cfg.App = kitfortress.App{ID: app.ID, Name: app.Name, Version: app.Version, Icon: app.Icon}
+	cfg.Host = host
 	cfg.Status = src
 	cfg.Actions = append(cfg.Actions, actions...)
 	cfg.OnRemoved = removed

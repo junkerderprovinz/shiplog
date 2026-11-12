@@ -32,7 +32,7 @@ func (k Kit) Members() []Member {
 		if m.Kind != member.KindInstance {
 			continue
 		}
-		out = append(out, Member{ID: m.ID, App: m.App.ID, Device: m.Device, Online: m.Online(), Actions: m.Actions})
+		out = append(out, Member{ID: m.ID, App: m.App.ID, Device: m.Device, Host: m.Host, Online: m.Online(), Actions: m.Actions})
 	}
 	return out
 }

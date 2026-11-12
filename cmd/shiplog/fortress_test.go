@@ -1,9 +1,14 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/junkerderprovinz/parleyport/kit/status"
+
+	"github.com/junkerderprovinz/shiplog/internal/config"
+	"github.com/junkerderprovinz/shiplog/internal/fortress"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 )
 
@@ -27,5 +32,23 @@ func TestTheInstanceKeepsItsIDAcrossStarts(t *testing.T) {
 	}
 	if first.Name == "" {
 		t.Error("the instance has no name")
+	}
+}
+
+func TestShipLogShowsItsLogoInTheFortress(t *testing.T) {
+	if err := status.CheckIcon(app().Icon); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestShipLogFindsTheBackupAppByTheServerItRunsOn(t *testing.T) {
+	host, err := os.Hostname()
+	if err != nil {
+		t.Skip(err)
+	}
+	report := &fortress.Source{App: app(), Instance: status.Instance{ID: "x", Name: "Shipyard"}}
+	door, client := openFortress(config.Config{FortressDir: filepath.Join(t.TempDir(), "fortress")}, report)
+	if door.Host != host || client.Host != host || client.Device != "Shipyard" {
+		t.Errorf("door on %q, client on %q as %q, want both on %q", door.Host, client.Host, client.Device, host)
 	}
 }
