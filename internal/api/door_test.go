@@ -10,9 +10,10 @@ import (
 )
 
 type fakeDoor struct {
-	state fortress.State
-	words string
-	err   error
+	state   fortress.State
+	words   string
+	removed string
+	err     error
 }
 
 func (d *fakeDoor) State() fortress.State { return d.state }
@@ -21,6 +22,14 @@ func (d *fakeDoor) Enter(words string) error {
 	d.words = words
 	if d.err == nil {
 		d.state = fortress.State{Joined: true, Device: "Tower"}
+	}
+	return d.err
+}
+
+func (d *fakeDoor) Remove(id string) error {
+	if d.err == nil {
+		d.removed = id
+		d.state.RemovedMembers = append(d.state.RemovedMembers, fortress.Removed{App: "tollroll", Name: "TollRoll", Device: "Bottich"})
 	}
 	return d.err
 }
@@ -77,5 +86,39 @@ func TestTheFortressAnswersOnlyOnTheSocket(t *testing.T) {
 	}
 	if rr := doorCall(a, http.MethodPost, "/api/fortress/join", `{"phrase":"x"}`, false); rr.Code != http.StatusForbidden || d.words != "" {
 		t.Errorf("join over the network = %d, words %q", rr.Code, d.words)
+	}
+}
+
+func TestThePageRemovesAnotherMember(t *testing.T) {
+	d := &fakeDoor{state: fortress.State{Joined: true, Device: "Tower"}}
+	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(d)
+	rr := doorCall(a, http.MethodDelete, "/api/fortress/members/5f3a", "", true)
+	if rr.Code != http.StatusOK || d.removed != "5f3a" || !strings.Contains(rr.Body.String(), `"removedMembers":[{"app":"tollroll","name":"TollRoll","device":"Bottich"}]`) {
+		t.Errorf("remove = %d %s, removed %q", rr.Code, rr.Body, d.removed)
+	}
+}
+
+func TestARemovalThatFailsSaysWhyWithACode(t *testing.T) {
+	for _, c := range []struct {
+		err  error
+		code int
+		body string
+	}{
+		{fortress.ErrNoMember, http.StatusNotFound, `"error":"noMember"`},
+		{fortress.ErrNotMember, http.StatusConflict, `"error":"noFortress"`},
+	} {
+		a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(&fakeDoor{err: c.err})
+		rr := doorCall(a, http.MethodDelete, "/api/fortress/members/5f3a", "", true)
+		if rr.Code != c.code || !strings.Contains(rr.Body.String(), c.body) {
+			t.Errorf("%v: %d %s", c.err, rr.Code, rr.Body)
+		}
+	}
+}
+
+func TestOnlyTheSocketRemovesAMember(t *testing.T) {
+	d := &fakeDoor{state: fortress.State{Joined: true}}
+	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(d)
+	if rr := doorCall(a, http.MethodDelete, "/api/fortress/members/5f3a", "", false); rr.Code != http.StatusForbidden || d.removed != "" {
+		t.Errorf("remove over the network = %d, removed %q", rr.Code, d.removed)
 	}
 }

@@ -8,16 +8,18 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/fortress"
 )
 
-// Door lets the settings page see ShipLog's place in a fortress and join one
-// with the phrase.
+// Door lets the settings page see ShipLog's place in a fortress, join one
+// with the phrase and take another member out.
 type Door interface {
 	State() fortress.State
 	Enter(words string) error
+	Remove(id string) error
 }
 
-// WithDoor serves /api/fortress and /api/fortress/join from d. Like the status
-// contract, both answer only on the engine's unix socket, since the phrase
-// opens the fortress to whoever sends it.
+// WithDoor serves /api/fortress, /api/fortress/join and
+// /api/fortress/members/{id} from d. Like the status contract, they answer
+// only on the engine's unix socket, since the phrase opens the fortress to
+// whoever sends it and a removal shuts a member out for good.
 func (a *API) WithDoor(d Door) *API {
 	a.door = d
 	return a
@@ -51,6 +53,26 @@ func (a *API) fortressJoin(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "phrase"})
 	case errors.Is(err, fortress.ErrMember):
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "member"})
+	case err != nil:
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	default:
+		writeJSON(w, http.StatusOK, a.door.State())
+	}
+}
+
+// fortressRemove answers with a code the page can word: noMember for an id
+// no other member has, noFortress while ShipLog is in none.
+func (a *API) fortressRemove(w http.ResponseWriter, r *http.Request) {
+	if fromSocket(r) != nil {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "socket"})
+		return
+	}
+	err := a.door.Remove(r.PathValue("id"))
+	switch {
+	case errors.Is(err, fortress.ErrNoMember):
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "noMember"})
+	case errors.Is(err, fortress.ErrNotMember):
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "noFortress"})
 	case err != nil:
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	default:

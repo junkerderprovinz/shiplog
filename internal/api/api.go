@@ -189,6 +189,7 @@ func (a *API) Handler() http.Handler {
 	if a.door != nil {
 		mux.HandleFunc("GET /api/fortress", a.fortressState)
 		mux.HandleFunc("POST /api/fortress/join", a.fortressJoin)
+		mux.HandleFunc("DELETE /api/fortress/members/{id}", a.fortressRemove)
 	}
 	mux.HandleFunc("GET /logo.svg", a.logo)
 	mux.HandleFunc("GET /", a.statusPage)
