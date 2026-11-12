@@ -8,10 +8,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
 	kitfortress "github.com/junkerderprovinz/parleyport/kit/fortress"
+	"github.com/junkerderprovinz/parleyport/kit/member"
 	"github.com/junkerderprovinz/parleyport/kit/phrase"
 	"github.com/junkerderprovinz/parleyport/kit/status"
 
@@ -82,15 +84,28 @@ type State struct {
 	RemovedMembers []Removed `json:"removedMembers"`
 }
 
-// Other is another member as the settings page lists it.
+// Other is another member as the settings page lists it. Form is how it
+// runs, its deployment: plugin, container, desktop or android. Relay says it
+// is in reach through the relay alone.
 type Other struct {
-	ID         string `json:"id"`
-	Kind       string `json:"kind"`
-	App        string `json:"app"`
-	Name       string `json:"name"`
-	Device     string `json:"device"`
-	Deployment string `json:"deployment,omitempty"`
-	Online     bool   `json:"online"`
+	ID       string    `json:"id"`
+	Kind     string    `json:"kind"`
+	App      string    `json:"app"`
+	Name     string    `json:"name"`
+	Device   string    `json:"device"`
+	Form     string    `json:"form,omitempty"`
+	Version  string    `json:"version,omitempty"`
+	Icon     string    `json:"icon,omitempty"`
+	Online   bool      `json:"online"`
+	Relay    bool      `json:"relay"`
+	LastSeen time.Time `json:"lastSeen,omitzero"`
+}
+
+// MemberStatus is what another member says about itself: its status report
+// and its newest log lines, the newest first.
+type MemberStatus struct {
+	Report status.Report     `json:"report"`
+	Log    []status.LogEntry `json:"log"`
 }
 
 // Removed is a member ShipLog took out of the fortress.
@@ -169,19 +184,78 @@ func (d *Door) State() State {
 	return s
 }
 
-// others lists the members the settings page shows. One that never said
-// which app it runs, such as a helper that is online only while it works,
-// would be a row without a name, so it stays off.
+// others lists the members the settings page shows: the other instances of
+// an app. One that never said which app it runs, such as a helper that is
+// online only while it works, would be a row without a name, and a viewer
+// only reads, so both stay off.
 func others(members []kitfortress.Member) []Other {
 	out := []Other{}
 	for _, m := range members {
-		if m.App.ID == "" {
+		if m.App.ID == "" || m.Kind == member.KindViewer {
 			continue
 		}
 		out = append(out, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID),
-			Device: m.Device, Deployment: m.Deployment, Online: m.Online()})
+			Device: m.Device, Form: m.Deployment, Version: m.App.Version, Icon: m.App.Icon,
+			Online: m.Online(), Relay: m.Relay && !m.Direct, LastSeen: m.LastSeen})
 	}
 	return out
+}
+
+// Leave takes ShipLog out of its fortress and forgets the membership. The
+// other members keep it as away until somebody removes it, and the phrase
+// brings it back.
+func (d *Door) Leave() error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.m == nil {
+		return ErrNotMember
+	}
+	err := d.m.Close()
+	d.m = nil
+	d.removed, d.phraseChanged = false, false
+	return errors.Join(err, os.RemoveAll(d.Dir))
+}
+
+// statusLines is how many log lines the settings page shows of a member.
+const statusLines = 10
+
+// Status asks member id, another member of the fortress, how it is doing,
+// its texts in lang.
+func (d *Door) Status(ctx context.Context, id, lang string) (MemberStatus, error) {
+	f := d.current()
+	if f == nil {
+		return MemberStatus{}, ErrNotMember
+	}
+	if !slices.ContainsFunc(others(f.Members()), func(m Other) bool { return m.ID == id }) {
+		return MemberStatus{}, ErrNoMember
+	}
+	r, err := f.Status(ctx, id, lang)
+	if err != nil {
+		return MemberStatus{}, err
+	}
+	return MemberStatus{Report: r, Log: newestLines(ctx, f, id, lang)}, nil
+}
+
+// newestLines reads member id's log, which pages from its oldest entry, to
+// the end and keeps the last lines, the newest first. A log that cannot be
+// read leaves the lines out and the report stands.
+func newestLines(ctx context.Context, f *kitfortress.Fortress, id, lang string) []status.LogEntry {
+	tail := []status.LogEntry{}
+	q := status.LogQuery{Limit: status.MaxLogLimit, Lang: lang}
+	for {
+		p, err := f.Log(ctx, id, q)
+		if err != nil {
+			break
+		}
+		tail = append(tail, p.Entries...)
+		tail = tail[max(0, len(tail)-statusLines):]
+		if len(p.Entries) < q.Limit || p.Next == q.After {
+			break
+		}
+		q.After = p.Next
+	}
+	slices.Reverse(tail)
+	return tail
 }
 
 // Remove takes member id out of the fortress, here and at every member in
