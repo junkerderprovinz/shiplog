@@ -243,9 +243,9 @@ html.tt-popups-on .sl-bubble .sl-newer-note h4{background:var(--tt-info,#3b82d0)
 /* Two shades only, frame and card: raw notes blend into their card. */
 html.tt-popups-on .sl-bubble .sl-raw{border:none;background:transparent}
 html.tt-popups-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
-/* OLED puts the dark window on true black. Its cards step down with it and
-   keep their shadow, so their own fill is their edge. */
-html.tt-popups-on[data-oled]:not(.Theme--white):not(.Theme--azure) .sl-bubble:not(.sl-light){--sl-bg:#000;--sl-card:#161616}
+/* Under OLED, which counts only on a dark Unraid theme, the window and its
+   cards take TowerTorch's lowered surfaces and keep their shadow. */
+html.tt-popups-on[data-oled]:is(.Theme--black,.Theme--gray) .sl-bubble:not(.sl-light){--sl-bg:var(--tt-surface-window,#161616);--sl-card:var(--tt-surface-3,#262626)}
 /* A release card's badge is its version, which keeps its own case. */
 .sl-bubble .sl-rel{position:relative}
 .sl-bubble .sl-rel h4{text-transform:none;letter-spacing:.2px}

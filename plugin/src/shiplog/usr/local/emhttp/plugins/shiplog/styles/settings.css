@@ -366,14 +366,13 @@ html.tt-popups-on #sl-wins {
   --sl-w-r-pill: var(--tt-radius-pill, 9999px);
   --sl-w-shadow: var(--tt-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
 }
-/* OLED puts the windows on true black and every surface one step down. The
-   shadow stays, so a card's own fill is its edge. */
-html.tt-popups-on[data-oled]:not(.Theme--white):not(.Theme--azure) #sl-wins {
-  --sl-w-ground: #000;
-  --sl-w-card: #161616;
-  --sl-w-chip: #262626;
-  --sl-w-raised: #262626;
-  --sl-w-raised-hover: #393939;
+/* Under OLED, which counts only on a dark Unraid theme, the windows take
+   TowerTorch's lowered surfaces and keep their order and their shadow. */
+html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) #sl-wins {
+  --sl-w-ground: var(--tt-surface-window, #161616);
+  --sl-w-card: var(--tt-surface-2, #1a1a1a);
+  --sl-w-chip: var(--tt-surface-3, #262626);
+  --sl-w-raised: var(--tt-surface-3, #262626);
 }
 #sl-wins *, #sl-wins *::before, #sl-wins *::after { box-sizing: border-box; }
 #sl-wins [hidden] { display: none !important; }
