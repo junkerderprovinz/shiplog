@@ -1,0 +1,10 @@
+{
+  "targets": [
+    {
+      "name": "plugin",
+      "mode": "port",
+      "version": "3.8.5",
+      "versionFile": "plugin/src/shiplog/usr/local/emhttp/plugins/shiplog/shiplog.page"
+    }
+  ]
+}
