@@ -119,6 +119,7 @@
   "d_autoHintOff": "ShipLog'un zamanlanmış otomatik güncellemesinin dışında. Elle güncellemek yine çalışır.",
   "d_autoSaving": "Kaydediliyor ve ShipLog yeniden başlatılıyor…",
   "d_autoFailed": "Kaydedilemedi. Sayfayı yeniden yükleyip tekrar dene.",
+  "d_autoSaved": "Kaydedildi",
   "d_autoOffBadge": "Otomatik güncelleme kapalı",
   "d_autoOffBadgeHint": "ShipLog'un zamanlanmış otomatik güncellemesinin dışında. Değiştirmek için tıkla.",
   "d_wobLabel": "Yedek olmadan güncelle",

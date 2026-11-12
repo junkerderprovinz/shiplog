@@ -119,6 +119,7 @@
   "d_autoHintOff": "不在 ShipLog 的定时自动更新范围内。手动更新仍然可用。",
   "d_autoSaving": "正在保存并重启 ShipLog…",
   "d_autoFailed": "保存失败。请刷新页面后重试。",
+  "d_autoSaved": "已保存",
   "d_autoOffBadge": "自动更新已关闭",
   "d_autoOffBadgeHint": "不在 ShipLog 的定时自动更新范围内。点击可更改。",
   "d_wobLabel": "不备份也更新",

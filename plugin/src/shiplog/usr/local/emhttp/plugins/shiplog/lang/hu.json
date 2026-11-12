@@ -119,6 +119,7 @@
   "d_autoHintOff": "Kimarad a ShipLog ütemezett automatikus frissítéséből. A kézi frissítés továbbra is működik.",
   "d_autoSaving": "Mentés és a ShipLog újraindítása…",
   "d_autoFailed": "A mentés nem sikerült. Töltsd újra az oldalt, és próbáld újra.",
+  "d_autoSaved": "Mentve",
   "d_autoOffBadge": "Automatikus frissítés ki",
   "d_autoOffBadgeHint": "Kimarad a ShipLog ütemezett automatikus frissítéséből. Kattints a módosításhoz.",
   "d_wobLabel": "Frissítés mentés nélkül",

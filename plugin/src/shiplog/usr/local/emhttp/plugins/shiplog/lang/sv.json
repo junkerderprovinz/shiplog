@@ -119,6 +119,7 @@
   "d_autoHintOff": "Utesluten från ShipLogs schemalagda automatiska uppdatering. Att uppdatera den för hand fungerar fortfarande.",
   "d_autoSaving": "Sparar och startar om ShipLog…",
   "d_autoFailed": "Det gick inte att spara. Ladda om sidan och försök igen.",
+  "d_autoSaved": "Sparat",
   "d_autoOffBadge": "Automatisk uppdatering av",
   "d_autoOffBadgeHint": "Utesluten från ShipLogs schemalagda automatiska uppdatering. Klicka för att ändra.",
   "d_wobLabel": "Uppdatera utan säkerhetskopia",

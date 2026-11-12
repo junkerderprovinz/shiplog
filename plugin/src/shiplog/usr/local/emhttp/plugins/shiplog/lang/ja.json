@@ -119,6 +119,7 @@
   "d_autoHintOff": "ShipLogのスケジュール自動更新の対象外です。手動での更新は引き続き使えます。",
   "d_autoSaving": "保存してShipLogを再起動しています…",
   "d_autoFailed": "保存できませんでした。ページを再読み込みして、もう一度お試しください。",
+  "d_autoSaved": "保存しました",
   "d_autoOffBadge": "自動更新オフ",
   "d_autoOffBadgeHint": "ShipLogのスケジュール自動更新の対象外です。クリックで変更できます。",
   "d_wobLabel": "バックアップなしで更新",

@@ -84,7 +84,12 @@
   var NOTIFY = { MATRIX_HOMESERVER: true, MATRIX_TOKEN: true, MATRIX_ROOM: true, APPRISE_URL: true, UNRAID_NOTIFY: true };
   var savedEl = byId("sl-saved");
   var saving = false, queued = null, typed = null, typeTimer = 0;
-  function note(state, text) { savedEl.setAttribute("data-state", state); savedEl.textContent = text; }
+  // A failure also comes as a toast where TowerTorch draws them.
+  function note(state, text) {
+    savedEl.setAttribute("data-state", state);
+    savedEl.textContent = text;
+    if (state === "err" && window.TTTheme && window.TTTheme.toast) window.TTTheme.toast(text, "error");
+  }
   function job(names, undo, ctl) {
     return {
       restart: names.some(function (n) { return !UI_ONLY[n] && !NOTIFY[n]; }),

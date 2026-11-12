@@ -119,6 +119,7 @@
   "d_autoHintOff": "Pominięty w zaplanowanej automatycznej aktualizacji ShipLog. Ręczna aktualizacja nadal działa.",
   "d_autoSaving": "Zapisywanie i restart ShipLog…",
   "d_autoFailed": "Nie udało się zapisać. Odśwież stronę i spróbuj ponownie.",
+  "d_autoSaved": "Zapisano",
   "d_autoOffBadge": "Bez automatycznej aktualizacji",
   "d_autoOffBadgeHint": "Pominięty w zaplanowanej automatycznej aktualizacji ShipLog. Kliknij, aby zmienić.",
   "d_wobLabel": "Aktualizuj bez kopii zapasowej",

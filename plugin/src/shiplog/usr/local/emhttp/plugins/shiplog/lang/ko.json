@@ -119,6 +119,7 @@
   "d_autoHintOff": "ShipLog의 예약된 자동 업데이트에서 제외되었습니다. 수동 업데이트는 계속 가능합니다.",
   "d_autoSaving": "저장하고 ShipLog를 다시 시작하는 중…",
   "d_autoFailed": "저장하지 못했습니다. 페이지를 새로 고친 뒤 다시 시도하세요.",
+  "d_autoSaved": "저장됨",
   "d_autoOffBadge": "자동 업데이트 꺼짐",
   "d_autoOffBadgeHint": "ShipLog의 예약된 자동 업데이트에서 제외되었습니다. 클릭하여 변경하세요.",
   "d_wobLabel": "백업 없이 업데이트",

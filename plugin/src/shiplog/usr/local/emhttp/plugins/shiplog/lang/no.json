@@ -119,6 +119,7 @@
   "d_autoHintOff": "Holdt utenfor ShipLogs planlagte auto-oppdatering. Manuell oppdatering fungerer fortsatt.",
   "d_autoSaving": "Lagrer og starter ShipLog på nytt…",
   "d_autoFailed": "Kunne ikke lagre. Last inn siden på nytt og prøv igjen.",
+  "d_autoSaved": "Lagret",
   "d_autoOffBadge": "Auto-oppdatering av",
   "d_autoOffBadgeHint": "Holdt utenfor ShipLogs planlagte auto-oppdatering. Klikk for å endre.",
   "d_wobLabel": "Oppdater uten sikkerhetskopi",

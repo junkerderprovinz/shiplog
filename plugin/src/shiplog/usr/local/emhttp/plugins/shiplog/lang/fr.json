@@ -119,6 +119,7 @@
   "d_autoHintOff": "Exclu de la mise à jour automatique planifiée de ShipLog. La mise à jour à la main fonctionne toujours.",
   "d_autoSaving": "Enregistrement et redémarrage de ShipLog…",
   "d_autoFailed": "Échec de l'enregistrement. Recharge la page et réessaie.",
+  "d_autoSaved": "Enregistré",
   "d_autoOffBadge": "Mise à jour auto désactivée",
   "d_autoOffBadgeHint": "Exclu de la mise à jour automatique planifiée de ShipLog. Clique pour modifier.",
   "d_wobLabel": "Mettre à jour sans sauvegarde",
