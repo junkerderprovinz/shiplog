@@ -12,8 +12,12 @@ import (
 	"strings"
 	"time"
 
+	kitnotify "github.com/junkerderprovinz/parleyport/kit/notify"
+	"github.com/junkerderprovinz/parleyport/kit/status"
+
 	"github.com/junkerderprovinz/shiplog/internal/changelog"
 	"github.com/junkerderprovinz/shiplog/internal/model"
+	"github.com/junkerderprovinz/shiplog/internal/notify"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 )
@@ -56,9 +60,9 @@ type ContainerLister interface {
 	List(ctx context.Context) ([]model.Container, error)
 }
 
-// Messenger delivers a message to the configured notification channels.
+// Messenger delivers an event to the configured notification channels.
 type Messenger interface {
-	SendMessage(ctx context.Context, text, html string) error
+	Send(ctx context.Context, e kitnotify.Event) error
 }
 
 // API bundles the HTTP handlers.
@@ -74,6 +78,10 @@ type API struct {
 	// verifyFile names what is wrong with a changelog file URL, or returns ""
 	// when the file reads fine or the check was inconclusive.
 	verifyFile func(ctx context.Context, url string) (problem string)
+	fortress   status.Source
+	guards     GuardLister
+	backup     func() bool
+	door       Door
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -168,6 +176,16 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/unmaintained-suppressions", a.listSuppressions)
 	mux.HandleFunc("PUT /api/unmaintained-suppression", a.setSuppression)
 	mux.HandleFunc("DELETE /api/unmaintained-suppression", a.deleteSuppression)
+	mux.HandleFunc("GET /api/guards", a.listGuards)
+	if a.fortress != nil {
+		h := status.Handler(a.fortress, fromSocket)
+		mux.Handle("GET "+status.StatusPath, h)
+		mux.Handle("GET "+status.LogPath, h)
+	}
+	if a.door != nil {
+		mux.HandleFunc("GET /api/fortress", a.fortressState)
+		mux.HandleFunc("POST /api/fortress/join", a.fortressJoin)
+	}
 	mux.HandleFunc("GET /logo.svg", a.logo)
 	mux.HandleFunc("GET /", a.statusPage)
 	return mux
@@ -234,9 +252,7 @@ func (a *API) applied(w http.ResponseWriter, r *http.Request) {
 	}
 	a.ref.Refresh()
 	if !ok && a.msg != nil {
-		text := fmt.Sprintf("🚢 ShipLog · %s: the update did not apply, the container still runs the old image", name)
-		html := fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: the update did not apply, the container still runs the old image", template.HTMLEscapeString(name))
-		_ = a.msg.SendMessage(r.Context(), text, html)
+		_ = a.msg.Send(r.Context(), notify.NotApplied(name))
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"applied": ok})
 }

@@ -33,6 +33,19 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Read-only,
 optional AI summaries (Ollama or llama-swap) and Matrix or Apprise alerts.
 
+### 3.8.0
+✨ **Added**
+- **ShipLog tells the other apps of your fortress how it is doing.** They can read how many containers have an update, which of them are a major jump or come with a breaking change, an auto-update that failed, the auto-update that is running and the auto-update log. Only members of your fortress can read it, and the engine still opens no port on your network.
+- **Every auto-update is backed up first.** When ShipLog is in a fortress with a backup app on the same server, it asks that app to back up each container before the update and waits until the backup is done (30 minutes at most, adjustable). If the backup fails or the app doesn't answer, the update waits and ShipLog tells you why. For a container that needs no backup, turn on "Update without a backup" in its ShipLog window.
+- **A failed auto-update goes back to the old image.** ShipLog keeps the old image while the update runs. If the new one fails its check, turns unhealthy or stops, ShipLog points the template at the old image and recreates the container from it. Your appdata stays as it is, and the message links the backup from before the update. Without a backup app in your fortress, auto-updates run as they always did.
+- **Other apps of your fortress can have ShipLog update containers.** A maintenance plan names the containers it wants, or none for every container with an update, and ShipLog updates them one at a time with the same backup and rollback as its own auto-update. It never runs two updates at once.
+- **ShipLog joins your fortress with the phrase.** The General tab has a Fortress card for the twelve words. ShipLog keeps its own keys only, never the phrase. When another member takes ShipLog out, the card says so and the phrase brings it back.
+
+⚡ **Improved**
+- **Notifications have a file of their own.** On its first start, ShipLog moves your Matrix, Apprise and Unraid settings from shiplog.cfg to notify.json next to it, and the settings page saves them there from then on. A channel that was only partly filled in comes over switched off, so nothing you typed is lost.
+- **A message that does not get through is tried three times** instead of once. ShipLog no longer follows a redirect to another host, because the request can carry your token.
+- **Unraid shows a failed update as a warning.** That goes for an auto-update run in which an update failed and for an update that did not apply. Apprise messages now carry a title.
+
 ### 3.7.6
 🐛 **Fixed**
 - **Only the Unraid web UI reaches ShipLog's engine.** The engine answered on port 8484 to anyone on your network, without a login, so any device there could start a check or change a changelog source. It now listens on a local socket, and the Docker tab, the settings page and the status page reach it through your Unraid login. The status page opens from ShipLog's settings page, and the port setting is gone.

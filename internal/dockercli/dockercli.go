@@ -1,6 +1,6 @@
 // Package dockercli is a Docker Engine API client over the unix socket. Apart
-// from starting a container it only reads, so it cannot stop, remove or create
-// one.
+// from starting a container and tagging an image to keep it, it only reads, so
+// it cannot stop, remove or create a container.
 package dockercli
 
 import (
@@ -58,6 +58,7 @@ type dockerContainer struct {
 	Image   string            `json:"Image"`
 	ImageID string            `json:"ImageID"`
 	State   string            `json:"State"`
+	Status  string            `json:"Status"`
 	Labels  map[string]string `json:"Labels"`
 }
 
@@ -139,6 +140,8 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 			IsLocal:      info.isLocal,
 			Source:       source,
 			State:        dc.State,
+			Health:       health(dc.Status),
+			ImageID:      dc.ImageID,
 			ImageVersion: info.version,
 			BaseVersion:  info.baseVersion,
 			Managed:      dc.Labels[managedLabel] != "",
@@ -166,6 +169,56 @@ func (c *Client) Start(ctx context.Context, name string) error {
 		return fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 	return nil
+}
+
+// heldRepo is where Hold keeps an image. Unraid removes the old image after an
+// update unless another tag still points at it.
+const heldRepo = "shiplog/before-update"
+
+// Hold tags image as the one the named container ran before its update, so
+// neither Unraid nor a prune removes it.
+func (c *Client) Hold(ctx context.Context, image, name string) error {
+	q := url.Values{"repo": {heldRepo}, "tag": {name}}
+	return c.send(ctx, http.MethodPost, "/images/"+url.PathEscape(image)+"/tag?"+q.Encode(), http.StatusCreated)
+}
+
+// Release drops the tag Hold put on the named container's old image. A tag
+// that is gone is released already.
+func (c *Client) Release(ctx context.Context, name string) error {
+	return c.send(ctx, http.MethodDelete, "/images/"+heldRepo+":"+url.PathEscape(name), http.StatusOK, http.StatusNotFound)
+}
+
+func (c *Client) send(ctx context.Context, method, path string, ok ...int) error {
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, nil)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	for _, code := range ok {
+		if resp.StatusCode == code {
+			return nil
+		}
+	}
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+	return fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+}
+
+// health reads the healthcheck from the status line Docker lists, such as
+// "Up 2 minutes (unhealthy)".
+func health(status string) string {
+	switch {
+	case strings.HasSuffix(status, "(health: starting)"):
+		return "starting"
+	case strings.HasSuffix(status, "(unhealthy)"):
+		return "unhealthy"
+	case strings.HasSuffix(status, "(healthy)"):
+		return "healthy"
+	}
+	return ""
 }
 
 // ghcrSource maps ghcr.io/owner/repo to github.com/owner/repo, so an image

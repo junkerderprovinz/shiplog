@@ -20,6 +20,9 @@
   const AUP = (PREFS.autoUpdate && typeof PREFS.autoUpdate === "object") ? PREFS.autoUpdate : {};
   const auEnabled = AUP.enabled === true;
   let auExclude = Array.isArray(AUP.exclude) ? AUP.exclude.map(String) : [];
+  // withoutBackup lists the containers that update even when the fortress's
+  // backup app could not back them up (AUTOUPDATE_WITHOUT_BACKUP).
+  let auWithoutBackup = Array.isArray(AUP.withoutBackup) ? AUP.withoutBackup.map(String) : [];
 
   const UPDATE_PHRASES = [
     "aktualisierung anwenden", "auf dem neu", "nicht verfügbar", "wird geprüft",
@@ -82,6 +85,16 @@
     newerChipHint: "Newer version %v available. The tag is pinned, so change it to update.",
     newerNote: "Version %v is available. Change the tag to update.",
     newerWhy: "This container is pinned to %v, so pulling it again changes nothing and ShipLog never auto-updates it.",
+    wobLabel: "Update without a backup",
+    wobHintOn: "Updates even if the backup app couldn't back it up first.",
+    wobHintOff: "Updates only after the backup app has backed it up.",
+    heldTitle: "Waiting for a backup",
+    heldNote: "ShipLog held back the last auto-update because the backup didn't finish: %s",
+    rolledTitle: "Rolled back",
+    rolledNote: "The last auto-update failed (%s), so ShipLog put the container back on its old image. Your appdata is untouched.",
+    rolledUnpin: "Its template now points at the old image. To update again, remove the @sha256 part from the repository.",
+    snapshot: "Backup from before the update",
+    guardHint: "Click to see why.",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
   function T(k) { return I18N["d_" + k] || EN[k] || k; }
@@ -153,16 +166,20 @@
   // Unraid's /update.php merges the one key into shiplog.cfg and restarts the
   // engine. Docker's own name rule keeps the value safe in the sourced cfg.
   const AU_NAME_OK = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
-  function auIsExcluded(name) {
+  function auIsExcluded(name) { return listed(auExclude, name); }
+  function listed(list, name) {
     const n = norm(name);
-    return !!n && auExclude.some((x) => norm(x) === n);
+    return !!n && list.some((x) => norm(x) === n);
   }
-  async function auSave(name, excluded) {
-    const next = auExclude.filter((x) => norm(x) !== norm(name));
-    if (excluded) next.push(name);
+  function toggled(list, name, on) {
+    const next = list.filter((x) => norm(x) !== norm(name));
+    if (on) next.push(name);
+    return next;
+  }
+  async function cfgSave(key, list) {
     const body = new URLSearchParams();
     body.set("#file", "shiplog/shiplog.cfg");
-    body.set("AUTOUPDATE_EXCLUDE_CONTAINERS", next.join(","));
+    body.set(key, list.join(","));
     body.set("#command", "/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog");
     body.set("#arg[1]", "restart");
     body.set("csrf_token", window.csrf_token || "");
@@ -172,10 +189,20 @@
       // Unraid answers a POST with a bad CSRF token with an empty 200. Its
       // update.htm defines addLog either way, so only a call proves that the
       // restart ran and echoed its log lines.
-      if (!res.ok || txt.indexOf("<script>addLog(") < 0) return false;
-      auExclude = next;
-      return true;
+      return res.ok && txt.indexOf("<script>addLog(") >= 0;
     } catch (e) { return false; }
+  }
+  async function auSave(name, excluded) {
+    const next = toggled(auExclude, name, excluded);
+    if (!(await cfgSave("AUTOUPDATE_EXCLUDE_CONTAINERS", next))) return false;
+    auExclude = next;
+    return true;
+  }
+  async function wobSave(name, on) {
+    const next = toggled(auWithoutBackup, name, on);
+    if (!(await cfgSave("AUTOUPDATE_WITHOUT_BACKUP", next))) return false;
+    auWithoutBackup = next;
+    return true;
   }
   function autoHint(excluded) {
     return T(excluded ? "autoHintOff" : "autoHintOn");
@@ -195,7 +222,78 @@
         </label>
         <span class="sl-au-info" tabindex="0" role="img" aria-label="${hint}" title="${hint}">${INFO_ICON}</span>
         <span class="sl-au-state" aria-live="polite"></span>
+      </div>${wobHTML(name)}`;
+  }
+  // The second switch shows only while the fortress has a backup app on this
+  // server, since only then does an update wait for a backup.
+  function wobHTML(name) {
+    if (!guards.backup) return "";
+    const on = listed(auWithoutBackup, name);
+    const hint = esc(T(on ? "wobHintOn" : "wobHintOff"));
+    return `<div class="sl-aubar sl-wobbar" data-au="${on ? "on" : "off"}">
+        <label class="sl-au-row">
+          <input type="checkbox" class="sl-au-cb sl-wob-cb"${on ? " checked" : ""}>
+          <span class="sl-au-track"></span><span>${esc(T("wobLabel"))}</span>
+        </label>
+        <span class="sl-au-info" tabindex="0" role="img" aria-label="${hint}" title="${hint}">${INFO_ICON}</span>
+        <span class="sl-au-state" aria-live="polite"></span>
       </div>`;
+  }
+  function wireWithoutBackup(b, st) {
+    const cb = b.querySelector(".sl-wob-cb");
+    if (!cb) return;
+    cb.addEventListener("change", () => {
+      const bar = b.querySelector(".sl-wobbar");
+      const info = bar.querySelector(".sl-au-info"), state = bar.querySelector(".sl-au-state");
+      const on = cb.checked;
+      cb.disabled = true; bar.dataset.au = "saving"; state.textContent = T("autoSaving");
+      wobSave(st.container.name, on).then((ok) => {
+        cb.disabled = false;
+        if (!ok) { cb.checked = !on; bar.dataset.au = "error"; state.textContent = T("autoFailed"); return; }
+        bar.dataset.au = on ? "on" : "off";
+        state.textContent = "";
+        const hint = T(on ? "wobHintOn" : "wobHintOff");
+        info.title = hint; info.setAttribute("aria-label", hint);
+      });
+    });
+  }
+
+  // guards holds what the engine keeps about backups and rollbacks; backup
+  // says whether the fortress has a backup app on this server.
+  let guards = { backup: false, byName: {} };
+  async function loadGuards() {
+    try {
+      const res = await fetch(`${PROXY}?path=guards`, { headers: { Accept: "application/json" } });
+      if (!res.ok) return;
+      const data = await res.json();
+      const byName = {};
+      (Array.isArray(data.guards) ? data.guards : []).forEach((g) => { if (g && g.name) byName[norm(g.name)] = g; });
+      guards = { backup: data.backup === true, byName };
+    } catch (e) {}
+  }
+  function guardOf(st) {
+    const g = guards.byName[norm(st.container && st.container.name)];
+    return g && (g.state === "no_backup" || g.state === "rolled_back") ? g : null;
+  }
+  function fillS(s, v) { return String(s).replace("%s", () => v); }
+  function guardHTML(st) {
+    const g = guardOf(st);
+    if (!g) return "";
+    if (g.state === "no_backup") {
+      return `<div class="sl-unmaint-note sl-guard-note"><h4>${WARN_G}${esc(T("heldTitle"))}</h4><div>${esc(fillS(T("heldNote"), g.reason || ""))}</div></div>`;
+    }
+    const link = /^https?:\/\//i.test(g.link || "")
+      ? `<div><a href="${esc(g.link)}" target="_blank" rel="noopener">${esc(T("snapshot"))}</a></div>` : "";
+    return `<div class="sl-unmaint-note sl-guard-note"><h4>${WARN_G}${esc(T("rolledTitle"))}</h4>` +
+      `<div>${esc(fillS(T("rolledNote"), g.reason || ""))}</div><div class="sl-newer-why">${esc(T("rolledUnpin"))}</div>${link}</div>`;
+  }
+  function guardBadge(st) {
+    const g = guardOf(st);
+    const a = el("a", "sl-autoff sl-guarded", `${WARN_ICON}<span>${esc(T(g.state === "no_backup" ? "heldTitle" : "rolledTitle"))}</span>`);
+    a.href = "#";
+    a.title = `ShipLog: ${T("guardHint")}`;
+    a.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(a, st); });
+    return a;
   }
   function wireAuto(b, st) {
     const cb = b.querySelector(".sl-au-cb");
@@ -336,6 +434,7 @@
       const data = await res.json();
       if (data && data.error) { console.warn(`${TAG} engine: ${data.error}`); return false; }
       index(Array.isArray(data) ? data : []);
+      await loadGuards();
       return true;
     } catch (e) {
       console.warn(`${TAG} proxy unreachable`, e);
@@ -509,7 +608,7 @@
       ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>${WARN_G}${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${nv ? `<div class="sl-unmaint-note sl-newer-note"><h4>${esc(T("pinned"))}</h4><div>${esc(fillV(T("newerNote"), nv))}</div><div class="sl-newer-why">${esc(fillV(T("newerWhy"), cur))}</div></div>` : ""}
       ${unraidStale(st) ? `<div class="sl-unmaint-note sl-newer-note sl-stale-note">${esc(T("unraidStale").replace("%d", () => fmtStamp(st.checked_at)))}</div>` : ""}
-      ${autoHTML(st)}${summary}${raw}
+      ${guardHTML(st)}${autoHTML(st)}${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
 
@@ -793,6 +892,7 @@
       else { updBtn.querySelector(".sl-l").textContent = T("updateGone"); updBtn.classList.add("sl-upd-off"); }
     });
     wireAuto(b, st);
+    wireWithoutBackup(b, st);
     try {
       const ro = new ResizeObserver(() => {
         try { localStorage.setItem(SZ_KEY, JSON.stringify({ w: b.offsetWidth, h: b.offsetHeight })); } catch (e) {}
@@ -892,6 +992,7 @@
       const row = el("div", "sl-chiprow");
       row.appendChild(chip);
       if (auEnabled && auIsExcluded(st.container && st.container.name)) row.appendChild(autoBadge(st));
+      if (guardOf(st)) row.appendChild(guardBadge(st));
       cell.appendChild(row);
       cell.setAttribute(MARK, "1");
       n++;

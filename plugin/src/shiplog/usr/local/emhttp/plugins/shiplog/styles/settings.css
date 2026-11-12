@@ -151,6 +151,7 @@ html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-sil: 30%; }
 .sl-cfg input.sl-f { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-cfg input.sl-f-s { width: 120px; }
 .sl-cfg input.sl-f-xs { width: 72px; }
+.sl-cfg input.sl-phrase { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-cfg select.sl-sel { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-field { position: relative; display: inline-flex; width: var(--sl-fw); max-width: 100%; }
 .sl-cfg .sl-field > input.sl-f { width: 100%; padding-inline-end: 34px; }
