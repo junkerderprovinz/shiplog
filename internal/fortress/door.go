@@ -1,7 +1,9 @@
 package fortress
 
 import (
+	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -23,7 +25,13 @@ var (
 	ErrMember = errors.New("ShipLog is in a fortress already")
 	// ErrNotMember means ShipLog is in no fortress.
 	ErrNotMember = errors.New("ShipLog is in no fortress")
+	// ErrNoMember means no other member of the fortress has the id.
+	ErrNoMember = errors.New("no other member of the fortress has that id")
 )
+
+// removedFile sits next to the membership and names the members ShipLog took
+// out since the phrase last changed.
+const removedFile = "removed.json"
 
 // Door holds ShipLog's place in a fortress: it opens the membership kept in
 // Dir, joins with a phrase the way the kit's fortress join does on the
@@ -64,6 +72,30 @@ type State struct {
 	Removed       bool   `json:"removed"`
 	PhraseChanged bool   `json:"phraseChanged"`
 	Device        string `json:"device,omitempty"`
+	// Members are the other members, RemovedMembers those ShipLog took out
+	// since the phrase last changed, which the phrase still lets back in.
+	Members        []Other   `json:"members"`
+	RemovedMembers []Removed `json:"removedMembers"`
+}
+
+// Other is another member as the settings page lists it.
+type Other struct {
+	ID         string `json:"id"`
+	Kind       string `json:"kind"`
+	App        string `json:"app"`
+	Name       string `json:"name"`
+	Device     string `json:"device"`
+	Deployment string `json:"deployment,omitempty"`
+	// Address is where its web interface is, empty until it said so.
+	Address string `json:"address,omitempty"`
+	Online  bool   `json:"online"`
+}
+
+// Removed is a member ShipLog took out of the fortress.
+type Removed struct {
+	App    string `json:"app"`
+	Name   string `json:"name"`
+	Device string `json:"device"`
 }
 
 // followWait is how long a member that answered on the old phrase gets to
@@ -110,18 +142,72 @@ func (d *Door) Enter(words string) error {
 		return errors.Join(joinErr, err)
 	}
 	d.m, d.removed, d.phraseChanged = in, false, false
-	return nil
+	return d.forgetRemoved()
 }
 
 // State says how ShipLog stands in its fortress now.
 func (d *Door) State() State {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	s := State{Joined: d.m != nil, Removed: d.removed, PhraseChanged: d.phraseChanged}
-	if d.m != nil {
-		s.Device = d.m.Device
+	s := State{Joined: d.m != nil, Removed: d.removed, PhraseChanged: d.phraseChanged,
+		Members: []Other{}, RemovedMembers: d.removedList()}
+	if d.m == nil {
+		return s
+	}
+	s.Device = d.m.Device
+	for _, m := range d.m.Fortress.Members() {
+		s.Members = append(s.Members, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID),
+			Device: m.Device, Deployment: m.Deployment, Address: m.Address, Online: m.Online()})
 	}
 	return s
+}
+
+// Remove takes member id out of the fortress, here and at every member in
+// reach, and keeps its name until the phrase changes. ShipLog is no other
+// member of its own fortress, so it cannot remove itself.
+func (d *Door) Remove(id string) error {
+	f := d.current()
+	if f == nil {
+		return ErrNotMember
+	}
+	for _, m := range f.Members() {
+		if m.ID != id {
+			continue
+		}
+		if err := f.Remove(id); err != nil {
+			return err
+		}
+		d.mu.Lock()
+		defer d.mu.Unlock()
+		list := append(d.removedList(), Removed{App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID), Device: m.Device})
+		raw, err := json.Marshal(list)
+		if err != nil {
+			return err
+		}
+		return writeFile(filepath.Join(d.Dir, removedFile), raw)
+	}
+	return ErrNoMember
+}
+
+// removedList reads the members ShipLog took out. A list that cannot be read
+// names nobody rather than keep the settings page from showing the fortress.
+func (d *Door) removedList() []Removed {
+	var list []Removed
+	raw, err := os.ReadFile(filepath.Join(d.Dir, removedFile))
+	if err != nil || json.Unmarshal(raw, &list) != nil || list == nil {
+		return []Removed{}
+	}
+	return list
+}
+
+// forgetRemoved drops the list once the phrase changed: the members on it
+// do not know the new one.
+func (d *Door) forgetRemoved() error {
+	err := os.Remove(filepath.Join(d.Dir, removedFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 // Members lists the other members, none while ShipLog is out.
@@ -209,6 +295,7 @@ func (d *Door) follow(ctx context.Context, f *kitfortress.Fortress, signalled bo
 		return nil
 	}
 	_ = d.m.Close()
+	_ = d.forgetRemoved()
 	in, err := d.join()
 	d.m = in
 	if err != nil || in == nil {
@@ -281,4 +368,22 @@ func (d *Door) removedBy(gen int) {
 		_ = os.RemoveAll(d.Dir)
 		d.removed, d.phraseChanged = true, false
 	}()
+}
+
+// writeFile replaces path with raw, so that a crash leaves the old list or the
+// new one. CreateTemp makes the file readable by its owner alone.
+func writeFile(path string, raw []byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".removed-*")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	if _, err := tmp.Write(raw); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
