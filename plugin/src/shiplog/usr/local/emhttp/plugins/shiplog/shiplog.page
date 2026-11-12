@@ -56,7 +56,7 @@ if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
 
 $slVer = '';
 if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
-$slGlimstoneVer = '3.8.5';
+$slGlimstoneVer = '4.4.0';
 
 $G = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
 $slE = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
