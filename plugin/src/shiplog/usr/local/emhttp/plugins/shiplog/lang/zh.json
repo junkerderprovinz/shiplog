@@ -177,13 +177,13 @@
   "s_fortress_member": "成员身份",
   "s_fortress_in": "以 %s 的身份在堡垒中",
   "s_fortress_out": "不在任何堡垒中",
-  "s_fortress_removed": "堡垒的另一个成员已将这台服务器移出堡垒。在你用短语重新加入之前，自动更新会在没有备份的情况下进行。",
-  "s_fortress_changed": "你的堡垒换了新短语，ShipLog 没能自己跟上。在下面输入新的单词，它仍是原来的成员。在此之前，自动更新会在没有备份的情况下进行。",
-  "s_fortress_join": "用短语加入",
-  "s_fortress_join_desc": "输入你的堡垒短语，也就是那十二个词。ShipLog 只保存自己的密钥，从不保存短语。",
+  "s_fortress_removed": "堡垒的另一个成员已将这台服务器移出堡垒。在你用口令重新加入之前，自动更新会在没有备份的情况下进行。",
+  "s_fortress_changed": "你的堡垒换了新口令，ShipLog 没能自己跟上。在下面输入新的单词，它仍是原来的成员。在此之前，自动更新会在没有备份的情况下进行。",
+  "s_fortress_join": "用口令加入",
+  "s_fortress_join_desc": "输入你的口令，也就是那十二个词。ShipLog 只保存自己的密钥，从不保存口令。",
   "s_fortress_join_ph": "十二个词",
   "s_fortress_join_btn": "加入",
   "s_fortress_joined": "欢迎来到你的堡垒。",
-  "s_fortress_bad_phrase": "这些词不是堡垒短语。请再逐个检查一遍。",
+  "s_fortress_bad_phrase": "这些词不是有效的口令。请再逐个检查一遍。",
   "s_fortress_failed": "加入失败：%s"
 }

@@ -180,10 +180,10 @@
   "s_fortress_removed": "Jiný člen pevnosti z ní tento server vyřadil. Dokud se znovu nepřipojíš svou frází, automatické aktualizace poběží bez zálohy.",
   "s_fortress_changed": "Tvoje pevnost má novou frázi, ke které ShipLog nedokázal přejít sám. Zadej níže nová slova a zůstane stejným členem. Do té doby poběží automatické aktualizace bez zálohy.",
   "s_fortress_join": "Připojit se frází",
-  "s_fortress_join_desc": "Zadej frázi své pevnosti, dvanáct slov. ShipLog si ponechá jen vlastní klíče, nikdy ne frázi.",
+  "s_fortress_join_desc": "Zadej svou frázi, dvanáct slov. ShipLog si ponechá jen vlastní klíče, nikdy ne frázi.",
   "s_fortress_join_ph": "dvanáct slov",
   "s_fortress_join_btn": "Připojit",
   "s_fortress_joined": "Vítej ve své pevnosti.",
-  "s_fortress_bad_phrase": "Tato slova nejsou fráze pevnosti. Zkontroluj ještě jednou každé z nich.",
+  "s_fortress_bad_phrase": "Tato slova nejsou platná fráze. Zkontroluj ještě jednou každé z nich.",
   "s_fortress_failed": "Připojení se nepovedlo: %s"
 }

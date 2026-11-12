@@ -180,10 +180,10 @@
   "s_fortress_removed": "Un altro membro della fortezza ne ha tolto questo server. Finché non rientri con la tua frase, gli aggiornamenti automatici avvengono senza backup.",
   "s_fortress_changed": "La tua fortezza ha una nuova frase che ShipLog non è riuscito a seguire da solo. Inserisci qui sotto le nuove parole e resterà lo stesso membro. Fino ad allora, gli aggiornamenti automatici avvengono senza backup.",
   "s_fortress_join": "Entra con la frase",
-  "s_fortress_join_desc": "Inserisci la frase della tua fortezza, le dodici parole. ShipLog tiene solo le proprie chiavi, mai la frase.",
+  "s_fortress_join_desc": "Inserisci la tua frase, le dodici parole. ShipLog tiene solo le proprie chiavi, mai la frase.",
   "s_fortress_join_ph": "dodici parole",
   "s_fortress_join_btn": "Entra",
   "s_fortress_joined": "Benvenuto nella tua fortezza.",
-  "s_fortress_bad_phrase": "Queste parole non sono una frase della fortezza. Controllale ancora una volta.",
+  "s_fortress_bad_phrase": "Queste parole non sono una frase valida. Controllale ancora una volta.",
   "s_fortress_failed": "Non è stato possibile entrare: %s"
 }

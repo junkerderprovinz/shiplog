@@ -180,10 +180,10 @@
   "s_fortress_removed": "Et annet medlem av festningen tok denne serveren ut. Til du blir med igjen med frasen din, kjører automatiske oppdateringer uten sikkerhetskopi.",
   "s_fortress_changed": "Festningen din har en ny frase som ShipLog ikke klarte å følge på egen hånd. Skriv inn de nye ordene nedenfor, så fortsetter den som det samme medlemmet. Til da kjører automatiske oppdateringer uten sikkerhetskopi.",
   "s_fortress_join": "Bli med med frasen",
-  "s_fortress_join_desc": "Skriv inn frasen til festningen din, de tolv ordene. ShipLog tar bare vare på sine egne nøkler, aldri frasen.",
+  "s_fortress_join_desc": "Skriv inn frasen din, de tolv ordene. ShipLog tar bare vare på sine egne nøkler, aldri frasen.",
   "s_fortress_join_ph": "tolv ord",
   "s_fortress_join_btn": "Bli med",
   "s_fortress_joined": "Velkommen til festningen din.",
-  "s_fortress_bad_phrase": "De ordene er ikke en festningsfrase. Sjekk hvert ord en gang til.",
+  "s_fortress_bad_phrase": "De ordene er ikke en gyldig frase. Sjekk hvert ord en gang til.",
   "s_fortress_failed": "Det gikk ikke å bli med: %s"
 }

@@ -180,10 +180,10 @@
   "s_fortress_removed": "Inny członek twierdzy usunął z niej ten serwer. Dopóki nie dołączysz ponownie swoją frazą, automatyczne aktualizacje idą bez kopii zapasowej.",
   "s_fortress_changed": "Twoja twierdza ma nową frazę, za którą ShipLog nie zdołał podążyć sam. Wpisz poniżej nowe słowa, a zostanie tym samym członkiem. Do tego czasu automatyczne aktualizacje idą bez kopii zapasowej.",
   "s_fortress_join": "Dołącz frazą",
-  "s_fortress_join_desc": "Wpisz frazę swojej twierdzy, dwanaście słów. ShipLog trzyma tylko własne klucze, nigdy frazy.",
+  "s_fortress_join_desc": "Wpisz swoją frazę, dwanaście słów. ShipLog trzyma tylko własne klucze, nigdy frazy.",
   "s_fortress_join_ph": "dwanaście słów",
   "s_fortress_join_btn": "Dołącz",
   "s_fortress_joined": "Witaj w swojej twierdzy.",
-  "s_fortress_bad_phrase": "Te słowa nie są frazą twierdzy. Sprawdź jeszcze raz każde z nich.",
+  "s_fortress_bad_phrase": "Te słowa nie są poprawną frazą. Sprawdź jeszcze raz każde z nich.",
   "s_fortress_failed": "Nie udało się dołączyć: %s"
 }

@@ -180,10 +180,10 @@
   "s_fortress_removed": "Kalenin başka bir üyesi bu sunucuyu kaleden çıkardı. İfadenle yeniden katılana kadar otomatik güncellemeler yedeksiz çalışır.",
   "s_fortress_changed": "Kalenin yeni bir ifadesi var ve ShipLog buna kendi başına geçemedi. Yeni kelimeleri aşağıya gir, aynı üye olarak devam etsin. O zamana kadar otomatik güncellemeler yedeksiz çalışır.",
   "s_fortress_join": "İfadeyle katıl",
-  "s_fortress_join_desc": "Kalenin ifadesini, on iki kelimeyi gir. ShipLog yalnızca kendi anahtarlarını saklar, ifadeyi asla saklamaz.",
+  "s_fortress_join_desc": "İfadeni, on iki kelimeyi gir. ShipLog yalnızca kendi anahtarlarını saklar, ifadeyi asla saklamaz.",
   "s_fortress_join_ph": "on iki kelime",
   "s_fortress_join_btn": "Katıl",
   "s_fortress_joined": "Kalene hoş geldin.",
-  "s_fortress_bad_phrase": "Bu kelimeler bir kale ifadesi değil. Her birini bir kez daha kontrol et.",
+  "s_fortress_bad_phrase": "Bu kelimeler geçerli bir ifade değil. Her birini bir kez daha kontrol et.",
   "s_fortress_failed": "Katılım olmadı: %s"
 }

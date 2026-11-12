@@ -180,10 +180,10 @@
   "s_fortress_removed": "Toinen linnoituksen jäsen otti tämän palvelimen pois siitä. Kunnes liityt uudelleen lauseellasi, automaattiset päivitykset tehdään ilman varmuuskopiota.",
   "s_fortress_changed": "Linnoituksellasi on uusi lause, jota ShipLog ei pystynyt seuraamaan itse. Kirjoita uudet sanat alle, niin se jatkaa samana jäsenenä. Siihen asti automaattiset päivitykset tehdään ilman varmuuskopiota.",
   "s_fortress_join": "Liity lauseella",
-  "s_fortress_join_desc": "Kirjoita linnoituksesi lause, kaksitoista sanaa. ShipLog säilyttää vain omat avaimensa, ei koskaan lausetta.",
+  "s_fortress_join_desc": "Kirjoita lauseesi, kaksitoista sanaa. ShipLog säilyttää vain omat avaimensa, ei koskaan lausetta.",
   "s_fortress_join_ph": "kaksitoista sanaa",
   "s_fortress_join_btn": "Liity",
   "s_fortress_joined": "Tervetuloa linnoitukseesi.",
-  "s_fortress_bad_phrase": "Nuo sanat eivät ole linnoituksen lause. Tarkista jokainen sana vielä kerran.",
+  "s_fortress_bad_phrase": "Nuo sanat eivät ole kelvollinen lause. Tarkista jokainen sana vielä kerran.",
   "s_fortress_failed": "Liittyminen ei onnistunut: %s"
 }
