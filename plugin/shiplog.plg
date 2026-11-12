@@ -38,7 +38,7 @@ that backs up first when your fortress has a backup app.
 ShipLog moves into the fortress: a backup before every auto-update, and a way back when one goes sideways.
 
 ✨ **Added**
-- **Every auto-update is backed up first.** When ShipLog is in a fortress with a backup app on the same server, it asks that app to back up each container before the update and waits until the backup is done (30 minutes at most, adjustable). If the backup fails or the app doesn't answer, the update waits and ShipLog tells you why. For a container that needs no backup, turn on "Update without a backup" in its ShipLog window.
+- **Every auto-update is backed up first.** When ShipLog is in a fortress with a backup app on the same server, it asks that app to back up each container before the update and waits until the backup is done (30 minutes at most, adjustable), even for a container that app has never backed up before. If the backup fails or the app doesn't answer, the update waits and ShipLog tells you why. For a container that needs no backup, turn on "Update without a backup" in its ShipLog window.
 - **The backup app on your server can go by any name.** ShipLog finds it by the server it runs on, so renaming it in its own settings doesn't cost you a backup. The other apps of your fortress show ShipLog with its own logo.
 - **A failed auto-update goes back to the old image.** ShipLog keeps the old image while the update runs. If the new one fails its check, turns unhealthy or stops, ShipLog points the template at the old image and recreates the container from it. Your appdata stays as it is, and the message links the backup from before the update. Without a backup app in your fortress, auto-updates run as they always did.
 - **ShipLog joins your fortress with the phrase.** The General tab has a Fortress card for the twelve words. ShipLog keeps its own keys only, never the phrase. When the fortress gets a new phrase, ShipLog follows along, and if it can't, the card asks you for the new words. If another member takes ShipLog out, the card says so, and the current phrase brings it back.
@@ -70,6 +70,9 @@ ShipLog moves into the fortress: a backup before every auto-update, and a way ba
 - **No more false critical alerts on a rebuild.** An image rebuilt without a new release could turn critical because of a word in older release notes. When the running version is unknown, ShipLog now reads only the notes of a version the image is proven to be, so a real breaking release still alerts you.
 - **Notifications name only a version they can vouch for.** A rebuilt image reads "New image for latest" instead of naming a release it does not contain. The changelog window's header follows the same rule.
 - **No unproven version on an up-to-date container.** A rolling tag whose version is unknown shows the tag, not the newest release.
+- **ShipLog comes back after a reboot without network.** Installing ShipLog removed the very package it was about to use from the flash. Unraid installs every plugin again at boot, often before the network is up, so a start without network came up without ShipLog.
+- **The settings page saves again.** A name clash in the crypto window kept the settings page from saving anything once it had loaded, and joining the fortress stood still with its button locked.
+- **The name in the banner reads on a phone.** Below 600 px it runs across the watermark instead of shrinking to two letters.
 - **The AI model chip reads again with TowerTorch.** Beside Summary it was grey on the accent colour. It takes the badge's text colour.
 
 🌐 **Translations**
