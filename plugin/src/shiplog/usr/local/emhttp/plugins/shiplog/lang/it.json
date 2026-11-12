@@ -119,6 +119,7 @@
   "d_autoHintOff": "Escluso dall'aggiornamento automatico pianificato di ShipLog. Aggiornarlo a mano funziona comunque.",
   "d_autoSaving": "Salvataggio e riavvio di ShipLog…",
   "d_autoFailed": "Salvataggio non riuscito. Ricarica la pagina e riprova.",
+  "d_autoSaved": "Salvato",
   "d_autoOffBadge": "Aggiornamento automatico disattivato",
   "d_autoOffBadgeHint": "Escluso dall'aggiornamento automatico pianificato di ShipLog. Clicca per cambiare.",
   "d_wobLabel": "Aggiorna senza backup",

@@ -119,6 +119,7 @@
   "d_autoHintOff": "Udeladt af ShipLogs planlagte auto-opdatering. Manuel opdatering virker stadig.",
   "d_autoSaving": "Gemmer og genstarter ShipLog…",
   "d_autoFailed": "Kunne ikke gemme. Genindlæs siden, og prøv igen.",
+  "d_autoSaved": "Gemt",
   "d_autoOffBadge": "Auto-opdatering fra",
   "d_autoOffBadgeHint": "Udeladt af ShipLogs planlagte auto-opdatering. Klik for at ændre.",
   "d_wobLabel": "Opdater uden sikkerhedskopi",

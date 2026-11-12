@@ -119,6 +119,7 @@
   "d_autoHintOff": "Left out of ShipLog's scheduled auto-update. Updating it by hand still works.",
   "d_autoSaving": "Saving and restarting ShipLog…",
   "d_autoFailed": "Couldn't save. Reload the page and try again.",
+  "d_autoSaved": "Saved",
   "d_autoOffBadge": "Auto-update off",
   "d_autoOffBadgeHint": "Left out of ShipLog's scheduled auto-update. Click to change.",
   "d_wobLabel": "Update without a backup",

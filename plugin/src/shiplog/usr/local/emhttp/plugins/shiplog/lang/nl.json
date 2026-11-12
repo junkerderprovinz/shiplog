@@ -119,6 +119,7 @@
   "d_autoHintOff": "Uitgesloten van het geplande automatisch bijwerken van ShipLog. Met de hand bijwerken werkt nog steeds.",
   "d_autoSaving": "Opslaan en ShipLog herstarten…",
   "d_autoFailed": "Opslaan mislukt. Laad de pagina opnieuw en probeer het nog eens.",
+  "d_autoSaved": "Opgeslagen",
   "d_autoOffBadge": "Automatisch bijwerken uit",
   "d_autoOffBadgeHint": "Uitgesloten van het geplande automatisch bijwerken van ShipLog. Klik om te wijzigen.",
   "d_wobLabel": "Bijwerken zonder back-up",

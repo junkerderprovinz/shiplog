@@ -79,6 +79,7 @@
     autoHintOff: "Left out of ShipLog's scheduled auto-update. Updating it by hand still works.",
     autoSaving: "Saving and restarting ShipLog…",
     autoFailed: "Couldn't save. Reload the page and try again.",
+    autoSaved: "Saved",
     autoOffBadge: "Auto-update off",
     autoOffBadgeHint: "Left out of ShipLog's scheduled auto-update. Click to change.",
     newerPill: "pinned · newer %v",
@@ -239,6 +240,14 @@
         <span class="sl-au-state" aria-live="polite"></span>
       </div>`;
   }
+  // A switch in the window says for a moment that it saved, and a failure
+  // also comes as a toast where TowerTorch draws them (GlimStone, "Saving").
+  function settled(state, ok) {
+    const text = T(ok ? "autoSaved" : "autoFailed");
+    state.textContent = text;
+    if (ok) setTimeout(() => { if (state.textContent === text) state.textContent = ""; }, 2500);
+    else if (window.TTTheme && window.TTTheme.toast) window.TTTheme.toast(text, "error");
+  }
   function wireWithoutBackup(b, st) {
     const cb = b.querySelector(".sl-wob-cb");
     if (!cb) return;
@@ -249,9 +258,9 @@
       cb.disabled = true; bar.dataset.au = "saving"; state.textContent = T("autoSaving");
       wobSave(st.container.name, on).then((ok) => {
         cb.disabled = false;
-        if (!ok) { cb.checked = !on; bar.dataset.au = "error"; state.textContent = T("autoFailed"); return; }
+        if (!ok) { cb.checked = !on; bar.dataset.au = "error"; settled(state, false); return; }
         bar.dataset.au = on ? "on" : "off";
-        state.textContent = "";
+        settled(state, true);
         const hint = T(on ? "wobHintOn" : "wobHintOff");
         info.title = hint; info.setAttribute("aria-label", hint);
       });
@@ -305,9 +314,9 @@
       cb.disabled = true; bar.dataset.au = "saving"; state.textContent = T("autoSaving");
       auSave(st.container.name, excluded).then((ok) => {
         cb.disabled = false;
-        if (!ok) { cb.checked = !cb.checked; bar.dataset.au = "error"; state.textContent = T("autoFailed"); return; }
+        if (!ok) { cb.checked = !cb.checked; bar.dataset.au = "error"; settled(state, false); return; }
         bar.dataset.au = excluded ? "off" : "on";
-        state.textContent = "";
+        settled(state, true);
         const hint = autoHint(excluded);
         info.title = hint; info.setAttribute("aria-label", hint);
         refreshAutoBadges();

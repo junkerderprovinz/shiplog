@@ -119,6 +119,7 @@
   "d_autoHintOff": "Vom geplanten Auto-Update von ShipLog ausgenommen. Von Hand aktualisieren geht weiterhin.",
   "d_autoSaving": "Wird gespeichert, ShipLog startet neu…",
   "d_autoFailed": "Speichern fehlgeschlagen. Lade die Seite neu und versuch es noch einmal.",
+  "d_autoSaved": "Gespeichert",
   "d_autoOffBadge": "Auto-Update aus",
   "d_autoOffBadgeHint": "Vom geplanten Auto-Update von ShipLog ausgenommen. Zum Ändern klicken.",
   "d_wobLabel": "Ohne Sicherung aktualisieren",

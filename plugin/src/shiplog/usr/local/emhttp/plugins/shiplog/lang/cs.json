@@ -119,6 +119,7 @@
   "d_autoHintOff": "Vynechán z plánované automatické aktualizace ShipLogu. Ruční aktualizace dál funguje.",
   "d_autoSaving": "Ukládání a restart ShipLogu…",
   "d_autoFailed": "Uložení se nezdařilo. Načtěte stránku znovu a zkuste to ještě jednou.",
+  "d_autoSaved": "Uloženo",
   "d_autoOffBadge": "Automatická aktualizace vypnuta",
   "d_autoOffBadgeHint": "Vynechán z plánované automatické aktualizace ShipLogu. Kliknutím změníte.",
   "d_wobLabel": "Aktualizovat bez zálohy",

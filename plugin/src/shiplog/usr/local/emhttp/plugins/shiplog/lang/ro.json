@@ -119,6 +119,7 @@
   "d_autoHintOff": "Lăsat în afara actualizării automate programate a ShipLog. Actualizarea manuală funcționează în continuare.",
   "d_autoSaving": "Se salvează și se repornește ShipLog…",
   "d_autoFailed": "Salvarea a eșuat. Reîncarcă pagina și încearcă din nou.",
+  "d_autoSaved": "Salvat",
   "d_autoOffBadge": "Actualizare automată oprită",
   "d_autoOffBadgeHint": "Lăsat în afara actualizării automate programate a ShipLog. Fă clic pentru a schimba.",
   "d_wobLabel": "Actualizează fără copie de rezervă",

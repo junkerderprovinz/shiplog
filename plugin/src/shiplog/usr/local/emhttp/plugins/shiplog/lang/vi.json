@@ -119,6 +119,7 @@
   "d_autoHintOff": "Nằm ngoài lịch tự động cập nhật của ShipLog. Cập nhật thủ công vẫn hoạt động.",
   "d_autoSaving": "Đang lưu và khởi động lại ShipLog…",
   "d_autoFailed": "Không lưu được. Hãy tải lại trang rồi thử lại.",
+  "d_autoSaved": "Đã lưu",
   "d_autoOffBadge": "Tự động cập nhật: tắt",
   "d_autoOffBadgeHint": "Nằm ngoài lịch tự động cập nhật của ShipLog. Nhấp để thay đổi.",
   "d_wobLabel": "Cập nhật không cần sao lưu",

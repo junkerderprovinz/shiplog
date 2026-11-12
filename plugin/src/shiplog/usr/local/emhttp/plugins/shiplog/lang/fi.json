@@ -119,6 +119,7 @@
   "d_autoHintOff": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Käsin päivittäminen toimii edelleen.",
   "d_autoSaving": "Tallennetaan ja käynnistetään ShipLog uudelleen…",
   "d_autoFailed": "Tallennus epäonnistui. Lataa sivu uudelleen ja yritä uudestaan.",
+  "d_autoSaved": "Tallennettu",
   "d_autoOffBadge": "Automaattipäivitys pois",
   "d_autoOffBadgeHint": "Jätetty pois ShipLogin ajastetusta automaattipäivityksestä. Muuta napsauttamalla.",
   "d_wobLabel": "Päivitä ilman varmuuskopiota",

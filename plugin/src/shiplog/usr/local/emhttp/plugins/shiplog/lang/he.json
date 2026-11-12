@@ -119,6 +119,7 @@
   "d_autoHintOff": "מחוץ לעדכון האוטומטי המתוזמן של ShipLog. עדכון ידני עדיין עובד.",
   "d_autoSaving": "שומר ומפעיל מחדש את ShipLog…",
   "d_autoFailed": "השמירה נכשלה. טען את העמוד מחדש ונסה שוב.",
+  "d_autoSaved": "נשמר",
   "d_autoOffBadge": "עדכון אוטומטי כבוי",
   "d_autoOffBadgeHint": "מחוץ לעדכון האוטומטי המתוזמן של ShipLog. לחץ לשינוי.",
   "d_wobLabel": "עדכון בלי גיבוי",
