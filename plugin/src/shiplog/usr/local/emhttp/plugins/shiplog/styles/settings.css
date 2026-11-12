@@ -114,6 +114,9 @@ html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-sil: 30%; }
 .sl-main { flex: 1 1 auto; min-width: 0; max-width: 920px; }
 /* The top padding is the room the first card's heading takes above it. */
 .sl-pane { display: flex; flex-direction: column; gap: 40px; padding-top: 11px; }
+/* The fortress card keeps its own room above its heading. */
+#sl-pane-fortress { padding-top: 0; }
+#sl-pane-fortress > .sl-card { margin-top: 11px; }
 
 /* A card, and its heading as a badge across the card's top edge. */
 .sl-card { position: relative; padding: 22px 18px 12px; border-radius: var(--sl-r-card); background: var(--sl-card); box-shadow: var(--sl-shadow); }
@@ -156,7 +159,6 @@ html.tt-popups-on .sl-cfg .sl-res.run { color: var(--sl-focus); }
 .sl-cfg input.sl-f { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-cfg input.sl-f-s { width: 120px; }
 .sl-cfg input.sl-f-xs { width: 72px; }
-.sl-cfg input.sl-phrase { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-cfg select.sl-sel { width: var(--sl-fw); max-width: 100%; height: 32px; margin: 0; }
 .sl-field { position: relative; display: inline-flex; width: var(--sl-fw); max-width: 100%; }
 .sl-cfg .sl-field > input.sl-f { width: 100%; padding-inline-end: 34px; }
@@ -238,22 +240,6 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   color: var(--sl-warn); font-size: 13px; line-height: 1.45;
 }
 .sl-warn .sl-g { padding-top: 2px; }
-
-/* The other members of the fortress, one a line with its state and Remove,
-   in a well, and the quiet line naming those removed while the phrase still
-   lets them back in. */
-.sl-fm { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 4px 12px; border-radius: var(--sl-r-ctl); background: var(--sl-well); list-style: none; }
-.sl-fm-item { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 40px; margin: 0; }
-.sl-fm-item .sl-stat { flex: 1 1 180px; min-width: 0; color: inherit; }
-.sl-fm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.sl-fm-item small { flex: none; color: var(--sl-dim); font-size: 12px; }
-.sl-fm-item .sl-btn { margin: 0; margin-inline-start: auto; }
-.sl-quiet {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 6px; padding: 9px 12px;
-  border-radius: var(--sl-r-ctl); background: var(--sl-well); color: var(--sl-dim); font-size: 13px; line-height: 1.45;
-}
-.sl-quiet-txt { flex: 1 1 200px; min-width: 0; }
-.sl-quiet .sl-btn { margin: 0; }
 
 /* The auto-update container list: a switch per container, in a well. */
 .sl-ct {
@@ -433,7 +419,6 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
 .sl-win-coffee .sl-win-body { overflow: hidden; }
 .sl-win .sl-win-text { margin: 0; text-align: start; }
 .sl-win .sl-win-sub { color: var(--sl-w-dim); }
-.sl-win .sl-rm-err { color: var(--sl-w-err); }
 .sl-win-act { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
 .sl-win-act > button { margin: 0; }
 /* A window's buttons wear their glyph like the page's and follow the same label mode. */

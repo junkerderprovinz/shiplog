@@ -1,0 +1,313 @@
+/* The fortress card for a page without a framework (fortress-card.js).
+ *
+ * One markup, two looks, as on the plugins' settings pages. Without
+ * TowerTorch it follows Unraid: its theme colours and its own buttons. With
+ * TowerTorch, whose sheets dress the page's buttons, fields and switches as
+ * GlimStone does, the rules under html.tt-popups-on give the cards, the
+ * badges and the windows the same look from TowerTorch's tokens, OLED
+ * included. The geometry is the same in both. */
+
+.glim-fc {
+  --fc-card: var(--mild-background-color, rgba(128, 128, 128, .08));
+  --fc-well: color-mix(in srgb, currentColor 6%, transparent);
+  --fc-head: var(--hover-button-background, #e22828);
+  --fc-head-ink: var(--hover-button-text-color, #fff);
+  --fc-dim: var(--alt-text-color, #8d8d8d);
+  --fc-track: var(--checkbox-color, #8d8d8d);
+  --fc-on: var(--link-text-color, #486dba);
+  --fc-on-ink: #fff;
+  --fc-focus: var(--link-text-color, #486dba);
+  --fc-chip: color-mix(in srgb, currentColor 10%, transparent);
+  --fc-ok: #3fae6a;
+  --fc-err: #e05252;
+  --fc-warn: #ff832b;
+  --fc-active: var(--link-text-color, #486dba);
+  --fc-r-card: 4px;
+  --fc-r-ctl: 4px;
+  --fc-r-pill: 4px;
+  --fc-shadow: none;
+  display: flex; flex-direction: column; gap: 24px;
+  padding-top: 11px;
+  font-size: 14px; line-height: 1.45;
+}
+html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da1e28; --fc-warn: #ba4e00; }
+.glim-fc *, .glim-fc *::before, .glim-fc *::after { box-sizing: border-box; }
+.glim-fc [hidden], .glim-fc-wins [hidden] { display: none !important; }
+
+/* The card, and its heading as a badge across the card's top edge. */
+.glim-fc-card { position: relative; padding: 22px 18px 12px; border-radius: var(--fc-r-card); background: var(--fc-card); box-shadow: var(--fc-shadow); }
+.glim-fc .glim-fc-h {
+  position: absolute; top: 0; transform: translateY(-50%); z-index: 1;
+  display: inline-flex; align-items: center; max-width: calc(100% - 36px); min-height: 22px; margin: 0; padding: 0 12px;
+  border-radius: var(--fc-r-pill); background: var(--fc-head); color: var(--fc-head-ink);
+  font-size: 12px; font-weight: 500; line-height: 1.2; letter-spacing: 1.2px; text-transform: uppercase;
+}
+
+/* A row: the name, its (i) and a line under it at the start, the controls
+   at the end. Where both do not fit, the controls move under the name and
+   keep the end. */
+.glim-fc-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; min-height: 44px; padding: 6px 0; }
+.glim-fc-start { flex: 1 1 220px; min-width: 0; }
+.glim-fc-lbl { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.glim-fc .glim-fc-sub { margin: 2px 0 0; color: var(--fc-dim); font-size: 13px; text-align: start; }
+.glim-fc .glim-fc-error { color: var(--fc-err); }
+.glim-fc-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; min-width: 0; max-width: 100%; margin-inline-start: auto; }
+
+/* Buttons are the host's: Unraid's without TowerTorch, TowerTorch's with it.
+   This only lays out the glyph beside the words. */
+.glim-fc .glim-fc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0; white-space: nowrap; vertical-align: middle; }
+.glim-fc .glim-fc-btn:disabled { opacity: .5; cursor: default; }
+.glim-fc-g { display: inline-flex; flex: none; line-height: 0; }
+.glim-fc-g svg { width: 1.15em; height: 1.15em; display: block; }
+.glim-fc-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+
+/* The (i): a bare stroked glyph with its words in a bubble under the pointer
+   and on keyboard focus. */
+.glim-fc-info { position: relative; display: inline-flex; flex: none; width: 15px; height: 15px; color: inherit; opacity: .8; cursor: help; }
+.glim-fc-info:is(:hover, :focus-visible) { opacity: 1; }
+.glim-fc-info .glim-fc-g svg { width: 15px; height: 15px; }
+.glim-fc-info::after {
+  content: attr(data-tip); position: absolute; z-index: 10; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(300px, 70vw); padding: 7px 10px; border-radius: var(--fc-r-ctl);
+  background: var(--fc-bubble, var(--mild-background-color, #262626)); color: var(--fc-bubble-ink, var(--text-color, #f2f2f2));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35); font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: normal; text-transform: none; white-space: normal;
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.glim-fc-info:is(:hover, :focus-visible)::after { opacity: 1; visibility: visible; }
+
+/* The notes: another member took this app out, or the phrase moved on
+   without it. Then the quiet line naming those removed while the phrase
+   still lets them back in. */
+.glim-fc-note, .glim-fc-quiet {
+  display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 6px; padding: 9px 12px;
+  border-radius: var(--fc-r-ctl); font-size: 13px; line-height: 1.45;
+}
+.glim-fc-note { background: color-mix(in srgb, var(--fc-warn) 12%, transparent); color: var(--fc-warn); }
+.glim-fc-quiet { background: var(--fc-well); color: var(--fc-dim); }
+:is(.glim-fc-note, .glim-fc-quiet) .glim-fc-g { padding-top: 2px; }
+
+/* The switch, drawn on the checkbox itself. TowerTorch draws its own on the
+   same box. */
+.glim-fc input.glim-fc-sw {
+  -webkit-appearance: none; appearance: none; position: relative; flex: none; vertical-align: middle;
+  width: 44px; height: 24px; margin: 0; padding: 0; border: none; border-radius: var(--fc-r-pill);
+  background: var(--fc-track); cursor: pointer; transition: background-color .12s;
+}
+.glim-fc input.glim-fc-sw::before {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: var(--fc-r-pill); background: #fff; transition: left .15s;
+}
+.glim-fc input.glim-fc-sw:checked { background: var(--fc-on); }
+.glim-fc input.glim-fc-sw:checked::before { left: 23px; background: var(--fc-on-ink); }
+@media (prefers-reduced-motion: reduce) { .glim-fc input.glim-fc-sw, .glim-fc input.glim-fc-sw::before { transition: none; } }
+
+/* Badges: the state of a member, quiet unless it is good news or trouble. */
+.glim-fc-badge {
+  display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: var(--fc-r-pill);
+  background: var(--fc-chip); color: var(--fc-dim); font-size: 12px; font-weight: 500; line-height: 1.2; white-space: nowrap;
+}
+.glim-fc-badge-ok { background: color-mix(in srgb, var(--fc-ok) 16%, transparent); color: var(--fc-ok); }
+.glim-fc-badge-warn { background: color-mix(in srgb, var(--fc-warn) 16%, transparent); color: var(--fc-warn); }
+.glim-fc-badge-fail { background: color-mix(in srgb, var(--fc-err) 16%, transparent); color: var(--fc-err); }
+.glim-fc-badge-active { background: color-mix(in srgb, var(--fc-active) 16%, transparent); color: var(--fc-active); }
+
+/* The other apps, a card each: the logo, the name with its badges, the form,
+   where it runs, and its buttons at the end. */
+.glim-fc-grid { display: flex; flex-direction: column; gap: 16px; }
+.glim-fc-app { display: flex; gap: 24px; padding: 18px; border-radius: var(--fc-r-card); background: var(--fc-card); box-shadow: var(--fc-shadow); }
+.glim-fc-logo {
+  flex: none; display: flex; align-items: center; justify-content: center; width: 104px; height: 104px;
+  border-radius: var(--fc-r-ctl); overflow: hidden;
+}
+.glim-fc-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.glim-fc-initial {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  background: var(--fc-head); color: var(--fc-head-ink); font-size: 44px; font-weight: 700; line-height: 1;
+}
+.glim-fc-app-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.glim-fc-app-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 12px; }
+.glim-fc .glim-fc-app-name { margin: 0; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 600; line-height: 1.35; letter-spacing: normal; text-transform: none; }
+.glim-fc-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-inline-start: auto; }
+.glim-fc .glim-fc-eyebrow { margin: 0; color: var(--fc-dim); font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; }
+.glim-fc .glim-fc-facts { margin: 0; color: var(--fc-dim); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.glim-fc-app-act { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 10px; }
+.glim-fc-rows { display: flex; flex-direction: column; gap: 2px; margin: 8px 0 0; padding: 4px 12px; border-radius: var(--fc-r-ctl); background: var(--fc-well); list-style: none; }
+.glim-fc-inst { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 44px; margin: 0; }
+.glim-fc-inst-text { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; }
+.glim-fc-inst-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.glim-fc-inst-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; margin-inline-start: auto; }
+@media (max-width: 599px) {
+  .glim-fc-app { gap: 16px; padding: 16px; }
+  .glim-fc-logo { width: 64px; height: 64px; }
+  .glim-fc-initial { font-size: 28px; }
+}
+
+@keyframes glim-fc-shake {
+  20%, 60% { transform: translateX(calc(var(--tt-motion-shake-dist, 4px) * -1)); }
+  40%, 80% { transform: translateX(var(--tt-motion-shake-dist, 4px)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .glim-fc-shake { animation: glim-fc-shake var(--tt-motion-shake-dur, 360ms) ease-in-out; }
+}
+
+/* The windows live in <body>, outside the card, so they carry their own
+   colours: Unraid's theme without TowerTorch, and with it a window that stays
+   dark on every theme, as TowerTorch's windows do. */
+.glim-fc-wins {
+  --fc-w-ground: var(--background-color, #1c1b1b);
+  --fc-w-card: var(--mild-background-color, rgba(128, 128, 128, .08));
+  --fc-w-raised: color-mix(in srgb, currentColor 12%, transparent);
+  --fc-w-raised-hover: color-mix(in srgb, currentColor 20%, transparent);
+  --fc-w-head: var(--hover-button-background, #e22828);
+  --fc-w-head-ink: var(--hover-button-text-color, #fff);
+  --fc-w-dim: var(--alt-text-color, #8d8d8d);
+  --fc-w-focus: var(--link-text-color, #486dba);
+  --fc-w-ink: var(--text-color, #f2f2f2);
+  --fc-w-ok: #3fae6a;
+  --fc-w-err: #e05252;
+  --fc-w-warn: #ff832b;
+  --fc-w-active: var(--link-text-color, #486dba);
+  --fc-w-scrim: rgba(0, 0, 0, .6);
+  --fc-w-r-card: 4px;
+  --fc-w-r-ctl: 4px;
+  --fc-w-r-pill: 4px;
+  --fc-w-shadow: 0 12px 48px rgba(0, 0, 0, .55);
+  font-size: 14px; line-height: 1.45;
+}
+html:is(.Theme--white, .Theme--azure) .glim-fc-wins { --fc-w-ok: #0e6027; --fc-w-err: #da1e28; --fc-w-warn: #ba4e00; }
+.glim-fc-wins *, .glim-fc-wins *::before, .glim-fc-wins *::after { box-sizing: border-box; }
+
+/* The scrim darkens and blurs the page; the window sits above Unraid's own
+   popovers, whose z-index reaches 999999. */
+.glim-fc-scrim { position: fixed; inset: 0; z-index: 1000000; background: var(--fc-w-scrim); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+@media (prefers-reduced-transparency: reduce) { .glim-fc-scrim { -webkit-backdrop-filter: none; backdrop-filter: none; } }
+.glim-fc-win {
+  position: fixed; z-index: 1000001; left: 50%; top: 50%; translate: -50% -50%;
+  display: flex; flex-direction: column;
+  width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 48px);
+  padding: 21px 0 16px; border-radius: var(--fc-w-r-card);
+  background: var(--fc-w-ground); color: var(--fc-w-ink); box-shadow: var(--fc-w-shadow); text-align: start;
+}
+.glim-fc-win.glim-fc-win-wide { width: min(640px, calc(100vw - 32px)); }
+.glim-fc-win:focus { outline: none; }
+.glim-fc-wins .glim-fc-win-title {
+  position: absolute; top: 0; inset-inline-start: 24px; transform: translateY(-50%);
+  display: inline-flex; align-items: center; max-width: calc(100% - 48px); min-height: 22px; margin: 0; padding: 0 12px;
+  border-radius: var(--fc-w-r-pill); background: var(--fc-w-head); color: var(--fc-w-head-ink);
+  font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.2; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.glim-fc-win-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 4px; }
+.glim-fc-win-text { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.glim-fc-wins .glim-fc-win-text p { margin: 0; text-align: start; }
+.glim-fc-wins .glim-fc-win-sub { color: var(--fc-w-dim); font-size: 13px; }
+.glim-fc-wins .glim-fc-win-error { color: var(--fc-w-err); }
+.glim-fc-win-act { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
+
+/* The window draws its own buttons in the look of the page's: rounded, never
+   a pill, the one that goes on in the window's colour. */
+.glim-fc-wins button.glim-fc-win-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 88px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
+  border: none; border-radius: var(--fc-w-r-ctl); box-shadow: none; background: var(--fc-w-raised); color: var(--fc-w-ink);
+  font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+.glim-fc-wins button.glim-fc-win-btn:is(:hover, :focus-visible) { background: var(--fc-w-raised-hover); }
+.glim-fc-wins button.glim-fc-win-btn.glim-fc-key { background: var(--fc-w-head); color: var(--fc-w-head-ink); }
+.glim-fc-wins button.glim-fc-win-btn.glim-fc-key:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--fc-w-head), #000 12%); }
+.glim-fc-wins button.glim-fc-win-btn:disabled { opacity: .5; cursor: default; }
+.glim-fc-wins button.glim-fc-win-btn:focus-visible { outline: 2px solid var(--fc-w-focus); outline-offset: 2px; }
+
+/* Twelve fields for the words, four to a line, two on a phone. */
+.glim-fc-words { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; }
+@media (max-width: 599px) { .glim-fc-words { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.glim-fc-field { display: grid; grid-template-columns: 2.4ch minmax(0, 1fr); align-items: center; gap: 6px; margin: 0; font-size: 12px; }
+.glim-fc-num { color: var(--fc-w-dim); text-align: end; font-variant-numeric: tabular-nums; }
+.glim-fc-wins input.glim-fc-word {
+  width: 100%; min-width: 0; height: 32px; margin: 0; padding: 6px 9px;
+  border: 1px solid transparent; border-radius: var(--fc-w-r-ctl); background: var(--fc-w-raised); color: var(--fc-w-ink);
+  font: 13px/1.2 ui-monospace, "Cascadia Mono", Consolas, monospace; outline: none;
+}
+.glim-fc-wins input.glim-fc-word:focus { border-color: var(--fc-w-focus); }
+
+.glim-fc-result { display: flex; align-items: center; gap: 14px; }
+.glim-fc-done { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, var(--fc-w-ok) 18%, transparent); color: var(--fc-w-ok); }
+.glim-fc-done .glim-fc-g svg { width: 20px; height: 20px; }
+.glim-fc-wins .glim-fc-result-title { margin: 0; font-weight: 600; }
+
+/* The status window of a plugin: its state, what needs the person, what runs,
+   what comes next and the latest log lines. */
+.glim-fc-status-sec { display: flex; flex-direction: column; gap: 6px; }
+.glim-fc-wins .glim-fc-status-h { margin: 0; color: var(--fc-w-dim); font-size: 12px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase; }
+.glim-fc-status-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 8px 12px; border-radius: var(--fc-w-r-ctl); background: var(--fc-w-card); list-style: none; }
+.glim-fc-status-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 13px; }
+.glim-fc-at { color: var(--fc-w-dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+.glim-fc-work { justify-content: space-between; }
+.glim-fc-progress { flex: 0 1 160px; height: 6px; accent-color: var(--fc-w-head); }
+.glim-fc-wins .glim-fc-badge { border-radius: var(--fc-w-r-pill); background: var(--fc-w-raised); color: var(--fc-w-dim); }
+.glim-fc-wins .glim-fc-badge-ok { background: color-mix(in srgb, var(--fc-w-ok) 16%, transparent); color: var(--fc-w-ok); }
+.glim-fc-wins .glim-fc-badge-warn { background: color-mix(in srgb, var(--fc-w-warn) 16%, transparent); color: var(--fc-w-warn); }
+.glim-fc-wins .glim-fc-badge-fail { background: color-mix(in srgb, var(--fc-w-err) 16%, transparent); color: var(--fc-w-err); }
+.glim-fc-wins .glim-fc-badge-active { background: color-mix(in srgb, var(--fc-w-active) 16%, transparent); color: var(--fc-w-active); }
+
+/* With TowerTorch: GlimStone's look from its tokens. */
+html.tt-popups-on .glim-fc {
+  --fc-card: var(--tt-fm-card, #222);
+  --fc-head: var(--tt-accent, #FCC419);
+  --fc-head-ink: var(--tt-accent-text, #161616);
+  --fc-dim: var(--tt-text-dim, #8a8a8a);
+  --fc-focus: var(--tt-accent-ink, #FCC419);
+  --fc-on: var(--tt-accent, #FCC419);
+  --fc-on-ink: var(--tt-accent-text, #161616);
+  --fc-chip: var(--tt-chip, #2e2e2e);
+  --fc-ok: var(--tt-ok-ink, #6fdc8c);
+  --fc-err: var(--tt-err-ink, #ff8389);
+  --fc-warn: var(--tt-warn-ink, #ff832b);
+  --fc-active: var(--tt-accent-ink, #FCC419);
+  --fc-r-card: var(--tt-radius-card, 20px);
+  --fc-r-ctl: var(--tt-radius-control, 12px);
+  --fc-r-pill: var(--tt-radius-pill, 9999px);
+  --fc-shadow: var(--tt-elev-1, 0 1px 4px rgba(0, 0, 0, .35));
+  --fc-bubble: var(--tt-surface-window, #242424);
+  --fc-bubble-ink: var(--tt-text, #e6e6e6);
+  color: var(--tt-text, #e6e6e6);
+}
+html.tt-popups-on .glim-fc .glim-fc-h { font-size: var(--tt-sec-fs, 12px); font-weight: var(--tt-sec-fw, 500); letter-spacing: var(--tt-sec-ls, 1.2px); min-height: var(--tt-sec-h, 22px); }
+html.tt-popups-on .glim-fc-wins {
+  --fc-w-ground: #1a1a1a;
+  --fc-w-card: #222;
+  --fc-w-raised: #2e2e2e;
+  --fc-w-raised-hover: #383838;
+  --fc-w-head: var(--tt-accent, #FCC419);
+  --fc-w-head-ink: var(--tt-accent-text, #161616);
+  --fc-w-dim: #8a8a8a;
+  --fc-w-focus: var(--tt-accent, #FCC419);
+  --fc-w-ink: #e6e6e6;
+  --fc-w-ok: #6fdc8c;
+  --fc-w-err: #ff8389;
+  --fc-w-warn: #ff832b;
+  --fc-w-active: var(--tt-accent, #FCC419);
+  --fc-w-scrim: var(--tt-backdrop-dim, rgba(0, 0, 0, .72));
+  --fc-w-r-card: var(--tt-radius-card, 20px);
+  --fc-w-r-ctl: var(--tt-radius-control, 12px);
+  --fc-w-r-pill: var(--tt-radius-pill, 9999px);
+  --fc-w-shadow: var(--tt-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
+}
+/* Under OLED, which counts only on a dark Unraid theme, the windows take
+   TowerTorch's lowered surfaces. */
+html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-fc-wins {
+  --fc-w-ground: var(--tt-surface-window, #161616);
+  --fc-w-card: var(--tt-surface-2, #1a1a1a);
+  --fc-w-raised: var(--tt-surface-3, #262626);
+}
+/* GlimStone's rule 40 in the windows: the hovered ground takes 22% of the
+   accent and the glyph all of it, while the words keep the text colour. */
+html.tt-popups-on .glim-fc-wins button.glim-fc-win-btn:not(.glim-fc-key):is(:hover, :focus-visible) { background: color-mix(in srgb, var(--fc-w-raised), var(--fc-w-head) 22%); }
+html.tt-popups-on .glim-fc-wins button.glim-fc-win-btn:not(.glim-fc-key):is(:hover, :focus-visible) .glim-fc-g { color: var(--fc-w-head); }
+
+/* TowerTorch's sheets reach every button, switch and focus ring on a page
+   with !important. An important declaration in a cascade layer outranks
+   every unlayered one, so the few things the card needs to keep sit here. */
+@layer glim-fortress-card {
+  .glim-fc input.glim-fc-sw { margin: 0 !important; }
+  .glim-fc :is(.glim-fc-btn, .glim-fc-sw, .glim-fc-info):focus-visible { outline: 2px solid var(--fc-focus) !important; outline-offset: 2px !important; filter: none !important; }
+}
