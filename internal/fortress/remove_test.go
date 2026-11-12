@@ -154,17 +154,20 @@ func TestANewPhraseClearsTheRemovedList(t *testing.T) {
 }
 
 func TestTheStateListsTheOtherMembers(t *testing.T) {
-	d, bv, tr, _ := joinedWithTollRoll(t)
-	waitFor(t, "ShipLog to list BombVault", func() bool { return seesOnline(d, bv.id.ID()) })
+	d, _, tr, _ := joinedWithTollRoll(t)
+	want := []string{"BombVault on Tower as container", "TollRoll on Bottich as plugin"}
 	var names []string
+	waitFor(t, "ShipLog to list BombVault and TollRoll by name", func() bool {
+		names = names[:0]
+		for _, m := range d.State().Members {
+			names = append(names, m.Name+" on "+m.Device+" as "+m.Deployment)
+		}
+		slices.Sort(names)
+		return slices.Equal(names, want)
+	})
 	for _, m := range d.State().Members {
-		names = append(names, m.Name+" on "+m.Device+" as "+m.Deployment)
 		if m.ID == tr.id && !m.Online {
 			t.Error("TollRoll is listed as away")
 		}
-	}
-	slices.Sort(names)
-	if want := []string{"BombVault on Tower as container", "TollRoll on Bottich as plugin"}; !slices.Equal(names, want) {
-		t.Errorf("members = %v, want %v", names, want)
 	}
 }
