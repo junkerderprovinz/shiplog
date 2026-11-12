@@ -48,7 +48,7 @@ ShipLog moves into the fortress: a backup before every auto-update, and a way ba
 
 🎨 **Design**
 - **GlimStone 4.4.0.** Update now and Update all show the two arrows of the sync glyph. With TowerTorch, the Repository, Close and release links take the accent when the pointer reaches them, and under its rainbow each one takes a colour of its own. The buttons in the coffee, PayPal and crypto windows do the same. A held or rolled back update shows in orange, the colour of a warning, and the badges in the changelog window keep readable text on every accent.
-- **True black for OLED screens.** When TowerTorch puts its dark look on true black, the changelog window and the coffee, PayPal and crypto windows follow, each surface one step darker.
+- **Ready for OLED screens.** When TowerTorch puts its dark look on true black, the changelog window and the coffee, PayPal and crypto windows step down with it.
 - **The versions at the top of the changelog window are larger,** with the newest version in bold.
 - **The auto-update switch in the changelog window only shows while the scheduled auto-update is on.**
 
