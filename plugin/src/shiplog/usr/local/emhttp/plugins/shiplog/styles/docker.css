@@ -38,9 +38,10 @@ html[data-tt-motion="off"] .sl-amp.sl-crit{animation:none}
 .sl-autoff:hover{color:#3c8ac0;border-color:currentColor}
 .sl-autoff .sl-ico{width:12px;height:12px}
 html.tt-popups-on .sl-autoff{border:none;background:rgba(128,128,128,.18)}
-/* An update that waits for a backup or was rolled back needs a look. */
+/* An update that waits for a backup or was rolled back needs a look, in the
+   warning colour. */
 .sl-autoff.sl-guarded{color:#d08a1c;border-color:currentColor}
-html.tt-popups-on .sl-autoff.sl-guarded{background:rgba(208,138,28,.18)}
+html.tt-popups-on .sl-autoff.sl-guarded{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
@@ -87,7 +88,7 @@ html.tt-popups-on .sl-pill.sl-unmaint{border:none}
 .sl-chip.sl-dep .sl-ico{opacity:1;width:13px;height:13px}
 .sl-pill.sl-dep{color:#1a1a1a;background:#d6a243;border-color:#d6a243} .sl-pill.sl-dep .sl-dot{background:#1a1a1a}
 html.tt-popups-on .sl-pill.sl-dep{border:none}
-.sl-dep-note{background:rgba(214,162,67,.15);color:#d6a243}
+.sl-dep-note,.sl-bubble .sl-guard-note{background:rgba(214,162,67,.15);color:#d6a243}
 .sl-newer-note{background:rgba(79,143,214,.14);color:#7db3ec}
 .sl-bubble.sl-light .sl-newer-note{background:rgba(31,95,168,.09);color:#1f5fa8}
 .sl-newer-note .sl-newer-why{margin-top:4px;font-size:12px;opacity:.85}
@@ -233,15 +234,18 @@ html.tt-popups-on .sl-bubble .sl-unmaint-note{
   position:relative;
 }
 html.tt-popups-on .sl-bubble .sl-unmaint-note h4{
-  display:inline-flex;background:var(--tt-err,#d9433f);color:#fff;
+  display:inline-flex;background:var(--tt-err,#d9433f);color:var(--tt-err-fg,#fff);
   border-radius:999px;padding:3px 12px;
   position:absolute;top:0;left:14px;transform:translateY(-50%);margin:0;
 }
-html.tt-popups-on .sl-bubble .sl-dep-note h4{background:var(--tt-warn,#e0912a);color:#1a1207}
-html.tt-popups-on .sl-bubble .sl-newer-note h4{background:var(--tt-info,#3b82d0);color:#fff}
+html.tt-popups-on .sl-bubble :is(.sl-dep-note,.sl-guard-note) h4{background:var(--tt-warn,#e0912a);color:var(--tt-warn-fg,#1a1207)}
+html.tt-popups-on .sl-bubble .sl-newer-note h4{background:var(--tt-info,#3b82d0);color:var(--tt-info-fg,#161616)}
 /* Two shades only, frame and card: raw notes blend into their card. */
 html.tt-popups-on .sl-bubble .sl-raw{border:none;background:transparent}
 html.tt-popups-on .sl-bubble .sl-raw code{border:none;background:var(--sl-card)}
+/* OLED puts the dark window on true black. Its cards step down with it and
+   keep their shadow, so their own fill is their edge. */
+html.tt-popups-on[data-oled]:not(.Theme--white):not(.Theme--azure) .sl-bubble:not(.sl-light){--sl-bg:#000;--sl-card:#161616}
 /* A release card's badge is its version, which keeps its own case. */
 .sl-bubble .sl-rel{position:relative}
 .sl-bubble .sl-rel h4{text-transform:none;letter-spacing:.2px}
@@ -272,7 +276,12 @@ html.tt-popups-on .sl-bubble .sl-bf{margin-top:8px}
 .sl-bubble .sl-au-info .sl-ico{width:15px;height:15px}
 .sl-bubble .sl-au-state{flex:1 1 160px;min-width:0;color:var(--sl-dim);font-size:12px;line-height:1.4}
 .sl-bubble .sl-aubar[data-au="error"] .sl-au-state{color:#e5645f}
+html.tt-popups-on .sl-bubble .sl-aubar[data-au="error"] .sl-au-state{color:var(--tt-err-ink,#e5645f)}
 @media (prefers-reduced-motion:reduce){.sl-bubble .sl-au-track,.sl-bubble .sl-au-track::after{transition:none}}
+/* With TowerTorch the switch takes its track and knob, so it reads 3:1 on the
+   card in both themes. */
+html.tt-popups-on .sl-bubble .sl-au-track{background:var(--tt-toggle-track-off,#8d8d8d)}
+html.tt-popups-on .sl-bubble .sl-au-track::after{background:var(--tt-toggle-knob,#fff)}
 html.tt-popups-on .sl-bubble .sl-aubar{border-bottom:none;background:var(--sl-card);margin:10px 16px 0;padding:9px 14px;
   border-radius:10px;box-shadow:var(--tt-elev-1,0 1px 4px rgba(0,0,0,.35))}
 
