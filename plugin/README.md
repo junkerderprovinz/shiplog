@@ -41,7 +41,9 @@ plugin/
 ```
 
 - **Config** persists on flash at `/boot/config/plugins/shiplog/shiplog.cfg`
-  (written by the settings page; read by the proxy and the daemon).
+  (written by the settings page, read by the proxy and the daemon). Beside it
+  live `notify.json` for the notification channels, `fortress/` for the
+  fortress membership and `runs.json` for the update runs other apps asked for.
 - **Data** (SQLite cache) lives in appdata (`DATA_DIR`, default
   `/mnt/user/appdata/shiplog`), never on the flash.
 - The chip appears **only for containers with an update**; up-to-date rows are
@@ -54,7 +56,7 @@ plugin/
 plugin/pkg_build.sh 2026.06.15            # → plugin/out/shiplog-2026.06.15-x86_64-1.txz (+ .sha256)
 ```
 
-The release workflow attaches the `.txz` to a `plugin-<version>` GitHub release
+The release workflow attaches the `.txz` to a `v<version>` GitHub release
 and injects its SHA256 into `shiplog.plg`. Users install by pasting the raw
 `shiplog.plg` URL into Unraid **Plugins → Install Plugin** (later: the CA plugins
 section).
