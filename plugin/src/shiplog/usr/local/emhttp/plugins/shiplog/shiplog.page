@@ -115,6 +115,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
 };
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/settings.css')?>">
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/fortress-card.css')?>">
 
 <div id="sl-cfg" class="sl-cfg" data-sl-labels="textGlyph">
 <div class="sl-hero">
@@ -133,6 +134,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
 <div class="sl-body">
   <div class="sl-tabs" role="tablist" aria-orientation="vertical" aria-label="ShipLog">
     <button type="button" class="sl-tab" role="tab" id="sl-tab-general" aria-controls="sl-pane-general" aria-selected="true" data-sl-tab="general"><span class="sl-tabico"><?=$G['TabGeneral']?></span><span class="sl-tablbl"><?=$slE($L['t_general'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-fortress" aria-controls="sl-pane-fortress" aria-selected="false" tabindex="-1" data-sl-tab="fortress"><span class="sl-tabico"><?=$G['ShieldOn']?></span><span class="sl-tablbl"><?=$slE($L['s_fortress'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-updates" aria-controls="sl-pane-updates" aria-selected="false" tabindex="-1" data-sl-tab="updates"><span class="sl-tabico"><?=$G['Update']?></span><span class="sl-tablbl"><?=$slE($L['t_updates'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-notify" aria-controls="sl-pane-notify" aria-selected="false" tabindex="-1" data-sl-tab="notify"><span class="sl-tabico"><?=$G['Notifications']?></span><span class="sl-tablbl"><?=$slE($L['t_notify'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-sources" aria-controls="sl-pane-sources" aria-selected="false" tabindex="-1" data-sl-tab="sources"><span class="sl-tabico"><?=$G['Link']?></span><span class="sl-tablbl"><?=$slE($L['t_sources'])?></span></button>
@@ -168,25 +170,15 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
         </div>
       </div>
     </section>
-    <section class="sl-card" id="sl-fortress" aria-labelledby="sl-h-fortress" hidden>
-      <h3 class="sl-h"><span id="sl-h-fortress"><?=$slE($L['s_fortress'])?></span></h3>
-      <p class="sl-warn" id="sl-fortress-removed" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_fortress_removed'])?></span></p>
-      <p class="sl-warn" id="sl-fortress-changed" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_fortress_changed'])?></span></p>
+  </div>
+
+  <div class="sl-pane" role="tabpanel" id="sl-pane-fortress" aria-labelledby="sl-tab-fortress" hidden>
+    <div id="sl-fortress"></div>
+    <section class="sl-card" id="sl-fortress-down" aria-labelledby="sl-h-fortress-down" hidden>
+      <h3 class="sl-h"><span id="sl-h-fortress-down"><?=$slE($L['s_fortress'])?></span></h3>
       <div class="sl-row">
-        <div class="sl-lbl"><span id="sl-fortress-lbl"><?=$slE($L['s_fortress_member'])?></span></div>
-        <div class="sl-ctl"><span class="sl-stat" id="sl-fortress-stat" role="status" aria-labelledby="sl-fortress-lbl sl-fortress-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-fortress-txt"></span></span></div>
-      </div>
-      <div class="sl-quiet" id="sl-fortress-out" role="status" hidden><span class="sl-g"><?=$G['Info']?></span><span class="sl-quiet-txt" id="sl-fortress-out-txt"></span></div>
-      <div class="sl-row sl-row-wide" id="sl-fortress-others" hidden>
-        <div class="sl-lbl"><span id="sl-fortress-others-lbl"><?=$slE($L['s_fortress_others'])?></span></div>
-        <div class="sl-wide"><ul class="sl-fm" id="sl-fortress-list" aria-labelledby="sl-fortress-others-lbl"></ul></div>
-      </div>
-      <div class="sl-row" id="sl-fortress-joinrow" hidden>
-        <div class="sl-lbl"><label for="sl-fortress-phrase"><?=$slE($L['s_fortress_join'])?></label><?=$slInfo($L['s_fortress_join_desc'])?></div>
-        <div class="sl-ctl">
-          <input type="password" class="sl-phrase" id="sl-fortress-phrase" autocomplete="off" spellcheck="false" placeholder="<?=$slE($L['s_fortress_join_ph'])?>">
-          <span class="sl-act"><button type="button" class="sl-btn" id="sl-fortress-join"><?=$slBtn('Check', $L['s_fortress_join_btn'])?></button></span>
-        </div>
+        <div class="sl-lbl"><span id="sl-fortress-down-lbl"><?=$slE($L['s_status'])?></span></div>
+        <div class="sl-ctl"><span class="sl-stat" data-state="err" role="status" aria-labelledby="sl-fortress-down-lbl sl-fortress-down-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-fortress-down-txt"><?=$slE(preg_replace('/^[✓✗]\s*/u', '', $L['s_unreachable']))?></span></span></div>
       </div>
     </section>
   </div>
@@ -466,16 +458,13 @@ $slGroup = function ($label, $control) use ($slE) {
   .'<p class="sl-note" hidden>'.$slE($L['s_give_no_tag']).'</p>'
   .'<button type="button" class="sl-win-btn sl-copy" id="sl-copy">'.$slBtn('Copy', $L['s_copy']).'</button></div>'
   .'<div class="sl-coins" role="listbox" aria-label="'.$slE($L['s_give_crypto_title']).'">'.$slCoins.'</div>')?>
-<div class="sl-win sl-win-remove" id="sl-win-remove" role="dialog" aria-modal="true" aria-labelledby="sl-win-remove-t" aria-describedby="sl-rm-text" tabindex="-1" hidden>
-<h2 class="sl-win-title" id="sl-win-remove-t"></h2>
-<div class="sl-win-body"><p class="sl-win-text" id="sl-rm-text"></p><p class="sl-win-text sl-win-sub" id="sl-rm-sub" hidden></p><p class="sl-win-text sl-rm-err" id="sl-rm-err" role="alert" hidden></p></div>
-<div class="sl-win-act"><button type="button" class="sl-win-btn" id="sl-rm-cancel" data-sl-close><?=$slBtn('Close', $L['s_fortress_cancel'])?></button><button type="button" class="sl-win-btn" id="sl-rm-go"><?=$slBtn('Trash', $L['s_fortress_remove'])?></button><button type="button" class="sl-win-btn" id="sl-rm-later" data-sl-close hidden><?=$slBtn('Close', $L['s_fortress_later'])?></button></div>
-</div>
 </div>
 
 <script>
 var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
-var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Copy' => $G['Copy'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff'], 'Trash' => $G['Trash']), JSON_UNESCAPED_SLASHES)?>;
+var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Copy' => $G['Copy'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
 var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 </script>
 <script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>
+<script src="<?autov('/plugins/shiplog/scripts/fortress-card.js')?>"></script>
+<script src="<?autov('/plugins/shiplog/scripts/fortress.js')?>"></script>

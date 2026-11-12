@@ -12,7 +12,9 @@
  *   GET  status.php?path=fortress-status[&lang=de]      -> the status contract
  *   GET  status.php?path=fortress-log[&after=<id>&limit=<n>&lang=de]
  *   GET  status.php?path=fortress                       -> ShipLog's place in a fortress
- *   POST status.php  path=refresh|override|unmaintained-suppression|fortress/join,
+ *   GET  status.php?path=fortress-member&member=<member id>[&lang=de]
+ *                                                       -> another member's status and log
+ *   POST status.php  path=refresh|override|unmaintained-suppression|fortress/join|fortress/leave,
  *                    method=POST|PUT|DELETE, data=<JSON body>
  *   POST status.php  path=fortress/member, method=DELETE, id=<member id>
  */
@@ -22,10 +24,10 @@ $self   = '/plugins/shiplog/server/status.php';
 $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides',
            'unmaintained-suppressions' => '/api/unmaintained-suppressions', 'guards' => '/api/guards',
            'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
-           'fortress' => '/api/fortress'];
+           'fortress' => '/api/fortress', 'fortress-member' => '/api/fortress/members/'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
            'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST'],
-           'fortress/member' => ['DELETE']];
+           'fortress/leave' => ['POST'], 'fortress/member' => ['DELETE']];
 
 $deny = function ($code) {
     http_response_code($code);
@@ -63,7 +65,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deny(400);
         }
         $url = $reads[$path];
-        if ($path === 'fortress-status' || $path === 'fortress-log') {
+        if ($path === 'fortress-member') {
+            $member = isset($_GET['member']) ? preg_replace('/[^a-z0-9-]/', '', $_GET['member']) : '';
+            if ($member === '') {
+                $deny(400);
+            }
+            $url .= $member . '/status';
+        }
+        if ($path === 'fortress-status' || $path === 'fortress-log' || $path === 'fortress-member') {
             $q = [];
             if (isset($_GET['lang']) && preg_match('/^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$/', $_GET['lang'])) {
                 $q['lang'] = $_GET['lang'];
