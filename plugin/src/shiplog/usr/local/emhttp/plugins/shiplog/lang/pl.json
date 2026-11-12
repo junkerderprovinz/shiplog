@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Anuluj",
   "s_fortress_removed_title": "Zmienić frazę teraz?",
   "s_fortress_removed_body": "{device} jest już poza twierdzą. Dopóki fraza się nie zmieni, droga powrotna wciąż stoi otworem.",
-  "s_fortress_change_in": "ShipLog nie przechowuje frazy, więc zmieniasz ją w {app}.",
+  "s_fortress_change_in": "Frazę zmienisz w {apps}.",
   "s_fortress_change_any": "ShipLog nie przechowuje frazy. Zmień ją w aplikacji twierdzy, która ją pokazuje.",
-  "s_fortress_change": "Zmień frazę",
   "s_fortress_later": "Później",
   "s_fortress_removed_note": "Usunięto: {devices}. Zmień frazę, aby zamknąć drogę powrotną."
 }

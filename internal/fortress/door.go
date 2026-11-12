@@ -86,9 +86,7 @@ type Other struct {
 	Name       string `json:"name"`
 	Device     string `json:"device"`
 	Deployment string `json:"deployment,omitempty"`
-	// Address is where its web interface is, empty until it said so.
-	Address string `json:"address,omitempty"`
-	Online  bool   `json:"online"`
+	Online     bool   `json:"online"`
 }
 
 // Removed is a member ShipLog took out of the fortress.
@@ -169,7 +167,7 @@ func others(members []kitfortress.Member) []Other {
 			continue
 		}
 		out = append(out, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID),
-			Device: m.Device, Deployment: m.Deployment, Address: m.Address, Online: m.Online()})
+			Device: m.Device, Deployment: m.Deployment, Online: m.Online()})
 	}
 	return out
 }

@@ -198,9 +198,8 @@
   "s_fortress_cancel": "取消",
   "s_fortress_removed_title": "现在更改口令吗？",
   "s_fortress_removed_body": "{device} 已被移出。但只要口令不变，回来的路就仍然开着。",
-  "s_fortress_change_in": "ShipLog 不保存口令，所以要在{app}中更改。",
+  "s_fortress_change_in": "请在 {apps} 中更改口令。",
   "s_fortress_change_any": "ShipLog 不保存口令。请在堡垒中能显示口令的应用里更改。",
-  "s_fortress_change": "更改口令",
   "s_fortress_later": "稍后",
   "s_fortress_removed_note": "已移除：{devices}。更改口令即可关上回来的路。"
 }

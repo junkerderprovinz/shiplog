@@ -198,9 +198,8 @@
   "s_fortress_cancel": "ยกเลิก",
   "s_fortress_removed_title": "เปลี่ยนวลีตอนนี้ไหม",
   "s_fortress_removed_body": "{device} ออกไปแล้ว แต่ตราบใดที่วลียังเหมือนเดิม ทางกลับเข้ามาก็ยังเปิดอยู่",
-  "s_fortress_change_in": "ShipLog ไม่เก็บวลีไว้ จึงต้องเปลี่ยนวลีใน {app}",
+  "s_fortress_change_in": "คุณเปลี่ยนวลีได้ที่ {apps}",
   "s_fortress_change_any": "ShipLog ไม่เก็บวลีไว้ เปลี่ยนวลีได้ในแอปของป้อมปราการที่แสดงวลี",
-  "s_fortress_change": "เปลี่ยนวลี",
   "s_fortress_later": "ไว้ทีหลัง",
   "s_fortress_removed_note": "นำออกแล้ว: {devices} เปลี่ยนวลีเพื่อปิดทางกลับเข้ามา"
 }

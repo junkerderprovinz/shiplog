@@ -472,26 +472,33 @@
 
   /* The other members, each with Remove. A removed member gets back in with
      the phrase until it changes, so the window offers that next and a quiet
-     line keeps the names until then. ShipLog keeps only its keys, so the
-     phrase changes in an app that keeps it: an instance that is no plugin and
-     has a page to open. */
-  var list = byId("sl-fortress-list"), outChange = byId("sl-fortress-out-change");
-  var rmGo = byId("sl-rm-go"), rmCancel = byId("sl-rm-cancel"), rmLater = byId("sl-rm-later"), rmChange = byId("sl-rm-change");
-  var rmFor = null, keeper = null;
+     line keeps the names until then. ShipLog keeps only its keys, so both
+     name the apps that keep the phrase, the instances that are no plugin,
+     those in reach first. */
+  var list = byId("sl-fortress-list");
+  var rmGo = byId("sl-rm-go"), rmCancel = byId("sl-rm-cancel"), rmLater = byId("sl-rm-later");
+  var rmFor = null, keepers = [];
   function fill(text, v) { return String(text).replace(/\{(\w+)\}/g, function (m, k) { return k in v ? v[k] : m; }); }
   function memberName(m) {
     var app = m.name || m.app || "";
     return m.device ? fill(T.s_fortress_member_on, { app: app, device: m.device }) : app;
   }
-  function listOf(names) {
-    try { return new Intl.ListFormat(window.SL_LANG, { type: "conjunction" }).format(names); } catch (e) { return names.join(", "); }
+  function listOf(names, type) {
+    try { return new Intl.ListFormat(window.SL_LANG, { type: type || "conjunction" }).format(names); } catch (e) { return names.join(", "); }
   }
-  function phraseKeeper(members) {
-    var at = members.filter(function (m) { return m.kind === "instance" && m.deployment !== "plugin" && /^https?:\/\//.test(m.address || ""); });
-    at.sort(function (a, b) { return (b.online ? 1 : 0) - (a.online ? 1 : 0); });
-    return at[0] || null;
+  // An app the fortress still knows from an earlier install is named once.
+  function phraseKeepers(members) {
+    var at = members.filter(function (m) { return m.kind === "instance" && m.deployment !== "plugin"; });
+    var names = [];
+    at.filter(function (m) { return m.online; }).concat(at.filter(function (m) { return !m.online; })).forEach(function (m) {
+      var n = memberName(m);
+      if (names.indexOf(n) < 0) names.push(n);
+    });
+    return names;
   }
-  function openKeeper() { if (keeper) window.open(keeper.address, "_blank", "noopener"); }
+  function changeWhere() {
+    return keepers.length ? fill(T.s_fortress_change_in, { apps: listOf(keepers, "disjunction") }) : T.s_fortress_change_any;
+  }
   function memberRow(m, i) {
     var li = document.createElement("li"), st = document.createElement("span"), dot = document.createElement("span");
     var name = document.createElement("span"), state = document.createElement("small"), b = document.createElement("button");
@@ -515,13 +522,12 @@
     return li;
   }
   function showMembers(members, gone) {
-    keeper = phraseKeeper(members);
+    keepers = phraseKeepers(members);
     list.textContent = "";
     members.forEach(function (m, i) { list.appendChild(memberRow(m, i)); });
     byId("sl-fortress-others").hidden = !members.length;
     byId("sl-fortress-out").hidden = !gone.length;
-    byId("sl-fortress-out-txt").textContent = fill(T.s_fortress_removed_note, { devices: listOf(gone.map(memberName)) });
-    outChange.hidden = !keeper;
+    byId("sl-fortress-out-txt").textContent = fill(T.s_fortress_removed_note, { devices: listOf(gone.map(memberName)) }) + " " + changeWhere();
     labels();
   }
   // removeStep fills the window to ask, or once the member is out to offer
@@ -530,13 +536,12 @@
     var who = memberName(rmFor), sub = byId("sl-rm-sub");
     byId("sl-win-remove-t").textContent = done ? T.s_fortress_removed_title : fill(T.s_fortress_remove_title, { device: who });
     byId("sl-rm-text").textContent = fill(done ? T.s_fortress_removed_body : T.s_fortress_remove_body, { device: who });
-    sub.textContent = keeper ? fill(T.s_fortress_change_in, { app: memberName(keeper) }) : T.s_fortress_change_any;
+    sub.textContent = changeWhere();
     sub.hidden = !done;
     byId("sl-rm-err").hidden = true;
     rmCancel.hidden = rmGo.hidden = done;
     rmLater.hidden = !done;
-    rmChange.hidden = !done || !keeper;
-    return done ? (keeper ? rmChange : rmLater) : rmGo;
+    return done ? rmLater : rmGo;
   }
   var removeWin = { open: function () { return removeStep(false); }, close: function () { rmFor = null; } };
   function removeFailed() {
@@ -553,8 +558,8 @@
       .then(function (res) {
         if (res.ok) {
           showFortress(res.d);
-          // The row that opened the window is gone, so Later lands on the line.
-          opener = outChange.hidden ? null : outChange;
+          // The row that opened the window is gone.
+          opener = null;
           var next = removeStep(true);
           paint();
           next.focus();
@@ -569,8 +574,6 @@
       .then(function () { rmGo.disabled = false; });
   }
   rmGo.addEventListener("click", removeMember);
-  rmChange.addEventListener("click", function () { openKeeper(); closeWin(); });
-  outChange.addEventListener("click", openKeeper);
 
   function loadFortress() {
     fetch(PROXY + "?path=fortress", { headers: { Accept: "application/json" } })

@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Скасувати",
   "s_fortress_removed_title": "Змінити фразу зараз?",
   "s_fortress_removed_body": "{device} уже поза фортецею. Але поки фраза та сама, шлях назад ще відкритий.",
-  "s_fortress_change_in": "ShipLog не зберігає фразу, тож змініть її в {app}.",
+  "s_fortress_change_in": "Змінити фразу можна в {apps}.",
   "s_fortress_change_any": "ShipLog не зберігає фразу. Змініть її в застосунку фортеці, який її показує.",
-  "s_fortress_change": "Змінити фразу",
   "s_fortress_later": "Пізніше",
   "s_fortress_removed_note": "Видалено: {devices}. Змініть фразу, щоб закрити шлях назад."
 }

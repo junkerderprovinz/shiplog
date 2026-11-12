@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Avbryt",
   "s_fortress_removed_title": "Bytte frasen nå?",
   "s_fortress_removed_body": "{device} er ute. Så lenge frasen er den samme, står veien tilbake fortsatt åpen.",
-  "s_fortress_change_in": "ShipLog tar ikke vare på frasen, så du bytter den i {app}.",
+  "s_fortress_change_in": "Frasen bytter du i {apps}.",
   "s_fortress_change_any": "ShipLog tar ikke vare på frasen. Bytt den i en app i festningen som viser den.",
-  "s_fortress_change": "Bytt frase",
   "s_fortress_later": "Senere",
   "s_fortress_removed_note": "Fjernet: {devices}. Bytt frasen for å stenge veien tilbake."
 }

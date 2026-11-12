@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Ακύρωση",
   "s_fortress_removed_title": "Αλλαγή της φράσης τώρα;",
   "s_fortress_removed_body": "Το {device} είναι πια έξω. Όσο η φράση μένει ίδια, ο δρόμος της επιστροφής παραμένει ανοιχτός.",
-  "s_fortress_change_in": "Το ShipLog δεν κρατά τη φράση, οπότε την αλλάζετε στο {app}.",
+  "s_fortress_change_in": "Τη φράση την αλλάζεις στο {apps}.",
   "s_fortress_change_any": "Το ShipLog δεν κρατά τη φράση. Αλλάξτε την σε μια εφαρμογή του φρουρίου που τη δείχνει.",
-  "s_fortress_change": "Αλλαγή φράσης",
   "s_fortress_later": "Αργότερα",
   "s_fortress_removed_note": "Αφαιρέθηκαν: {devices}. Αλλάξτε τη φράση για να κλείσει ο δρόμος της επιστροφής."
 }

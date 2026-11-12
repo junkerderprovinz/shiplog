@@ -198,9 +198,8 @@
   "s_fortress_cancel": "إلغاء",
   "s_fortress_removed_title": "هل تريد تغيير العبارة الآن؟",
   "s_fortress_removed_body": "{device} خارج الحصن الآن. لكن ما دامت العبارة كما هي، يبقى طريق العودة مفتوحًا.",
-  "s_fortress_change_in": "لا يحتفظ ShipLog بالعبارة، لذا تغيّرها في {app}.",
+  "s_fortress_change_in": "تغيّر العبارة في {apps}.",
   "s_fortress_change_any": "لا يحتفظ ShipLog بالعبارة. غيّرها في تطبيق من الحصن يعرضها.",
-  "s_fortress_change": "تغيير العبارة",
   "s_fortress_later": "لاحقًا",
   "s_fortress_removed_note": "أُزيل: {devices}. غيّر العبارة لتغلق طريق العودة."
 }

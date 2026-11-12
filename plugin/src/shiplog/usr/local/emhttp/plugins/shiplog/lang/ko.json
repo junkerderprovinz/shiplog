@@ -198,9 +198,8 @@
   "s_fortress_cancel": "취소",
   "s_fortress_removed_title": "지금 문구를 바꿀까요?",
   "s_fortress_removed_body": "{device} 기기는 이제 빠졌어요. 하지만 문구가 그대로인 동안에는 다시 돌아올 길이 열려 있어요.",
-  "s_fortress_change_in": "ShipLog는 문구를 보관하지 않아서 {app}에서 바꿔요.",
+  "s_fortress_change_in": "문구는 {apps}에서 바꿔요.",
   "s_fortress_change_any": "ShipLog는 문구를 보관하지 않아요. 문구를 보여 주는 요새의 앱에서 바꿔 주세요.",
-  "s_fortress_change": "문구 변경",
   "s_fortress_later": "나중에",
   "s_fortress_removed_note": "제거됨: {devices}. 문구를 바꾸면 돌아올 길이 닫혀요."
 }
