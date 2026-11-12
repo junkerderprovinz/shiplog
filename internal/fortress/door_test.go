@@ -120,7 +120,7 @@ func TestADoorKeepsTheDeviceTheMembershipJoinedWith(t *testing.T) {
 	}
 }
 
-func TestRemovedByAnotherMemberShipLogForgetsTheFortress(t *testing.T) {
+func TestRemovedByAnotherMemberShipLogForgetsTheFortressAndSaysSoAfterARestart(t *testing.T) {
 	srv := httptest.NewServer(relay.New())
 	t.Cleanup(srv.CloseClientConnections)
 	t.Cleanup(srv.Close)
@@ -164,14 +164,36 @@ func TestRemovedByAnotherMemberShipLogForgetsTheFortress(t *testing.T) {
 	if got := d.Members(); len(got) != 0 {
 		t.Errorf("a removed ShipLog still lists %v", got)
 	}
-	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("a removed ShipLog kept %s: %v", dir, err)
+	if _, err := os.Stat(filepath.Join(dir, "fortress.json")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("a removed ShipLog kept its membership: %v", err)
 	}
-	if err := d.Enter(w); err != nil {
+	if err := d.Close(); err != nil {
+		t.Fatal(err)
+	}
+	again := &Door{Dir: dir, App: shiplog, Device: "Tower", Relay: srv.URL}
+	t.Cleanup(func() { _ = again.Close() })
+	if err := again.Open(); err != nil {
+		t.Fatal(err)
+	}
+	if s := again.State(); s.Joined || !s.Removed {
+		t.Errorf("after a restart: %+v", s)
+	}
+	if err := again.Enter(w); err != nil {
 		t.Fatalf("joining again: %v", err)
 	}
-	if s := d.State(); !s.Joined || s.Removed {
+	if s := again.State(); !s.Joined || s.Removed {
 		t.Errorf("joined again: %+v", s)
+	}
+	if err := again.Close(); err != nil {
+		t.Fatal(err)
+	}
+	last := &Door{Dir: dir, App: shiplog, Device: "Tower", Relay: srv.URL}
+	t.Cleanup(func() { _ = last.Close() })
+	if err := last.Open(); err != nil {
+		t.Fatal(err)
+	}
+	if s := last.State(); !s.Joined || s.Removed {
+		t.Errorf("a restart after joining again: %+v", s)
 	}
 }
 

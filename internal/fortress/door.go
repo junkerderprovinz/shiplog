@@ -33,6 +33,10 @@ var (
 // out since the phrase last changed.
 const removedFile = "removed.json"
 
+// removedHereFile is all that stays of a membership another member ended, so
+// the settings page still says so after a restart.
+const removedHereFile = "removed-here"
+
 // Door holds ShipLog's place in a fortress: it opens the membership kept in
 // Dir, joins with a phrase the way the kit's fortress join does on the
 // console, and forgets the membership once another member takes ShipLog out.
@@ -105,8 +109,13 @@ func (d *Door) Open() error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	m, err := d.join()
-	if err != nil || m == nil {
+	if err != nil {
 		return err
+	}
+	if m == nil {
+		_, err := os.Stat(filepath.Join(d.Dir, removedHereFile))
+		d.removed = err == nil
+		return nil
 	}
 	d.m, d.Device = m, m.Device
 	return nil
@@ -140,6 +149,9 @@ func (d *Door) Enter(words string) error {
 		return errors.Join(joinErr, err)
 	}
 	d.m, d.removed, d.phraseChanged = in, false, false
+	if err := os.Remove(filepath.Join(d.Dir, removedHereFile)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
 	return d.forgetRemoved()
 }
 
@@ -382,6 +394,9 @@ func (d *Door) removedBy(gen int) {
 		_ = d.m.Close()
 		d.m = nil
 		_ = os.RemoveAll(d.Dir)
+		if os.MkdirAll(d.Dir, 0o700) == nil {
+			_ = os.WriteFile(filepath.Join(d.Dir, removedHereFile), nil, 0o600)
+		}
 		d.removed, d.phraseChanged = true, false
 	}()
 }
