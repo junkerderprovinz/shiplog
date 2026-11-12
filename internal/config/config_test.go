@@ -55,3 +55,24 @@ func TestLoadDockerConfigDir(t *testing.T) {
 		t.Fatalf("with HOME set: got %q, want %q", got, want)
 	}
 }
+
+func TestLoadFindsTheNotificationChannels(t *testing.T) {
+	t.Setenv("NOTIFY_FILE", "")
+	if c := Load(); c.NotifyFile != "" {
+		t.Errorf("NotifyFile = %q, want none in the container", c.NotifyFile)
+	}
+	t.Setenv("NOTIFY_FILE", "/boot/config/plugins/shiplog/notify.json")
+	if c := Load(); c.NotifyFile != "/boot/config/plugins/shiplog/notify.json" {
+		t.Errorf("NotifyFile = %q", c.NotifyFile)
+	}
+}
+
+func TestLoadKeepsTheOldNotificationSettingsForTheMove(t *testing.T) {
+	t.Setenv("MATRIX_ROOM", "#updates:example.org")
+	t.Setenv("UNRAID_NOTIFY", "true")
+	t.Setenv("APPRISE_URL", "")
+	c := Load()
+	if c.OldNotify["MATRIX_ROOM"] != "#updates:example.org" || c.OldNotify["UNRAID_NOTIFY"] != "true" || c.OldNotify["APPRISE_URL"] != "" {
+		t.Errorf("OldNotify = %v", c.OldNotify)
+	}
+}

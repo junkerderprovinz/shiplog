@@ -169,7 +169,9 @@ type fakeHost struct {
 	stale    map[string]bool
 	orphaned map[string]bool
 	// created makes an update leave the container created but not started.
-	created   map[string]bool
+	created map[string]bool
+	// health is what the healthcheck says after the next update.
+	health    map[string]string
 	exitErr   error  // returned once, after the update had its effect
 	onSleep   func() // runs once, at the next sleep
 	started   []string
@@ -196,7 +198,11 @@ func (h *fakeHost) Update(ctx context.Context, name string) (string, error) {
 		c = model.Container{Name: name, State: "created"}
 	case h.created[name]:
 		c.State = "created"
+	case c.State == "restarting":
+		c.State = "running"
 	}
+	c.Health = h.health[name]
+	delete(h.health, name)
 	switch {
 	case c.State == "removing" || h.stale[name]:
 	case h.orphaned[name]:
@@ -750,5 +756,27 @@ func TestResultNotable(t *testing.T) {
 		if got := c.res.Notable(); got != c.want {
 			t.Errorf("%s: Notable = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+func TestExecutorNamesEachContainerBeforeItsUpdate(t *testing.T) {
+	upd := &fakeUpdater{sup: true}
+	var named []string
+	e := NewExecutor(fakeLister{sts: []model.UpdateStatus{
+		stNamed("a", model.KindPatch), stNamed("b", model.KindMajor), stNamed("d", model.KindPatch),
+	}}, upd).WithProgress(func(name string) {
+		if len(upd.calls) != len(named) {
+			t.Errorf("%s named after its update started", name)
+		}
+		named = append(named, name)
+	})
+	e.Run(context.Background(), Policy{Level: LevelPatch}, false)
+	if !reflect.DeepEqual(named, []string{"a", "d"}) {
+		t.Errorf("named %v, want [a d]", named)
+	}
+	named = nil
+	e.Run(context.Background(), Policy{Level: LevelPatch}, true)
+	if len(named) != 0 {
+		t.Errorf("a dry run named %v", named)
 	}
 }

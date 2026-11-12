@@ -80,30 +80,53 @@
      so a burst of edits restarts the engine once. A switch or a pick that could
      not be saved goes back and shakes; a typed value stays as it is. */
   var UI_ONLY = { CONFIRM_UPDATE: true, SILENT_UPDATE: true };
+  // Notifications go to notify.json through notify.php, which restarts the engine.
+  var NOTIFY = { MATRIX_HOMESERVER: true, MATRIX_TOKEN: true, MATRIX_ROOM: true, APPRISE_URL: true, UNRAID_NOTIFY: true };
   var savedEl = byId("sl-saved");
   var saving = false, queued = null, typed = null, typeTimer = 0;
   function note(state, text) { savedEl.setAttribute("data-state", state); savedEl.textContent = text; }
   function job(names, undo, ctl) {
-    return { restart: names.some(function (n) { return !UI_ONLY[n]; }), undo: undo ? [undo] : [], ctl: ctl ? [ctl] : [] };
+    return {
+      restart: names.some(function (n) { return !UI_ONLY[n] && !NOTIFY[n]; }),
+      cfg: names.some(function (n) { return !NOTIFY[n]; }),
+      notify: names.some(function (n) { return NOTIFY[n]; }),
+      undo: undo ? [undo] : [], ctl: ctl ? [ctl] : []
+    };
   }
   function merged(a, b) {
     if (!a) return b;
-    return { restart: a.restart || b.restart, undo: a.undo.concat(b.undo), ctl: a.ctl.concat(b.ctl) };
+    return { restart: a.restart || b.restart, cfg: a.cfg || b.cfg, notify: a.notify || b.notify,
+      undo: a.undo.concat(b.undo), ctl: a.ctl.concat(b.ctl) };
+  }
+  function posted(r) {
+    // An expired session answers with the login page.
+    if (!r.ok || r.redirected) throw new Error(r.ok ? T.s_session : "HTTP " + r.status);
+  }
+  function saveCfg(restart) {
+    // update.php never answers a multipart body, so the form goes URL-encoded.
+    var body = new URLSearchParams(new FormData(form));
+    Object.keys(NOTIFY).forEach(function (k) { body.delete(k); });
+    if (!restart) { body.delete("#command"); body.delete("#arg[1]"); }
+    return fetch("/update.php", { method: "POST", body: body, credentials: "same-origin" }).then(posted);
+  }
+  function saveNotify() {
+    var body = new URLSearchParams({
+      unraid: val("UNRAID_NOTIFY"), hs: val("MATRIX_HOMESERVER"), token: val("MATRIX_TOKEN"),
+      room: val("MATRIX_ROOM"), apprise: val("APPRISE_URL"), csrf_token: window.csrf_token || ""
+    });
+    return fetch("/plugins/shiplog/server/notify.php", { method: "POST", body: body, credentials: "same-origin" }).then(posted);
   }
   function save(j) {
     if (saving) { queued = merged(queued, j); return; }
     saving = true;
-    note("run", j.restart ? T.s_saving_restart : T.s_saving);
-    // update.php never answers a multipart body, so the form goes URL-encoded.
-    var body = new URLSearchParams(new FormData(form));
-    if (!j.restart) { body.delete("#command"); body.delete("#arg[1]"); }
-    fetch("/update.php", { method: "POST", body: body, credentials: "same-origin" })
-      .then(function (r) {
-        // An expired session answers with the login page.
-        if (!r.ok || r.redirected) throw new Error(r.ok ? T.s_session : "HTTP " + r.status);
+    note("run", j.restart || j.notify ? T.s_saving_restart : T.s_saving);
+    Promise.resolve()
+      .then(function () { if (j.cfg) return saveCfg(j.restart); })
+      .then(function () { if (j.notify) return saveNotify(); })
+      .then(function () {
         var t = new Date().toLocaleTimeString(window.SL_LANG, { hour: "2-digit", minute: "2-digit" });
         note("ok", T.s_saved + " · " + t);
-        if (j.restart) loadStatus();
+        if (j.restart || j.notify) loadStatus();
       })
       .catch(function (e) {
         j.undo.forEach(function (fn) { fn(); });
@@ -422,6 +445,54 @@
       .catch(function () { show("err", T.s_unreachable, T.s_unreachable_hint); auLoaded(null); });
   }
   loadStatus();
+
+  /* ShipLog's place in a fortress. The card shows only when the engine answers
+     on its socket, and says so when another member took this server out or
+     the fortress has a new phrase ShipLog could not follow, which the new
+     words fix as the same member. The phrase goes to the engine and is never
+     kept, here or there. */
+  var fort = byId("sl-fortress"), phraseEl = byId("sl-fortress-phrase"), joinBtn = byId("sl-fortress-join");
+  function showFortress(s) {
+    fort.hidden = false;
+    var stat = byId("sl-fortress-stat");
+    stat.setAttribute("data-state", s.joined ? "ok" : "");
+    byId("sl-fortress-txt").textContent = s.joined ? T.s_fortress_in.replace("%s", function () { return s.device || ""; }) : T.s_fortress_out;
+    var changed = !!(s.joined && s.phraseChanged);
+    byId("sl-fortress-removed").hidden = !s.removed || s.joined;
+    byId("sl-fortress-changed").hidden = !changed;
+    byId("sl-fortress-joinrow").hidden = !!s.joined && !changed;
+  }
+  function loadFortress() {
+    fetch("/plugins/shiplog/server/status.php?path=fortress", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) { if (s && typeof s.joined === "boolean") showFortress(s); })
+      .catch(function () {});
+  }
+  function joinFortress() {
+    var words = phraseEl.value.trim();
+    if (!words) { note("err", T.s_fortress_bad_phrase); phraseEl.focus(); return; }
+    joinBtn.disabled = true;
+    var body = new URLSearchParams({ path: "fortress/join", method: "POST", data: JSON.stringify({ phrase: words }), csrf_token: window.csrf_token || "" });
+    fetch("/plugins/shiplog/server/status.php", { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d || {} }; }, function () { return { ok: false, d: {} }; }); })
+      .then(function (res) {
+        if (res.ok) {
+          phraseEl.value = "";
+          note("ok", T.s_fortress_joined);
+          showFortress(res.d);
+        } else if (res.d.error === "member") {
+          phraseEl.value = "";
+          loadFortress();
+        } else {
+          note("err", res.d.error === "phrase" ? T.s_fortress_bad_phrase : T.s_fortress_failed.replace("%s", function () { return res.d.error || ""; }));
+        }
+      })
+      .catch(function (e) { note("err", T.s_fortress_failed.replace("%s", function () { return e.message; })); })
+      .then(function () { joinBtn.disabled = false; });
+  }
+  joinBtn.addEventListener("click", joinFortress);
+  phraseEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); joinFortress(); } });
+  loadFortress();
 
   /* Auto-update. Everything below the main switch only matters while it is on,
      so those rows are left out while it is off. */

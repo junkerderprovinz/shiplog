@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	kitnotify "github.com/junkerderprovinz/parleyport/kit/notify"
+
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 )
@@ -385,10 +387,10 @@ type fakeDocker struct{ cs []model.Container }
 
 func (f fakeDocker) List(context.Context) ([]model.Container, error) { return f.cs, nil }
 
-type fakeMessenger struct{ texts []string }
+type fakeMessenger struct{ events []kitnotify.Event }
 
-func (f *fakeMessenger) SendMessage(_ context.Context, text, _ string) error {
-	f.texts = append(f.texts, text)
+func (f *fakeMessenger) Send(_ context.Context, e kitnotify.Event) error {
+	f.events = append(f.events, e)
 	return nil
 }
 
@@ -413,8 +415,9 @@ func TestAppliedComparesRunningDigest(t *testing.T) {
 	if ref.called != 3 {
 		t.Errorf("refresh called %d times, want once per check", ref.called)
 	}
-	if len(msg.texts) != 2 || !strings.Contains(msg.texts[0], "Nextcloud") || !strings.Contains(msg.texts[1], "Gone") {
-		t.Errorf("notifications %q, want one for each container left on the old image", msg.texts)
+	if len(msg.events) != 2 || !strings.Contains(msg.events[0].Title, "Nextcloud") || !strings.Contains(msg.events[1].Title, "Gone") ||
+		msg.events[0].Severity != kitnotify.SeverityFailure {
+		t.Errorf("notifications %+v, want a failure for each container left on the old image", msg.events)
 	}
 }
 

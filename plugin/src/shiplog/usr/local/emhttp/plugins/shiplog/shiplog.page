@@ -19,11 +19,16 @@ $ourl   = isset($cfg['OLLAMA_URL'])        ? $cfg['OLLAMA_URL']        : '';
 $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $lsurl  = isset($cfg['LLAMASWAP_URL'])     ? $cfg['LLAMASWAP_URL']     : '';
 $lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
-$mhs    = isset($cfg['MATRIX_HOMESERVER']) ? $cfg['MATRIX_HOMESERVER'] : '';
-$mtok   = isset($cfg['MATRIX_TOKEN'])      ? $cfg['MATRIX_TOKEN']      : '';
-$mroom  = isset($cfg['MATRIX_ROOM'])       ? $cfg['MATRIX_ROOM']       : '';
-$apprise= isset($cfg['APPRISE_URL'])       ? $cfg['APPRISE_URL']       : '';
-$unraidNotify = (isset($cfg['UNRAID_NOTIFY']) && $cfg['UNRAID_NOTIFY']==='true'); // default off
+/* Notifications live in notify.json beside shiplog.cfg, which still holds them
+   until the engine or this page has moved them (server/notify.php). */
+$N = include '/usr/local/emhttp/plugins/shiplog/include/notify.php';
+$nf = '/boot/config/plugins/shiplog/notify.json';
+$NV = $N['fields'](is_file($nf) ? json_decode((string)@file_get_contents($nf), true) : null, $cfg);
+$mhs    = $NV['hs'];
+$mtok   = $NV['token'];
+$mroom  = $NV['room'];
+$apprise= $NV['apprise'];
+$unraidNotify = $NV['unraid'];
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
@@ -160,6 +165,22 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
         <div class="sl-ctl">
           <span class="sl-stat" id="sl-stat" data-state="run" role="status" aria-labelledby="sl-status-lbl sl-stat-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-stat-txt"><?=$slE($L['s_checking'])?></span></span>
           <span class="sl-act"><a class="button sl-btn" id="sl-statuslink" href="/plugins/shiplog/server/status.php?path=page" target="_blank" rel="noopener noreferrer"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a></span>
+        </div>
+      </div>
+    </section>
+    <section class="sl-card" id="sl-fortress" aria-labelledby="sl-h-fortress" hidden>
+      <h3 class="sl-h"><span id="sl-h-fortress"><?=$slE($L['s_fortress'])?></span></h3>
+      <p class="sl-warn" id="sl-fortress-removed" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_fortress_removed'])?></span></p>
+      <p class="sl-warn" id="sl-fortress-changed" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_fortress_changed'])?></span></p>
+      <div class="sl-row">
+        <div class="sl-lbl"><span id="sl-fortress-lbl"><?=$slE($L['s_fortress_member'])?></span></div>
+        <div class="sl-ctl"><span class="sl-stat" id="sl-fortress-stat" role="status" aria-labelledby="sl-fortress-lbl sl-fortress-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-fortress-txt"></span></span></div>
+      </div>
+      <div class="sl-row" id="sl-fortress-joinrow" hidden>
+        <div class="sl-lbl"><label for="sl-fortress-phrase"><?=$slE($L['s_fortress_join'])?></label><?=$slInfo($L['s_fortress_join_desc'])?></div>
+        <div class="sl-ctl">
+          <input type="password" class="sl-phrase" id="sl-fortress-phrase" autocomplete="off" spellcheck="false" placeholder="<?=$slE($L['s_fortress_join_ph'])?>">
+          <span class="sl-act"><button type="button" class="sl-btn" id="sl-fortress-join"><?=$slBtn('Check', $L['s_fortress_join_btn'])?></button></span>
         </div>
       </div>
     </section>

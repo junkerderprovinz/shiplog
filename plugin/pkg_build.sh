@@ -18,7 +18,7 @@ trap 'rm -rf "$PKGROOT"' EXIT
 
 echo "==> building engine binary (linux/amd64)"
 ( cd "$ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -trimpath -ldflags "-s -w" -o "$PLUGIN_SRC/$BIN_REL" ./cmd/shiplog )
+  go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o "$PLUGIN_SRC/$BIN_REL" ./cmd/shiplog )
 
 echo "==> assembling package tree"
 cp -a "$PLUGIN_SRC/." "$PKGROOT/"

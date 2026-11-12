@@ -1,7 +1,9 @@
 package config_test
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/config"
 )
@@ -31,6 +33,41 @@ func TestLoadAutoUpdateParsed(t *testing.T) {
 	au := config.Load().AutoUpdate
 	if !au.Enabled || au.Level != "minor" || !au.Digest || !au.DryRun || au.SchedMode != "hours" || au.SchedEvery != 6 || au.ExcludeContainers != "gitea,plex" {
 		t.Fatalf("parse failed: %+v", au)
+	}
+}
+
+func TestLoadBackupSettings(t *testing.T) {
+	t.Setenv("AUTOUPDATE_BACKUP_MINUTES", "")
+	t.Setenv("AUTOUPDATE_WITHOUT_BACKUP", "")
+	t.Setenv("FORTRESS_DIR", "")
+	cfg := config.Load()
+	if cfg.AutoUpdate.BackupTimeout != 30*time.Minute || cfg.AutoUpdate.WithoutBackup != "" || cfg.FortressDir != "" {
+		t.Fatalf("defaults = %s %q %q, want 30m and nothing else", cfg.AutoUpdate.BackupTimeout, cfg.AutoUpdate.WithoutBackup, cfg.FortressDir)
+	}
+
+	t.Setenv("AUTOUPDATE_BACKUP_MINUTES", "90")
+	t.Setenv("AUTOUPDATE_WITHOUT_BACKUP", "redis,dozzle")
+	t.Setenv("FORTRESS_DIR", "/boot/config/plugins/shiplog/fortress")
+	cfg = config.Load()
+	if cfg.AutoUpdate.BackupTimeout != 90*time.Minute || cfg.AutoUpdate.WithoutBackup != "redis,dozzle" || cfg.FortressDir != "/boot/config/plugins/shiplog/fortress" {
+		t.Fatalf("parsed = %s %q %q", cfg.AutoUpdate.BackupTimeout, cfg.AutoUpdate.WithoutBackup, cfg.FortressDir)
+	}
+
+	t.Setenv("AUTOUPDATE_BACKUP_MINUTES", "0")
+	if got := config.Load().AutoUpdate.BackupTimeout; got != 30*time.Minute {
+		t.Errorf("a timeout below a minute = %s, want the 30m default", got)
+	}
+}
+
+func TestRunsFileDefaultsToTheDataDir(t *testing.T) {
+	t.Setenv("DATA_DIR", "/config")
+	t.Setenv("RUNS_FILE", "")
+	if got := config.Load().RunsFile; got != filepath.Join("/config", "runs.json") {
+		t.Fatalf("RunsFile = %q", got)
+	}
+	t.Setenv("RUNS_FILE", "/boot/config/plugins/shiplog/runs.json")
+	if got := config.Load().RunsFile; got != "/boot/config/plugins/shiplog/runs.json" {
+		t.Fatalf("RunsFile = %q", got)
 	}
 }
 

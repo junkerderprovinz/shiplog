@@ -30,21 +30,28 @@ type Config struct {
 	DockerHubUser  string // DOCKERHUB_USERNAME
 	DockerHubToken string // DOCKERHUB_TOKEN (access token or password)
 
-	OllamaURL        string // OLLAMA_URL
-	OllamaModel      string // OLLAMA_MODEL
-	LlamaSwapURL     string // LLAMASWAP_URL, used instead of Ollama when set
-	LlamaSwapModel   string // LLAMASWAP_MODEL
-	MatrixHomeserver string // MATRIX_HOMESERVER
-	MatrixToken      string // MATRIX_TOKEN
-	MatrixRoom       string // MATRIX_ROOM
-	AppriseURL       string // APPRISE_URL, an Apprise API notify URL with its key
+	OllamaURL      string // OLLAMA_URL
+	OllamaModel    string // OLLAMA_MODEL
+	LlamaSwapURL   string // LLAMASWAP_URL, used instead of Ollama when set
+	LlamaSwapModel string // LLAMASWAP_MODEL
 
-	// UnraidNotify (UNRAID_NOTIFY) also sends native Unraid notifications, which
-	// fan out to every agent configured on the host.
-	UnraidNotify bool
+	// NotifyFile (NOTIFY_FILE) holds the notification channels. Without it,
+	// as in the container, OldNotify sets them up on every start.
+	NotifyFile string
+	// OldNotify holds the variables notifications were set up with before
+	// NotifyFile, which the plugin reads once to build it.
+	OldNotify map[string]string
 
 	// AutoUpdate holds the scheduled auto-update settings of the Unraid plugin.
 	AutoUpdate AutoUpdateConfig
+
+	// FortressDir (FORTRESS_DIR) keeps ShipLog's membership in a fortress, as
+	// the kit's fortress join writes it. Empty or without a membership, ShipLog
+	// is in no fortress.
+	FortressDir string
+	// RunsFile (RUNS_FILE, else runs.json in DataDir) keeps the update runs
+	// other apps asked for, so they get their answer after a restart.
+	RunsFile string
 }
 
 // AutoUpdateConfig configures scheduled auto-updates (all AUTOUPDATE_* env vars).
@@ -63,30 +70,35 @@ type AutoUpdateConfig struct {
 	// ExcludeContainers (AUTOUPDATE_EXCLUDE_CONTAINERS, comma-separated names)
 	// are never auto-updated; the admin updates them by hand.
 	ExcludeContainers string
+	// BackupTimeout (AUTOUPDATE_BACKUP_MINUTES) is how long an update waits for
+	// the fortress's backup app to back the container up.
+	BackupTimeout time.Duration
+	// WithoutBackup (AUTOUPDATE_WITHOUT_BACKUP, comma-separated names) update
+	// even when their backup fails.
+	WithoutBackup string
 }
 
 // Load reads the environment, applying the documented defaults.
 func Load() Config {
-	return Config{
-		DockerSocket:     env("DOCKER_SOCKET", "/var/run/docker.sock"),
-		DockerConfigDir:  dockerConfigDir(),
-		Port:             env("PORT", "8484"),
-		Socket:           os.Getenv("SOCKET"),
-		DataDir:          env("DATA_DIR", "/config"),
-		PollInterval:     dur("POLL_INTERVAL", 6*time.Hour),
-		GithubToken:      os.Getenv("GITHUB_TOKEN"),
-		IgnoreUnmanaged:  truthy("IGNORE_UNMANAGED"),
-		DockerHubUser:    os.Getenv("DOCKERHUB_USERNAME"),
-		DockerHubToken:   os.Getenv("DOCKERHUB_TOKEN"),
-		OllamaURL:        os.Getenv("OLLAMA_URL"),
-		OllamaModel:      os.Getenv("OLLAMA_MODEL"),
-		LlamaSwapURL:     os.Getenv("LLAMASWAP_URL"),
-		LlamaSwapModel:   os.Getenv("LLAMASWAP_MODEL"),
-		MatrixHomeserver: os.Getenv("MATRIX_HOMESERVER"),
-		MatrixToken:      os.Getenv("MATRIX_TOKEN"),
-		MatrixRoom:       os.Getenv("MATRIX_ROOM"),
-		AppriseURL:       os.Getenv("APPRISE_URL"),
-		UnraidNotify:     truthy("UNRAID_NOTIFY"),
+	c := Config{
+		DockerSocket:    env("DOCKER_SOCKET", "/var/run/docker.sock"),
+		DockerConfigDir: dockerConfigDir(),
+		Port:            env("PORT", "8484"),
+		Socket:          os.Getenv("SOCKET"),
+		DataDir:         env("DATA_DIR", "/config"),
+		PollInterval:    dur("POLL_INTERVAL", 6*time.Hour),
+		GithubToken:     os.Getenv("GITHUB_TOKEN"),
+		IgnoreUnmanaged: truthy("IGNORE_UNMANAGED"),
+		DockerHubUser:   os.Getenv("DOCKERHUB_USERNAME"),
+		DockerHubToken:  os.Getenv("DOCKERHUB_TOKEN"),
+		OllamaURL:       os.Getenv("OLLAMA_URL"),
+		OllamaModel:     os.Getenv("OLLAMA_MODEL"),
+		LlamaSwapURL:    os.Getenv("LLAMASWAP_URL"),
+		LlamaSwapModel:  os.Getenv("LLAMASWAP_MODEL"),
+		NotifyFile:      os.Getenv("NOTIFY_FILE"),
+		FortressDir:     os.Getenv("FORTRESS_DIR"),
+		RunsFile:        os.Getenv("RUNS_FILE"),
+		OldNotify:       oldNotify(),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:           truthy("AUTOUPDATE_ENABLED"),
 			Level:             levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
@@ -97,8 +109,22 @@ func Load() Config {
 			SchedEvery:        atoiMin1("AUTOUPDATE_SCHED_EVERY", 6),
 			ExcludeWords:      os.Getenv("AUTOUPDATE_EXCLUDE_WORDS"),
 			ExcludeContainers: os.Getenv("AUTOUPDATE_EXCLUDE_CONTAINERS"),
+			BackupTimeout:     time.Duration(atoiMin1("AUTOUPDATE_BACKUP_MINUTES", 30)) * time.Minute,
+			WithoutBackup:     os.Getenv("AUTOUPDATE_WITHOUT_BACKUP"),
 		},
 	}
+	if c.RunsFile == "" {
+		c.RunsFile = filepath.Join(c.DataDir, "runs.json")
+	}
+	return c
+}
+
+func oldNotify() map[string]string {
+	m := map[string]string{}
+	for _, k := range []string{"MATRIX_HOMESERVER", "MATRIX_TOKEN", "MATRIX_ROOM", "APPRISE_URL", "UNRAID_NOTIFY"} {
+		m[k] = os.Getenv(k)
+	}
+	return m
 }
 
 // truthy accepts the settings page's "true" as well as "yes", "1" and "on".
