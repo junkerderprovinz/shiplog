@@ -178,7 +178,7 @@
   "s_fortress_member": "Członkostwo",
   "s_fortress_in": "W twierdzy jako %s",
   "s_fortress_out": "Poza twierdzą",
-  "s_fortress_removed": "Inny członek twierdzy usunął z niej ten serwer. Dopóki nie dołączysz ponownie swoją frazą, automatyczne aktualizacje idą bez kopii zapasowej.",
+  "s_fortress_removed": "Inny członek twierdzy usunął z niej ten serwer. Dopóki nie dołączysz ponownie aktualną frazą, automatyczne aktualizacje idą bez kopii zapasowej.",
   "s_fortress_changed": "Twoja twierdza ma nową frazę, za którą ShipLog nie zdołał podążyć sam. Wpisz poniżej nowe słowa, a zostanie tym samym członkiem. Do tego czasu automatyczne aktualizacje idą bez kopii zapasowej.",
   "s_fortress_join": "Dołącz frazą",
   "s_fortress_join_desc": "Wpisz swoją frazę, dwanaście słów. ShipLog trzyma tylko własne klucze, nigdy frazy.",

@@ -178,7 +178,7 @@
   "s_fortress_member": "Medlemskab",
   "s_fortress_in": "I fæstningen som %s",
   "s_fortress_out": "Ikke i en fæstning",
-  "s_fortress_removed": "Et andet medlem af fæstningen tog denne server ud. Indtil du er med igen med din sætning, kører automatiske opdateringer uden sikkerhedskopi.",
+  "s_fortress_removed": "Et andet medlem af fæstningen tog denne server ud. Indtil du er med igen med den aktuelle sætning, kører automatiske opdateringer uden sikkerhedskopi.",
   "s_fortress_changed": "Din fæstning har en ny sætning, som ShipLog ikke kunne følge af sig selv. Skriv de nye ord nedenfor, så fortsætter den som det samme medlem. Indtil da kører automatiske opdateringer uden sikkerhedskopi.",
   "s_fortress_join": "Bliv medlem med sætningen",
   "s_fortress_join_desc": "Indtast din sætning, de tolv ord. ShipLog gemmer kun sine egne nøgler, aldrig sætningen.",

@@ -178,7 +178,7 @@
   "s_fortress_member": "Üyelik",
   "s_fortress_in": "Kalede %s olarak",
   "s_fortress_out": "Hiçbir kalede değil",
-  "s_fortress_removed": "Kalenin başka bir üyesi bu sunucuyu kaleden çıkardı. İfadenle yeniden katılana kadar otomatik güncellemeler yedeksiz çalışır.",
+  "s_fortress_removed": "Kalenin başka bir üyesi bu sunucuyu kaleden çıkardı. Güncel ifadeyle yeniden katılana kadar otomatik güncellemeler yedeksiz çalışır.",
   "s_fortress_changed": "Kalenin yeni bir ifadesi var ve ShipLog buna kendi başına geçemedi. Yeni kelimeleri aşağıya gir, aynı üye olarak devam etsin. O zamana kadar otomatik güncellemeler yedeksiz çalışır.",
   "s_fortress_join": "İfadeyle katıl",
   "s_fortress_join_desc": "İfadeni, on iki kelimeyi gir. ShipLog yalnızca kendi anahtarlarını saklar, ifadeyi asla saklamaz.",
