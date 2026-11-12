@@ -171,3 +171,25 @@ func TestTheStateListsTheOtherMembers(t *testing.T) {
 		}
 	}
 }
+
+func TestAMemberThatNeverSaidItsAppStaysOffTheCard(t *testing.T) {
+	got := others([]kitfortress.Member{
+		{ID: "a", Kind: member.KindInstance, App: kitfortress.App{ID: "tollroll", Name: "TollRoll"}, Device: "Bottich", Deployment: "plugin"},
+		{ID: "b", Kind: member.KindInstance, Device: "Bottich", Deployment: "plugin"},
+	})
+	if len(got) != 1 || got[0].ID != "a" || got[0].Name != "TollRoll" {
+		t.Errorf("listed = %+v, want TollRoll alone", got)
+	}
+}
+
+func TestTheRemovedListNamesNobodyWithoutAnApp(t *testing.T) {
+	d := &Door{Dir: t.TempDir(), App: shiplog, Device: "Tower"}
+	raw := `[{"app":"tollroll","name":"TollRoll","device":"Bottich"},{"app":"","name":"","device":"Bottich"}]`
+	if err := os.WriteFile(filepath.Join(d.Dir, removedFile), []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	want := []Removed{{App: "tollroll", Name: "TollRoll", Device: "Bottich"}}
+	if got := d.State().RemovedMembers; !slices.Equal(got, want) {
+		t.Errorf("removed = %+v, want %+v", got, want)
+	}
+}
