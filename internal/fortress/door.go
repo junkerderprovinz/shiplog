@@ -155,11 +155,23 @@ func (d *Door) State() State {
 		return s
 	}
 	s.Device = d.m.Device
-	for _, m := range d.m.Fortress.Members() {
-		s.Members = append(s.Members, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID),
+	s.Members = others(d.m.Fortress.Members())
+	return s
+}
+
+// others lists the members the settings page shows. One that never said
+// which app it runs, such as a helper that is online only while it works,
+// would be a row without a name, so it stays off.
+func others(members []kitfortress.Member) []Other {
+	out := []Other{}
+	for _, m := range members {
+		if m.App.ID == "" {
+			continue
+		}
+		out = append(out, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID),
 			Device: m.Device, Deployment: m.Deployment, Address: m.Address, Online: m.Online()})
 	}
-	return s
+	return out
 }
 
 // Remove takes member id out of the fortress, here and at every member in
@@ -170,7 +182,7 @@ func (d *Door) Remove(id string) error {
 	if f == nil {
 		return ErrNotMember
 	}
-	for _, m := range f.Members() {
+	for _, m := range others(f.Members()) {
 		if m.ID != id {
 			continue
 		}
@@ -179,7 +191,7 @@ func (d *Door) Remove(id string) error {
 		}
 		d.mu.Lock()
 		defer d.mu.Unlock()
-		list := append(d.removedList(), Removed{App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID), Device: m.Device})
+		list := append(d.removedList(), Removed{App: m.App, Name: m.Name, Device: m.Device})
 		raw, err := json.Marshal(list)
 		if err != nil {
 			return err
@@ -192,10 +204,16 @@ func (d *Door) Remove(id string) error {
 // removedList reads the members ShipLog took out. A list that cannot be read
 // names nobody rather than keep the settings page from showing the fortress.
 func (d *Door) removedList() []Removed {
-	var list []Removed
+	var read []Removed
 	raw, err := os.ReadFile(filepath.Join(d.Dir, removedFile))
-	if err != nil || json.Unmarshal(raw, &list) != nil || list == nil {
+	if err != nil || json.Unmarshal(raw, &read) != nil {
 		return []Removed{}
+	}
+	list := []Removed{}
+	for _, r := range read {
+		if r.App != "" {
+			list = append(list, r)
+		}
 	}
 	return list
 }
