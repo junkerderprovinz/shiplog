@@ -849,7 +849,7 @@
      the chain is switched right under the address it changes, and the coins
      wait below as tiles. A new coin starts on its own first chain, never on one
      carried over. */
-  var cwin = byId("sl-win-crypto"), copyBtn = byId("sl-copy"), note = cwin.querySelector(".sl-note"), copiedTimer = 0;
+  var cwin = byId("sl-win-crypto"), copyBtn = byId("sl-copy"), netNote = cwin.querySelector(".sl-note"), copiedTimer = 0;
   // A copy that landed wears the tick of a passed test until it turns back.
   function copied(done) {
     copyBtn.querySelector(".sl-g").innerHTML = done ? GLYPH.Check : GLYPH.Copy;
@@ -862,7 +862,7 @@
   function pickNet(chip) {
     Array.prototype.forEach.call(chip.parentNode.children, function (c) { c.setAttribute("aria-selected", c === chip ? "true" : "false"); });
     cwin.querySelectorAll(".sl-qrpanel").forEach(function (p) { p.hidden = p.getAttribute("data-address") !== chip.getAttribute("data-address"); });
-    note.hidden = !chip.hasAttribute("data-note");
+    netNote.hidden = !chip.hasAttribute("data-note");
     clearTimeout(copiedTimer);
     copied(false);
   }
