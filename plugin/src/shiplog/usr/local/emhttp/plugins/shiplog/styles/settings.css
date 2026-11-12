@@ -145,6 +145,8 @@ html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-sil: 30%; }
 .sl-res.ok { color: var(--sl-ok); }
 .sl-res.err { color: var(--sl-err); }
 .sl-res.run, .sl-hint, .sl-unit { color: var(--sl-dim); font-size: 13px; }
+/* A check that runs wears the accent, as every running state does. */
+html.tt-popups-on .sl-cfg .sl-res.run { color: var(--sl-focus); }
 
 /* One width per kind of field: every text field, secret and dropdown is as wide
    as the field column, a short value such as a port or a time keeps a short one. */
@@ -349,6 +351,8 @@ html.tt-popups-on #sl-wins {
   --sl-w-ground: #1a1a1a;
   --sl-w-card: #222;
   --sl-w-chip: #2e2e2e;
+  --sl-w-raised: #2e2e2e;
+  --sl-w-raised-hover: #383838;
   --sl-w-head: var(--tt-accent, #FCC419);
   --sl-w-head-ink: var(--tt-accent-text, #161616);
   --sl-w-dim: #8a8a8a;
@@ -361,6 +365,15 @@ html.tt-popups-on #sl-wins {
   --sl-w-r-ctl: var(--tt-radius-control, 12px);
   --sl-w-r-pill: var(--tt-radius-pill, 9999px);
   --sl-w-shadow: var(--tt-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
+}
+/* OLED puts the windows on true black and every surface one step down. The
+   shadow stays, so a card's own fill is its edge. */
+html.tt-popups-on[data-oled]:not(.Theme--white):not(.Theme--azure) #sl-wins {
+  --sl-w-ground: #000;
+  --sl-w-card: #161616;
+  --sl-w-chip: #262626;
+  --sl-w-raised: #262626;
+  --sl-w-raised-hover: #393939;
 }
 #sl-wins *, #sl-wins *::before, #sl-wins *::after { box-sizing: border-box; }
 #sl-wins [hidden] { display: none !important; }
@@ -504,20 +517,20 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
    so the window draws its own in the look of TowerTorch's windows. */
 html.tt-popups-on .sl-win button.sl-win-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 96px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
-  border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: #2e2e2e; color: #e6e6e6;
+  min-width: 88px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
+  border: none; border-radius: var(--sl-w-r-pill); box-shadow: none; background: var(--sl-w-raised); color: #e6e6e6;
   font-family: inherit; font-size: var(--tt-text-meta, 12px); font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
 /* GlimStone's rule 40: the hovered ground takes 22% of the tint and the glyph
    all of it, while the words keep the text colour. Under rainbow settings.js
    gives each button its own position. */
-html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) { background: color-mix(in srgb, #2e2e2e, var(--sl-tint, var(--sl-w-head)) 22%); color: #e6e6e6; }
+html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--sl-w-raised), var(--sl-tint, var(--sl-w-head)) 22%); color: #e6e6e6; }
 html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) .sl-g { color: var(--sl-tint, var(--sl-w-head)); }
 html.tt-popups-on .sl-win input.sl-amount {
   height: 32px; padding: 7px 10px; border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none;
-  background: #2e2e2e; color: #e6e6e6; font-family: inherit; font-size: 13px;
+  background: var(--sl-w-raised); color: #e6e6e6; font-family: inherit; font-size: 13px;
 }
-html.tt-popups-on .sl-win input.sl-amount:focus { background: #383838; }
+html.tt-popups-on .sl-win input.sl-amount:focus { background: var(--sl-w-raised-hover); }
 html.tt-popups-on .sl-win input.sl-amount::placeholder { color: #a3a3a3; opacity: 1; }
 
 /* With TowerTorch: GlimStone's look from its tokens. */
