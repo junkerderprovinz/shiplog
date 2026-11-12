@@ -162,7 +162,7 @@ func TestTheStateListsTheOtherMembers(t *testing.T) {
 	waitFor(t, "ShipLog to list BombVault and TollRoll by name", func() bool {
 		names = names[:0]
 		for _, m := range d.State().Members {
-			names = append(names, m.Name+" on "+m.Device+" as "+m.Deployment)
+			names = append(names, m.Name+" on "+m.Device+" as "+m.Form)
 		}
 		slices.Sort(names)
 		return slices.Equal(names, want)
@@ -194,7 +194,7 @@ func TestTheCardNeverCarriesAMembersAddress(t *testing.T) {
 	if s := string(raw); strings.Contains(s, "address") || strings.Contains(s, "bottich:3000") {
 		t.Errorf("the card gets the address: %s", s)
 	}
-	if len(got) != 1 || got[0].Kind != "instance" || got[0].Deployment != "container" || got[0].Device != "Bottich" {
+	if len(got) != 1 || got[0].Kind != "instance" || got[0].Form != "container" || got[0].Device != "Bottich" {
 		t.Errorf("the card lost what names the app that keeps the phrase: %+v", got)
 	}
 }

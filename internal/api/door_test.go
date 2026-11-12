@@ -1,10 +1,14 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/junkerderprovinz/parleyport/kit/status"
 
 	"github.com/junkerderprovinz/shiplog/internal/fortress"
 )
@@ -13,6 +17,8 @@ type fakeDoor struct {
 	state   fortress.State
 	words   string
 	removed string
+	left    bool
+	asked   string
 	err     error
 }
 
@@ -32,6 +38,22 @@ func (d *fakeDoor) Remove(id string) error {
 		d.state.RemovedMembers = append(d.state.RemovedMembers, fortress.Removed{App: "tollroll", Name: "TollRoll", Device: "Bottich"})
 	}
 	return d.err
+}
+
+func (d *fakeDoor) Leave() error {
+	if d.err == nil {
+		d.left = true
+		d.state = fortress.State{}
+	}
+	return d.err
+}
+
+func (d *fakeDoor) Status(_ context.Context, id, lang string) (fortress.MemberStatus, error) {
+	d.asked = id + " in " + lang
+	if d.err != nil {
+		return fortress.MemberStatus{}, d.err
+	}
+	return fortress.MemberStatus{Report: status.Report{State: status.StateOK}, Log: []status.LogEntry{{ID: "7", Level: status.SeverityWarn, Text: "Plex waits for a backup"}}}, nil
 }
 
 func doorCall(a *API, method, path, body string, socket bool) *httptest.ResponseRecorder {
@@ -120,5 +142,61 @@ func TestOnlyTheSocketRemovesAMember(t *testing.T) {
 	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(d)
 	if rr := doorCall(a, http.MethodDelete, "/api/fortress/members/5f3a", "", false); rr.Code != http.StatusForbidden || d.removed != "" {
 		t.Errorf("remove over the network = %d, removed %q", rr.Code, d.removed)
+	}
+}
+
+func TestThePageTakesShipLogOutOfTheFortress(t *testing.T) {
+	d := &fakeDoor{state: fortress.State{Joined: true, Device: "Tower"}}
+	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(d)
+	rr := doorCall(a, http.MethodPost, "/api/fortress/leave", "", true)
+	if rr.Code != http.StatusOK || !d.left || !strings.Contains(rr.Body.String(), `"joined":false`) {
+		t.Errorf("leave = %d %s", rr.Code, rr.Body)
+	}
+}
+
+func TestLeavingOutsideAFortressSaysSoWithACode(t *testing.T) {
+	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(&fakeDoor{err: fortress.ErrNotMember})
+	rr := doorCall(a, http.MethodPost, "/api/fortress/leave", "", true)
+	if rr.Code != http.StatusConflict || !strings.Contains(rr.Body.String(), `"error":"notMember"`) {
+		t.Errorf("leave = %d %s", rr.Code, rr.Body)
+	}
+}
+
+func TestThePageReadsAnotherMembersStatusInItsLanguage(t *testing.T) {
+	d := &fakeDoor{state: fortress.State{Joined: true}}
+	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(d)
+	rr := doorCall(a, http.MethodGet, "/api/fortress/members/5f3a/status?lang=de", "", true)
+	body := rr.Body.String()
+	if rr.Code != http.StatusOK || d.asked != "5f3a in de" || !strings.Contains(body, `"report":{`) || !strings.Contains(body, `"log":[{"id":"7"`) {
+		t.Errorf("status = %d %s, asked %q", rr.Code, body, d.asked)
+	}
+}
+
+func TestAStatusThatFailsSaysWhyWithACode(t *testing.T) {
+	for _, c := range []struct {
+		err  error
+		code int
+		body string
+	}{
+		{fortress.ErrNoMember, http.StatusNotFound, `"error":"noMember"`},
+		{fortress.ErrNotMember, http.StatusConflict, `"error":"noFortress"`},
+		{errors.New("member 5f3a is not reachable"), http.StatusBadGateway, `"error":"unreachable"`},
+	} {
+		a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(&fakeDoor{err: c.err})
+		rr := doorCall(a, http.MethodGet, "/api/fortress/members/5f3a/status", "", true)
+		if rr.Code != c.code || !strings.Contains(rr.Body.String(), c.body) {
+			t.Errorf("%v: %d %s", c.err, rr.Code, rr.Body)
+		}
+	}
+}
+
+func TestOnlyTheSocketLeavesOrReadsAMember(t *testing.T) {
+	d := &fakeDoor{state: fortress.State{Joined: true}}
+	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(d)
+	if rr := doorCall(a, http.MethodPost, "/api/fortress/leave", "", false); rr.Code != http.StatusForbidden || d.left {
+		t.Errorf("leave over the network = %d, left %v", rr.Code, d.left)
+	}
+	if rr := doorCall(a, http.MethodGet, "/api/fortress/members/5f3a/status", "", false); rr.Code != http.StatusForbidden || d.asked != "" {
+		t.Errorf("status over the network = %d, asked %q", rr.Code, d.asked)
 	}
 }
