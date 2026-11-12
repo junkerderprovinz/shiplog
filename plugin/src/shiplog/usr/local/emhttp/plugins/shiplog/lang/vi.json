@@ -177,7 +177,7 @@
   "s_fortress_member": "Thành viên",
   "s_fortress_in": "Trong pháo đài với tên %s",
   "s_fortress_out": "Không ở trong pháo đài nào",
-  "s_fortress_removed": "Một thành viên khác của pháo đài đã đưa máy chủ này ra khỏi pháo đài. Cho đến khi bạn tham gia lại bằng cụm từ của mình, cập nhật tự động sẽ chạy mà không sao lưu.",
+  "s_fortress_removed": "Một thành viên khác của pháo đài đã đưa máy chủ này ra khỏi pháo đài. Cho đến khi bạn tham gia lại bằng cụm từ hiện tại, cập nhật tự động sẽ chạy mà không sao lưu.",
   "s_fortress_changed": "Pháo đài của bạn có cụm từ mới mà ShipLog không tự theo kịp. Nhập các từ mới bên dưới để nó vẫn là thành viên như trước. Cho đến lúc đó, cập nhật tự động sẽ chạy mà không sao lưu.",
   "s_fortress_join": "Tham gia bằng cụm từ",
   "s_fortress_join_desc": "Nhập cụm từ của pháo đài, mười hai từ. ShipLog chỉ giữ khóa của riêng nó, không bao giờ giữ cụm từ.",

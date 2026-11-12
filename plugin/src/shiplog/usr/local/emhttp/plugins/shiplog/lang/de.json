@@ -177,7 +177,7 @@
   "s_fortress_member": "Mitgliedschaft",
   "s_fortress_in": "In der Festung als %s",
   "s_fortress_out": "In keiner Festung",
-  "s_fortress_removed": "Ein anderes Mitglied der Festung hat diesen Server herausgenommen. Bis du mit deiner Phrase wieder beitrittst, laufen Auto-Updates ohne Backup.",
+  "s_fortress_removed": "Ein anderes Mitglied der Festung hat diesen Server herausgenommen. Bis du mit der aktuellen Phrase wieder beitrittst, laufen Auto-Updates ohne Backup.",
   "s_fortress_changed": "Deine Festung hat eine neue Phrase, der ShipLog nicht von selbst folgen konnte. Gib unten die neuen Wörter ein, dann bleibt ShipLog dasselbe Mitglied wie bisher. Bis dahin laufen Auto-Updates ohne Backup.",
   "s_fortress_join": "Mit der Phrase beitreten",
   "s_fortress_join_desc": "Gib die Phrase deiner Festung ein, die zwölf Wörter. ShipLog behält nur seine eigenen Schlüssel, nie die Phrase.",

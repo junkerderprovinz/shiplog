@@ -177,7 +177,7 @@
   "s_fortress_member": "Členství",
   "s_fortress_in": "V pevnosti jako %s",
   "s_fortress_out": "Není v žádné pevnosti",
-  "s_fortress_removed": "Jiný člen pevnosti z ní tento server vyřadil. Dokud se znovu nepřipojíš svou frází, automatické aktualizace poběží bez zálohy.",
+  "s_fortress_removed": "Jiný člen pevnosti z ní tento server vyřadil. Dokud se znovu nepřipojíš aktuální frází, automatické aktualizace poběží bez zálohy.",
   "s_fortress_changed": "Tvoje pevnost má novou frázi, ke které ShipLog nedokázal přejít sám. Zadej níže nová slova a zůstane stejným členem. Do té doby poběží automatické aktualizace bez zálohy.",
   "s_fortress_join": "Připojit se frází",
   "s_fortress_join_desc": "Zadej frázi své pevnosti, dvanáct slov. ShipLog si ponechá jen vlastní klíče, nikdy ne frázi.",
