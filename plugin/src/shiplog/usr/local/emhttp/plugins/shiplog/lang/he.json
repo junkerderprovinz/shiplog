@@ -198,9 +198,8 @@
   "s_fortress_cancel": "ביטול",
   "s_fortress_removed_title": "לשנות את הביטוי עכשיו?",
   "s_fortress_removed_body": "{device} בחוץ. כל עוד הביטוי נשאר אותו דבר, הדרך חזרה עדיין פתוחה.",
-  "s_fortress_change_in": "ShipLog לא שומר את הביטוי, לכן משנים אותו ב-{app}.",
+  "s_fortress_change_in": "את הביטוי משנים ב-{apps}.",
   "s_fortress_change_any": "ShipLog לא שומר את הביטוי. אפשר לשנות אותו באפליקציה במבצר שמציגה אותו.",
-  "s_fortress_change": "שינוי הביטוי",
   "s_fortress_later": "אחר כך",
   "s_fortress_removed_note": "הוסרו: {devices}. כדי לסגור את הדרך חזרה, צריך לשנות את הביטוי."
 }

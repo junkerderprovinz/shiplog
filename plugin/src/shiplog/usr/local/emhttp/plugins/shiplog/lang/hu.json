@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Mégse",
   "s_fortress_removed_title": "Megváltoztatod most a jelmondatot?",
   "s_fortress_removed_body": "{device} kint van. Amíg a jelmondat ugyanaz marad, a visszaút még nyitva áll.",
-  "s_fortress_change_in": "A ShipLog nem őrzi a jelmondatot, ezért itt változtatod meg: {app}.",
+  "s_fortress_change_in": "A jelmondatot itt változtatod meg: {apps}.",
   "s_fortress_change_any": "A ShipLog nem őrzi a jelmondatot. Változtasd meg az erőd egyik alkalmazásában, amely mutatja.",
-  "s_fortress_change": "Jelmondat módosítása",
   "s_fortress_later": "Később",
   "s_fortress_removed_note": "Eltávolítva: {devices}. Változtasd meg a jelmondatot, és a visszaút bezárul."
 }

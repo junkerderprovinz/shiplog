@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Annuleren",
   "s_fortress_removed_title": "Frase nu wijzigen?",
   "s_fortress_removed_body": "{device} is eruit. Zolang de frase hetzelfde blijft, staat de weg terug nog open.",
-  "s_fortress_change_in": "ShipLog bewaart de frase niet, dus je wijzigt hem in {app}.",
+  "s_fortress_change_in": "De frase wijzig je in {apps}.",
   "s_fortress_change_any": "ShipLog bewaart de frase niet. Wijzig hem in een app van de vesting die hem toont.",
-  "s_fortress_change": "Frase wijzigen",
   "s_fortress_later": "Later",
   "s_fortress_removed_note": "Verwijderd: {devices}. Wijzig de frase om de weg terug te sluiten."
 }

@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Annulla",
   "s_fortress_removed_title": "Cambiare la frase adesso?",
   "s_fortress_removed_body": "{device} è fuori. Finché la frase resta la stessa, la via per rientrare è ancora aperta.",
-  "s_fortress_change_in": "ShipLog non conserva la frase, quindi la cambi in {app}.",
+  "s_fortress_change_in": "La frase la cambi in {apps}.",
   "s_fortress_change_any": "ShipLog non conserva la frase. Cambiala in un'app della fortezza che la mostra.",
-  "s_fortress_change": "Cambia la frase",
   "s_fortress_later": "Più tardi",
   "s_fortress_removed_note": "Rimossi: {devices}. Cambia la frase per chiudere la via del ritorno."
 }

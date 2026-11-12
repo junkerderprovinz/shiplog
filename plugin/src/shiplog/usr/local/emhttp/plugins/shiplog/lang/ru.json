@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Отмена",
   "s_fortress_removed_title": "Сменить фразу сейчас?",
   "s_fortress_removed_body": "{device} больше не в крепости. Но пока фраза прежняя, путь обратно ещё открыт.",
-  "s_fortress_change_in": "ShipLog не хранит фразу, поэтому смените её в {app}.",
+  "s_fortress_change_in": "Сменить фразу можно в {apps}.",
   "s_fortress_change_any": "ShipLog не хранит фразу. Смените её в приложении крепости, которое её показывает.",
-  "s_fortress_change": "Сменить фразу",
   "s_fortress_later": "Позже",
   "s_fortress_removed_note": "Удалены: {devices}. Смените фразу, чтобы закрыть путь обратно."
 }

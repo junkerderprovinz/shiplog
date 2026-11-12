@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Annuller",
   "s_fortress_removed_title": "Skift sætningen nu?",
   "s_fortress_removed_body": "{device} er ude. Så længe sætningen er den samme, står vejen tilbage dog stadig åben.",
-  "s_fortress_change_in": "ShipLog gemmer ikke sætningen, så du skifter den i {app}.",
+  "s_fortress_change_in": "Sætningen skifter du i {apps}.",
   "s_fortress_change_any": "ShipLog gemmer ikke sætningen. Skift den i en app i fæstningen, der viser den.",
-  "s_fortress_change": "Skift sætning",
   "s_fortress_later": "Senere",
   "s_fortress_removed_note": "Fjernet: {devices}. Skift sætningen for at lukke vejen tilbage."
 }

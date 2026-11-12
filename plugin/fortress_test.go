@@ -101,8 +101,8 @@ func TestEveryLanguageCanRemoveAMember(t *testing.T) {
 		"s_fortress_remove": nil, "s_fortress_member_on": {"{app}", "{device}"},
 		"s_fortress_remove_title": {"{device}"}, "s_fortress_remove_body": {"{device}"},
 		"s_fortress_removed_title": nil, "s_fortress_removed_body": {"{device}"},
-		"s_fortress_later": nil, "s_fortress_removed_note": {"{devices}"}, "s_fortress_change": nil,
-		"s_fortress_change_in": {"{app}"}, "s_fortress_change_any": nil, "s_fortress_cancel": nil,
+		"s_fortress_later": nil, "s_fortress_removed_note": {"{devices}"},
+		"s_fortress_change_in": {"{apps}"}, "s_fortress_change_any": nil, "s_fortress_cancel": nil,
 		"s_fortress_remove_failed": nil,
 	}
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
@@ -154,7 +154,7 @@ func TestTheSettingsPageRemovesAMemberThroughTheProxy(t *testing.T) {
 		t.Error("status.php passes the member id on unchecked")
 	}
 	page := read(t, "shiplog.page")
-	for _, id := range []string{"sl-fortress-others", "sl-fortress-list", "sl-fortress-out", "sl-win-remove", "sl-rm-go", "sl-rm-later", "sl-rm-change"} {
+	for _, id := range []string{"sl-fortress-others", "sl-fortress-list", "sl-fortress-out", "sl-win-remove", "sl-rm-go", "sl-rm-later"} {
 		if !strings.Contains(page, `id="`+id+`"`) {
 			t.Errorf("the page lacks #%s", id)
 		}
@@ -177,5 +177,48 @@ func TestTheRemoveWindowPaintsNothingRed(t *testing.T) {
 	}
 	if strings.Contains(win, "sl-err") || strings.Contains(win, "danger") {
 		t.Errorf("the remove window paints a button red: %s", win)
+	}
+}
+
+// TestTheSettingsPageNamesWhereThePhraseChanges keeps every member's address
+// off the page. ShipLog keeps no phrase, so the card names the apps that do
+// and the device each runs on, as a choice when there are several.
+func TestTheSettingsPageNamesWhereThePhraseChanges(t *testing.T) {
+	js := read(t, "scripts/settings.js")
+	for _, banned := range []string{".address", "window.open("} {
+		if strings.Contains(js, banned) {
+			t.Errorf("settings.js uses %s", banned)
+		}
+	}
+	keepers := regexp.MustCompile(`(?s)function phraseKeepers\(members\) \{.*?\n  \}`).FindString(js)
+	for _, want := range []string{`m.kind === "instance"`, `m.deployment !== "plugin"`, "m.online"} {
+		if !strings.Contains(keepers, want) {
+			t.Errorf("phraseKeepers lacks %s: %s", want, keepers)
+		}
+	}
+	for _, want := range []string{`listOf(keepers, "disjunction")`, "T.s_fortress_change_in, { apps: ", "T.s_fortress_change_any"} {
+		if !strings.Contains(js, want) {
+			t.Errorf("settings.js lacks %s", want)
+		}
+	}
+	page := read(t, "shiplog.page")
+	for _, gone := range []string{"sl-rm-change", "sl-fortress-out-change", "s_fortress_change'"} {
+		if strings.Contains(page, gone) {
+			t.Errorf("the page still has %s, a way to open another member", gone)
+		}
+	}
+	for _, lang := range []string{"en", "de"} {
+		raw, err := os.ReadFile(filepath.Join(pluginDir, "lang", lang+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]string
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatal(err)
+		}
+		want := map[string]string{"en": "You change the phrase in {apps}.", "de": "Die Phrase änderst du in {apps}."}[lang]
+		if texts["s_fortress_change_in"] != want {
+			t.Errorf("%s: s_fortress_change_in = %q, want %q", lang, texts["s_fortress_change_in"], want)
+		}
 	}
 }

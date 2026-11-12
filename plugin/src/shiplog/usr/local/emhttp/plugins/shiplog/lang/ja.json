@@ -198,9 +198,8 @@
   "s_fortress_cancel": "キャンセル",
   "s_fortress_removed_title": "今すぐフレーズを変更しますか？",
   "s_fortress_removed_body": "{device}は外れました。ただしフレーズが同じままなら、戻る道はまだ開いています。",
-  "s_fortress_change_in": "ShipLogはフレーズを保持しないため、{app}で変更します。",
+  "s_fortress_change_in": "フレーズは {apps} で変更できます。",
   "s_fortress_change_any": "ShipLogはフレーズを保持しません。フレーズを表示できる要塞内のアプリで変更してください。",
-  "s_fortress_change": "フレーズを変更",
   "s_fortress_later": "後で",
   "s_fortress_removed_note": "削除済み：{devices}。フレーズを変更すると、戻る道が閉じます。"
 }

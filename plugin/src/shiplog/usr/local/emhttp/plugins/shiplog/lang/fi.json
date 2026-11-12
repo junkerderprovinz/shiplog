@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Peruuta",
   "s_fortress_removed_title": "Vaihdetaanko lause nyt?",
   "s_fortress_removed_body": "{device} on ulkona. Niin kauan kuin lause pysyy samana, tie takaisin on silti auki.",
-  "s_fortress_change_in": "ShipLog ei säilytä lausetta, joten vaihdat sen sovelluksessa {app}.",
+  "s_fortress_change_in": "Lauseen vaihdat sovelluksessa {apps}.",
   "s_fortress_change_any": "ShipLog ei säilytä lausetta. Vaihda se linnoituksen sovelluksessa, joka näyttää sen.",
-  "s_fortress_change": "Vaihda lause",
   "s_fortress_later": "Myöhemmin",
   "s_fortress_removed_note": "Poistettu: {devices}. Vaihda lause, niin tie takaisin sulkeutuu."
 }

@@ -198,9 +198,8 @@
   "s_fortress_cancel": "İptal",
   "s_fortress_removed_title": "İfade şimdi değiştirilsin mi?",
   "s_fortress_removed_body": "{device} artık dışarıda. Ama ifade aynı kaldıkça geri dönüş yolu hâlâ açık.",
-  "s_fortress_change_in": "ShipLog ifadeyi saklamaz, bu yüzden ifadeyi {app} içinde değiştirirsin.",
+  "s_fortress_change_in": "İfadeyi {apps} içinde değiştirirsin.",
   "s_fortress_change_any": "ShipLog ifadeyi saklamaz. İfadeyi kalede onu gösteren bir uygulamada değiştir.",
-  "s_fortress_change": "İfadeyi değiştir",
   "s_fortress_later": "Sonra",
   "s_fortress_removed_note": "Kaldırılanlar: {devices}. Geri dönüş yolunu kapatmak için ifadeyi değiştir."
 }

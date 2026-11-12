@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Zrušit",
   "s_fortress_removed_title": "Změnit frázi hned teď?",
   "s_fortress_removed_body": "{device} je venku. Dokud zůstane fráze stejná, cesta zpátky je ale pořád otevřená.",
-  "s_fortress_change_in": "ShipLog si frázi neuchovává, takže ji změníš v {app}.",
+  "s_fortress_change_in": "Frázi změníš v {apps}.",
   "s_fortress_change_any": "ShipLog si frázi neuchovává. Změň ji v aplikaci pevnosti, která ji ukazuje.",
-  "s_fortress_change": "Změnit frázi",
   "s_fortress_later": "Později",
   "s_fortress_removed_note": "Odebráno: {devices}. Změň frázi a cesta zpátky se zavře."
 }

@@ -198,9 +198,8 @@
   "s_fortress_cancel": "Abbrechen",
   "s_fortress_removed_title": "Phrase jetzt ändern?",
   "s_fortress_removed_body": "{device} ist draußen. Solange die Phrase gleich bleibt, steht der Weg zurück aber noch offen.",
-  "s_fortress_change_in": "ShipLog merkt sich die Phrase nicht, deshalb änderst du sie in {app}.",
+  "s_fortress_change_in": "Die Phrase änderst du in {apps}.",
   "s_fortress_change_any": "ShipLog merkt sich die Phrase nicht. Ändere sie in einer App der Festung, die sie anzeigt.",
-  "s_fortress_change": "Phrase ändern",
   "s_fortress_later": "Später",
   "s_fortress_removed_note": "Herausgenommen: {devices}. Ändere die Phrase, dann ist der Weg zurück zu."
 }

@@ -2,11 +2,13 @@ package fortress
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -179,6 +181,21 @@ func TestAMemberThatNeverSaidItsAppStaysOffTheCard(t *testing.T) {
 	})
 	if len(got) != 1 || got[0].ID != "a" || got[0].Name != "TollRoll" {
 		t.Errorf("listed = %+v, want TollRoll alone", got)
+	}
+}
+
+func TestTheCardNeverCarriesAMembersAddress(t *testing.T) {
+	got := others([]kitfortress.Member{{ID: "b", Kind: member.KindInstance, App: kitfortress.App{ID: "bombvault", Name: "BombVault"},
+		Device: "Bottich", Deployment: "container", Address: "http://bottich:3000"}})
+	raw, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := string(raw); strings.Contains(s, "address") || strings.Contains(s, "bottich:3000") {
+		t.Errorf("the card gets the address: %s", s)
+	}
+	if len(got) != 1 || got[0].Kind != "instance" || got[0].Deployment != "container" || got[0].Device != "Bottich" {
+		t.Errorf("the card lost what names the app that keeps the phrase: %+v", got)
 	}
 }
 
