@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "참여",
   "s_fortress_joined": "요새에 오신 것을 환영합니다.",
   "s_fortress_bad_phrase": "이 단어들은 올바른 문구가 아닙니다. 단어를 하나씩 다시 확인해 주세요.",
-  "s_fortress_failed": "참여하지 못했습니다: %s"
+  "s_fortress_failed": "참여하지 못했습니다: %s",
+  "s_fortress_others": "다른 앱",
+  "s_fortress_online": "연결됨",
+  "s_fortress_away": "연결할 수 없음",
+  "s_fortress_remove": "제거",
+  "s_fortress_member_on": "{device}의 {app}",
+  "s_fortress_remove_title": "{device} 기기를 제거할까요?",
+  "s_fortress_remove_body": "{device} 기기는 곧바로 접근할 수 없게 돼요. 되돌릴 수 없어요.",
+  "s_fortress_remove_failed": "잘 안 됐어요. 다시 시도해 주세요.",
+  "s_fortress_cancel": "취소",
+  "s_fortress_removed_title": "지금 문구를 바꿀까요?",
+  "s_fortress_removed_body": "{device} 기기는 이제 빠졌어요. 하지만 문구가 그대로인 동안에는 다시 돌아올 길이 열려 있어요.",
+  "s_fortress_change_in": "ShipLog는 문구를 보관하지 않아서 {app}에서 바꿔요.",
+  "s_fortress_change_any": "ShipLog는 문구를 보관하지 않아요. 문구를 보여 주는 요새의 앱에서 바꿔 주세요.",
+  "s_fortress_change": "문구 변경",
+  "s_fortress_later": "나중에",
+  "s_fortress_removed_note": "제거됨: {devices}. 문구를 바꾸면 돌아올 길이 닫혀요."
 }

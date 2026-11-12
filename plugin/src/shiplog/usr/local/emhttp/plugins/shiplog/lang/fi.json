@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Liity",
   "s_fortress_joined": "Tervetuloa linnoitukseesi.",
   "s_fortress_bad_phrase": "Nuo sanat eivät ole kelvollinen lause. Tarkista jokainen sana vielä kerran.",
-  "s_fortress_failed": "Liittyminen ei onnistunut: %s"
+  "s_fortress_failed": "Liittyminen ei onnistunut: %s",
+  "s_fortress_others": "Muut sovellukset",
+  "s_fortress_online": "Yhdistetty",
+  "s_fortress_away": "Ei tavoitettavissa",
+  "s_fortress_remove": "Poista",
+  "s_fortress_member_on": "{app} laitteella {device}",
+  "s_fortress_remove_title": "Poistetaanko instanssi {device}?",
+  "s_fortress_remove_body": "{device} menettää pääsynsä heti. Tätä ei voi perua.",
+  "s_fortress_remove_failed": "Se ei onnistunut. Yritä uudelleen.",
+  "s_fortress_cancel": "Peruuta",
+  "s_fortress_removed_title": "Vaihdetaanko lause nyt?",
+  "s_fortress_removed_body": "{device} on ulkona. Niin kauan kuin lause pysyy samana, tie takaisin on silti auki.",
+  "s_fortress_change_in": "ShipLog ei säilytä lausetta, joten vaihdat sen sovelluksessa {app}.",
+  "s_fortress_change_any": "ShipLog ei säilytä lausetta. Vaihda se linnoituksen sovelluksessa, joka näyttää sen.",
+  "s_fortress_change": "Vaihda lause",
+  "s_fortress_later": "Myöhemmin",
+  "s_fortress_removed_note": "Poistettu: {devices}. Vaihda lause, niin tie takaisin sulkeutuu."
 }

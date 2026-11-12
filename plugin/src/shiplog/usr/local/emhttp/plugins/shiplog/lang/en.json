@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Join",
   "s_fortress_joined": "Welcome to your fortress.",
   "s_fortress_bad_phrase": "Those words aren't a valid phrase. Check each one once more.",
-  "s_fortress_failed": "Joining didn't work: %s"
+  "s_fortress_failed": "Joining didn't work: %s",
+  "s_fortress_others": "Other apps",
+  "s_fortress_online": "Connected",
+  "s_fortress_away": "Not reachable",
+  "s_fortress_remove": "Remove",
+  "s_fortress_member_on": "{app} on {device}",
+  "s_fortress_remove_title": "Remove {device}?",
+  "s_fortress_remove_body": "{device} loses its access right away. This can't be undone.",
+  "s_fortress_remove_failed": "That didn't work. Please try again.",
+  "s_fortress_cancel": "Cancel",
+  "s_fortress_removed_title": "Change the phrase now?",
+  "s_fortress_removed_body": "{device} is out. As long as the phrase stays the same, the way back in is still open.",
+  "s_fortress_change_in": "ShipLog doesn't keep the phrase, so you change it in {app}.",
+  "s_fortress_change_any": "ShipLog doesn't keep the phrase. Change it in an app of your fortress that shows it.",
+  "s_fortress_change": "Change phrase",
+  "s_fortress_later": "Later",
+  "s_fortress_removed_note": "Removed: {devices}. Change the phrase to close the way back in."
 }

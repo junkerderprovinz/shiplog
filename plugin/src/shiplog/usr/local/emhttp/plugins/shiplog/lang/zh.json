@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "加入",
   "s_fortress_joined": "欢迎来到你的堡垒。",
   "s_fortress_bad_phrase": "这些词不是有效的口令。请再逐个检查一遍。",
-  "s_fortress_failed": "加入失败：%s"
+  "s_fortress_failed": "加入失败：%s",
+  "s_fortress_others": "其他应用",
+  "s_fortress_online": "已连接",
+  "s_fortress_away": "无法连接",
+  "s_fortress_remove": "移除",
+  "s_fortress_member_on": "{device} 上的 {app}",
+  "s_fortress_remove_title": "要移除 {device} 吗？",
+  "s_fortress_remove_body": "{device} 会立即失去访问权限，且无法撤销。",
+  "s_fortress_remove_failed": "操作未成功，请重试。",
+  "s_fortress_cancel": "取消",
+  "s_fortress_removed_title": "现在更改口令吗？",
+  "s_fortress_removed_body": "{device} 已被移出。但只要口令不变，回来的路就仍然开着。",
+  "s_fortress_change_in": "ShipLog 不保存口令，所以要在{app}中更改。",
+  "s_fortress_change_any": "ShipLog 不保存口令。请在堡垒中能显示口令的应用里更改。",
+  "s_fortress_change": "更改口令",
+  "s_fortress_later": "稍后",
+  "s_fortress_removed_note": "已移除：{devices}。更改口令即可关上回来的路。"
 }

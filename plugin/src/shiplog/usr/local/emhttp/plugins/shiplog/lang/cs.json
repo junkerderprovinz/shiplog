@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Připojit",
   "s_fortress_joined": "Vítej ve své pevnosti.",
   "s_fortress_bad_phrase": "Tato slova nejsou platná fráze. Zkontroluj ještě jednou každé z nich.",
-  "s_fortress_failed": "Připojení se nepovedlo: %s"
+  "s_fortress_failed": "Připojení se nepovedlo: %s",
+  "s_fortress_others": "Ostatní aplikace",
+  "s_fortress_online": "Připojeno",
+  "s_fortress_away": "Nedostupné",
+  "s_fortress_remove": "Odebrat",
+  "s_fortress_member_on": "{app} na {device}",
+  "s_fortress_remove_title": "Odebrat instanci {device}?",
+  "s_fortress_remove_body": "{device} hned přijde o přístup. Nejde to vrátit zpět.",
+  "s_fortress_remove_failed": "Nepovedlo se. Zkus to prosím znovu.",
+  "s_fortress_cancel": "Zrušit",
+  "s_fortress_removed_title": "Změnit frázi hned teď?",
+  "s_fortress_removed_body": "{device} je venku. Dokud zůstane fráze stejná, cesta zpátky je ale pořád otevřená.",
+  "s_fortress_change_in": "ShipLog si frázi neuchovává, takže ji změníš v {app}.",
+  "s_fortress_change_any": "ShipLog si frázi neuchovává. Změň ji v aplikaci pevnosti, která ji ukazuje.",
+  "s_fortress_change": "Změnit frázi",
+  "s_fortress_later": "Později",
+  "s_fortress_removed_note": "Odebráno: {devices}. Změň frázi a cesta zpátky se zavře."
 }

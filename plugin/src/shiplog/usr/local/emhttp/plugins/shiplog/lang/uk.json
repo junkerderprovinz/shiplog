@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Приєднатися",
   "s_fortress_joined": "Ласкаво просимо до твоєї фортеці.",
   "s_fortress_bad_phrase": "Ці слова не є правильною фразою. Перевір кожне ще раз.",
-  "s_fortress_failed": "Приєднатися не вдалося: %s"
+  "s_fortress_failed": "Приєднатися не вдалося: %s",
+  "s_fortress_others": "Інші застосунки",
+  "s_fortress_online": "Підключено",
+  "s_fortress_away": "Недоступно",
+  "s_fortress_remove": "Видалити",
+  "s_fortress_member_on": "{app} на {device}",
+  "s_fortress_remove_title": "Видалити екземпляр {device}?",
+  "s_fortress_remove_body": "{device} одразу втрачає доступ. Це не можна скасувати.",
+  "s_fortress_remove_failed": "Не вдалося. Спробуйте ще раз.",
+  "s_fortress_cancel": "Скасувати",
+  "s_fortress_removed_title": "Змінити фразу зараз?",
+  "s_fortress_removed_body": "{device} уже поза фортецею. Але поки фраза та сама, шлях назад ще відкритий.",
+  "s_fortress_change_in": "ShipLog не зберігає фразу, тож змініть її в {app}.",
+  "s_fortress_change_any": "ShipLog не зберігає фразу. Змініть її в застосунку фортеці, який її показує.",
+  "s_fortress_change": "Змінити фразу",
+  "s_fortress_later": "Пізніше",
+  "s_fortress_removed_note": "Видалено: {devices}. Змініть фразу, щоб закрити шлях назад."
 }

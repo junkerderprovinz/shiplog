@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Beitreten",
   "s_fortress_joined": "Willkommen in deiner Festung.",
   "s_fortress_bad_phrase": "Das ist keine gültige Phrase. Schau dir jedes Wort noch einmal an.",
-  "s_fortress_failed": "Beitreten hat nicht geklappt: %s"
+  "s_fortress_failed": "Beitreten hat nicht geklappt: %s",
+  "s_fortress_others": "Andere Apps",
+  "s_fortress_online": "Verbunden",
+  "s_fortress_away": "Nicht erreichbar",
+  "s_fortress_remove": "Herausnehmen",
+  "s_fortress_member_on": "{app} auf {device}",
+  "s_fortress_remove_title": "{device} herausnehmen?",
+  "s_fortress_remove_body": "{device} verliert sofort den Zugang. Das lässt sich nicht rückgängig machen.",
+  "s_fortress_remove_failed": "Das hat nicht geklappt. Versuch es bitte noch einmal.",
+  "s_fortress_cancel": "Abbrechen",
+  "s_fortress_removed_title": "Phrase jetzt ändern?",
+  "s_fortress_removed_body": "{device} ist draußen. Solange die Phrase gleich bleibt, steht der Weg zurück aber noch offen.",
+  "s_fortress_change_in": "ShipLog merkt sich die Phrase nicht, deshalb änderst du sie in {app}.",
+  "s_fortress_change_any": "ShipLog merkt sich die Phrase nicht. Ändere sie in einer App der Festung, die sie anzeigt.",
+  "s_fortress_change": "Phrase ändern",
+  "s_fortress_later": "Später",
+  "s_fortress_removed_note": "Herausgenommen: {devices}. Ändere die Phrase, dann ist der Weg zurück zu."
 }

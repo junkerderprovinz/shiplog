@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Войти",
   "s_fortress_joined": "Добро пожаловать в твою крепость.",
   "s_fortress_bad_phrase": "Эти слова не составляют правильную фразу. Проверь каждое ещё раз.",
-  "s_fortress_failed": "Войти не получилось: %s"
+  "s_fortress_failed": "Войти не получилось: %s",
+  "s_fortress_others": "Другие приложения",
+  "s_fortress_online": "Подключено",
+  "s_fortress_away": "Недоступно",
+  "s_fortress_remove": "Удалить",
+  "s_fortress_member_on": "{app} на {device}",
+  "s_fortress_remove_title": "Удалить экземпляр {device}?",
+  "s_fortress_remove_body": "{device} сразу теряет доступ. Это нельзя отменить.",
+  "s_fortress_remove_failed": "Не получилось. Попробуйте ещё раз.",
+  "s_fortress_cancel": "Отмена",
+  "s_fortress_removed_title": "Сменить фразу сейчас?",
+  "s_fortress_removed_body": "{device} больше не в крепости. Но пока фраза прежняя, путь обратно ещё открыт.",
+  "s_fortress_change_in": "ShipLog не хранит фразу, поэтому смените её в {app}.",
+  "s_fortress_change_any": "ShipLog не хранит фразу. Смените её в приложении крепости, которое её показывает.",
+  "s_fortress_change": "Сменить фразу",
+  "s_fortress_later": "Позже",
+  "s_fortress_removed_note": "Удалены: {devices}. Смените фразу, чтобы закрыть путь обратно."
 }

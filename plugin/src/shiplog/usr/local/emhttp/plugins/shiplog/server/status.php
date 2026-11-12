@@ -14,6 +14,7 @@
  *   GET  status.php?path=fortress                       -> ShipLog's place in a fortress
  *   POST status.php  path=refresh|override|unmaintained-suppression|fortress/join,
  *                    method=POST|PUT|DELETE, data=<JSON body>
+ *   POST status.php  path=fortress/member, method=DELETE, id=<member id>
  */
 
 $sock   = '/var/run/shiplog.sock';
@@ -23,7 +24,8 @@ $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides'
            'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
            'fortress' => '/api/fortress'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
-           'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST']];
+           'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST'],
+           'fortress/member' => ['DELETE']];
 
 $deny = function ($code) {
     http_response_code($code);
@@ -44,6 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $url       = '/api/' . $path;
     $body      = isset($_POST['data']) ? (string) $_POST['data'] : '';
     $headers[] = 'Content-Type: application/json';
+    if ($path === 'fortress/member') {
+        $member = isset($_POST['id']) ? preg_replace('/[^a-z0-9-]/', '', $_POST['id']) : '';
+        if ($member === '') {
+            $deny(400);
+        }
+        $url = '/api/fortress/members/' . $member;
+    }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $path    = isset($_GET['path']) ? (string) $_GET['path'] : '';
     $id      = isset($_GET['id']) ? preg_replace('/[^0-9a-f]/', '', $_GET['id']) : '';

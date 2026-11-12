@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Tham gia",
   "s_fortress_joined": "Chào mừng đến với pháo đài của bạn.",
   "s_fortress_bad_phrase": "Những từ đó không phải là cụm từ hợp lệ. Hãy kiểm tra lại từng từ.",
-  "s_fortress_failed": "Không tham gia được: %s"
+  "s_fortress_failed": "Không tham gia được: %s",
+  "s_fortress_others": "Ứng dụng khác",
+  "s_fortress_online": "Đã kết nối",
+  "s_fortress_away": "Không truy cập được",
+  "s_fortress_remove": "Xóa",
+  "s_fortress_member_on": "{app} trên {device}",
+  "s_fortress_remove_title": "Xóa {device}?",
+  "s_fortress_remove_body": "{device} mất quyền truy cập ngay lập tức. Không thể hoàn tác.",
+  "s_fortress_remove_failed": "Chưa thành công. Vui lòng thử lại.",
+  "s_fortress_cancel": "Hủy",
+  "s_fortress_removed_title": "Đổi cụm từ ngay bây giờ?",
+  "s_fortress_removed_body": "{device} đã ra ngoài. Nhưng khi cụm từ vẫn như cũ, đường quay lại vẫn còn mở.",
+  "s_fortress_change_in": "ShipLog không giữ cụm từ, nên bạn đổi cụm từ trong {app}.",
+  "s_fortress_change_any": "ShipLog không giữ cụm từ. Hãy đổi cụm từ trong một ứng dụng của pháo đài có hiện nó.",
+  "s_fortress_change": "Đổi cụm từ",
+  "s_fortress_later": "Để sau",
+  "s_fortress_removed_note": "Đã xóa: {devices}. Đổi cụm từ để đóng đường quay lại."
 }

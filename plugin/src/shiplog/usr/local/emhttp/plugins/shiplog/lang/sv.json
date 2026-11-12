@@ -186,5 +186,21 @@
   "s_fortress_join_btn": "Gå med",
   "s_fortress_joined": "Välkommen till din fästning.",
   "s_fortress_bad_phrase": "De orden är ingen giltig fras. Kontrollera varje ord en gång till.",
-  "s_fortress_failed": "Det gick inte att gå med: %s"
+  "s_fortress_failed": "Det gick inte att gå med: %s",
+  "s_fortress_others": "Andra appar",
+  "s_fortress_online": "Ansluten",
+  "s_fortress_away": "Går inte att nå",
+  "s_fortress_remove": "Ta bort",
+  "s_fortress_member_on": "{app} på {device}",
+  "s_fortress_remove_title": "Ta bort {device}?",
+  "s_fortress_remove_body": "{device} förlorar sin åtkomst direkt. Det går inte att ångra.",
+  "s_fortress_remove_failed": "Det gick inte. Försök igen.",
+  "s_fortress_cancel": "Avbryt",
+  "s_fortress_removed_title": "Byta frasen nu?",
+  "s_fortress_removed_body": "{device} är ute. Så länge frasen är densamma står vägen tillbaka ändå öppen.",
+  "s_fortress_change_in": "ShipLog sparar inte frasen, så du byter den i {app}.",
+  "s_fortress_change_any": "ShipLog sparar inte frasen. Byt den i en app i fästningen som visar den.",
+  "s_fortress_change": "Byt fras",
+  "s_fortress_later": "Senare",
+  "s_fortress_removed_note": "Borttagna: {devices}. Byt frasen för att stänga vägen tillbaka."
 }
