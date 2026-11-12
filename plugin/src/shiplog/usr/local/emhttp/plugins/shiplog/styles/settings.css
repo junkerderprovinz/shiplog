@@ -84,6 +84,9 @@ html:is(.Theme--white, .Theme--azure) .sl-hero { --sl-hero-sil: 30%; }
   .sl-hero-text { max-width: calc(100% - 260px); }
   .sl-cfg .sl-hero-name { font-size: 26px; }
 }
+@media (max-width: 599px) {
+  .sl-hero-text { max-width: none; }
+}
 
 /* The tab column beside the cards, as on TowerTorch's own settings page. */
 .sl-body { display: flex; align-items: flex-start; gap: 24px; margin-top: 12px; }
