@@ -132,6 +132,9 @@ func TestShipLogRemovesNobodyItDoesNotKnow(t *testing.T) {
 
 func TestANewPhraseClearsTheRemovedList(t *testing.T) {
 	d, bv, tr, secret := joinedWithTollRoll(t)
+	// Only a member BombVault met before the removal is handed the new
+	// phrase. One it first hears of after it is a newcomer and stays out.
+	waitFor(t, "BombVault to meet ShipLog before the removal", func() bool { return len(bv.shiplogs()) == 1 })
 	if err := d.Remove(tr.id); err != nil {
 		t.Fatal(err)
 	}
