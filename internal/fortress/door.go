@@ -1,7 +1,6 @@
 package fortress
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -194,7 +193,7 @@ func others(members []kitfortress.Member) []Other {
 		if m.App.ID == "" || m.Kind == member.KindViewer {
 			continue
 		}
-		out = append(out, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: cmp.Or(m.App.Name, m.App.ID),
+		out = append(out, Other{ID: m.ID, Kind: string(m.Kind), App: m.App.ID, Name: AppName(m.App),
 			Device: m.Device, Form: m.Deployment, Version: m.App.Version, Icon: m.App.Icon,
 			Online: m.Online(), Relay: m.Relay && !m.Direct, LastSeen: m.LastSeen})
 	}
