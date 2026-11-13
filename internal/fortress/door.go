@@ -155,7 +155,7 @@ func (d *Door) Enter(words string) error {
 		_ = d.m.Close()
 		d.m = nil
 	}
-	m := kitfortress.Membership{App: d.App.ID, Device: d.Device, Relay: d.Relay, Uses: []string{backup.Action}}
+	m := kitfortress.Membership{App: d.App.ID, Device: d.Device, Relay: d.Relay, LAN: true, Uses: []string{backup.Action}}
 	joinErr := kitfortress.Join(d.Dir, secret, m)
 	in, err := d.join()
 	if err != nil || joinErr != nil {

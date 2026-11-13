@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/junkerderprovinz/parleyport/kit/fortress"
+	"github.com/junkerderprovinz/parleyport/kit/group"
 	"github.com/junkerderprovinz/parleyport/kit/member"
 )
 
@@ -58,7 +60,22 @@ func (k Kit) Call(ctx context.Context, id, method, path string, body []byte) (in
 	case errors.Is(err, fortress.ErrNoSuchAction):
 		return http.StatusNotFound, refusal("no_such_action"), nil
 	}
-	return 0, nil, err
+	return 0, nil, withoutAddress(err)
+}
+
+// withoutAddress is err without the member's network address, which the
+// kit's errors name and which has no place in a report or a notification.
+func withoutAddress(err error) error {
+	var st *group.StatusError
+	switch {
+	case errors.Is(err, group.ErrUnreachable):
+		return group.ErrUnreachable
+	case errors.Is(err, group.ErrStranger):
+		return group.ErrStranger
+	case errors.As(err, &st):
+		return fmt.Errorf("the member answered the direct call with HTTP %d", st.Status)
+	}
+	return err
 }
 
 func refusal(code string) []byte {

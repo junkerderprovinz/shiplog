@@ -3,10 +3,14 @@ package backup
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/junkerderprovinz/parleyport/kit/fortress"
+	"github.com/junkerderprovinz/parleyport/kit/group"
 	"github.com/junkerderprovinz/parleyport/kit/member"
 )
 
@@ -81,5 +85,23 @@ func TestKitListsInstancesOnly(t *testing.T) {
 	got := Kit{Fortress: k}.Members()
 	if len(got) != 2 || got[0].ID != "m1" || !got[0].Online || got[0].App != "vault" || got[0].Actions[0] != Action || got[0].Host != "Tower" || got[1].Online {
 		t.Fatalf("members = %+v", got)
+	}
+}
+
+func TestKitReportsAMemberOutOfReachWithoutItsAddress(t *testing.T) {
+	const at = "https://192.168.20.5:3443"
+	for _, kitErr := range []error{
+		fmt.Errorf("%w directly at %s: %w", group.ErrUnreachable, at, io.ErrUnexpectedEOF),
+		fmt.Errorf("%w: %s refused the direct call with HTTP 403", group.ErrStranger, at),
+		&group.StatusError{Address: at, Status: http.StatusBadGateway},
+	} {
+		_, _, err := Kit{Fortress: &fakeKit{err: kitErr}}.Call(context.Background(), "m1", http.MethodPost, RequestPath, nil)
+		if err == nil || strings.Contains(err.Error(), "192.168") {
+			t.Errorf("%v came back as %v", kitErr, err)
+		}
+	}
+	_, _, err := Kit{Fortress: &fakeKit{err: fmt.Errorf("%w directly at %s: %w", group.ErrUnreachable, at, io.ErrUnexpectedEOF)}}.Call(context.Background(), "m1", http.MethodPost, RequestPath, nil)
+	if !errors.Is(err, group.ErrUnreachable) {
+		t.Errorf("err = %v, want it unreachable", err)
 	}
 }
