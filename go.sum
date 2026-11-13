@@ -18,6 +18,8 @@ github.com/junkerderprovinz/parleyport/kit v0.0.0-20261113191443-701db5a911b3 h1
 github.com/junkerderprovinz/parleyport/kit v0.0.0-20261113191443-701db5a911b3/go.mod h1:VvXmRbkWZsOzDVnLswkwKtG64qx5TlUb+vnKqb21WJA=
 github.com/junkerderprovinz/parleyport/kit v0.0.0-20261113195351-665654a24bf9 h1:3p6xwMumjquue8+hfmA5EvirNMMX5mXHRk0vGQ3tojw=
 github.com/junkerderprovinz/parleyport/kit v0.0.0-20261113195351-665654a24bf9/go.mod h1:VvXmRbkWZsOzDVnLswkwKtG64qx5TlUb+vnKqb21WJA=
+github.com/junkerderprovinz/parleyport/kit v0.0.0-20261113211432-f973fdd3d13c h1:kGxBO1/O3DcVibvbQOM7eU76F8mLkdyhBkSSghNQhlM=
+github.com/junkerderprovinz/parleyport/kit v0.0.0-20261113211432-f973fdd3d13c/go.mod h1:VvXmRbkWZsOzDVnLswkwKtG64qx5TlUb+vnKqb21WJA=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
