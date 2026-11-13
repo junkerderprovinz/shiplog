@@ -66,7 +66,7 @@ func TestWindowFootButtonsAreFilled(t *testing.T) {
 // rollback texts of the Docker tab in every language, and its English fallback
 // equal to en.json.
 func TestEveryLanguageExplainsTheBackupBeforeAnUpdate(t *testing.T) {
-	keys := []string{"wobLabel", "wobHintOn", "wobHintOff", "heldTitle", "heldNote", "rolledTitle", "rolledNote", "rolledUnpin", "snapshot", "guardHint"}
+	keys := []string{"wobLabel", "wobHintOn", "wobHintOff", "heldTitle", "heldNote", "rolledTitle", "rolledNote", "rolledUnpin", "guardHint"}
 	js := read(t, filepath.Join("scripts", "docker.js"))
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
 	if err != nil || len(files) < 26 {

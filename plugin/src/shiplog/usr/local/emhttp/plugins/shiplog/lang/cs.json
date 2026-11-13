@@ -130,7 +130,6 @@
   "d_rolledTitle": "Vráceno zpět",
   "d_rolledNote": "Poslední automatická aktualizace selhala (%s), proto ShipLog vrátil kontejner na starý obraz. Appdata zůstala nedotčená.",
   "d_rolledUnpin": "Šablona teď ukazuje na starý obraz. Chcete-li znovu aktualizovat, odstraňte z repozitáře část @sha256.",
-  "d_snapshot": "Záloha z doby před aktualizací",
   "d_guardHint": "Kliknutím zjistíte proč.",
   "s_au_pinned_desc": "Kontejner připnutý na značku verze (například :1.4.2) se nikdy neaktualizuje automaticky, protože opětovné stažení stejné značky nic nezmění. Novější verze se zobrazí jen jako nápověda; pro aktualizaci změňte značku sami.",
   "s_au_ct_newer": "připnuto · novější %v k dispozici",

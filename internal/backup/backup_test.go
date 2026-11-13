@@ -107,7 +107,7 @@ func TestSaveBacksUpTheContainerAndWaitsForTheRun(t *testing.T) {
 	if len(v.asked) != 1 || v.asked[0]["container"] != "nextcloud" || v.asked[0]["reason"] != "update" {
 		t.Errorf("backup requests = %v, want one for nextcloud with reason update", v.asked)
 	}
-	want := Snapshot{Member: "m1", Run: "run-8812", ID: "4f2a9c1e", Link: "https://tower.lan:3443/snapshots/4f2a9c1e"}
+	want := Snapshot{Member: "m1", Run: "run-8812", ID: "4f2a9c1e"}
 	if snap != want {
 		t.Errorf("snapshot = %+v, want %+v", snap, want)
 	}
@@ -297,5 +297,18 @@ func TestABackupAppOnAnotherServerUnderTheSameNameIsLeftAlone(t *testing.T) {
 	c.Host = "Tower"
 	if c.Available() {
 		t.Fatal("a backup app on another server counts because it shares the name")
+	}
+}
+
+func TestSaveKeepsNoAddressOfTheBackupApp(t *testing.T) {
+	v := &fakeVault{final: "done"}
+	f := &fakeFortress{members: []Member{vaultMember("m1", "Tower")}, serve: map[string]http.Handler{"m1": v.handler()}}
+	c, _ := newClient(f)
+	snap, err := c.Save(context.Background(), "nextcloud")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fmt.Sprintf("%+v", snap); strings.Contains(got, "tower.lan") {
+		t.Errorf("snapshot = %s, want it without the backup app's address", got)
 	}
 }

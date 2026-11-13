@@ -70,12 +70,8 @@ func RenderSummary(res Result) (text, html string) {
 			if o.Snapshot.ID == "" {
 				label = "backup"
 			}
-			snap := esc(label)
-			if o.Snapshot.Link != "" {
-				snap = fmt.Sprintf(`<a href="%s">%s</a>`, esc(o.Snapshot.Link), esc(label))
-			}
 			tp = append(tp, fmt.Sprintf("%s (%s, %s)", o.Name, note, label))
-			hp = append(hp, fmt.Sprintf("%s (%s, %s)", esc(o.Name), esc(note), snap))
+			hp = append(hp, fmt.Sprintf("%s (%s, %s)", esc(o.Name), esc(note), esc(label)))
 		}
 		fmt.Fprintf(&t, ". %d failed: %s", len(failed), strings.Join(tp, ", "))
 		fmt.Fprintf(&h, ". %d failed: %s", len(failed), strings.Join(hp, ", "))

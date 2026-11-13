@@ -130,7 +130,6 @@
   "d_rolledTitle": "Przywrócono",
   "d_rolledNote": "Ostatnia automatyczna aktualizacja się nie udała (%s), więc ShipLog przywrócił kontener do starego obrazu. Twoje appdata są nietknięte.",
   "d_rolledUnpin": "Szablon wskazuje teraz na stary obraz. Aby znów aktualizować, usuń z repozytorium część @sha256.",
-  "d_snapshot": "Kopia zapasowa sprzed aktualizacji",
   "d_guardHint": "Kliknij, aby zobaczyć dlaczego.",
   "s_au_pinned_desc": "Kontener przypięty do tagu wersji (na przykład :1.4.2) nigdy nie jest aktualizowany automatycznie, bo ponowne pobranie tego samego tagu niczego nie zmienia. Nowsza wersja pojawia się tylko jako wskazówka; aby zaktualizować, zmień tag samodzielnie.",
   "s_au_ct_newer": "przypięte · dostępna nowsza %v",

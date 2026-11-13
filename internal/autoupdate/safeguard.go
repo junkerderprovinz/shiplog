@@ -94,7 +94,7 @@ func (s *Safeguard) before(ctx context.Context, o *Outcome, c model.Container, b
 
 func (g *guarded) state(name, state, reason string) store.Guard {
 	return store.Guard{Name: name, State: state, Repository: g.repository, Digest: g.digest,
-		Snapshot: g.snapshot.ID, Link: g.snapshot.Link, Reason: reason, At: time.Now().Unix()}
+		Snapshot: g.snapshot.ID, Reason: reason, At: time.Now().Unix()}
 }
 
 // ready checks a container that ran before its update: it has to stay up for

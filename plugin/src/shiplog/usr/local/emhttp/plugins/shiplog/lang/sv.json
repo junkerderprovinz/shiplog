@@ -130,7 +130,6 @@
   "d_rolledTitle": "Återställd",
   "d_rolledNote": "Den senaste automatiska uppdateringen misslyckades (%s), så ShipLog satte tillbaka containern på dess gamla image. Dina appdata är orörda.",
   "d_rolledUnpin": "Mallen pekar nu på den gamla imagen. Ta bort @sha256-delen från repository för att uppdatera igen.",
-  "d_snapshot": "Säkerhetskopia från före uppdateringen",
   "d_guardHint": "Klicka för att se varför.",
   "s_au_pinned_desc": "En container som är fäst vid en versionstagg (till exempel :1.4.2) uppdateras aldrig automatiskt, eftersom det inte ändrar något att hämta samma tagg igen. En nyare version visas bara som ett tips; ändra taggen själv för att uppdatera.",
   "s_au_ct_newer": "fäst · nyare %v tillgänglig",

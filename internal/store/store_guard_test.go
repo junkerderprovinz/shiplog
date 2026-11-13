@@ -14,7 +14,7 @@ func TestGuardsKeepOneEntryPerContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	updating := store.Guard{Name: "nextcloud", State: store.GuardUpdating, Repository: "lscr.io/linuxserver/nextcloud",
-		Digest: "sha256:aaaa", Snapshot: "4f2a9c1e", Link: "https://tower.lan:3443/snapshots/4f2a9c1e", At: 100}
+		Digest: "sha256:aaaa", Snapshot: "4f2a9c1e", At: 100}
 	if err := s.SetGuard(updating); err != nil {
 		t.Fatal(err)
 	}

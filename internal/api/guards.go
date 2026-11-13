@@ -26,7 +26,6 @@ type guardJSON struct {
 	State    string `json:"state"`
 	Reason   string `json:"reason,omitempty"`
 	Snapshot string `json:"snapshot,omitempty"`
-	Link     string `json:"link,omitempty"`
 	// Pinned is the image a rolled back template runs now.
 	Pinned string    `json:"pinned,omitempty"`
 	Since  time.Time `json:"since"`
@@ -45,7 +44,7 @@ func (a *API) listGuards(w http.ResponseWriter, _ *http.Request) {
 			return
 		}
 		for _, g := range gs {
-			j := guardJSON{Name: g.Name, State: g.State, Reason: g.Reason, Snapshot: g.Snapshot, Link: g.Link,
+			j := guardJSON{Name: g.Name, State: g.State, Reason: g.Reason, Snapshot: g.Snapshot,
 				Since: time.Unix(g.At, 0).UTC()}
 			if g.State == store.GuardRolledBack && g.Repository != "" && g.Digest != "" {
 				ref, _, _ := strings.Cut(g.Repository, "@")

@@ -106,7 +106,7 @@ func newGuardedHost() *guardedHost {
 	h.pulled["nextcloud"] = []string{newDigest}
 	g := &guardedHost{
 		fakeHost:  h,
-		backup:    &fakeBackup{h: h, snap: backup.Snapshot{Member: "m1", Run: "7", ID: "4f2a9c1e", Link: "https://tower.lan/snap/4f2a9c1e"}},
+		backup:    &fakeBackup{h: h, snap: backup.Snapshot{Member: "m1", Run: "7", ID: "4f2a9c1e"}},
 		images:    &fakeImages{},
 		templates: &fakeTemplates{h: h, repo: map[string]string{"nextcloud": "lscr.io/linuxserver/nextcloud:latest"}},
 		guards:    &fakeGuards{m: map[string]store.Guard{}},
@@ -149,7 +149,7 @@ func TestSafeguardBacksUpAndHoldsTheOldImageBeforeTheUpdate(t *testing.T) {
 	if len(g.backup.saved) != 1 || g.backup.updatesSeen[0] != 0 {
 		t.Errorf("backups %v with %v updates run before, want one before the update", g.backup.saved, g.backup.updatesSeen)
 	}
-	if o.Snapshot.ID != "4f2a9c1e" || o.Snapshot.Link != "https://tower.lan/snap/4f2a9c1e" {
+	if o.Snapshot.ID != "4f2a9c1e" {
 		t.Errorf("snapshot = %+v", o.Snapshot)
 	}
 	if len(g.images.held) != 1 || g.images.held[0] != "sha256:1111 nextcloud" {
