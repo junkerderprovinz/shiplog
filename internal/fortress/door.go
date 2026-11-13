@@ -201,14 +201,15 @@ func others(members []kitfortress.Member) []Other {
 }
 
 // Leave takes ShipLog out of its fortress and forgets the membership. The
-// other members keep it as away until somebody removes it, and the phrase
-// brings it back.
+// members in reach drop it at once, the others when they hear it from them,
+// and the phrase brings it back.
 func (d *Door) Leave() error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.m == nil {
 		return ErrNotMember
 	}
+	d.m.Fortress.Leave()
 	err := d.m.Close()
 	d.m = nil
 	d.removed, d.phraseChanged = false, false
