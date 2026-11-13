@@ -1,11 +1,11 @@
 /* The fortress card for a page without a framework (fortress-card.js).
  *
- * One markup, two looks, as on the plugins' settings pages. Without
- * TowerTorch it follows Unraid: its theme colours and its own buttons. With
- * TowerTorch, whose sheets dress the page's buttons, fields and switches as
- * GlimStone does, the rules under html.tt-popups-on give the cards, the
- * badges and the windows the same look from TowerTorch's tokens, OLED
- * included. The geometry is the same in both. */
+ * One markup, two looks, as on the plugins' settings pages. Without a
+ * theme plugin it follows Unraid: its theme colours and its own buttons.
+ * With a theme plugin whose sheets dress the page's buttons, fields and
+ * switches as GlimStone does, the rules under html.tt-popups-on give the
+ * cards, the badges and the windows the same look from that plugin's
+ * tokens, OLED included. The geometry is the same in both. */
 
 .glim-fc {
   --fc-card: var(--mild-background-color, rgba(128, 128, 128, .08));
@@ -53,7 +53,7 @@ html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da
 .glim-fc .glim-fc-error { color: var(--fc-err); }
 .glim-fc-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; min-width: 0; max-width: 100%; margin-inline-start: auto; }
 
-/* Buttons are the host's: Unraid's without TowerTorch, TowerTorch's with it.
+/* Buttons are the host's: Unraid's on their own, the theme plugin's with it.
    This only lays out the glyph beside the words. */
 .glim-fc .glim-fc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0; white-space: nowrap; vertical-align: middle; }
 .glim-fc .glim-fc-btn:disabled { opacity: .5; cursor: default; }
@@ -91,8 +91,8 @@ html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da
 :is(.glim-fc-note, .glim-fc-quiet):has(.glim-fc-btn) { flex-wrap: wrap; align-items: center; }
 :is(.glim-fc-note, .glim-fc-quiet) .glim-fc-btn { margin-inline-start: auto; }
 
-/* The switch, drawn on the checkbox itself. TowerTorch draws its own on the
-   same box. */
+/* The switch, drawn on the checkbox itself. The theme plugin draws its own on
+   the same box. */
 .glim-fc input.glim-fc-sw {
   -webkit-appearance: none; appearance: none; position: relative; flex: none; vertical-align: middle;
   width: 44px; height: 24px; margin: 0; padding: 0; border: none; border-radius: var(--fc-r-pill);
@@ -156,8 +156,8 @@ html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da
 }
 
 /* The windows live in <body>, outside the card, so they carry their own
-   colours: Unraid's theme without TowerTorch, and with it a window that stays
-   dark on every theme, as TowerTorch's windows do. */
+   colours: Unraid's theme on its own, and with the theme plugin a window that
+   stays dark on every theme, as that plugin's windows do. */
 .glim-fc-wins {
   --fc-w-ground: var(--background-color, #1c1b1b);
   --fc-w-card: var(--mild-background-color, rgba(128, 128, 128, .08));
@@ -254,7 +254,7 @@ html:is(.Theme--white, .Theme--azure) .glim-fc-wins { --fc-w-ok: #0e6027; --fc-w
 .glim-fc-wins .glim-fc-badge-fail { background: color-mix(in srgb, var(--fc-w-err) 16%, transparent); color: var(--fc-w-err); }
 .glim-fc-wins .glim-fc-badge-active { background: color-mix(in srgb, var(--fc-w-active) 16%, transparent); color: var(--fc-w-active); }
 
-/* With TowerTorch: GlimStone's look from its tokens. */
+/* With the theme plugin: GlimStone's look from its tokens. */
 html.tt-popups-on .glim-fc {
   --fc-card: var(--tt-fm-card, #222);
   --fc-head: var(--tt-accent, #FCC419);
@@ -300,7 +300,7 @@ html.tt-popups-on .glim-fc-wins {
   --fc-w-shadow: var(--tt-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
 }
 /* Under OLED, which counts only on a dark Unraid theme, the windows take
-   TowerTorch's lowered surfaces. */
+   the theme plugin's lowered surfaces. */
 html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-fc-wins {
   --fc-w-ground: var(--tt-surface-window, #161616);
   --fc-w-card: var(--tt-surface-2, #1a1a1a);
@@ -311,12 +311,12 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-fc-wins {
 html.tt-popups-on .glim-fc-wins button.glim-fc-win-btn:not(.glim-fc-key):is(:hover, :focus-visible) { background: color-mix(in srgb, var(--fc-w-raised), var(--fc-w-head) 22%); }
 html.tt-popups-on .glim-fc-wins button.glim-fc-win-btn:not(.glim-fc-key):is(:hover, :focus-visible) .glim-fc-g { color: var(--fc-w-head); }
 
-/* TowerTorch's sheets reach every button, switch and focus ring on a page
+/* The theme plugin's sheets reach every button, switch and focus ring on a page
    with !important. An important declaration in a cascade layer outranks
    every unlayered one, so the few things the card needs to keep sit here. */
 @layer glim-fortress-card {
   .glim-fc input.glim-fc-sw { margin: 0 !important; }
-  /* TowerTorch dresses the buttons of most pages but not of every one, so
+  /* The theme plugin dresses the buttons of most pages but not of every one, so
      under its look the card draws its own the same way, rounded, never a
      pill, the hovered ground taking 22% of the accent and the glyph all of it. */
   html.tt-popups-on .glim-fc button.glim-fc-btn {
