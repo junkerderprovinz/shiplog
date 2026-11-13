@@ -32,7 +32,7 @@
 }
 html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da1e28; --fc-warn: #ba4e00; }
 .glim-fc *, .glim-fc *::before, .glim-fc *::after { box-sizing: border-box; }
-.glim-fc [hidden], .glim-fc-wins [hidden] { display: none !important; }
+.glim-fc[hidden], .glim-fc [hidden], .glim-fc-wins [hidden] { display: none !important; }
 
 /* The card, and its heading as a badge across the card's top edge. */
 .glim-fc-card { position: relative; padding: 22px 18px 12px; border-radius: var(--fc-r-card); background: var(--fc-card); box-shadow: var(--fc-shadow); }
@@ -269,6 +269,8 @@ html.tt-popups-on .glim-fc {
   --fc-shadow: var(--tt-elev-1, 0 1px 4px rgba(0, 0, 0, .35));
   --fc-bubble: var(--tt-surface-window, #242424);
   --fc-bubble-ink: var(--tt-text, #e6e6e6);
+  --fc-btn: var(--tt-fm-btn, #353535);
+  --fc-btn-ink: var(--tt-text-chip, #cfcfcf);
   color: var(--tt-text, #e6e6e6);
 }
 html.tt-popups-on .glim-fc .glim-fc-h { font-size: var(--tt-sec-fs, 12px); font-weight: var(--tt-sec-fw, 500); letter-spacing: var(--tt-sec-ls, 1.2px); min-height: var(--tt-sec-h, 22px); }
@@ -309,5 +311,19 @@ html.tt-popups-on .glim-fc-wins button.glim-fc-win-btn:not(.glim-fc-key):is(:hov
    every unlayered one, so the few things the card needs to keep sit here. */
 @layer glim-fortress-card {
   .glim-fc input.glim-fc-sw { margin: 0 !important; }
+  /* TowerTorch dresses the buttons of most pages but not of every one, so
+     under its look the card draws its own the same way, rounded, never a
+     pill, the hovered ground taking 22% of the accent and the glyph all of it. */
+  html.tt-popups-on .glim-fc button.glim-fc-btn {
+    display: inline-flex !important; align-items: center !important; gap: 6px !important;
+    min-width: 0 !important; min-height: 32px !important; height: auto !important; margin: 0 !important; padding: 6px 14px !important;
+    border: none !important; border-radius: var(--fc-r-ctl) !important; box-shadow: none !important; filter: none !important;
+    background: var(--fc-btn) !important; color: var(--fc-btn-ink) !important;
+    font-family: inherit !important; font-size: var(--tt-text-meta, 12px) !important; font-weight: 600 !important; line-height: 1.2 !important;
+    letter-spacing: normal !important; text-transform: none !important; cursor: pointer !important;
+  }
+  html.tt-popups-on .glim-fc button.glim-fc-btn:is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--fc-btn), var(--fc-head) 22%) !important; }
+  html.tt-popups-on .glim-fc button.glim-fc-btn:is(:hover, :focus-visible):not(:disabled) .glim-fc-g { color: var(--fc-head); }
+  html.tt-popups-on .glim-fc button.glim-fc-btn:disabled { opacity: .5 !important; cursor: default !important; }
   .glim-fc :is(.glim-fc-btn, .glim-fc-sw, .glim-fc-info):focus-visible { outline: 2px solid var(--fc-focus) !important; outline-offset: 2px !important; filter: none !important; }
 }

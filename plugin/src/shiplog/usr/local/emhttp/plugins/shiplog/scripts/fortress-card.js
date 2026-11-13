@@ -500,7 +500,8 @@
 
     function actions(a, m) {
       const out = [];
-      if (m.form === "plugin" && adapter.status) {
+      // A plugin that is away has no status to show, so it offers no Open.
+      if (m.form === "plugin" && m.online && adapter.status) {
         out.push(button(t.open, "IconExternalLink", { "data-fortress": "open", "aria-label": t.open + ": " + memberName(t, m), onclick: (e) => openStatus(e.currentTarget, a, m) }));
       }
       out.push(button(t.remove, "IconTrash", { "data-fortress": "open-remove", "aria-label": t.remove + ": " + memberName(t, m), onclick: (e) => openRemove(e.currentTarget, m) }));
@@ -778,7 +779,7 @@
     // The state stays fresh while the page shows, so a member that goes away
     // or comes back changes its badge without a reload.
     function tick() {
-      if (!gone && !win && document.visibilityState !== "hidden") load();
+      if (!gone && !win && document.visibilityState !== "hidden" && (el.hidden || el.offsetParent !== null)) load();
     }
 
     load();
