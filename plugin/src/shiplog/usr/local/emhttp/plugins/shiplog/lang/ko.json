@@ -174,5 +174,6 @@
   "s_give_no_tag": "destination tag와 memo는 필요 없습니다.",
   "s_copy": "복사",
   "s_copied": "복사됨",
-  "s_fortress": "요새"
+  "s_fortress": "요새",
+  "s_fortress_no_backup": "그때까지 자동 업데이트는 백업 없이 실행됩니다."
 }

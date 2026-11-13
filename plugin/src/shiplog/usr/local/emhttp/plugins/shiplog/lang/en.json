@@ -174,5 +174,6 @@
   "s_give_no_tag": "No destination tag and no memo needed.",
   "s_copy": "Copy",
   "s_copied": "Copied",
-  "s_fortress": "Fortress"
+  "s_fortress": "Fortress",
+  "s_fortress_no_backup": "Until then, auto-updates run without a backup."
 }

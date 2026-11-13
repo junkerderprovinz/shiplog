@@ -174,5 +174,6 @@
   "s_give_no_tag": "destination tag も memo も不要です。",
   "s_copy": "コピー",
   "s_copied": "コピーしました",
-  "s_fortress": "要塞"
+  "s_fortress": "要塞",
+  "s_fortress_no_backup": "それまでは、自動更新はバックアップなしで実行されます。"
 }

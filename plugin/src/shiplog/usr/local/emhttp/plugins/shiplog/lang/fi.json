@@ -174,5 +174,6 @@
   "s_give_no_tag": "Destination tagia tai memoa ei tarvita.",
   "s_copy": "Kopioi",
   "s_copied": "Kopioitu",
-  "s_fortress": "Linnoitus"
+  "s_fortress": "Linnoitus",
+  "s_fortress_no_backup": "Siihen asti automaattiset päivitykset tehdään ilman varmuuskopiota."
 }

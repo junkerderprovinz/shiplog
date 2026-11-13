@@ -6,6 +6,7 @@
   "use strict";
   var PROXY = "/plugins/shiplog/server/status.php";
   var lang = window.SL_LANG || "en";
+  var T = window.SLT;
   var down = document.getElementById("sl-fortress-down");
 
   function answer(r) {
@@ -26,7 +27,9 @@
       removedHere: !!s.removed,
       phraseChanged: !!s.phraseChanged,
       members: s.members || [],
-      removed: s.removedMembers || []
+      removed: s.removedMembers || [],
+      // Without its place in the fortress ShipLog cannot ask for a backup.
+      hints: s.removed || s.phraseChanged ? [{ text: T.s_fortress_no_backup, tone: "warn" }] : []
     };
   }
   // A refusal reaches the card as the code it words, renamed through codes

@@ -174,5 +174,6 @@
   "s_give_no_tag": "אין צורך ב-destination tag ולא ב-memo.",
   "s_copy": "העתק",
   "s_copied": "הועתק",
-  "s_fortress": "מבצר"
+  "s_fortress": "מבצר",
+  "s_fortress_no_backup": "עד אז, עדכונים אוטומטיים רצים בלי גיבוי."
 }

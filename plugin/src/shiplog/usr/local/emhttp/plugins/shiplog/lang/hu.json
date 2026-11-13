@@ -174,5 +174,6 @@
   "s_give_no_tag": "Nem kell sem destination tag, sem memo.",
   "s_copy": "Másolás",
   "s_copied": "Másolva",
-  "s_fortress": "Erőd"
+  "s_fortress": "Erőd",
+  "s_fortress_no_backup": "Addig az automatikus frissítések mentés nélkül futnak."
 }

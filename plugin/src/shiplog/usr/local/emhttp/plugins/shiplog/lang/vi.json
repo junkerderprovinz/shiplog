@@ -174,5 +174,6 @@
   "s_give_no_tag": "Không cần destination tag hay memo.",
   "s_copy": "Sao chép",
   "s_copied": "Đã sao chép",
-  "s_fortress": "Pháo đài"
+  "s_fortress": "Pháo đài",
+  "s_fortress_no_backup": "Cho đến lúc đó, cập nhật tự động sẽ chạy mà không sao lưu."
 }

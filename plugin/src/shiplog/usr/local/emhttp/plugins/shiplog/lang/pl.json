@@ -174,5 +174,6 @@
   "s_give_no_tag": "Destination tag ani memo nie są potrzebne.",
   "s_copy": "Kopiuj",
   "s_copied": "Skopiowano",
-  "s_fortress": "Twierdza"
+  "s_fortress": "Twierdza",
+  "s_fortress_no_backup": "Do tego czasu automatyczne aktualizacje idą bez kopii zapasowej."
 }
