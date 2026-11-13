@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/junkerderprovinz/parleyport/kit/group"
+
 	"github.com/junkerderprovinz/shiplog/internal/fortress"
 )
 
@@ -38,7 +40,8 @@ func (a *API) fortressState(w http.ResponseWriter, r *http.Request) {
 }
 
 // fortressJoin answers with a code the page can word: phrase for words that
-// are no fortress phrase, member when ShipLog is in one already.
+// are no fortress phrase, member when ShipLog is in one already and
+// closedUntilNewPhrase while the members take nobody new.
 func (a *API) fortressJoin(w http.ResponseWriter, r *http.Request) {
 	if fromSocket(r) != nil {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "socket"})
@@ -57,6 +60,8 @@ func (a *API) fortressJoin(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "phrase"})
 	case errors.Is(err, fortress.ErrMember):
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "member"})
+	case errors.Is(err, fortress.ErrShutOut):
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": group.ClosedUntilNewPhrase})
 	case err != nil:
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	default:

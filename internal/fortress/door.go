@@ -28,6 +28,9 @@ var (
 	ErrNotMember = errors.New("ShipLog is in no fortress")
 	// ErrNoMember means no other member of the fortress has the id.
 	ErrNoMember = errors.New("no other member of the fortress has that id")
+	// ErrShutOut means the members turned ShipLog away, since one of them was
+	// taken out and the phrase has not changed since.
+	ErrShutOut = errors.New("the fortress takes no new member until its phrase changes")
 )
 
 // removedFile sits next to the membership and names the members ShipLog took
@@ -78,7 +81,8 @@ type State struct {
 	PhraseChanged bool   `json:"phraseChanged"`
 	Device        string `json:"device,omitempty"`
 	// Members are the other members, RemovedMembers those ShipLog took out
-	// since the phrase last changed, which the phrase still lets back in.
+	// since the phrase last changed, which keeps the fortress closed to new
+	// members until it changes.
 	Members        []Other   `json:"members"`
 	RemovedMembers []Removed `json:"removedMembers"`
 }
@@ -118,6 +122,10 @@ type Removed struct {
 // hand over the new keys.
 var followWait = 10 * time.Second
 
+// admitWait is how long a join waits for a member to answer ShipLog or turn
+// it away.
+var admitWait = 8 * time.Second
+
 // Open takes part in the fortress kept in Dir, if ShipLog joined one.
 func (d *Door) Open() error {
 	d.mu.Lock()
@@ -137,8 +145,73 @@ func (d *Door) Open() error {
 
 // Enter joins the fortress of words and opens the membership. After a
 // phrase change ShipLog could not follow, the new words keep the member key
-// in Dir, so the others know it as before.
+// in Dir, so the others know it as before. It fails with ErrShutOut and
+// forgets the membership when the members turn ShipLog away.
 func (d *Door) Enter(words string) error {
+	d.mu.Lock()
+	removed := d.removed
+	d.mu.Unlock()
+	if err := d.enter(words); err != nil {
+		return err
+	}
+	f := d.current()
+	if f == nil || !turnedAway(f, admitWait) {
+		return nil
+	}
+	return d.shutOut(f, removed)
+}
+
+// turnedAway waits up to wait for every member in reach to answer f, and
+// reports whether the members turned it away instead. A member taken out
+// still answers, so one answer alone says nothing.
+func turnedAway(f *kitfortress.Fortress, wait time.Duration) bool {
+	for end := time.Now().Add(wait); time.Now().Before(end); time.Sleep(50 * time.Millisecond) {
+		if f.ShutOut() {
+			return true
+		}
+		if allAnswered(f) {
+			return false
+		}
+	}
+	return f.ShutOut()
+}
+
+// allAnswered reports whether f knows a member in reach and every one of them
+// told it which app it runs, which a member that turns f away never does.
+func allAnswered(f *kitfortress.Fortress) bool {
+	n := 0
+	for _, m := range f.Members() {
+		if m.Kind != member.KindInstance || !m.Online() {
+			continue
+		}
+		if m.App.ID == "" {
+			return false
+		}
+		n++
+	}
+	return n > 0
+}
+
+// shutOut forgets the membership of f, which nobody lets in until the phrase
+// changes, so the card offers the join again. A ShipLog that another member
+// took out still says so.
+func (d *Door) shutOut(f *kitfortress.Fortress, removed bool) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.m == nil || d.m.Fortress != f {
+		return ErrShutOut
+	}
+	err := errors.Join(d.m.Close(), os.RemoveAll(d.Dir))
+	d.m = nil
+	if removed {
+		d.removed = true
+		err = errors.Join(err, os.MkdirAll(d.Dir, 0o700))
+		err = errors.Join(err, os.WriteFile(filepath.Join(d.Dir, removedHereFile), nil, 0o600))
+	}
+	return errors.Join(ErrShutOut, err)
+}
+
+func (d *Door) enter(words string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if _, err := os.Stat(filepath.Join(d.Dir, "fortress.json")); !d.phraseChanged && !errors.Is(err, fs.ErrNotExist) {

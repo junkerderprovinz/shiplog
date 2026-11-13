@@ -76,3 +76,50 @@ func TestTheCardWarnsOfUpdatesWithoutABackupWhileShipLogIsOut(t *testing.T) {
 		}
 	}
 }
+
+// refusalRun loads the card and fortress.js in node, has the engine turn a
+// join away with the code in argv[3] and prints the card's sentence for the
+// adapter's refusal beside its joinLocked.
+const refusalRun = `
+globalThis.window = globalThis;
+window.SL_LANG = "en";
+window.SLT = {};
+globalThis.document = { getElementById: () => ({ hidden: false }) };
+require(process.argv[1]);
+const card = window.GlimFortressCard;
+let adapter = null;
+window.GlimFortressCard = { mount: (el, a) => { adapter = a; } };
+globalThis.fetch = () => Promise.resolve({ ok: false, json: () => Promise.resolve({ error: process.argv[3] }) });
+require(process.argv[2]);
+const t = card.text("en");
+adapter.join(["legal"]).then(
+  () => console.log(JSON.stringify({ said: "joined", locked: t.joinLocked })),
+  (e) => console.log(JSON.stringify({ said: card.joinRefusal(t, e.code), locked: t.joinLocked }))
+);
+`
+
+func TestAJoinTheFortressTurnsAwayShowsJoinLocked(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node is not installed")
+	}
+	var scripts []string
+	for _, name := range []string{"fortress-card.js", "fortress.js"} {
+		p, err := filepath.Abs(filepath.Join(pluginDir, "scripts", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		scripts = append(scripts, p)
+	}
+	out, err := exec.Command(node, "-e", refusalRun, scripts[0], scripts[1], "closedUntilNewPhrase").CombinedOutput()
+	if err != nil {
+		t.Fatalf("node: %v\n%s", err, out)
+	}
+	var got struct{ Said, Locked string }
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	if got.Locked == "" || got.Said != got.Locked {
+		t.Errorf("the card says %q, want joinLocked %q", got.Said, got.Locked)
+	}
+}
