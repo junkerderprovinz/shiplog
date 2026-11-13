@@ -326,7 +326,10 @@
    * app whose fortress is not running. `opts.lang` is the page's language and
    * `opts.app` the app showing it, `{ id, name }`. `opts.rows` adds rows of
    * the app's own to the card, each `{ label, about, value, button: { label,
-   * glyph }, run }`.
+   * glyph }, run }`. A state may carry `hints`, lines of the app's own in its
+   * own words under the card's heading, each `{ text, tone, action }` with
+   * tone `warn` (the default) or `quiet`, and an action `{ label, glyph,
+   * join }` that opens the window for the phrase, or `{ label, glyph, run }`.
    */
   function mount(el, adapter, opts) {
     const lang = (opts && opts.lang) || "en";
@@ -367,6 +370,7 @@
         phraseMoved: !!s.phraseChanged,
         members: Array.isArray(s.members) ? s.members : [],
         removed: Array.isArray(s.removed) ? s.removed : [],
+        hints: Array.isArray(s.hints) ? s.hints.filter((x) => x && x.text) : [],
       };
     }
 
@@ -400,6 +404,7 @@
       const s = state;
       if (s.removedHere && !s.joined) note(card, t.removedHereTitle, fill(t.removedHereHint, { app: app.name }), "removed-here");
       if (s.joined && s.phraseMoved) note(card, t.changedTitle, fill(t.phraseMoved, { app: app.name }), "moved");
+      s.hints.forEach((x) => card.appendChild(hint(x)));
 
       if (!s.joined) {
         card.appendChild(
@@ -447,6 +452,34 @@
         groupApps(s.members).forEach((a) => grid.appendChild(appCard(a)));
         el.appendChild(grid);
       }
+    }
+
+    function hint(x) {
+      const line = h("div", { class: x.tone === "quiet" ? "glim-fc-quiet" : "glim-fc-note", role: "status", "data-fortress": "hint" }, [
+        glyph("IconInfo"),
+        h("span", { class: "glim-fc-hint-text", text: x.text }),
+      ]);
+      const a = x.action;
+      if (a && a.label) {
+        const b = button(a.label, a.glyph || (a.join ? "IconSignIn" : "IconExternalLink"), {
+          "data-fortress": a.join ? "open-join" : "hint-action",
+          onclick: (e) => {
+            if (a.join) return openJoin(e.currentTarget);
+            b.disabled = true;
+            Promise.resolve()
+              .then(() => a.run())
+              .then(
+                () => load(),
+                () => {
+                  b.disabled = false;
+                  shake(b);
+                },
+              );
+          },
+        });
+        line.appendChild(b);
+      }
+      return line;
     }
 
     function note(card, title, text, kind) {

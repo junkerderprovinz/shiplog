@@ -85,6 +85,10 @@ html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da
 .glim-fc-note { background: color-mix(in srgb, var(--fc-warn) 12%, transparent); color: var(--fc-warn); }
 .glim-fc-quiet { background: var(--fc-well); color: var(--fc-dim); }
 :is(.glim-fc-note, .glim-fc-quiet) .glim-fc-g { padding-top: 2px; }
+/* A line of the app's own may end in a button, which keeps to the end. */
+.glim-fc-hint-text { flex: 1 1 200px; min-width: 0; }
+:is(.glim-fc-note, .glim-fc-quiet):has(.glim-fc-btn) { flex-wrap: wrap; align-items: center; }
+:is(.glim-fc-note, .glim-fc-quiet) .glim-fc-btn { margin-inline-start: auto; }
 
 /* The switch, drawn on the checkbox itself. TowerTorch draws its own on the
    same box. */
