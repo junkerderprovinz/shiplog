@@ -3,6 +3,7 @@ package plugin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -114,44 +115,77 @@ func TestTheAdapterHandsTheCardShipLogsFortress(t *testing.T) {
 	}
 }
 
+// TestTheFortressCardIsGlimStonesOwnUnchanged holds the copy to GlimStone's
+// release tag, or to its release branch while the tag is still to come.
 func TestTheFortressCardIsGlimStonesOwnUnchanged(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "glimstone.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	var cfg struct {
-		Vanilla struct {
-			Ref   string            `json:"ref"`
-			Files map[string]string `json:"files"`
-		} `json:"vanilla"`
+		Targets []struct {
+			Name    string `json:"name"`
+			Mode    string `json:"mode"`
+			Version string `json:"version"`
+			Files   []struct {
+				From string `json:"from"`
+				To   string `json:"to"`
+			} `json:"files"`
+		} `json:"targets"`
 	}
 	if err := json.Unmarshal(raw, &cfg); err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Vanilla.Ref == "" || len(cfg.Vanilla.Files) != 2 {
-		t.Fatalf("glimstone.json names no GlimStone copy: %+v", cfg.Vanilla)
+	var version string
+	sources := map[string]string{}
+	for _, target := range cfg.Targets {
+		if target.Mode != "copy" || target.Name != "fortress card" {
+			continue
+		}
+		version = target.Version
+		for _, f := range target.Files {
+			sources[f.To] = f.From
+		}
+	}
+	if version == "" || len(sources) != 2 {
+		t.Fatalf("glimstone.json has no fortress card copy target with its two files: %+v", cfg.Targets)
 	}
 	client := &http.Client{Timeout: 30 * time.Second}
-	for copied, source := range cfg.Vanilla.Files {
+	for copied, source := range sources {
 		mine, err := os.ReadFile(filepath.Join("..", filepath.FromSlash(copied)))
 		if err != nil {
 			t.Errorf("%s: %v", copied, err)
 			continue
 		}
-		url := "https://raw.githubusercontent.com/junkerderprovinz/glimstone/" + cfg.Vanilla.Ref + "/" + source
-		resp, err := client.Get(url)
+		theirs, ref, err := glimstoneFile(client, version, source)
 		if err != nil {
-			t.Errorf("%s: %v", url, err)
-			continue
-		}
-		theirs, err := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		if err != nil || resp.StatusCode != http.StatusOK {
-			t.Errorf("%s: %s, %v", url, resp.Status, err)
+			t.Errorf("%s: %v", copied, err)
 			continue
 		}
 		if !bytes.Equal(mine, theirs) {
-			t.Errorf("%s is not GlimStone's %s at %s; copy it again unchanged", copied, source, cfg.Vanilla.Ref)
+			t.Errorf("%s is not GlimStone's %s at %s; copy it again unchanged", copied, source, ref)
 		}
 	}
+}
+
+// glimstoneFile reads path from GlimStone's tag v<version>, falling back to
+// the branch rel/<version> until that release is tagged.
+func glimstoneFile(client *http.Client, version, path string) ([]byte, string, error) {
+	for _, ref := range []string{"v" + version, "rel/" + version} {
+		url := "https://raw.githubusercontent.com/junkerderprovinz/glimstone/" + ref + "/" + path
+		resp, err := client.Get(url)
+		if err != nil {
+			return nil, ref, err
+		}
+		body, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound {
+			continue
+		}
+		if err != nil || resp.StatusCode != http.StatusOK {
+			return nil, ref, fmt.Errorf("%s: %s, %v", url, resp.Status, err)
+		}
+		return body, ref, nil
+	}
+	return nil, "", fmt.Errorf("GlimStone has %s neither at v%s nor on rel/%s", path, version, version)
 }
