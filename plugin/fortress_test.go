@@ -44,14 +44,14 @@ func TestEveryLanguageNamesTheFortressTab(t *testing.T) {
 	}
 }
 
-func TestTheFortressHasItsOwnTabRightAfterGeneral(t *testing.T) {
+func TestTheFortressHasItsOwnTabJustAboveInfo(t *testing.T) {
 	page := read(t, "shiplog.page")
 	var tabs []string
 	for _, m := range regexp.MustCompile(`data-sl-tab="([a-z]+)"`).FindAllStringSubmatch(page, -1) {
 		tabs = append(tabs, m[1])
 	}
-	if len(tabs) < 2 || tabs[0] != "general" || tabs[1] != "fortress" {
-		t.Errorf("tabs = %v, want fortress right after general", tabs)
+	if n := len(tabs); n < 3 || tabs[0] != "general" || tabs[n-2] != "fortress" || tabs[n-1] != "info" {
+		t.Errorf("tabs = %v, want general first and fortress just above info", tabs)
 	}
 	tab := regexp.MustCompile(`<button[^>]*data-sl-tab="fortress"[^>]*>.*?</button>`).FindString(page)
 	if !strings.Contains(tab, `$L['s_fortress']`) || !strings.Contains(tab, `aria-controls="sl-pane-fortress"`) {

@@ -134,10 +134,10 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
 <div class="sl-body">
   <div class="sl-tabs" role="tablist" aria-orientation="vertical" aria-label="ShipLog">
     <button type="button" class="sl-tab" role="tab" id="sl-tab-general" aria-controls="sl-pane-general" aria-selected="true" data-sl-tab="general"><span class="sl-tabico"><?=$G['TabGeneral']?></span><span class="sl-tablbl"><?=$slE($L['t_general'])?></span></button>
-    <button type="button" class="sl-tab" role="tab" id="sl-tab-fortress" aria-controls="sl-pane-fortress" aria-selected="false" tabindex="-1" data-sl-tab="fortress"><span class="sl-tabico"><?=$G['ShieldOn']?></span><span class="sl-tablbl"><?=$slE($L['s_fortress'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-updates" aria-controls="sl-pane-updates" aria-selected="false" tabindex="-1" data-sl-tab="updates"><span class="sl-tabico"><?=$G['Update']?></span><span class="sl-tablbl"><?=$slE($L['t_updates'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-notify" aria-controls="sl-pane-notify" aria-selected="false" tabindex="-1" data-sl-tab="notify"><span class="sl-tabico"><?=$G['Notifications']?></span><span class="sl-tablbl"><?=$slE($L['t_notify'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-sources" aria-controls="sl-pane-sources" aria-selected="false" tabindex="-1" data-sl-tab="sources"><span class="sl-tabico"><?=$G['Link']?></span><span class="sl-tablbl"><?=$slE($L['t_sources'])?></span></button>
+    <button type="button" class="sl-tab" role="tab" id="sl-tab-fortress" aria-controls="sl-pane-fortress" aria-selected="false" tabindex="-1" data-sl-tab="fortress"><span class="sl-tabico"><?=$G['ShieldOn']?></span><span class="sl-tablbl"><?=$slE($L['s_fortress'])?></span></button>
     <button type="button" class="sl-tab" role="tab" id="sl-tab-info" aria-controls="sl-pane-info" aria-selected="false" tabindex="-1" data-sl-tab="info"><span class="sl-tabico"><?=$G['Info']?></span><span class="sl-tablbl"><?=$slE($L['t_info'])?></span></button>
   </div>
 
@@ -168,17 +168,6 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
           <span class="sl-stat" id="sl-stat" data-state="run" role="status" aria-labelledby="sl-status-lbl sl-stat-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-stat-txt"><?=$slE($L['s_checking'])?></span></span>
           <span class="sl-act"><a class="button sl-btn" id="sl-statuslink" href="/plugins/shiplog/server/status.php?path=page" target="_blank" rel="noopener noreferrer"><?=$slBtn('ExternalLink', $L['s_statuspage_btn'])?></a></span>
         </div>
-      </div>
-    </section>
-  </div>
-
-  <div class="sl-pane" role="tabpanel" id="sl-pane-fortress" aria-labelledby="sl-tab-fortress" hidden>
-    <div id="sl-fortress"></div>
-    <section class="sl-card" id="sl-fortress-down" aria-labelledby="sl-h-fortress-down" hidden>
-      <h3 class="sl-h"><span id="sl-h-fortress-down"><?=$slE($L['s_fortress'])?></span></h3>
-      <div class="sl-row">
-        <div class="sl-lbl"><span id="sl-fortress-down-lbl"><?=$slE($L['s_status'])?></span></div>
-        <div class="sl-ctl"><span class="sl-stat" data-state="err" role="status" aria-labelledby="sl-fortress-down-lbl sl-fortress-down-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-fortress-down-txt"><?=$slE(preg_replace('/^[✓✗]\s*/u', '', $L['s_unreachable']))?></span></span></div>
       </div>
     </section>
   </div>
@@ -349,6 +338,17 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
           <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="llamaswap" data-sl-out="sl-llamaswap-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
         </div>
         <div class="sl-res" id="sl-llamaswap-result" role="status"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="sl-pane" role="tabpanel" id="sl-pane-fortress" aria-labelledby="sl-tab-fortress" hidden>
+    <div id="sl-fortress"></div>
+    <section class="sl-card" id="sl-fortress-down" aria-labelledby="sl-h-fortress-down" hidden>
+      <h3 class="sl-h"><span id="sl-h-fortress-down"><?=$slE($L['s_fortress'])?></span></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><span id="sl-fortress-down-lbl"><?=$slE($L['s_status'])?></span></div>
+        <div class="sl-ctl"><span class="sl-stat" data-state="err" role="status" aria-labelledby="sl-fortress-down-lbl sl-fortress-down-txt"><span class="sl-dot" aria-hidden="true"></span><span id="sl-fortress-down-txt"><?=$slE(preg_replace('/^[✓✗]\s*/u', '', $L['s_unreachable']))?></span></span></div>
       </div>
     </section>
   </div>
