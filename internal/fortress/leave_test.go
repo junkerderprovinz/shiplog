@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"github.com/junkerderprovinz/parleyport/kit/group"
 	"github.com/junkerderprovinz/parleyport/kit/member"
 	"github.com/junkerderprovinz/parleyport/kit/phrase"
+	"github.com/junkerderprovinz/parleyport/kit/relay"
 	"github.com/junkerderprovinz/parleyport/kit/status"
 )
 
@@ -151,5 +153,37 @@ func TestShipLogReadsAnotherPluginsStatusAndItsNewestLines(t *testing.T) {
 	}
 	if _, err := d.Status(context.Background(), "nobody", "de"); !errors.Is(err, ErrNoMember) {
 		t.Errorf("status of a stranger = %v, want ErrNoMember", err)
+	}
+}
+
+func TestShipLogThatLeavesIsGoneFromTheOtherMembers(t *testing.T) {
+	srv := httptest.NewServer(relay.New())
+	t.Cleanup(srv.CloseClientConnections)
+	t.Cleanup(srv.Close)
+	secret, w, err := phrase.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bv := vault(t, srv.URL, secret)
+	d := &Door{Dir: filepath.Join(t.TempDir(), "fortress"), App: shiplog, Device: "Tower", Relay: srv.URL}
+	t.Cleanup(func() { _ = d.Close() })
+	if err := d.Enter(w); err != nil {
+		t.Fatal(err)
+	}
+	listed := func() bool {
+		for _, m := range bv.Members() {
+			if m.App.ID == "shiplog" {
+				return true
+			}
+		}
+		return false
+	}
+	waitFor(t, "BombVault to know ShipLog", listed)
+
+	if err := d.Leave(); err != nil {
+		t.Fatal(err)
+	}
+	if listed() {
+		t.Error("BombVault still lists ShipLog after it left")
 	}
 }
