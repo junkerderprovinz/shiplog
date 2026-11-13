@@ -174,5 +174,6 @@
   "s_give_no_tag": "Ni destination tag ni memo ne sont nécessaires.",
   "s_copy": "Copier",
   "s_copied": "Copié",
-  "s_fortress": "Forteresse"
+  "s_fortress": "Forteresse",
+  "s_fortress_no_backup": "D'ici là, les mises à jour automatiques se font sans sauvegarde."
 }

@@ -174,5 +174,6 @@
   "s_give_no_tag": "Destination tag da memo da gerekmiyor.",
   "s_copy": "Kopyala",
   "s_copied": "Kopyalandı",
-  "s_fortress": "Kale"
+  "s_fortress": "Kale",
+  "s_fortress_no_backup": "O zamana kadar otomatik güncellemeler yedeksiz çalışır."
 }

@@ -174,5 +174,6 @@
   "s_give_no_tag": "Nu sunt necesare destination tag sau memo.",
   "s_copy": "Copiază",
   "s_copied": "Copiat",
-  "s_fortress": "Fortăreață"
+  "s_fortress": "Fortăreață",
+  "s_fortress_no_backup": "Până atunci, actualizările automate rulează fără copie de rezervă."
 }

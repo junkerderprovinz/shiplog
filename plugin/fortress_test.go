@@ -13,9 +13,9 @@ import (
 	"time"
 )
 
-// TestEveryLanguageNamesTheFortressTab keeps the tab's name in every
-// language. The card brings its own texts, so the language files carry no
-// other fortress text.
+// TestEveryLanguageNamesTheFortressTab keeps the tab's name and the backup
+// warning in every language. The card brings its own texts, so the language
+// files carry no other fortress text.
 func TestEveryLanguageNamesTheFortressTab(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
 	if err != nil || len(files) < 26 {
@@ -31,11 +31,13 @@ func TestEveryLanguageNamesTheFortressTab(t *testing.T) {
 		if err := json.Unmarshal(raw, &texts); err != nil {
 			t.Fatalf("%s: %v", f, err)
 		}
-		if v := texts["s_fortress"]; v == "" || banned.MatchString(v) {
-			t.Errorf("%s: s_fortress = %q", filepath.Base(f), v)
+		for _, k := range []string{"s_fortress", "s_fortress_no_backup"} {
+			if v := texts[k]; v == "" || banned.MatchString(v) {
+				t.Errorf("%s: %s = %q", filepath.Base(f), k, v)
+			}
 		}
 		for k := range texts {
-			if strings.HasPrefix(k, "s_fortress_") {
+			if strings.HasPrefix(k, "s_fortress_") && k != "s_fortress_no_backup" {
 				t.Errorf("%s still carries %s, which the card words itself", filepath.Base(f), k)
 			}
 		}

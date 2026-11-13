@@ -174,5 +174,6 @@
   "s_give_no_tag": "Varken destination tag eller memo behövs.",
   "s_copy": "Kopiera",
   "s_copied": "Kopierad",
-  "s_fortress": "Fästning"
+  "s_fortress": "Fästning",
+  "s_fortress_no_backup": "Tills dess körs automatiska uppdateringar utan säkerhetskopia."
 }

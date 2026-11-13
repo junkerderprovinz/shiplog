@@ -174,5 +174,6 @@
   "s_give_no_tag": "无需 destination tag，也无需 memo。",
   "s_copy": "复制",
   "s_copied": "已复制",
-  "s_fortress": "堡垒"
+  "s_fortress": "堡垒",
+  "s_fortress_no_backup": "在此之前，自动更新会在没有备份的情况下进行。"
 }

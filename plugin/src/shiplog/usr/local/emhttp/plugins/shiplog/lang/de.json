@@ -174,5 +174,6 @@
   "s_give_no_tag": "Kein Destination Tag und kein Memo nötig.",
   "s_copy": "Kopieren",
   "s_copied": "Kopiert",
-  "s_fortress": "Festung"
+  "s_fortress": "Festung",
+  "s_fortress_no_backup": "Bis dahin laufen Auto-Updates ohne Sicherung."
 }
