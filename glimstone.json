@@ -8,7 +8,7 @@
     }
   ],
   "vanilla": {
-    "ref": "2778adece8ddeff56ebf1cae513c3a5e8ba0b1a7",
+    "ref": "ba0310263311571b221eb3d7cb3460e125d1178b",
     "files": {
       "plugin/src/shiplog/usr/local/emhttp/plugins/shiplog/scripts/fortress-card.js": "packages/core/vanilla/fortress-card.js",
       "plugin/src/shiplog/usr/local/emhttp/plugins/shiplog/styles/fortress-card.css": "packages/core/vanilla/fortress-card.css"
