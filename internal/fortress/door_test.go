@@ -128,7 +128,7 @@ func TestRemovedByAnotherMemberShipLogForgetsTheFortressAndSaysSoAfterARestart(t
 	if err != nil {
 		t.Fatal(err)
 	}
-	bv := vault(t, srv.URL, secret)
+	bv := newBackupApp(t, srv.URL, secret, nil)
 
 	dir := filepath.Join(t.TempDir(), "fortress")
 	d := &Door{Dir: dir, App: shiplog, Device: "Tower", Relay: srv.URL}
@@ -146,7 +146,7 @@ func TestRemovedByAnotherMemberShipLogForgetsTheFortressAndSaysSoAfterARestart(t
 	})
 	var self string
 	waitFor(t, "BombVault to see ShipLog", func() bool {
-		for _, m := range bv.Members() {
+		for _, m := range bv.f.Members() {
 			if m.App.ID == "shiplog" {
 				self = m.ID
 				return true
@@ -154,7 +154,7 @@ func TestRemovedByAnotherMemberShipLogForgetsTheFortressAndSaysSoAfterARestart(t
 		}
 		return false
 	})
-	if err := bv.Remove(self); err != nil {
+	if err := bv.f.Remove(self); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, "ShipLog to leave", func() bool { return d.State().Removed })
@@ -178,8 +178,21 @@ func TestRemovedByAnotherMemberShipLogForgetsTheFortressAndSaysSoAfterARestart(t
 	if s := again.State(); s.Joined || !s.Removed {
 		t.Errorf("after a restart: %+v", s)
 	}
-	if err := again.Enter(w); err != nil {
-		t.Fatalf("joining again: %v", err)
+	if err := again.Enter(w); !errors.Is(err, ErrShutOut) {
+		t.Fatalf("joining again on the old phrase = %v, want ErrShutOut", err)
+	}
+	if s := again.State(); s.Joined || !s.Removed {
+		t.Errorf("turned away on the old phrase: %+v", s)
+	}
+	bv.changePhrase(secret)
+	bv.keeper.mu.Lock()
+	fresh, err := phrase.Encode(bv.keeper.secret)
+	bv.keeper.mu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := again.Enter(fresh); err != nil {
+		t.Fatalf("joining again on the new phrase: %v", err)
 	}
 	if s := again.State(); !s.Joined || s.Removed {
 		t.Errorf("joined again: %+v", s)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -211,5 +212,27 @@ func TestTheRemovedListNamesNobodyWithoutAnApp(t *testing.T) {
 	want := []Removed{{App: "tollroll", Name: "TollRoll", Device: "Bottich"}}
 	if got := d.State().RemovedMembers; !slices.Equal(got, want) {
 		t.Errorf("removed = %+v, want %+v", got, want)
+	}
+}
+
+func TestAfterARemovalTheOldPhraseLetsNoNewShipLogIn(t *testing.T) {
+	d, _, tr, secret := joinedWithTollRoll(t)
+	if err := d.Remove(tr.id); err != nil {
+		t.Fatal(err)
+	}
+	words, err := phrase.Encode(secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	late := &Door{Dir: filepath.Join(t.TempDir(), "fortress"), App: shiplog, Src: source(&fakeStore{}), Device: "Laptop", Relay: d.Relay}
+	t.Cleanup(func() { _ = late.Close() })
+	if err := late.Enter(words); !errors.Is(err, ErrShutOut) {
+		t.Fatalf("join on the old phrase = %v, want ErrShutOut", err)
+	}
+	if s := late.State(); s.Joined {
+		t.Errorf("state after the refusal = %+v, want out", s)
+	}
+	if _, err := os.Stat(filepath.Join(late.Dir, "fortress.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("the membership the members turned away is kept: %v", err)
 	}
 }

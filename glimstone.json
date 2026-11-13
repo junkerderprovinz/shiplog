@@ -3,13 +3,13 @@
     {
       "name": "plugin",
       "mode": "port",
-      "version": "4.4.0",
+      "version": "4.4.1",
       "versionFile": "plugin/src/shiplog/usr/local/emhttp/plugins/shiplog/shiplog.page"
     },
     {
       "name": "fortress card",
       "mode": "copy",
-      "version": "4.4.0",
+      "version": "4.4.1",
       "files": [
         {
           "from": "packages/core/vanilla/fortress-card.css",

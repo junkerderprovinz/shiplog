@@ -91,6 +91,7 @@ func TestAJoinThatFailsSaysWhyWithACode(t *testing.T) {
 	}{
 		{fortress.ErrPhrase, http.StatusBadRequest, `"error":"phrase"`},
 		{fortress.ErrMember, http.StatusConflict, `"error":"member"`},
+		{fortress.ErrShutOut, http.StatusForbidden, `"error":"closedUntilNewPhrase"`},
 	} {
 		a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithDoor(&fakeDoor{err: c.err})
 		rr := doorCall(a, http.MethodPost, "/api/fortress/join", `{"phrase":"x"}`, true)
