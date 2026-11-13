@@ -2,13 +2,9 @@ package fortress
 
 import (
 	"errors"
-	"io"
 	"io/fs"
-	"log"
 	"net"
-	"net/http"
 	"slices"
-	"time"
 
 	kitfortress "github.com/junkerderprovinz/parleyport/kit/fortress"
 	"github.com/junkerderprovinz/parleyport/kit/group"
@@ -76,7 +72,7 @@ func Join(dir string, app status.App, host string, src status.Source, removed fu
 	}
 	m := &Membership{Fortress: f, Device: cfg.Self.Name, close: func() error { return errors.Join(f.Close(), cfg.LAN.Close()) }}
 	if ln != nil {
-		srv := serveDirect(ln, f)
+		srv := group.ServeDirect(ln, f.DirectHandler())
 		m.close = func() error { return errors.Join(srv.Close(), f.Close(), cfg.LAN.Close()) }
 	}
 	return m, nil
@@ -92,16 +88,4 @@ func listenDirect() (net.Listener, error) {
 		return nil, nil
 	}
 	return net.Listen("tcp4", net.JoinHostPort(ip, "0"))
-}
-
-// serveDirect answers the members' direct calls at ln and nothing else. Every
-// call is sealed and signed under the fortress's keys, so only a member gets
-// past the kit's handler. The server logs nothing, since its errors name the
-// caller's address.
-func serveDirect(ln net.Listener, f *kitfortress.Fortress) *http.Server {
-	mux := http.NewServeMux()
-	mux.Handle(group.DirectPath, f.DirectHandler())
-	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
-	go func() { _ = srv.Serve(ln) }()
-	return srv
 }
