@@ -13,7 +13,6 @@ type Guard struct {
 	Repository string
 	Digest     string
 	Snapshot   string
-	Link       string // where the backup app shows the snapshot
 	Reason     string
 	At         int64 // unix seconds
 }
@@ -28,10 +27,10 @@ const (
 // SetGuard keeps g as the one guard of its container.
 func (s *Store) SetGuard(g Guard) error {
 	_, err := s.db.Exec(
-		`INSERT INTO guards (name, state, repository, digest, snapshot, link, reason, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO guards (name, state, repository, digest, snapshot, reason, at) VALUES (?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(name) DO UPDATE SET state = excluded.state, repository = excluded.repository, digest = excluded.digest,
-		 snapshot = excluded.snapshot, link = excluded.link, reason = excluded.reason, at = excluded.at`,
-		g.Name, g.State, g.Repository, g.Digest, g.Snapshot, g.Link, g.Reason, g.At)
+		 snapshot = excluded.snapshot, reason = excluded.reason, at = excluded.at`,
+		g.Name, g.State, g.Repository, g.Digest, g.Snapshot, g.Reason, g.At)
 	if err != nil {
 		return fmt.Errorf("store: set guard %q: %w", g.Name, err)
 	}
@@ -40,7 +39,7 @@ func (s *Store) SetGuard(g Guard) error {
 
 // Guards returns every guard by container name.
 func (s *Store) Guards() ([]Guard, error) {
-	rows, err := s.db.Query(`SELECT name, state, repository, digest, snapshot, link, reason, at FROM guards ORDER BY name`)
+	rows, err := s.db.Query(`SELECT name, state, repository, digest, snapshot, reason, at FROM guards ORDER BY name`)
 	if err != nil {
 		return nil, fmt.Errorf("store: guards: %w", err)
 	}
@@ -48,7 +47,7 @@ func (s *Store) Guards() ([]Guard, error) {
 	var out []Guard
 	for rows.Next() {
 		var g Guard
-		if err := rows.Scan(&g.Name, &g.State, &g.Repository, &g.Digest, &g.Snapshot, &g.Link, &g.Reason, &g.At); err != nil {
+		if err := rows.Scan(&g.Name, &g.State, &g.Repository, &g.Digest, &g.Snapshot, &g.Reason, &g.At); err != nil {
 			return nil, fmt.Errorf("store: scan guard: %w", err)
 		}
 		out = append(out, g)

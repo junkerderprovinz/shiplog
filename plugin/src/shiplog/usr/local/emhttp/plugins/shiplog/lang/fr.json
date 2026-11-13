@@ -130,7 +130,6 @@
   "d_rolledTitle": "Restauré",
   "d_rolledNote": "La dernière mise à jour automatique a échoué (%s), alors ShipLog a remis le conteneur sur son ancienne image. Tes appdata sont intactes.",
   "d_rolledUnpin": "Son modèle pointe maintenant vers l'ancienne image. Pour mettre à jour à nouveau, retire la partie @sha256 du dépôt.",
-  "d_snapshot": "Sauvegarde d'avant la mise à jour",
   "d_guardHint": "Clique pour voir pourquoi.",
   "s_au_pinned_desc": "Un conteneur épinglé sur un tag de version (par exemple :1.4.2) n'est jamais mis à jour automatiquement, car retélécharger le même tag ne change rien. Une version plus récente s'affiche seulement comme indication. Pour mettre à jour, change toi-même le tag.",
   "s_au_ct_newer": "épinglé · version plus récente %v disponible",

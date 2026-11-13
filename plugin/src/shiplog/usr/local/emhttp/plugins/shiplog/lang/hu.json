@@ -130,7 +130,6 @@
   "d_rolledTitle": "Visszaállítva",
   "d_rolledNote": "Az utolsó automatikus frissítés nem sikerült (%s), ezért a ShipLog visszaállította a konténert a régi image-re. Az appdata érintetlen.",
   "d_rolledUnpin": "A sablon most a régi image-re mutat. Az újabb frissítéshez töröld a repositoryból a @sha256 részt.",
-  "d_snapshot": "Mentés a frissítés előttről",
   "d_guardHint": "Kattints az okért.",
   "s_au_pinned_desc": "A verziócímkére rögzített konténer (például :1.4.2) sosem frissül automatikusan, mert ugyanannak a címkének az újbóli letöltése semmit sem változtat. Az újabb verzió csak tippként jelenik meg; a frissítéshez módosítsd te a címkét.",
   "s_au_ct_newer": "rögzítve · újabb %v érhető el",

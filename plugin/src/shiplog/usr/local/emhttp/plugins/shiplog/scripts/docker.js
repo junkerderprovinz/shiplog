@@ -94,7 +94,6 @@
     rolledTitle: "Rolled back",
     rolledNote: "The last auto-update failed (%s), so ShipLog put the container back on its old image. Your appdata is untouched.",
     rolledUnpin: "Its template now points at the old image. To update again, remove the @sha256 part from the repository.",
-    snapshot: "Backup from before the update",
     guardHint: "Click to see why.",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
@@ -291,10 +290,8 @@
     if (g.state === "no_backup") {
       return `<div class="sl-unmaint-note sl-guard-note"><h4>${WARN_G}${esc(T("heldTitle"))}</h4><div>${esc(fillS(T("heldNote"), g.reason || ""))}</div></div>`;
     }
-    const link = /^https?:\/\//i.test(g.link || "")
-      ? `<div><a href="${esc(g.link)}" target="_blank" rel="noopener">${esc(T("snapshot"))}</a></div>` : "";
     return `<div class="sl-unmaint-note sl-guard-note"><h4>${WARN_G}${esc(T("rolledTitle"))}</h4>` +
-      `<div>${esc(fillS(T("rolledNote"), g.reason || ""))}</div><div class="sl-newer-why">${esc(T("rolledUnpin"))}</div>${link}</div>`;
+      `<div>${esc(fillS(T("rolledNote"), g.reason || ""))}</div><div class="sl-newer-why">${esc(T("rolledUnpin"))}</div></div>`;
   }
   function guardBadge(st) {
     const g = guardOf(st);

@@ -105,7 +105,6 @@ CREATE TABLE IF NOT EXISTS guards (
 	repository TEXT NOT NULL DEFAULT '',
 	digest     TEXT NOT NULL DEFAULT '',
 	snapshot   TEXT NOT NULL DEFAULT '',
-	link       TEXT NOT NULL DEFAULT '',
 	reason     TEXT NOT NULL DEFAULT '',
 	at         INTEGER NOT NULL
 );

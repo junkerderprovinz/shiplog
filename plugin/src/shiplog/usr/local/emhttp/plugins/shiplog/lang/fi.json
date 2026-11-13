@@ -130,7 +130,6 @@
   "d_rolledTitle": "Palautettu",
   "d_rolledNote": "Viimeisin automaattinen päivitys epäonnistui (%s), joten ShipLog palautti kontin vanhaan levykuvaan. Appdata on ennallaan.",
   "d_rolledUnpin": "Malli osoittaa nyt vanhaan levykuvaan. Poista repositoriosta @sha256-osa, jotta voit päivittää taas.",
-  "d_snapshot": "Varmuuskopio ennen päivitystä",
   "d_guardHint": "Napsauta nähdäksesi syyn.",
   "s_au_pinned_desc": "Versiotunnisteeseen kiinnitettyä konttia (esimerkiksi :1.4.2) ei koskaan päivitetä automaattisesti, koska saman tunnisteen hakeminen uudelleen ei muuta mitään. Uudempi versio näkyy vain vihjeenä; päivitä vaihtamalla tunniste itse.",
   "s_au_ct_newer": "kiinnitetty · uudempi %v saatavilla",

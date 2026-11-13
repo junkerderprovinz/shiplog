@@ -50,7 +50,6 @@ type Snapshot struct {
 	Member string // who took it
 	Run    string
 	ID     string
-	Link   string // where the backup app shows it
 }
 
 var (
@@ -112,7 +111,6 @@ func (c *Client) Save(ctx context.Context, container string) (Snapshot, error) {
 		var run struct {
 			State    string `json:"state"`
 			Snapshot string `json:"snapshot"`
-			Link     string `json:"link"`
 			Error    string `json:"error"`
 		}
 		if err := c.call(ctx, m, http.MethodGet, RunsPath+url.PathEscape(snap.Run), nil, &run); err != nil {
@@ -120,7 +118,7 @@ func (c *Client) Save(ctx context.Context, container string) (Snapshot, error) {
 		}
 		switch strings.ToLower(run.State) {
 		case "done", "success":
-			snap.ID, snap.Link = run.Snapshot, run.Link
+			snap.ID = run.Snapshot
 			return snap, nil
 		case "failed", "error", "cancelled", "canceled":
 			if run.Error == "" {

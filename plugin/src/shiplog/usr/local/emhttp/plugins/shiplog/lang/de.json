@@ -130,7 +130,6 @@
   "d_rolledTitle": "Zurückgerollt",
   "d_rolledNote": "Das letzte Auto-Update ist gescheitert (%s), deshalb hat ShipLog den Container auf sein altes Image zurückgesetzt. Deine Appdata sind unberührt.",
   "d_rolledUnpin": "Das Template zeigt jetzt auf das alte Image. Zum Aktualisieren entfernst du den Teil @sha256 aus dem Repository.",
-  "d_snapshot": "Sicherung von vor dem Update",
   "d_guardHint": "Klick für den Grund.",
   "s_au_pinned_desc": "Ein Container, der auf ein Versions-Tag gepinnt ist (zum Beispiel :1.4.2), wird nie automatisch aktualisiert, weil ein erneutes Pullen desselben Tags nichts ändert. Eine neuere Version erscheint nur als Hinweis; zum Aktualisieren änderst du das Tag selbst.",
   "s_au_ct_newer": "gepinnt · neuere %v verfügbar",

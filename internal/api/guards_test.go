@@ -17,7 +17,7 @@ func TestGuardsTellTheDockerTabAboutBackups(t *testing.T) {
 	guards := fakeGuards{
 		{Name: "mariadb", State: store.GuardNoBackup, Reason: "the backup failed: locked", At: 100},
 		{Name: "nextcloud", State: store.GuardRolledBack, Repository: "lscr.io/linuxserver/nextcloud", Digest: "sha256:a",
-			Snapshot: "4f2a9c1e", Link: "https://tower.lan/snap/4f2a9c1e", Reason: "unhealthy after the update", At: 200},
+			Snapshot: "4f2a9c1e", Reason: "unhealthy after the update", At: 200},
 	}
 	a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "").WithGuards(guards, func() bool { return true })
 	rr := httptest.NewRecorder()
@@ -44,7 +44,7 @@ func TestGuardsTellTheDockerTabAboutBackups(t *testing.T) {
 		t.Fatalf("answer = %+v", got)
 	}
 	nc := got.Guards[1]
-	if nc.State != "rolled_back" || nc.Link != "https://tower.lan/snap/4f2a9c1e" || nc.Pinned != "lscr.io/linuxserver/nextcloud@sha256:a" || nc.Since != "1970-01-01T00:03:20Z" {
+	if nc.State != "rolled_back" || nc.Link != "" || nc.Pinned != "lscr.io/linuxserver/nextcloud@sha256:a" || nc.Since != "1970-01-01T00:03:20Z" {
 		t.Errorf("rolled back guard = %+v", nc)
 	}
 }

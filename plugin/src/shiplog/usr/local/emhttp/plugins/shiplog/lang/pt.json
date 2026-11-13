@@ -130,7 +130,6 @@
   "d_rolledTitle": "Revertido",
   "d_rolledNote": "A última atualização automática falhou (%s), então o ShipLog voltou o contêiner para a imagem antiga. Seus appdata continuam intactos.",
   "d_rolledUnpin": "O template agora aponta para a imagem antiga. Para atualizar de novo, remova a parte @sha256 do repositório.",
-  "d_snapshot": "Backup de antes da atualização",
   "d_guardHint": "Clique para ver o motivo.",
   "s_au_pinned_desc": "Um contêiner fixado em uma tag de versão (por exemplo :1.4.2) nunca é atualizado automaticamente, porque baixar a mesma tag de novo não muda nada. Uma versão mais recente aparece só como dica; para atualizar, altere a tag você mesmo.",
   "s_au_ct_newer": "fixado · versão mais recente %v disponível",

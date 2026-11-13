@@ -130,7 +130,6 @@
   "d_rolledTitle": "Readus înapoi",
   "d_rolledNote": "Ultima actualizare automată a eșuat (%s), așa că ShipLog a readus containerul la imaginea veche. Datele din appdata au rămas neatinse.",
   "d_rolledUnpin": "Șablonul indică acum imaginea veche. Ca să actualizezi din nou, șterge partea @sha256 din repository.",
-  "d_snapshot": "Copia de rezervă de dinainte de actualizare",
   "d_guardHint": "Dă clic ca să vezi de ce.",
   "s_au_pinned_desc": "Un container fixat pe o etichetă de versiune (de exemplu :1.4.2) nu este niciodată actualizat automat, pentru că descărcarea din nou a aceleiași etichete nu schimbă nimic. O versiune mai nouă apare doar ca sugestie; schimbă tu eticheta pentru a actualiza.",
   "s_au_ct_newer": "fixat · mai nouă %v disponibilă",

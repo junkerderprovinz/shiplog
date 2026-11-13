@@ -130,7 +130,6 @@
   "d_rolledTitle": "Geri alındı",
   "d_rolledNote": "Son otomatik güncelleme başarısız oldu (%s), bu yüzden ShipLog konteyneri eski imajına geri aldı. Appdata verilerine dokunulmadı.",
   "d_rolledUnpin": "Şablon artık eski imajı gösteriyor. Yeniden güncellemek için depo adresinden @sha256 kısmını sil.",
-  "d_snapshot": "Güncelleme öncesi yedek",
   "d_guardHint": "Nedenini görmek için tıkla.",
   "s_au_pinned_desc": "Bir sürüm etiketine sabitlenmiş konteyner (örneğin :1.4.2) asla otomatik güncellenmez, çünkü aynı etiketi yeniden çekmek hiçbir şeyi değiştirmez. Daha yeni bir sürüm yalnızca ipucu olarak görünür; güncellemek için etiketi kendin değiştir.",
   "s_au_ct_newer": "sabitlendi · daha yeni %v mevcut",

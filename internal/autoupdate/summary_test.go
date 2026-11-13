@@ -33,7 +33,7 @@ func TestRenderSummary(t *testing.T) {
 }
 
 func TestRenderSummaryTellsWhatTheBackupDid(t *testing.T) {
-	snap := backup.Snapshot{ID: "4f2a9c1e", Link: "https://tower.lan/snap/4f2a9c1e"}
+	snap := backup.Snapshot{ID: "4f2a9c1e"}
 	res := Result{Outcomes: []Outcome{
 		{Name: "plex", From: "1.2.3", To: "1.2.4", Level: "patch", Updated: true, Snapshot: snap},
 		{Name: "sonarr", From: "4.0", To: "4.1", Level: "minor", Updated: true, WithoutBackup: true},
@@ -52,8 +52,8 @@ func TestRenderSummaryTellsWhatTheBackupDid(t *testing.T) {
 			t.Errorf("text missing %q:\n%s", want, text)
 		}
 	}
-	if !strings.Contains(html, `<a href="https://tower.lan/snap/4f2a9c1e">backup 4f2a9c1e</a>`) {
-		t.Errorf("html does not link the snapshot:\n%s", html)
+	if !strings.Contains(html, "backup 4f2a9c1e") || strings.Contains(html, "<a ") {
+		t.Errorf("html does not name the snapshot without a link:\n%s", html)
 	}
 	if strings.Count(text, "mariadb") != 1 {
 		t.Errorf("a held update must not count as failed too:\n%s", text)
