@@ -71,9 +71,10 @@ html:is(.Theme--white, .Theme--azure) .glim-fc { --fc-ok: #0e6027; --fc-err: #da
   width: max-content; max-width: min(300px, 70vw); padding: 7px 10px; border-radius: var(--fc-r-ctl);
   background: var(--fc-bubble, var(--mild-background-color, #262626)); color: var(--fc-bubble-ink, var(--text-color, #f2f2f2));
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35); font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: normal; text-transform: none; white-space: normal;
-  opacity: 0; visibility: hidden; pointer-events: none;
+  display: none; pointer-events: none;
 }
-.glim-fc-info:is(:hover, :focus-visible)::after { opacity: 1; visibility: visible; }
+/* Hidden bubbles take no room, so a narrow page never scrolls sideways for one. */
+.glim-fc-info:is(:hover, :focus-visible)::after { display: block; }
 
 /* The notes: another member took this app out, or the phrase moved on
    without it. Then the quiet line naming those removed while the phrase
