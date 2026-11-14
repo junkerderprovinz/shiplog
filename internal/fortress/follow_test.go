@@ -218,3 +218,55 @@ func TestShipLogSaysThePhraseChangedWhenItCannotFollow(t *testing.T) {
 		t.Errorf("joining once more: %v, want ErrMember", err)
 	}
 }
+
+func TestShipLogHearsThePhraseChangedFromAMemberThatCannotHandItOver(t *testing.T) {
+	url := relayURL(t)
+	secret, w, err := phrase.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bv := newBackupApp(t, url, secret, nil)
+	cellar := &Door{Dir: filepath.Join(t.TempDir(), "fortress"), App: shiplog, Device: "Cellar", Relay: url}
+	t.Cleanup(func() { _ = cellar.Close() })
+	d := &Door{Dir: filepath.Join(t.TempDir(), "fortress"), App: shiplog, Device: "Tower", Relay: url}
+	t.Cleanup(func() { _ = d.Close() })
+	for _, door := range []*Door{cellar, d} {
+		if err := door.Enter(w); err != nil {
+			t.Fatal(err)
+		}
+	}
+	waitFor(t, "BombVault to see both ShipLogs", func() bool { return len(bv.shiplogs()) == 2 })
+	waitFor(t, "the ShipLogs to see each other", func() bool { return seesOnline(d, memberID(t, cellar.Dir)) })
+
+	// Tower is away while the phrase changes, and BombVault is gone by the
+	// time it is back, so only Cellar, which holds no phrase, is left to
+	// tell it.
+	if err := d.Close(); err != nil {
+		t.Fatal(err)
+	}
+	bv.changePhrase(secret)
+	waitFor(t, "Cellar to reach BombVault on the old phrase", func() bool { return seesOnline(cellar, bv.id.ID()) })
+	out, err := cellar.Act(context.Background(), bv.id.ID(), "backup.request", []byte(`{}`))
+	if err != nil || string(out) != `{"ok":true}` {
+		t.Fatalf("Cellar's act after the change = %s, %v", out, err)
+	}
+	if err := bv.f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Open(); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "Tower to hear the phrase changed", func() bool {
+		// Watch does the same now and then.
+		if f := d.current(); f != nil {
+			d.follow(context.Background(), f, false)
+		}
+		return d.State().PhraseChanged
+	})
+	if s := d.State(); !s.Joined {
+		t.Errorf("state = %+v, want still joined", s)
+	}
+	if seesOnline(d, memberID(t, cellar.Dir)) {
+		t.Error("Tower sees Cellar online on the phrase it left")
+	}
+}
