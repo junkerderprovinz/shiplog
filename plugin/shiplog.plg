@@ -34,6 +34,13 @@ what changed from your running image to the newest, with a risk badge. Optional
 AI summaries (Ollama or llama-swap), Matrix or Apprise alerts, and an auto-update
 that backs up first when your fortress has a backup app.
 
+### 3.8.1
+Security fixes in the network library and the fortress kit.
+
+🐛 **Fixed**
+- **golang.org/x/net 0.62.0.** It closes the 17 advisories a security scan found in ShipLog's engine, among them a denial of service in the HTML parser.
+- **The fortress kit is at 1.0.1.** An app holding the phrase could announce an address that sent ShipLog's direct call to another page of a host on your network. The call now always goes where it belongs.
+
 ### 3.8.0
 ShipLog moves into the fortress: a backup before every auto-update, and a way back when one goes sideways.
 
