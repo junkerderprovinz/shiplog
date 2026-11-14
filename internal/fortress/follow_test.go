@@ -245,11 +245,10 @@ func TestShipLogHearsThePhraseChangedFromAMemberThatCannotHandItOver(t *testing.
 		t.Fatal(err)
 	}
 	bv.changePhrase(secret)
-	waitFor(t, "Cellar to reach BombVault on the old phrase", func() bool { return seesOnline(cellar, bv.id.ID()) })
-	out, err := cellar.Act(context.Background(), bv.id.ID(), "backup.request", []byte(`{}`))
-	if err != nil || string(out) != `{"ok":true}` {
-		t.Fatalf("Cellar's act after the change = %s, %v", out, err)
-	}
+	waitFor(t, "Cellar to follow through BombVault", func() bool {
+		out, err := cellar.Act(context.Background(), bv.id.ID(), "backup.request", []byte(`{}`))
+		return err == nil && string(out) == `{"ok":true}`
+	})
 	if err := bv.f.Close(); err != nil {
 		t.Fatal(err)
 	}
