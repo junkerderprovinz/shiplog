@@ -5,7 +5,7 @@ go 1.26.10
 toolchain go1.27.4
 
 require (
-	github.com/junkerderprovinz/parleyport/kit v0.0.0-20261114082715-996d51bf331b
+	github.com/junkerderprovinz/parleyport/kit v1.0.0
 	modernc.org/sqlite v1.62.0
 )
 
