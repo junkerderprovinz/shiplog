@@ -148,7 +148,7 @@
   "s_session": "sesja wygasła, odśwież stronę",
   "s_version": "Wersja",
   "s_help": "Pomoc",
-  "s_help_body": "Błędy, pomysły albo życzenia? Śmiało otwórz issue na GitHubie. Na pytania odpowiadam na Discordzie.",
+  "s_help_body": "Problemy, życzenia albo pomysły? Śmiało otwórz zgłoszenie na GitHub albo wpadnij się przywitać na Discordzie.",
   "s_about": "O wtyczce",
   "s_about_body": "ShipLog to darmowa wtyczka do karty Docker w Unraid, budowana przez jednego rycerza wieczorami i w weekendy, bez kont, bez telemetrii i bez reklam.",
   "s_about_coin": "Jeśli zasłużyła na miejsce na twoim serwerze, rzuć swojemu rycerzowi monetę: pomaga to pokryć koszty i utrzymuje projekt przy życiu.",

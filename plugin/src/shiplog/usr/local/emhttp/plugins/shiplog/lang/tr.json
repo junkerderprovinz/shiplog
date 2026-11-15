@@ -148,7 +148,7 @@
   "s_session": "oturum sona erdi, sayfayı yeniden yükle",
   "s_version": "Sürüm",
   "s_help": "Yardım",
-  "s_help_body": "Hata, fikir ya da istek mi var? GitHub'da rahatça bir issue aç. Soruları Discord'da yanıtlıyorum.",
+  "s_help_body": "Sorun, dilek ya da öneri mi var? GitHub'da bir issue açabilir ya da Discord'a uğrayıp merhaba diyebilirsin.",
   "s_about": "Hakkında",
   "s_about_body": "ShipLog, Unraid'in Docker sekmesi için ücretsiz bir eklentidir; tek bir şövalye tarafından akşamları ve hafta sonları geliştirilir, hesap, telemetri ve reklam yoktur.",
   "s_about_coin": "Sunucunda bir yeri hak ettiyse şövalyene bir bozuk para at: masrafları karşılamaya yardım eder ve projeyi hayatta tutar.",

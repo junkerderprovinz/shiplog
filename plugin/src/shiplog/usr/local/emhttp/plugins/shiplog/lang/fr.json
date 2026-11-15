@@ -148,7 +148,7 @@
   "s_session": "la session a expiré, recharge la page",
   "s_version": "Version",
   "s_help": "Aide",
-  "s_help_body": "Des bugs, des idées ou des envies ? N'hésite pas à ouvrir une issue sur GitHub. Je réponds aux questions sur Discord.",
+  "s_help_body": "Un problème, une envie ou une idée ? N’hésitez pas à ouvrir une issue sur GitHub, ou à passer dire bonjour sur Discord.",
   "s_about": "À propos",
   "s_about_body": "ShipLog est un plugin gratuit pour l'onglet Docker d'Unraid, construit par un seul chevalier le soir et le week-end, sans compte, sans télémétrie et sans publicité.",
   "s_about_coin": "S'il a gagné sa place sur ton serveur, lance une pièce à ton chevalier : cela aide à couvrir les frais et garde le projet en vie.",

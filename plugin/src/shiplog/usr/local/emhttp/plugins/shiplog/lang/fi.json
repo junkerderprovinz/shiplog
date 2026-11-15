@@ -148,7 +148,7 @@
   "s_session": "istunto on vanhentunut, lataa sivu uudelleen",
   "s_version": "Versio",
   "s_help": "Ohje",
-  "s_help_body": "Virheitä, ideoita tai toiveita? Avaa rohkeasti issue GitHubissa. Kysymyksiin vastaan Discordissa.",
+  "s_help_body": "Ongelmia, toiveita tai ehdotuksia? Avaa ihmeessä issue GitHubissa tai tule moikkaamaan Discordiin.",
   "s_about": "Tietoja",
   "s_about_body": "ShipLog on ilmainen laajennus Unraidin Docker-välilehdelle. Sitä rakentaa yksi ritari iltaisin ja viikonloppuisin, ilman tilejä, ilman telemetriaa ja ilman mainoksia.",
   "s_about_coin": "Jos se on ansainnut paikkansa palvelimellasi, heitä ritarillesi kolikko: se auttaa kattamaan kulut ja pitää projektin hengissä.",
