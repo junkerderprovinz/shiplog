@@ -533,7 +533,7 @@ html.tt-popups-on .sl-win input.sl-amount {
   background: var(--sl-w-raised); color: #e6e6e6; font-family: inherit; font-size: 13px;
 }
 html.tt-popups-on .sl-win input.sl-amount:focus { background: var(--sl-w-raised-hover); }
-html.tt-popups-on .sl-win input.sl-amount::placeholder { color: #a3a3a3; opacity: 1; }
+html.tt-popups-on .sl-win input.sl-amount::placeholder { color: #c6c6c6; opacity: 1; }
 
 /* With TowerTorch: GlimStone's look from its tokens. */
 html.tt-popups-on .sl-cfg {
