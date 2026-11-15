@@ -269,7 +269,7 @@ html.tt-popups-on .sl-bubble .sl-bf{margin-top:8px}
   background:#bdbdbd;transition:transform .15s,background .15s}
 .sl-bubble .sl-au-cb:checked + .sl-au-track{background:var(--tt-accent,#ff8c2f)}
 .sl-bubble .sl-au-cb:checked + .sl-au-track::after{transform:translateX(16px);background:var(--tt-accent-fg,#fff)}
-.sl-bubble .sl-au-cb:focus-visible + .sl-au-track{box-shadow:0 0 0 2px var(--tt-accent,#ff8c2f)}
+.sl-bubble .sl-au-cb:focus-visible + .sl-au-track{box-shadow:0 0 0 var(--tt-focus-ring-width,2px) var(--tt-accent-ink,#ff8c2f)}
 .sl-bubble .sl-au-cb:disabled + .sl-au-track{opacity:.6}
 .sl-bubble .sl-au-info{display:inline-flex;color:var(--sl-dim2);opacity:.7;cursor:help;outline:none}
 .sl-bubble .sl-au-info:hover,.sl-bubble .sl-au-info:focus{opacity:1;color:var(--sl-dim)}

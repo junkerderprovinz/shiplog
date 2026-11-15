@@ -276,7 +276,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #sl-cfg .sl-rbtn-unit { position: relative; display: inline-flex; border-radius: var(--tt-radius-pill, 9999px); overflow: hidden; isolation: isolate; --sl-brand-coffee: #ffdd00; --sl-brand-paypal: #4fb5f0; --sl-brand-bitcoin: #f7931a; --sl-brand-discord: #949cf7; }
 #sl-cfg .sl-rbtn { position: relative; display: block; flex: none; box-sizing: border-box; width: 160px; height: 46.6px; padding: 0; background: var(--tt-surface-3, #2e2e2e); text-decoration: none; cursor: pointer; }
 #sl-cfg .sl-rbtn:hover { text-decoration: none; }
-#sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tt-accent, #FCC419) 45%, transparent) !important; }
+#sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 var(--tt-focus-ring-width, 2px) var(--sl-focus) !important; }
 #sl-cfg .sl-rbtn-mark { position: absolute; top: 50%; left: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; }
 #sl-cfg :is(.sl-rbtn-mark, .sl-rbtn-art) svg { display: block; width: 100%; height: 100%; }
 #sl-cfg .sl-rbtn-art { position: absolute; inset: 0; }
@@ -359,7 +359,7 @@ html.tt-popups-on #sl-wins {
   --sl-w-head: var(--tt-accent, #FCC419);
   --sl-w-head-ink: var(--tt-accent-text, #161616);
   --sl-w-dim: #8a8a8a;
-  --sl-w-focus: var(--tt-accent, #FCC419);
+  --sl-w-focus: var(--tt-accent-ink, #FCC419);
   --sl-w-ok: #6fdc8c;
   --sl-w-err: #ff8389;
   --sl-w-warn: #ff832b;
@@ -510,7 +510,7 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
     transition: max-height var(--tt-motion-label-dur, 160ms) var(--tt-motion-label-ease, ease-out), opacity var(--tt-motion-label-dur, 160ms) ease-out;
   }
 }
-.sl-win :is(.sl-seg-opt, .sl-net, .sl-coin):focus-visible { outline: 2px solid var(--sl-w-focus); outline-offset: 2px; }
+.sl-win :is(.sl-seg-opt, .sl-net, .sl-coin):focus-visible { outline: var(--tt-focus-ring-width, 2px) solid var(--sl-w-focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {
   .sl-win .sl-shake { animation: sl-shake var(--tt-motion-shake-dur, 360ms) ease-in-out; }
 }
@@ -599,6 +599,6 @@ html.tt-popups-on .sl-bubble {
   /* The header above the page names it, so Unraid's title strip would say it twice. */
   .content:has(#sl-cfg) > div.title { display: none !important; }
   #sl-cfg :is(.sl-tab, .sl-btn, .sl-sw, .sl-eye, .sl-info):focus-visible {
-    outline: 2px solid var(--sl-focus) !important; outline-offset: 2px !important; filter: none !important;
+    outline: var(--tt-focus-ring-width, 2px) solid var(--sl-focus) !important; outline-offset: 2px !important; filter: none !important;
   }
 }

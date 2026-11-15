@@ -85,3 +85,27 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Errorf("the GlimStone row does not open the newest release: %v", row)
 	}
 }
+
+// TestTheFocusRingIsOpaqueInTheAccentsInk follows GlimStone's ring: under
+// TowerTorch it is the accent's ink, so it reaches 3:1 on every ground, and it
+// takes TowerTorch's width, 3px when the system asks for more contrast.
+func TestTheFocusRingIsOpaqueInTheAccentsInk(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if strings.Contains(css, "--sl-w-focus: var(--tt-accent, #FCC419);") || !strings.Contains(css, "--sl-w-focus: var(--tt-accent-ink, #FCC419);") {
+		t.Error("the windows' ring under TowerTorch is not the accent's ink")
+	}
+	if strings.Contains(css, "45%, transparent)") {
+		t.Error("settings.css still draws a translucent halo")
+	}
+	if !strings.Contains(css, "#sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 var(--tt-focus-ring-width, 2px) var(--sl-focus) !important; }") {
+		t.Error("a README button does not draw the ring inside its edge")
+	}
+	for _, m := range regexp.MustCompile(`outline:\s*(\S+) solid var\(--sl-(?:w-)?focus\)`).FindAllStringSubmatch(css, -1) {
+		if m[1] != "var(--tt-focus-ring-width," {
+			t.Errorf("a ring is %s wide, not TowerTorch's width", m[1])
+		}
+	}
+	if docker := read(t, "styles/docker.css"); !strings.Contains(docker, ".sl-au-cb:focus-visible + .sl-au-track{box-shadow:0 0 0 var(--tt-focus-ring-width,2px) var(--tt-accent-ink,#ff8c2f)}") {
+		t.Error("the bubble's switch does not ring in the accent's ink")
+	}
+}
