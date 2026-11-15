@@ -371,7 +371,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
       <p class="sl-prose"><?=$slE($L['s_help_body'])?></p>
       <div class="sl-rbtn-rows">
         <?=$slRbtn('github', 'GitHub', 'https://github.com/junkerderprovinz/shiplog/issues')?>
-        <?=$slRbtn('house', $L['s_forum'], 'https://forums.unraid.net/topic/199510-support-junkerderprovinz-shiplog/')?>
+        <?=$slRbtn('discord', 'Discord', 'https://discord.gg/SyU7QUsbFR')?>
       </div>
     </section>
 
