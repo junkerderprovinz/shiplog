@@ -109,3 +109,11 @@ func TestTheFocusRingIsOpaqueInTheAccentsInk(t *testing.T) {
 		t.Error("the bubble's switch does not ring in the accent's ink")
 	}
 }
+
+// TestTheAmountsPlaceholderReadsOnEveryFill takes GlimStone's placeholder
+// colour for the dark give windows, which reaches 4.5:1 on every field fill.
+func TestTheAmountsPlaceholderReadsOnEveryFill(t *testing.T) {
+	if !strings.Contains(read(t, "styles/settings.css"), "html.tt-popups-on .sl-win input.sl-amount::placeholder { color: #c6c6c6; opacity: 1; }") {
+		t.Error("the amount's placeholder is not GlimStone's #c6c6c6")
+	}
+}
