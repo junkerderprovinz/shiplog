@@ -56,3 +56,32 @@ func TestTheHelpCardOffersGitHubAndDiscord(t *testing.T) {
 		}
 	}
 }
+
+// TestTheVersionCardNamesTheGlimStoneItPorts keeps the pins and the card on one
+// GlimStone version, linked to the newest release, which stays when a patch
+// tag folds into the next minor.
+func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "glimstone.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cfg struct {
+		Targets []struct{ Version string } `json:"targets"`
+	}
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range cfg.Targets {
+		if target.Version != "4.5.2" {
+			t.Errorf("glimstone.json pins %s, want 4.5.2", target.Version)
+		}
+	}
+	page := read(t, "shiplog.page")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.5.2';") {
+		t.Error("the Version card does not name GlimStone 4.5.2")
+	}
+	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
+	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
+		t.Errorf("the GlimStone row does not open the newest release: %v", row)
+	}
+}

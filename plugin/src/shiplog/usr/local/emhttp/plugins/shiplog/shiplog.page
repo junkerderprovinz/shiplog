@@ -56,7 +56,7 @@ if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
 
 $slVer = '';
 if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
-$slGlimstoneVer = '4.4.1';
+$slGlimstoneVer = '4.5.2';
 
 $G = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
 $slE = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
@@ -362,7 +362,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><span>GlimStone</span></div>
-        <div class="sl-ctl"><?=$slVerLink($slGlimstoneVer, 'https://github.com/junkerderprovinz/glimstone')?></div>
+        <div class="sl-ctl"><a class="button sl-ver" href="https://github.com/junkerderprovinz/glimstone/releases/latest" target="_blank" rel="noopener noreferrer"><?=$slE($slGlimstoneVer)?></a></div>
       </div>
     </section>
 
