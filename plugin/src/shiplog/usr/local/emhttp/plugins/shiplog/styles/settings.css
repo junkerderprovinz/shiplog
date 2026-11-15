@@ -273,7 +273,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    at rest, the brand's own colour and one sheen under the pointer. */
 #sl-cfg .sl-rbtn-rows { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 12px; }
 #sl-cfg .sl-rbtn-rows.sl-give { margin-top: 21px; }
-#sl-cfg .sl-rbtn-unit { position: relative; display: inline-flex; border-radius: var(--tt-radius-pill, 9999px); overflow: hidden; isolation: isolate; --sl-brand-coffee: #ffdd00; --sl-brand-paypal: #4fb5f0; --sl-brand-bitcoin: #f7931a; }
+#sl-cfg .sl-rbtn-unit { position: relative; display: inline-flex; border-radius: var(--tt-radius-pill, 9999px); overflow: hidden; isolation: isolate; --sl-brand-coffee: #ffdd00; --sl-brand-paypal: #4fb5f0; --sl-brand-bitcoin: #f7931a; --sl-brand-discord: #949cf7; }
 #sl-cfg .sl-rbtn { position: relative; display: block; flex: none; box-sizing: border-box; width: 160px; height: 46.6px; padding: 0; background: var(--tt-surface-3, #2e2e2e); text-decoration: none; cursor: pointer; }
 #sl-cfg .sl-rbtn:hover { text-decoration: none; }
 #sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tt-accent, #FCC419) 45%, transparent) !important; }
@@ -285,11 +285,9 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #sl-cfg .sl-paypal-mark { color: var(--sl-brand-paypal); }
 #sl-cfg .sl-bitcoin-mark { color: var(--sl-brand-bitcoin); }
 #sl-cfg .sl-github-mark { color: #fff; }
-/* The forum button reaches ShipLog's author, so it wears the page's own colour. */
-#sl-cfg .sl-house-mark { color: var(--sl-hue, var(--sl-house)); }
+#sl-cfg .sl-discord-mark { color: var(--sl-brand-discord); }
 #sl-cfg .sl-tile-github { --sl-give: #181717; --sl-give-ink: #fff; }
-#sl-cfg .sl-tile-house { --sl-house: #ff8c2f; --sl-give: var(--sl-hue, var(--sl-house)); --sl-give-ink: var(--sl-hue-ink, #161616); }
-html.tt-popups-on #sl-cfg .sl-tile-house { --sl-house: var(--tt-accent, #FCC419); --sl-give-ink: var(--sl-hue-ink, var(--tt-accent-text, #161616)); }
+#sl-cfg .sl-tile-discord { --sl-give: #5865f2; --sl-give-ink: #fff; }
 #sl-cfg .sl-tile-paypal { --sl-give: #003087; --sl-give-ink: #fff; }
 #sl-cfg .sl-tile-bitcoin { --sl-give: #f7931a; --sl-give-ink: #161616; }
 #sl-cfg .sl-tile-coffee { --sl-give: #ffdd00; --sl-give-ink: #0d0c22; }
