@@ -425,6 +425,11 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
 #sl-wins:is([data-sl-labels="glyph"], [data-sl-labels="reactive"]) .sl-win-btn { gap: 0; }
 #sl-wins:is([data-sl-labels="glyph"], [data-sl-labels="reactive"]) .sl-win-btn .sl-l { max-width: 0; opacity: 0; }
 #sl-wins[data-sl-labels="reactive"] .sl-win-btn:is(:hover, :focus-visible) .sl-l { max-width: 16em; opacity: 1; margin-inline-start: 6px; }
+/* Reactive holds a window's button at the width settings.js measured with its
+   words open, so they open inside it; the button centres its glyph at rest. */
+#sl-wins[data-sl-labels="reactive"] .sl-win-btn { min-width: var(--sl-btn-w, auto); }
+#sl-wins[data-sl-labels="reactive"] .sl-win-btn[data-sl-measure] .sl-l { max-width: 16em; opacity: 1; margin-inline-start: 6px; }
+#sl-wins .sl-win-btn[data-sl-still], #sl-wins .sl-win-btn[data-sl-still] * { transition: none !important; }
 @media (prefers-reduced-motion: no-preference) {
   #sl-wins[data-sl-labels="reactive"] .sl-win-btn .sl-l {
     transition: max-width var(--tt-motion-label-dur, 160ms) var(--tt-motion-label-ease, ease-out),

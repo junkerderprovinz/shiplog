@@ -160,6 +160,13 @@ html.tt-popups-on[data-tt-labels-buttons="text"] .sl-bubble :is(.sl-gh,.sl-upd) 
 html.tt-popups-on:is([data-tt-labels-buttons="glyph"],[data-tt-labels-buttons="reactive"]) .sl-bubble :is(.sl-gh,.sl-upd:not(.sl-upd-off)){gap:0}
 html.tt-popups-on:is([data-tt-labels-buttons="glyph"],[data-tt-labels-buttons="reactive"]) .sl-bubble :is(.sl-gh,.sl-upd:not(.sl-upd-off)) .sl-l{max-width:0;opacity:0}
 html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd:not(.sl-upd-off)):is(:hover,:focus-visible) .sl-l{max-width:16em;opacity:1;margin-left:6px}
+/* Reactive holds the buttons at the width docker.js measured with their words
+   open, so the words open inside them and the glyph rests in the middle. */
+html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd){min-width:var(--sl-btn-w,auto)}
+html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd)[data-sl-fit]{justify-content:center}
+html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd)[data-sl-measure]{gap:6px}
+html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd)[data-sl-measure] .sl-l{max-width:16em;opacity:1}
+.sl-bubble :is(.sl-gh,.sl-upd)[data-sl-still],.sl-bubble :is(.sl-gh,.sl-upd)[data-sl-still] *{transition:none!important}
 @media (prefers-reduced-motion:no-preference){
   html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-upd) .sl-l{
     transition:max-width var(--tt-motion-label-dur,160ms) var(--tt-motion-label-ease,ease-out),
