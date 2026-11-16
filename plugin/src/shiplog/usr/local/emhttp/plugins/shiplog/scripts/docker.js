@@ -863,6 +863,40 @@
     b.querySelectorAll(".sl-gh, .sl-x, .sl-relx").forEach((n, i) => n.style.setProperty("--sl-tint", tt.rbColor(i, accent)));
   }
 
+  // In reactive mode a button keeps the width it has with its words open, as
+  // TowerTorch's and GlimStone's reactive buttons do, so the words open inside it
+  // and a row that wraps never moves it out from under the pointer. The width is
+  // read with the words open and no transition running, and held as --sl-btn-w.
+  function holdWidth(b, reactive) {
+    if (!reactive) { b.style.removeProperty("--sl-btn-w"); b.removeAttribute("data-sl-fit"); return; }
+    if (!b.isConnected || !b.getClientRects().length) return;
+    b.setAttribute("data-sl-still", "");
+    b.style.removeProperty("--sl-btn-w");
+    b.setAttribute("data-sl-measure", "");
+    const open = b.offsetWidth;
+    b.removeAttribute("data-sl-measure");
+    const rest = b.offsetWidth, cs = getComputedStyle(b);
+    let w = open;
+    if (cs.boxSizing !== "border-box") {
+      w -= (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+    }
+    b.style.setProperty("--sl-btn-w", Math.ceil(w) + "px");
+    if (open > rest) b.setAttribute("data-sl-fit", ""); else b.removeAttribute("data-sl-fit");
+    // The still mark goes once the button has its resting style, or its words would fade out.
+    void b.offsetWidth;
+    b.removeAttribute("data-sl-still");
+  }
+  // The bubble's buttons are measured once it is shown and when their words change.
+  function holdBubble(b) {
+    const reactive = () => document.documentElement.classList.contains("tt-popups-on") && document.documentElement.getAttribute("data-tt-labels-buttons") === "reactive";
+    const ro = window.ResizeObserver ? new ResizeObserver((es) => es.forEach((e) => holdWidth(e.target, reactive()))) : null;
+    b.querySelectorAll(".sl-gh, .sl-upd").forEach((n) => {
+      if (ro) ro.observe(n);
+      const l = n.querySelector(".sl-l");
+      if (l) new MutationObserver(() => holdWidth(n, reactive())).observe(l, { characterData: true, childList: true, subtree: true });
+    });
+  }
+
   function openFor(anchor, st) {
     close();
     // The backdrop goes in first so it paints behind the window.
@@ -883,6 +917,7 @@
     } catch (e) {}
     armJumpMarquee(b); // needs the restored width
     tintButtons(b);
+    holdBubble(b);
     // CSS centres the window, so `anchor` goes unused.
     const x = b.querySelector(".sl-x");
     x.addEventListener("click", (e) => { e.stopPropagation(); close(); });

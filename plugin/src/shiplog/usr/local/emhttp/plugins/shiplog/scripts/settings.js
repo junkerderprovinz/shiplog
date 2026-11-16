@@ -350,7 +350,37 @@
       p.querySelectorAll("input.sl-sw").forEach(function (s, i) { hue(s, at(i), "--tt-rb-c", "--tt-rb-ct"); });
     });
   }
-  function engines() { labels(); paint(); }
+  // In reactive mode a button keeps the width it has with its words open, as
+  // TowerTorch's and GlimStone's reactive buttons do, so the words open inside it
+  // and a row that wraps never moves it out from under the pointer. The width is
+  // read with the words open and no transition running, and held as --sl-btn-w.
+  function holdWidth(b, reactive) {
+    if (!reactive) { b.style.removeProperty("--sl-btn-w"); b.removeAttribute("data-sl-fit"); return; }
+    if (!b.isConnected || !b.getClientRects().length) return;
+    b.setAttribute("data-sl-still", "");
+    b.style.removeProperty("--sl-btn-w");
+    b.setAttribute("data-sl-measure", "");
+    var open = b.offsetWidth;
+    b.removeAttribute("data-sl-measure");
+    var rest = b.offsetWidth, cs = getComputedStyle(b), w = open;
+    if (cs.boxSizing !== "border-box") {
+      w -= (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+    }
+    b.style.setProperty("--sl-btn-w", Math.ceil(w) + "px");
+    if (open > rest) b.setAttribute("data-sl-fit", ""); else b.removeAttribute("data-sl-fit");
+    // The still mark goes once the button has its resting style, or its words would fade out.
+    void b.offsetWidth;
+    b.removeAttribute("data-sl-still");
+  }
+  // A window's buttons are measured when the window shows them and when their words change.
+  var winHold = window.ResizeObserver ? new ResizeObserver(function (es) { es.forEach(function (e) { holdWidth(e.target, mode() === "reactive"); }); }) : null;
+  wins.querySelectorAll(".sl-win-btn").forEach(function (b) {
+    if (winHold) winHold.observe(b);
+    var l = b.querySelector(".sl-l");
+    if (l) new MutationObserver(function () { holdWidth(b, mode() === "reactive"); }).observe(l, { characterData: true, childList: true, subtree: true });
+  });
+  function holdWins() { wins.querySelectorAll(".sl-win-btn").forEach(function (b) { holdWidth(b, mode() === "reactive"); }); }
+  function engines() { labels(); holdWins(); paint(); }
   new MutationObserver(engines).observe(html, { attributes: true, attributeFilter: ["class", "data-tt-labels-buttons"] });
   window.addEventListener("storage", function (e) { if (!e.key || /^tt\./.test(e.key)) engines(); });
 
