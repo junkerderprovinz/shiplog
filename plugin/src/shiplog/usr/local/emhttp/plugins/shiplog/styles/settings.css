@@ -356,6 +356,7 @@ html.tt-popups-on #sl-wins {
   --sl-w-chip: #2e2e2e;
   --sl-w-raised: #2e2e2e;
   --sl-w-raised-hover: #383838;
+  --sl-w-hover: var(--tt-hover-dark);
   --sl-w-head: var(--tt-accent, #FCC419);
   --sl-w-head-ink: var(--tt-accent-text, #161616);
   --sl-w-dim: #8a8a8a;
@@ -376,6 +377,7 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) #sl-wins {
   --sl-w-card: var(--tt-surface-2, #1a1a1a);
   --sl-w-chip: var(--tt-surface-3, #262626);
   --sl-w-raised: var(--tt-surface-3, #262626);
+  --sl-w-hover: var(--tt-hover);
 }
 #sl-wins *, #sl-wins *::before, #sl-wins *::after { box-sizing: border-box; }
 #sl-wins [hidden] { display: none !important; }
@@ -528,10 +530,14 @@ html.tt-popups-on .sl-win button.sl-win-btn {
   border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none; background: var(--sl-w-raised); color: #e6e6e6;
   font-family: inherit; font-size: var(--tt-text-meta, 12px); font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
-/* GlimStone's rule 40: the hovered ground takes 22% of the tint and the glyph
-   all of it, while the words keep the text colour. Under rainbow settings.js
-   gives each button its own position. */
-html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--sl-w-raised), var(--sl-tint, var(--sl-w-head)) 22%); color: #e6e6e6; }
+/* GlimStone's rule 40: the hovered ground is TowerTorch's hover, the colour a
+   row and a menu entry take too, and the glyph takes the tint, while the words
+   keep the text colour. Under rainbow settings.js gives each button its own
+   position. An older TowerTorch without the hover gives the ground 22% of the
+   tint instead. */
+html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) { background: var(--sl-w-hover, color-mix(in srgb, var(--sl-w-raised), var(--sl-tint, var(--sl-w-head)) 22%)); color: #e6e6e6; }
+/* A choice in a strip and a network light in the same hover. */
+html.tt-popups-on .sl-win :is(.sl-seg-opt:not([aria-checked="true"]), .sl-net:not([aria-selected="true"])):hover { background: var(--sl-w-hover, var(--sl-w-chip)); }
 html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) .sl-g { color: var(--sl-tint, var(--sl-w-head)); }
 html.tt-popups-on .sl-win input.sl-amount {
   height: 32px; padding: 7px 10px; border: none; border-radius: var(--sl-w-r-ctl); box-shadow: none;
@@ -545,7 +551,6 @@ html.tt-popups-on .sl-cfg {
   --sl-card: var(--tt-fm-card, #222);
   --sl-tile: var(--tt-fm-btn, #353535);
   --sl-tile-ink: var(--tt-text-chip, #cfcfcf);
-  --sl-tile-hover: var(--tt-hover-wash, rgba(230, 230, 230, .15));
   --sl-head: var(--tt-accent, #FCC419);
   --sl-head-ink: var(--tt-accent-text, #161616);
   --sl-dim: var(--tt-text-dim, #8a8a8a);
@@ -566,6 +571,8 @@ html.tt-popups-on .sl-hero { --sl-hero-tint: var(--sl-hero-rb, var(--tt-accent, 
 html.tt-popups-on .sl-cfg .sl-h { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); font-size: var(--tt-sec-fs, 12px); font-weight: var(--tt-sec-fw, 500); letter-spacing: var(--tt-sec-ls, 1.2px); min-height: var(--tt-sec-h, 22px); }
 html.tt-popups-on .sl-cfg .sl-tab[aria-selected="true"],
 html.tt-popups-on .sl-cfg .sl-tab[aria-selected="true"]:hover { background: var(--sl-hue, var(--sl-head)); color: var(--sl-hue-ink, var(--sl-head-ink)); }
+/* An idle tab lights in TowerTorch's hover, as its own settings tabs do. */
+html.tt-popups-on .sl-cfg .sl-tab:not([aria-selected="true"]):hover { background: var(--tt-hover, var(--sl-tile)); box-shadow: none; }
 /* The tab-strip colour rule: an idle tab's glyph wears its colour, the open tab
    wears it as its fill, and in the reactive mode an idle glyph rests grey until
    the pointer or the focus reaches it. */
