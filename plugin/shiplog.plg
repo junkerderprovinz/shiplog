@@ -498,7 +498,7 @@ Most of this release started in @nphil's fork (https://github.com/nphil/shiplog)
 <INLINE>
 &emhttp;/scripts/rc.shiplog stop 2>/dev/null
 rm -rf &emhttp;
-find &plgPath; -maxdepth 1 -name '&slug;-*.txz' ! -name '&txz;' -delete 2>/dev/null
+find &plgPath; -maxdepth 1 -name '&slug;-*.txz' ! -name '&txz;' -delete 2>/dev/null || true
 </INLINE>
 </FILE>
 
