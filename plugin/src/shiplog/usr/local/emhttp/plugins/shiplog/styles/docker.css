@@ -208,11 +208,13 @@ html.tt-popups-on .sl-bubble .sl-gh,html.tt-popups-on .sl-bubble .sl-upd{border:
 html.tt-popups-on .sl-bubble .sl-gh{color:var(--sl-txt)}
 html.tt-popups-on .sl-bubble .sl-upd{background:#ff8c2f;color:#1a1207}
 html.tt-popups-on .sl-bubble .sl-upd:hover{background:#ff8c2f;filter:brightness(1.14)}
-/* GlimStone's rule 40: a filled button's hovered ground takes 22% of the tint
-   and its glyph all of it, while the words keep the text colour. A bare glyph
-   takes the tint alone. docker.js gives each button its own rainbow position. */
-html.tt-popups-on .sl-bubble .sl-gh:is(:hover,:focus-visible){background:color-mix(in srgb,var(--sl-card),var(--sl-tint) 22%);color:var(--sl-txt)}
-html.tt-popups-on .sl-bubble .sl-x:is(:hover,:focus-visible){background:color-mix(in srgb,var(--tt-chip,rgba(128,128,128,.18)),var(--sl-tint) 22%)}
+/* GlimStone's rule 40: a filled button's hovered ground is TowerTorch's hover,
+   the colour a row takes too, and its glyph takes the tint, while the words
+   keep the text colour. A bare glyph takes the tint alone. docker.js gives
+   each button its own rainbow position. An older TowerTorch without the hover
+   gives the ground 22% of the tint instead. */
+html.tt-popups-on .sl-bubble .sl-gh:is(:hover,:focus-visible){background:var(--tt-hover,color-mix(in srgb,var(--sl-card),var(--sl-tint) 22%));color:var(--sl-txt)}
+html.tt-popups-on .sl-bubble .sl-x:is(:hover,:focus-visible){background:var(--tt-hover,color-mix(in srgb,var(--tt-chip,rgba(128,128,128,.18)),var(--sl-tint) 22%))}
 html.tt-popups-on .sl-bubble :is(.sl-gh,.sl-x):is(:hover,:focus-visible) svg,
 html.tt-popups-on .sl-bubble .sl-relx:is(:hover,:focus-visible){color:var(--sl-tint)}
 html.tt-popups-on .sl-bubble .sl-upd.sl-upd-off{box-shadow:none;background:var(--sl-card);color:var(--sl-dim)}

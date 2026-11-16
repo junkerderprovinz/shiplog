@@ -72,13 +72,13 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.5.2" {
-			t.Errorf("glimstone.json pins %s, want 4.5.2", target.Version)
+		if target.Version != "4.5.4" {
+			t.Errorf("glimstone.json pins %s, want 4.5.4", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.5.2';") {
-		t.Error("the Version card does not name GlimStone 4.5.2")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.5.4';") {
+		t.Error("the Version card does not name GlimStone 4.5.4")
 	}
 	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
 	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
@@ -115,5 +115,29 @@ func TestTheFocusRingIsOpaqueInTheAccentsInk(t *testing.T) {
 func TestTheAmountsPlaceholderReadsOnEveryFill(t *testing.T) {
 	if !strings.Contains(read(t, "styles/settings.css"), "html.tt-popups-on .sl-win input.sl-amount::placeholder { color: #c6c6c6; opacity: 1; }") {
 		t.Error("the amount's placeholder is not GlimStone's #c6c6c6")
+	}
+}
+
+// TestEveryHoverLightsInTowerTorchsHover follows GlimStone's --hover: a button,
+// a tab, a choice in a strip and a network all light in TowerTorch's one hover
+// colour, and only an older TowerTorch without it falls back to the tinted mix.
+func TestEveryHoverLightsInTowerTorchsHover(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	for _, want := range []string{
+		"--sl-w-hover: var(--tt-hover-dark);",
+		"--sl-w-hover: var(--tt-hover);",
+		"html.tt-popups-on .sl-win button.sl-win-btn:is(:hover, :focus-visible) { background: var(--sl-w-hover, color-mix(",
+		"html.tt-popups-on .sl-win :is(.sl-seg-opt:not([aria-checked=\"true\"]), .sl-net:not([aria-selected=\"true\"])):hover { background: var(--sl-w-hover, var(--sl-w-chip)); }",
+		"html.tt-popups-on .sl-cfg .sl-tab:not([aria-selected=\"true\"]):hover { background: var(--tt-hover, var(--sl-tile)); box-shadow: none; }",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("settings.css is missing %q", want)
+		}
+	}
+	docker := read(t, "styles/docker.css")
+	for _, sel := range []string{".sl-gh", ".sl-x"} {
+		if !strings.Contains(docker, "html.tt-popups-on .sl-bubble "+sel+":is(:hover,:focus-visible){background:var(--tt-hover,color-mix(") {
+			t.Errorf("the bubble's %s does not light in TowerTorch's hover", sel)
+		}
 	}
 }
