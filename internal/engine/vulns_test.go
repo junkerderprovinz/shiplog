@@ -1,7 +1,11 @@
 package engine
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"log"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -68,6 +72,44 @@ func TestEveryContainerCarriesItsKnownVulnerabilities(t *testing.T) {
 	}
 	if got := rows["pinned"].Vulns; got == nil || got.Critical != 4 || v.newest["pinned"] != "" {
 		t.Errorf("pinned: vulns = %+v against %q", got, v.newest["pinned"])
+	}
+}
+
+func TestASweepSaysHowManyImagesItChecked(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+	v := &fakeVulns{report: map[string]model.Vulns{
+		"a": {Scope: model.VulnScopeImage, Critical: 1},
+		"b": {Scope: model.VulnScopeSystem, High: 2},
+		"c": {Reason: model.VulnNoPackages},
+	}}
+	sweepWithVulns(t, []model.Container{
+		{ID: "a", Name: "a", Repo: "ghcr.io/x/a", Tag: "1", Digest: "sha256:a"},
+		{ID: "b", Name: "b", Repo: "ghcr.io/x/b", Tag: "1", Digest: "sha256:b"},
+		{ID: "c", Name: "c", Repo: "ghcr.io/x/c", Tag: "1", Digest: "sha256:c"},
+	}, fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/a": {tag: "1", dig: "sha256:a"}, "ghcr.io/x/b": {tag: "1", dig: "sha256:b"}, "ghcr.io/x/c": {tag: "1", dig: "sha256:c"},
+	}}, &fakeChangelog{}, v)
+	want := "vulnerability check: 3 containers, 1 by the image's package list, 1 by the system packages, 1 without a package list, 0 failed"
+	if !strings.Contains(buf.String(), want) {
+		t.Errorf("log = %q, want %q", buf.String(), want)
+	}
+}
+
+func TestARegistryHiccupStillChecksTheRunningImage(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{"a": {
+		Container: model.Container{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "1.0.0", Digest: "sha256:a1"},
+		Kind:      model.KindDigest, Risk: model.RiskLow, NewestDigest: "sha256:a2", Vulns: &model.Vulns{Scope: model.VulnScopeImage, High: 1},
+	}}}
+	v := &fakeVulns{report: map[string]model.Vulns{"a": {Scope: model.VulnScopeImage, Critical: 3}}}
+	e := New(fakeCollector{list: []model.Container{{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "1.0.0", Digest: "sha256:a1"}}},
+		fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/app": {err: errors.New("429")}}}, &fakeChangelog{}, st, time.Hour).WithVulns(v)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := st.rows["a"]; got.Vulns == nil || got.Vulns.Critical != 3 || v.newest["a"] != "sha256:a2" || got.Kind != model.KindDigest {
+		t.Errorf("row = %+v against %q, want the kept verdict with a fresh check", got, v.newest["a"])
 	}
 }
 

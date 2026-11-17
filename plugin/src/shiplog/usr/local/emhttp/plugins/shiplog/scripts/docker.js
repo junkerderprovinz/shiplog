@@ -920,30 +920,6 @@
     const cap = setTimeout(release, 15 * 60 * 1000);
   }
 
-  // armJumpMarquee scrolls the jump line only when it overflows and motion is
-  // allowed, by the system and by TowerTorch's motion level. Two identical
-  // copies moved by translateX(-50%) loop seamlessly.
-  function armJumpMarquee(bubble) {
-    try {
-      const jumpEl = bubble.querySelector(".sl-jump");
-      if (!jumpEl) return;
-      const reduceMotion = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
-        document.documentElement.getAttribute("data-tt-motion") === "off";
-      const full = jumpEl.textContent;
-      if (reduceMotion || !full || jumpEl.scrollWidth <= jumpEl.clientWidth) return;
-      const track = el("span", "sl-jump-track");
-      track.appendChild(el("span", "sl-jump-txt", esc(full)));
-      const clone = el("span", "sl-jump-txt", esc(full));
-      clone.setAttribute("aria-hidden", "true");
-      track.appendChild(clone);
-      jumpEl.textContent = "";
-      jumpEl.appendChild(track);
-      jumpEl.classList.add("sl-jump-marquee");
-      // Longer text scrolls longer, so the reading speed stays about the same.
-      track.style.animationDuration = Math.max(6, Math.min(24, full.length / 8)) + "s";
-    } catch (e) {}
-  }
-
   // Under TowerTorch's rainbow each button of the window lights up in a palette
   // position of its own, as GlimStone's takePageHue() does in an app.
   function tintButtons(b) {
@@ -1007,7 +983,6 @@
       if (s && s.w) b.style.width = s.w + "px";
       if (s && s.h) b.style.height = s.h + "px";
     } catch (e) {}
-    armJumpMarquee(b); // needs the restored width
     tintButtons(b);
     holdBubble(b);
     // CSS centres the window, so `anchor` goes unused.

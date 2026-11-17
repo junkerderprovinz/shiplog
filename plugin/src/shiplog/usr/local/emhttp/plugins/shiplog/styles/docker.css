@@ -134,15 +134,10 @@ html[data-tt-motion="off"] .sl-backdrop{animation:none}
 .sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:17px;line-height:1.2;color:var(--sl-dim);flex-shrink:0}
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:700}
 .sl-bubble .sl-pill{flex-shrink:0}
-/* docker.js turns overflowing text into a marquee of two identical copies, so
-   translateX(-50%) loops seamlessly. Text that fits, or reduced motion, keeps
-   the plain ellipsis. */
+/* A reason too long for the header is cut short, and its tooltip holds the
+   whole text. */
 .sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;flex:1 1 auto;min-width:40px;overflow:hidden;
-  white-space:nowrap;text-overflow:ellipsis;position:relative}
-.sl-bubble .sl-jump.sl-jump-marquee{text-overflow:clip}
-.sl-bubble .sl-jump-track{display:inline-flex;animation:sl-jump-scroll linear infinite}
-.sl-bubble .sl-jump-txt{padding-right:40px}
-@keyframes sl-jump-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  white-space:nowrap;text-overflow:ellipsis}
 .sl-bubble .sl-bh-right{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
 .sl-bubble .sl-gh,.sl-bubble .sl-upd{display:inline-flex;align-items:center;gap:6px;
   background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
@@ -195,8 +190,8 @@ html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-u
 .sl-bubble .sl-vulns ul{margin-top:6px}
 .sl-bubble details.sl-vulns > summary{cursor:pointer;list-style:none}
 .sl-bubble details.sl-vulns > summary::-webkit-details-marker{display:none}
-.sl-bubble details.sl-vulns > summary h4:after{content:" B8";color:var(--sl-dim2)}
-.sl-bubble details.sl-vulns[open] > summary h4:after{content:" BE"}
+.sl-bubble details.sl-vulns > summary h4:after{content:" \25B8";color:var(--sl-dim2)}
+.sl-bubble details.sl-vulns[open] > summary h4:after{content:" \25BE"}
 .sl-bubble details.sl-vulns[open] > summary{margin-bottom:6px}
 .sl-bubble .sl-vuln-more{margin-top:4px;color:var(--sl-dim2)}
 /* Why the risk went up, on its own line so it never runs in the header. */

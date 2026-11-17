@@ -270,6 +270,20 @@ func TestVulnsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestTheStateAndARaisedRiskComeBack(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "a", State: "exited"}, VulnRaised: true, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Container.State != "exited" || !got.VulnRaised {
+		t.Errorf("state = %q, raised = %v; want exited and raised", got.Container.State, got.VulnRaised)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	s := newTestStore(t)
 	_, err := s.Get("does-not-exist")

@@ -158,6 +158,41 @@ func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 	}
 }
 
+// TestStylesCarryNoControlCharacters keeps escapes such as \25B8 in the CSS
+// as text, since a control character in their place shows as stray letters.
+func TestStylesCarryNoControlCharacters(t *testing.T) {
+	files, err := filepath.Glob(filepath.Join(pluginDir, "styles", "*.css"))
+	if err != nil || len(files) == 0 {
+		t.Fatalf("css files = %v, %v", files, err)
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, b := range raw {
+			if b < 0x20 && b != '\n' && b != '\t' && b != '\r' {
+				t.Errorf("%s: control character 0x%02x at byte %d", filepath.Base(f), b, i)
+			}
+		}
+	}
+}
+
+// TestTheWindowHeaderNeverScrolls keeps the risk reason in the window's
+// header still: it is cut short there, with the whole text in its tooltip.
+func TestTheWindowHeaderNeverScrolls(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	css := read(t, filepath.Join("styles", "docker.css"))
+	for _, gone := range []string{"armJumpMarquee", "sl-jump-marquee", "sl-jump-scroll"} {
+		if strings.Contains(js, gone) || strings.Contains(css, gone) {
+			t.Errorf("the header still scrolls through %s", gone)
+		}
+	}
+	if !strings.Contains(js, `<span class="sl-jump" title="${esc(jump)}">`) {
+		t.Error("the header's reason lacks its tooltip")
+	}
+}
+
 // TestTheVulnerabilityListStaysFolded keeps the window's list of
 // vulnerabilities behind its counts line, so the release notes stay in view,
 // and says how many the list leaves out.

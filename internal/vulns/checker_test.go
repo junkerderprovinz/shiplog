@@ -178,6 +178,20 @@ func TestAnAlpineContainerReadsItsApkDatabase(t *testing.T) {
 	}
 }
 
+func TestKernelPackagesDoNotCount(t *testing.T) {
+	// The container runs the host's kernel, so the headers its image carries
+	// from the kernel's source package bring no flaw of their own.
+	reg := &fakeRegistry{sboms: map[string]string{
+		oldSBOM: spdx("pkg:deb/debian/linux-libc-dev@3.0.11?distro=debian-13&upstream=linux"),
+	}}
+	f := &fakeDB{affects: map[string][]string{"linux 3.0.11": {"DEBIAN-CVE-1"}}, records: map[string]osvRecord{"DEBIAN-CVE-1": rec("DEBIAN-CVE-1", "m", critVector, "CVE-1")}}
+	k := New(t.TempDir(), NewDB(f.server(t).URL, t.TempDir()), reg, &fakeContainers{})
+	v := k.Check(context.Background(), model.Container{ID: "c1", Repo: "docker.io/library/app", Digest: oldSBOM}, "")
+	if v.Critical != 0 || len(f.queries) != 0 {
+		t.Errorf("Check = %+v after %d queries, want the kernel left out", v, len(f.queries))
+	}
+}
+
 func TestAnUncoveredSystemSaysSo(t *testing.T) {
 	ctr := &fakeContainers{files: map[string]string{"/etc/os-release": "ID=arch\n"}}
 	k := newChecker(t, &fakeRegistry{}, ctr)

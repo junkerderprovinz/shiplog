@@ -176,7 +176,7 @@ func (k *Checker) cached(key string) (cached, bool) {
 }
 
 func (k *Checker) lookup(ctx context.Context, key, scope string, pkgs []Package) (cached, error) {
-	f, err := k.db.Find(ctx, pkgs)
+	f, err := k.db.Find(ctx, withoutKernel(pkgs))
 	if err != nil {
 		return cached{}, err
 	}
@@ -185,6 +185,21 @@ func (k *Checker) lookup(ctx context.Context, key, scope string, pkgs []Package)
 	k.found[key] = res
 	k.mu.Unlock()
 	return res, nil
+}
+
+// withoutKernel leaves out what a distribution builds from its kernel source,
+// such as the headers in linux-libc-dev. A container runs the host's kernel,
+// so the kernel's flaws are the host's and not the image's.
+func withoutKernel(pkgs []Package) []Package {
+	out := make([]Package, 0, len(pkgs))
+	for _, p := range pkgs {
+		deb := strings.HasPrefix(p.Ecosystem, "Debian:") || strings.HasPrefix(p.Ecosystem, "Ubuntu:")
+		if deb && p.Name == "linux" {
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
 }
 
 // imageList is what the disk keeps per image digest. An image's SBOM never

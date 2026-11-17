@@ -232,6 +232,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	resolve := memoResolve(e.resolver)
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
+	var tally vulnTally
 	for _, c := range containers {
 		if e.ignoreUnmanaged && !c.Managed {
 			_ = e.store.Delete(c.ID)
@@ -243,11 +244,15 @@ func (e *Engine) Sweep(ctx context.Context) error {
 			defer wg.Done()
 			defer func() { <-sem }()
 			st := e.check(ctx, c, resolve, overrides, suppressed, projects, templateURLs, caFeed)
+			tally.add(st.Vulns)
 			// A row that fails to store is retried by the next sweep.
 			_ = e.store.Upsert(st)
 		}(c)
 	}
 	wg.Wait()
+	if e.vulns != nil {
+		log.Printf("shiplog: %s", tally.String())
+	}
 
 	// A container that was removed or recreated under a new ID would otherwise
 	// leave its old row behind for good.
@@ -263,6 +268,37 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// vulnTally counts how a sweep checked the images, so the log shows that
+// the check ran even when no count changed.
+type vulnTally struct {
+	mu                                 sync.Mutex
+	all, image, system, unread, failed int
+}
+
+func (t *vulnTally) add(v *model.Vulns) {
+	if v == nil {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.all++
+	switch {
+	case v.Scope == model.VulnScopeImage:
+		t.image++
+	case v.Scope == model.VulnScopeSystem:
+		t.system++
+	case v.Reason == model.VulnNoPackages:
+		t.unread++
+	default:
+		t.failed++
+	}
+}
+
+func (t *vulnTally) String() string {
+	return fmt.Sprintf("vulnerability check: %d containers, %d by the image's package list, %d by the system packages, %d without a package list, %d failed",
+		t.all, t.image, t.system, t.unread, t.failed)
 }
 
 type resolveFunc func(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error)
@@ -378,6 +414,15 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		if hasPrior && prior.Kind != "" && prior.Kind != model.KindUnknown {
 			prior.Container = c
 			prior.Error = ""
+			// The running image is still known, so its check need not wait
+			// for the registry.
+			if e.vulns != nil {
+				newest := ""
+				if prior.HasUpdate() {
+					newest = prior.NewestDigest
+				}
+				prior.Vulns = e.vulns.Check(ctx, c, newest)
+			}
 			return prior
 		}
 		st.Error = "could not resolve upstream: " + err.Error()
