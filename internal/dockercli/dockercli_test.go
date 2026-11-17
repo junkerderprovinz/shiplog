@@ -1,6 +1,8 @@
 package dockercli
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"net"
 	"net/http"
@@ -445,5 +447,68 @@ func TestReleaseUntagsTheImageAndAcceptsOneAlreadyGone(t *testing.T) {
 	}
 	if want := "DELETE shiplog/before-update:Nextcloud"; len(got) != 2 || got[0] != want {
 		t.Errorf("requests = %q, want %q first", got, want)
+	}
+}
+
+func tarOf(t *testing.T, entries ...[2]string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	for _, e := range entries {
+		hdr := &tar.Header{Name: e[0], Mode: 0o644, Size: int64(len(e[1])), Typeflag: tar.TypeReg}
+		if strings.HasSuffix(e[0], "/") {
+			hdr.Typeflag, hdr.Size = tar.TypeDir, 0
+		} else if strings.HasPrefix(e[1], "->") {
+			hdr.Typeflag, hdr.Linkname, hdr.Size = tar.TypeSymlink, strings.TrimPrefix(e[1], "->"), 0
+		}
+		if err := tw.WriteHeader(hdr); err != nil {
+			t.Fatal(err)
+		}
+		if hdr.Typeflag == tar.TypeReg {
+			_, _ = tw.Write([]byte(e[1]))
+		}
+	}
+	_ = tw.Close()
+	return buf.Bytes()
+}
+
+func TestFilesReadsAFileOrAFolderFromTheContainer(t *testing.T) {
+	var asked []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/containers/{id}/archive", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Query().Get("path")
+		asked = append(asked, r.Method+" "+r.PathValue("id")+" "+path)
+		switch path {
+		case "/var/lib/dpkg/status":
+			_, _ = w.Write(tarOf(t, [2]string{"status", "Package: bash\n"}))
+		case "/var/lib/dpkg/status.d":
+			_, _ = w.Write(tarOf(t, [2]string{"status.d/", ""}, [2]string{"status.d/tzdata", "Package: tzdata\n"}))
+		case "/etc/os-release":
+			_, _ = w.Write(tarOf(t, [2]string{"os-release", "->../usr/lib/os-release"}))
+		default:
+			http.Error(w, `{"message":"Could not find the file"}`, http.StatusNotFound)
+		}
+	})
+	c := serveDocker(t, mux)
+	ctx := context.Background()
+
+	got, err := c.Files(ctx, "abc", "/var/lib/dpkg/status")
+	if err != nil || string(got["/var/lib/dpkg/status"]) != "Package: bash\n" || len(got) != 1 {
+		t.Errorf("Files(status) = %q, %v", got, err)
+	}
+	got, err = c.Files(ctx, "abc", "/var/lib/dpkg/status.d")
+	if err != nil || string(got["/var/lib/dpkg/status.d/tzdata"]) != "Package: tzdata\n" || len(got) != 1 {
+		t.Errorf("Files(status.d) = %q, %v", got, err)
+	}
+	got, err = c.Files(ctx, "abc", "/etc/os-release")
+	if err != nil || len(got) != 0 {
+		t.Errorf("Files(link) = %q, %v; want no regular file", got, err)
+	}
+	got, err = c.Files(ctx, "abc", "/lib/apk/db/installed")
+	if err != nil || len(got) != 0 {
+		t.Errorf("Files(missing) = %q, %v; want nothing and no error", got, err)
+	}
+	if asked[0] != "GET abc /var/lib/dpkg/status" {
+		t.Errorf("first request = %q, want a GET", asked[0])
 	}
 }

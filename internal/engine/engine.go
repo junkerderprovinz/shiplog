@@ -57,6 +57,12 @@ type (
 	Notifier interface {
 		Notify(ctx context.Context, st model.UpdateStatus) error
 	}
+	// VulnChecker counts the known vulnerabilities of a container's running
+	// image and what the image behind newestDigest closes of them, as
+	// vulns.Checker does.
+	VulnChecker interface {
+		Check(ctx context.Context, c model.Container, newestDigest string) *model.Vulns
+	}
 	// caFeedLookuper lets tests fake a *cafeed.Feed.
 	caFeedLookuper interface {
 		Lookup(name, repo, templateURL string) (cafeed.Result, bool)
@@ -73,6 +79,7 @@ type Engine struct {
 	store      Storer
 	summarizer Summarizer
 	notifier   Notifier
+	vulns      VulnChecker
 	interval   time.Duration
 	workers    int
 	refresh    chan struct{}
@@ -113,6 +120,12 @@ func (e *Engine) WithCAFeed(dir string) *Engine {
 // WithSummarizer enables AI changelog summaries.
 func (e *Engine) WithSummarizer(s Summarizer) *Engine {
 	e.summarizer = s
+	return e
+}
+
+// WithVulns enables the check for known vulnerabilities.
+func (e *Engine) WithVulns(v VulnChecker) *Engine {
+	e.vulns = v
 	return e
 }
 
@@ -330,6 +343,9 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		if cl, ok := e.changelog.Get(ctx, c, st.RunningVersion, st.RunningVersion); ok {
 			st.Changelog = cl
 		}
+		if e.vulns != nil {
+			st.Vulns = e.vulns.Check(ctx, c, "")
+		}
 		return st
 	}
 
@@ -386,6 +402,14 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	st.Kind, st.Risk, st.RiskReason, st.NewerVersion = v.kind, v.risk, v.reason, v.newer
 	if v.newest != "" {
 		st.NewestTag = v.newest
+	}
+	if e.vulns != nil {
+		newest := ""
+		if st.HasUpdate() {
+			newest = st.NewestDigest
+		}
+		st.Vulns = e.vulns.Check(ctx, c, newest)
+		raiseForFixes(&st)
 	}
 
 	// Every container gets a changelog, the running version's notes when it is up
@@ -469,6 +493,27 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	}
 	e.maybeNotifyUnmaintained(ctx, st, prior, hasPrior)
 	return st
+}
+
+// raiseForFixes ranks an update one step higher when it is known to close a
+// critical vulnerability. Critical stays reserved for breaking notes, which ask
+// for a step before the pull.
+func raiseForFixes(st *model.UpdateStatus) {
+	if !st.HasUpdate() || !st.Vulns.ClosesCritical() {
+		return
+	}
+	switch st.Risk {
+	case model.RiskLow:
+		st.Risk = model.RiskMedium
+	case model.RiskMedium:
+		st.Risk = model.RiskHigh
+	}
+	n := st.Vulns.FixedCritical
+	noun := "vulnerabilities"
+	if n == 1 {
+		noun = "vulnerability"
+	}
+	st.RiskReason = fmt.Sprintf("%s; closes %d known critical %s", st.RiskReason, n, noun)
 }
 
 // scanBreaking reads the release notes that are still ahead of the container.

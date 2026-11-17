@@ -246,6 +246,30 @@ func TestChangelogRoundTrip(t *testing.T) {
 	}
 }
 
+func TestVulnsRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	want := model.Vulns{
+		Scope: model.VulnScopeImage, Critical: 2, High: 5, NewestKnown: true, FixedCritical: 1,
+		Items: []model.VulnItem{{ID: "CVE-2024-5535", Package: "openssl", Severity: "critical", Fixed: true}},
+	}
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "a"}, Vulns: &want, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "b"}, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	a, err := s.Get("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Vulns == nil || a.Vulns.Critical != 2 || a.Vulns.FixedCritical != 1 || len(a.Vulns.Items) != 1 || !a.Vulns.Items[0].Fixed {
+		t.Errorf("vulns = %+v, want %+v", a.Vulns, want)
+	}
+	if b, _ := s.Get("b"); b.Vulns != nil {
+		t.Errorf("a row without a check reads back %+v", b.Vulns)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	s := newTestStore(t)
 	_, err := s.Get("does-not-exist")

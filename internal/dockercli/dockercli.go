@@ -4,6 +4,7 @@
 package dockercli
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	pathpkg "path"
 	"regexp"
 	"strings"
 
@@ -169,6 +171,54 @@ func (c *Client) Start(ctx context.Context, name string) error {
 		return fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 	return nil
+}
+
+// maxFiles caps what Files reads, well above any package database.
+const maxFiles = 32 << 20
+
+// Files returns the regular files at or below path in the container, keyed by
+// their full path. A path that does not exist gives none.
+func (c *Client) Files(ctx context.Context, id, path string) (map[string][]byte, error) {
+	q := url.Values{"path": {path}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/containers/"+url.PathEscape(id)+"/archive?"+q.Encode(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		return map[string][]byte{}, nil
+	default:
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return nil, fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	// The archive names its entries after the last element of path.
+	parent := pathpkg.Dir(path)
+	out := map[string][]byte{}
+	tr := tar.NewReader(io.LimitReader(resp.Body, maxFiles))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			return out, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read archive of %s: %w", path, err)
+		}
+		if hdr.Typeflag != tar.TypeReg {
+			continue
+		}
+		b, err := io.ReadAll(tr)
+		if err != nil {
+			return nil, fmt.Errorf("read archive of %s: %w", path, err)
+		}
+		out[pathpkg.Join(parent, hdr.Name)] = b
+	}
 }
 
 // heldRepo is where Hold keeps an image. Unraid removes the old image after an

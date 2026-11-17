@@ -109,8 +109,11 @@ type UpdateStatus struct {
 	// CADeprecatedNote is the moderator's stated reason.
 	CADeprecatedNote string     `json:"ca_deprecated_note,omitempty"`
 	Changelog        *Changelog `json:"changelog,omitempty"`
-	CheckedAt        time.Time  `json:"checked_at"`
-	Error            string     `json:"error,omitempty"` // per-container failure, never fatal
+	// Vulns holds the known vulnerabilities of the running image while the
+	// check is switched on.
+	Vulns     *Vulns    `json:"vulns,omitempty"`
+	CheckedAt time.Time `json:"checked_at"`
+	Error     string    `json:"error,omitempty"` // per-container failure, never fatal
 }
 
 // HasDigest reports whether d equals the container's primary digest or any of
@@ -230,6 +233,47 @@ type ReleaseEntry struct {
 	URL         string    `json:"url"`
 	PublishedAt time.Time `json:"published_at"`
 }
+
+// Vulns counts the known critical and high vulnerabilities of the running
+// image and how many of them the newest image no longer has.
+type Vulns struct {
+	// Scope is VulnScopeImage when the image's own package list was checked
+	// and VulnScopeSystem when only the system packages inside the container
+	// could be read. Without either, Reason says why nothing was checked.
+	Scope    string `json:"scope,omitempty"`
+	Reason   string `json:"reason,omitempty"`
+	Critical int    `json:"critical"`
+	High     int    `json:"high"`
+	// NewestKnown says the newest image's package list was read, so the
+	// Fixed counts hold. Without it nobody can tell what an update closes.
+	NewestKnown   bool `json:"newest_known,omitempty"`
+	FixedCritical int  `json:"fixed_critical,omitempty"`
+	FixedHigh     int  `json:"fixed_high,omitempty"`
+	// Items lists the critical and high ones, critical first.
+	Items []VulnItem `json:"items,omitempty"`
+}
+
+// VulnItem is one known vulnerability of the running image.
+type VulnItem struct {
+	ID       string `json:"id"`
+	Package  string `json:"package"`
+	Severity string `json:"severity"` // "critical" or "high"
+	Fixed    bool   `json:"fixed,omitempty"`
+}
+
+const (
+	VulnScopeImage  = "image"
+	VulnScopeSystem = "system"
+	// VulnNoPackages: no package list could be read, as for an image without
+	// a distribution the database covers.
+	VulnNoPackages = "no_packages"
+	// VulnLookupFailed: the database could not be asked; the next sweep tries again.
+	VulnLookupFailed = "lookup_failed"
+)
+
+// ClosesCritical reports whether the newest image is known to close a
+// critical vulnerability of the running one.
+func (v *Vulns) ClosesCritical() bool { return v != nil && v.NewestKnown && v.FixedCritical > 0 }
 
 // AISummary is populated only when Ollama is configured.
 type AISummary struct {

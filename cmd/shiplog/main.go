@@ -40,6 +40,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/templates"
 	"github.com/junkerderprovinz/shiplog/internal/updater"
 	"github.com/junkerderprovinz/shiplog/internal/updates"
+	"github.com/junkerderprovinz/shiplog/internal/vulns"
 )
 
 func main() {
@@ -73,6 +74,11 @@ func main() {
 
 	eng.WithIgnoreUnmanaged(cfg.IgnoreUnmanaged)
 	eng.WithCAFeed(cfg.DataDir)
+	if cfg.VulnCheck {
+		dir := filepath.Join(cfg.DataDir, "vulns")
+		eng.WithVulns(vulns.New(dir, vulns.NewDB(vulns.DefaultDB, dir), reg, docker))
+		log.Printf("shiplog: known vulnerability check on; only package names and versions go to %s", vulns.DefaultDB)
+	}
 
 	// Optional integrations are pinged once, so the log says whether they work.
 	if ls := summarize.NewLlamaSwap(cfg.LlamaSwapURL, cfg.LlamaSwapModel); ls != nil {
