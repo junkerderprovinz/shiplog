@@ -47,6 +47,9 @@ func RenderSummary(res Result) (text, html string) {
 			case o.Snapshot.Run != "" || o.Snapshot.ID != "":
 				note += ", backed up first"
 			}
+			if o.Closes != "" {
+				note += ", closes " + o.Closes
+			}
 			tp = append(tp, fmt.Sprintf("%s %s→%s (%s)", o.Name, verOr(o.From), verOr(o.To), note))
 			hp = append(hp, fmt.Sprintf("<b>%s</b> <code>%s→%s</code> (%s)", esc(o.Name), esc(verOr(o.From)), esc(verOr(o.To)), esc(note)))
 		}

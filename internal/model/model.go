@@ -2,6 +2,7 @@
 package model
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -274,6 +275,55 @@ const (
 // ClosesCritical reports whether the newest image is known to close a
 // critical vulnerability of the running one.
 func (v *Vulns) ClosesCritical() bool { return v != nil && v.NewestKnown && v.FixedCritical > 0 }
+
+// Note sums the report up for a notification, or gives "" when no critical
+// or high vulnerability is known. With update set it also says what the
+// update closes, or that nobody can tell.
+func (v *Vulns) Note(update bool) string {
+	if v == nil || v.Reason != "" || v.Critical+v.High == 0 {
+		return ""
+	}
+	note := fmt.Sprintf("%d critical and %d high known vulnerabilities", v.Critical, v.High)
+	switch {
+	case !update:
+	case !v.NewestKnown:
+		note += ", unknown what the update closes"
+	case v.FixedCritical+v.FixedHigh == 0:
+		note += ", the update closes none of them"
+	default:
+		note += fmt.Sprintf(", the update closes %d critical and %d high", v.FixedCritical, v.FixedHigh)
+	}
+	return note
+}
+
+// Closes names what the newest image is known to close, or "".
+func (v *Vulns) Closes() string {
+	if v == nil || !v.NewestKnown || v.FixedCritical+v.FixedHigh == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d critical and %d high known vulnerabilities", v.FixedCritical, v.FixedHigh)
+}
+
+// VulnNote is the status page's line on the known vulnerabilities, which also
+// says why nothing was checked. It is "" while the check is off.
+func (s UpdateStatus) VulnNote() string {
+	v := s.Vulns
+	switch {
+	case v == nil:
+		return ""
+	case v.Reason == VulnNoPackages:
+		return "vulnerabilities unknown, no readable package list"
+	case v.Reason != "":
+		return "vulnerability lookup failed, ShipLog tries again at the next check"
+	case v.Critical+v.High == 0:
+		return "no known critical or high vulnerabilities"
+	}
+	note := v.Note(s.HasUpdate())
+	if v.Scope == VulnScopeSystem {
+		note += " (system packages only)"
+	}
+	return note
+}
 
 // AISummary is populated only when Ollama is configured.
 type AISummary struct {

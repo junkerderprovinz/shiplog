@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/junkerderprovinz/shiplog/internal/backup"
+	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
 func TestRenderSummary(t *testing.T) {
@@ -29,6 +30,33 @@ func TestRenderSummary(t *testing.T) {
 	dt, _ := RenderSummary(Result{DryRun: true, Outcomes: []Outcome{{Name: "plex", Level: "patch", Updated: true}}})
 	if !strings.Contains(dt, "Would auto-update") {
 		t.Errorf("dry-run wording missing: %s", dt)
+	}
+}
+
+func TestRenderSummaryNamesTheVulnerabilitiesAnUpdateClosed(t *testing.T) {
+	res := Result{Outcomes: []Outcome{
+		{Name: "nginx", From: "1.27", To: "1.28", Level: "minor", Updated: true, Closes: "1 critical and 3 high known vulnerabilities"},
+		{Name: "plex", From: "1.2.3", To: "1.2.4", Level: "patch", Updated: true},
+	}}
+	text, html := RenderSummary(res)
+	if !strings.Contains(text, "nginx 1.27→1.28 (minor, closes 1 critical and 3 high known vulnerabilities)") || !strings.Contains(text, "plex 1.2.3→1.2.4 (patch)") {
+		t.Errorf("text = %s", text)
+	}
+	if !strings.Contains(html, "closes 1 critical and 3 high known vulnerabilities") {
+		t.Errorf("html = %s", html)
+	}
+}
+
+func TestAnOutcomeCarriesOnlyAKnownFix(t *testing.T) {
+	st := model.UpdateStatus{Container: model.Container{Name: "a"}, Vulns: &model.Vulns{Critical: 2, High: 1, NewestKnown: true, FixedCritical: 1, FixedHigh: 1}}
+	if got := outcomeOf(st).Closes; got != "1 critical and 1 high known vulnerabilities" {
+		t.Errorf("Closes = %q", got)
+	}
+	for _, v := range []*model.Vulns{nil, {Critical: 2}, {Critical: 2, NewestKnown: true}} {
+		st.Vulns = v
+		if got := outcomeOf(st).Closes; got != "" {
+			t.Errorf("Closes = %q for %+v, want none", got, v)
+		}
 	}
 }
 

@@ -237,6 +237,23 @@ func TestStatusPageRenders(t *testing.T) {
 	}
 }
 
+func TestStatusPageShowsTheKnownVulnerabilities(t *testing.T) {
+	src := fakeSource{rows: []model.UpdateStatus{
+		{Container: model.Container{ID: "a", Name: "nginx", Repo: "docker.io/library/nginx", Tag: "1.27"}, NewestTag: "1.28", Kind: model.KindMinor, Risk: model.RiskHigh,
+			Vulns: &model.Vulns{Scope: model.VulnScopeImage, Critical: 2, High: 4, NewestKnown: true, FixedCritical: 2}},
+		{Container: model.Container{ID: "b", Name: "plain", Repo: "docker.io/x/plain", Tag: "1"}},
+	}}
+	rr := httptest.NewRecorder()
+	New(src, &fakeOverrides{}, &fakeRefresher{}, "").Handler().ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+	body := rr.Body.String()
+	if !strings.Contains(body, `<small class="vul">2 critical and 4 high known vulnerabilities, the update closes 2 critical and 0 high</small>`) {
+		t.Errorf("status page lacks the counts: %s", body)
+	}
+	if strings.Count(body, `class="vul"`) != 1 {
+		t.Error("a row without a check shows a vulnerability line")
+	}
+}
+
 func TestListJSON(t *testing.T) {
 	h, _ := testAPI()
 	rr := httptest.NewRecorder()

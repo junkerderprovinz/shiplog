@@ -21,6 +21,7 @@
   td:first-child{border-left:1px solid var(--line);border-radius:9px 0 0 9px}
   td:last-child{border-right:1px solid var(--line);border-radius:0 9px 9px 0}
   tr:hover td{background:var(--bg2)}
+  .vul{display:block;margin-top:4px;color:var(--dim2);font-size:11.5px;max-width:220px}
   .name{font-weight:600}.name small{display:block;font-weight:400;color:var(--dim2);font-size:11.5px}
   .ver{font-family:Consolas,monospace;font-size:12.5px;color:var(--dim)}.ver .new{color:var(--txt)}
   .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.3px;border:1px solid}
@@ -66,7 +67,7 @@
         <td class="name">{{.Container.Name}}<small>{{.Container.Repo}}</small></td>
         <td class="ver">{{if .Container.Tag}}{{.Container.Tag}}{{else if .Container.PinnedDigest}}pinned{{else}}&mdash;{{end}}</td>
         <td class="ver">{{if .HasUpdate}}<span class="new">&rarr; {{.NewestTag}}</span>{{else if .NewerVersion}}up to date &middot; pinned, <span class="new">{{.NewerVersion}}</span> available{{else if .Container.PinnedDigest}}pinned by digest{{else if .Container.IsLocal}}local image{{else if not .Container.Repo}}image-ID ref{{else}}up to date{{end}}</td>
-        <td><span class="badge r-{{.Risk}}">{{.Risk}}</span></td>
+        <td><span class="badge r-{{.Risk}}">{{.Risk}}</span>{{with .VulnNote}}<small class="vul">{{.}}</small>{{end}}</td>
         <td class="clog" data-repo="{{.Container.Repo}}">
           {{- if .Error}}<span style="color:var(--dim2)">{{.Error}}</span>
           {{- else if .Changelog}}{{if .Changelog.URL}}<a href="{{.Changelog.URL}}" target="_blank" rel="noopener">{{.Changelog.Source}} &#8599;</a>{{else}}{{.Changelog.Source}}{{end}}

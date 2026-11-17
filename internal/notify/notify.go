@@ -157,6 +157,10 @@ func update(st model.UpdateStatus) kit.Event {
 			e.HTML = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: update <code>%s</code> → <code>%s</code> (risk: %s)",
 				esc(name), esc(from), esc(to), esc(risk))
 		}
+		if note := st.Vulns.Note(true); note != "" {
+			e.Body += " · " + note
+			e.HTML += " · " + esc(note)
+		}
 	}
 	if link != "" {
 		e.Link = link

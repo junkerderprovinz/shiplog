@@ -57,6 +57,8 @@ type Outcome struct {
 	// RolledBack marks a failed update after which the container runs its old
 	// image again.
 	RolledBack bool
+	// Closes names the known vulnerabilities the newest image closes.
+	Closes string
 }
 
 // Result aggregates one auto-update run.
@@ -193,7 +195,7 @@ func (e *Executor) Update(ctx context.Context, sts []model.UpdateStatus, backedU
 }
 
 func outcomeOf(st model.UpdateStatus) Outcome {
-	return Outcome{Name: st.Container.Name, From: st.RunningVersion, To: st.NewestTag, Level: string(st.Kind)}
+	return Outcome{Name: st.Container.Name, From: st.RunningVersion, To: st.NewestTag, Level: string(st.Kind), Closes: st.Vulns.Closes()}
 }
 
 // one updates a single container and adds its outcome to res. backedUp says

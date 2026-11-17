@@ -166,6 +166,20 @@ func argValue(args []string, flag string) string {
 	return ""
 }
 
+func TestAnUpdateNamesTheVulnerabilitiesItCloses(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "nginx", Tag: "1.27"}, NewestTag: "1.28", Kind: model.KindMinor, Risk: model.RiskHigh,
+		Vulns: &model.Vulns{Scope: model.VulnScopeImage, Critical: 2, High: 4, NewestKnown: true, FixedCritical: 2, FixedHigh: 1},
+	}
+	want := "1.27 → 1.28 (risk: HIGH) · 2 critical and 4 high known vulnerabilities, the update closes 2 critical and 1 high"
+	if got := argValue(unraidArgs(t, st), "-d"); got != want {
+		t.Errorf("description = %q, want %q", got, want)
+	}
+	if e := update(st); !strings.Contains(e.HTML, "the update closes 2 critical and 1 high") {
+		t.Errorf("html = %q", e.HTML)
+	}
+}
+
 func TestTheRiskSetsUnraidsImportance(t *testing.T) {
 	for risk, want := range map[model.RiskLevel]string{
 		model.RiskLow: "normal", model.RiskMedium: "normal", model.RiskHigh: "warning", model.RiskCritical: "alert",
