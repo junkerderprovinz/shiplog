@@ -73,7 +73,8 @@ func save(path string, channels []kit.Channel) error {
 
 // Notifier sends ShipLog's events. A nil *Notifier sends nothing.
 type Notifier struct {
-	d *kit.Dispatcher
+	d   *kit.Dispatcher
+	hub *Hub
 }
 
 // New returns a Notifier for channels, or nil when none is switched on.
@@ -102,7 +103,10 @@ func (n *Notifier) Notify(ctx context.Context, st model.UpdateStatus) error {
 // Send delivers e to every channel that takes it. The error names each
 // channel that failed, with its secrets taken out.
 func (n *Notifier) Send(ctx context.Context, e kit.Event) error {
-	if n == nil {
+	if n == nil || n.hub != nil && n.hub.Take(ctx, e) {
+		return nil
+	}
+	if n.d == nil {
 		return nil
 	}
 	var errs []error
@@ -148,7 +152,7 @@ func update(st model.UpdateStatus) kit.Event {
 	} else {
 		from, to := st.Container.Tag, st.Target()
 		risk := strings.ToUpper(string(st.Risk))
-		e = kit.Event{Kind: "update.available", Severity: severity(st.Risk), Title: name + ": update available"}
+		e = kit.Event{Kind: "update.available", Severity: severity(st.Risk), Title: name + ": update available", Key: updateKey(st)}
 		if to == "" {
 			e.Body = fmt.Sprintf("New image for %s (risk: %s)", from, risk)
 			e.HTML = fmt.Sprintf("🚢 <b>ShipLog</b> · <b>%s</b>: new image for <code>%s</code> (risk: %s)", esc(name), esc(from), esc(risk))
@@ -163,6 +167,24 @@ func update(st model.UpdateStatus) kit.Event {
 		e.HTML += `<br/><a href="` + esc(link) + `">` + esc(link) + `</a>`
 	}
 	return e
+}
+
+// maxKey is the longest key TollRoll takes.
+const maxKey = 100
+
+// updateKey names one update, so TollRoll sends a newer image of the same
+// container again.
+func updateKey(st model.UpdateStatus) string {
+	d := strings.TrimPrefix(st.NewestDigest, "sha256:")
+	if len(d) > 12 {
+		d = d[:12]
+	}
+	k := "update:" + st.Container.Name + "@" + d
+	if len(k) > maxKey {
+		k = "update:" + d + "@" + st.Container.Name
+		k = k[:maxKey]
+	}
+	return k
 }
 
 // severity follows the risk: a breaking change needs a manual migration before

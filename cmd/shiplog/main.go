@@ -84,9 +84,6 @@ func main() {
 	}
 
 	notifier := loadNotifier(cfg)
-	if notifier != nil {
-		eng.WithNotifier(notifier)
-	}
 
 	upd := updater.Unraid{}
 	autoUpdating := cfg.AutoUpdate.Enabled && upd.Supported()
@@ -101,8 +98,6 @@ func main() {
 	// The binary is PID 1 in the container.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
-
-	go eng.Run(ctx)
 
 	run := &fortress.Run{}
 	report := &fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}
@@ -138,7 +133,16 @@ func main() {
 			Guards:        db,
 			WithoutBackup: autoupdate.ParseExcludeContainers(cfg.AutoUpdate.WithoutBackup),
 		})
+		// A TollRoll of the fortress that takes over sends the messages. While
+		// none does, ShipLog's own channels go on as before.
+		notifier = notify.WithHub(notifier, &notify.Hub{Fortress: door})
 	}
+	// The engine starts once the notifier knows the fortress, since its first
+	// sweep may already notify.
+	if notifier != nil {
+		eng.WithNotifier(notifier)
+	}
+	go eng.Run(ctx)
 	updating.Unlock()
 	switch {
 	case autoUpdating:
