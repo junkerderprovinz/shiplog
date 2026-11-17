@@ -161,10 +161,12 @@ func (d *DB) query(ctx context.Context, pkgs []Package) ([]hit, error) {
 // fetchChanged reads every record the cache does not hold in its current form.
 func (d *DB) fetchChanged(ctx context.Context, hits []hit) error {
 	d.mu.Lock()
-	want := map[string]bool{}
+	// The record spells its time finer than the list does, so the list's
+	// spelling is what the cache compares.
+	want := map[string]string{}
 	for _, h := range hits {
 		if s, ok := d.known[h.id]; !ok || s.Modified != h.modified {
-			want[h.id] = true
+			want[h.id] = h.modified
 		}
 	}
 	d.mu.Unlock()
@@ -186,7 +188,7 @@ func (d *DB) fetchChanged(ctx context.Context, hits []hit) error {
 					continue
 				}
 				d.mu.Lock()
-				d.known[id] = summary{Modified: r.Modified, Key: r.key(), Severity: r.severity(), Minor: r.minor(), Withdrawn: r.Withdrawn != ""}
+				d.known[id] = summary{Modified: want[id], Key: r.key(), Severity: r.severity(), Minor: r.minor(), Withdrawn: r.Withdrawn != ""}
 				d.mu.Unlock()
 			}
 		}()

@@ -173,5 +173,22 @@
   "s_copy": "Copier",
   "s_copied": "Copié",
   "s_fortress": "Forteresse",
-  "s_fortress_no_backup": "D'ici là, les mises à jour automatiques se font sans sauvegarde."
+  "s_fortress_no_backup": "D'ici là, les mises à jour automatiques se font sans sauvegarde.",
+  "s_vulns": "Vulnérabilités connues",
+  "s_vulns_sub": "ShipLog peut rechercher les paquets de chaque image en cours d'exécution dans une base ouverte de vulnérabilités. La fenêtre du changelog indique alors combien de vulnérabilités connues critiques et élevées l'image contient et combien la nouvelle image en corrige. Une mise à jour qui corrige une vulnérabilité critique fait monter son badge de risque d'un cran.",
+  "s_vuln_check": "Rechercher les vulnérabilités connues",
+  "s_vuln_check_desc": "Désactivé par défaut. ShipLog prend la liste des paquets de chaque image dans son registre ou, si l'image n'en a pas, dans la base de paquets du conteneur, et n'envoie que les noms et versions des paquets à la base ouverte de vulnérabilités api.osv.dev. Les noms des conteneurs et des images, les tags et tout le reste de votre serveur restent chez vous. Les résultats sont mis en cache, la vérification ne coûte donc que quelques petites requêtes par jour.",
+  "d_vulnTitle": "Vulnérabilités connues",
+  "d_vulnBadge": "%c critiques · %h élevées",
+  "d_vulnBadgeFix": "la mise à jour en corrige %n",
+  "d_vulnBadgeHint": "Vulnérabilités connues de l'image en cours. Cliquez pour les détails.",
+  "d_vulnRunning": "L'image en cours a %c vulnérabilités connues critiques et %h élevées.",
+  "d_vulnNone": "L'image en cours n'a aucune vulnérabilité connue critique ou élevée.",
+  "d_vulnCloses": "La nouvelle image en corrige %c critiques et %h élevées.",
+  "d_vulnClosesNone": "La nouvelle image les a encore toutes.",
+  "d_vulnNewestUnknown": "La nouvelle image n'a pas de liste de paquets, ShipLog ne peut donc pas dire ce que la mise à jour corrige.",
+  "d_vulnSystem": "ShipLog n'a pu vérifier que les paquets système du conteneur.",
+  "d_vulnNoPackages": "ShipLog n'a pas pu lire de liste de paquets pour cette image et ne peut donc pas dire quelles vulnérabilités elle a.",
+  "d_vulnFailed": "La base de vulnérabilités était injoignable. ShipLog réessaie à la prochaine vérification.",
+  "d_vulnFixed": "corrigée par la mise à jour"
 }

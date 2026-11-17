@@ -173,5 +173,22 @@
   "s_copy": "Sao chép",
   "s_copied": "Đã sao chép",
   "s_fortress": "Pháo đài",
-  "s_fortress_no_backup": "Cho đến lúc đó, cập nhật tự động sẽ chạy mà không sao lưu."
+  "s_fortress_no_backup": "Cho đến lúc đó, cập nhật tự động sẽ chạy mà không sao lưu.",
+  "s_vulns": "Lỗ hổng đã biết",
+  "s_vulns_sub": "ShipLog có thể tra các gói của từng image đang chạy trong một cơ sở dữ liệu lỗ hổng mở. Cửa sổ changelog khi đó cho thấy image có bao nhiêu lỗ hổng đã biết mức nghiêm trọng và cao, và image mới nhất vá được bao nhiêu trong số đó. Bản cập nhật vá được một lỗ hổng nghiêm trọng sẽ được nâng huy hiệu rủi ro lên một bậc.",
+  "s_vuln_check": "Kiểm tra lỗ hổng đã biết",
+  "s_vuln_check_desc": "Mặc định tắt. ShipLog lấy danh sách gói của từng image từ registry của nó, hoặc từ cơ sở dữ liệu gói trong container khi image không có, và chỉ gửi tên gói cùng phiên bản đến cơ sở dữ liệu lỗ hổng mở tại api.osv.dev. Tên container, tên image, tag và mọi thứ khác về máy chủ của bạn đều ở lại với bạn. Kết quả được lưu đệm, nên việc kiểm tra chỉ tốn vài yêu cầu nhỏ mỗi ngày.",
+  "d_vulnTitle": "Lỗ hổng đã biết",
+  "d_vulnBadge": "%c nghiêm trọng · %h cao",
+  "d_vulnBadgeFix": "cập nhật vá %n",
+  "d_vulnBadgeHint": "Lỗ hổng đã biết trong image đang chạy. Nhấn để xem chi tiết.",
+  "d_vulnRunning": "Image đang chạy có %c lỗ hổng đã biết mức nghiêm trọng và %h mức cao.",
+  "d_vulnNone": "Image đang chạy không có lỗ hổng đã biết mức nghiêm trọng hoặc cao.",
+  "d_vulnCloses": "Image mới nhất vá được %c nghiêm trọng và %h cao trong số đó.",
+  "d_vulnClosesNone": "Image mới nhất vẫn còn tất cả.",
+  "d_vulnNewestUnknown": "Image mới nhất không kèm danh sách gói, nên ShipLog không biết bản cập nhật vá được gì.",
+  "d_vulnSystem": "ShipLog chỉ kiểm tra được các gói hệ thống trong container.",
+  "d_vulnNoPackages": "ShipLog không đọc được danh sách gói của image này, nên không biết nó có lỗ hổng nào.",
+  "d_vulnFailed": "Không kết nối được cơ sở dữ liệu lỗ hổng. ShipLog sẽ thử lại ở lần kiểm tra sau.",
+  "d_vulnFixed": "đã được bản cập nhật vá"
 }

@@ -98,6 +98,64 @@ func TestEveryLanguageExplainsTheBackupBeforeAnUpdate(t *testing.T) {
 	}
 }
 
+// TestEveryLanguageCountsKnownVulnerabilities keeps the texts of the
+// vulnerability check in every language with their counts, and the Docker
+// tab's English fallback equal to en.json.
+func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
+	counts := map[string][]string{
+		"vulnTitle": nil, "vulnBadge": {"%c", "%h"}, "vulnBadgeFix": {"%n"}, "vulnBadgeHint": nil,
+		"vulnRunning": {"%c", "%h"}, "vulnNone": nil, "vulnCloses": {"%c", "%h"}, "vulnClosesNone": nil,
+		"vulnNewestUnknown": nil, "vulnSystem": nil, "vulnNoPackages": nil, "vulnFailed": nil, "vulnFixed": nil,
+	}
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	page := read(t, "shiplog.page")
+	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
+	if err != nil || len(files) < 26 {
+		t.Fatalf("lang files = %d, %v", len(files), err)
+	}
+	for _, k := range []string{"s_vulns", "s_vulns_sub", "s_vuln_check", "s_vuln_check_desc"} {
+		if !strings.Contains(page, "$L['"+k+"']") {
+			t.Errorf("shiplog.page does not show %s", k)
+		}
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]string
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, k := range []string{"s_vulns", "s_vulns_sub", "s_vuln_check", "s_vuln_check_desc"} {
+			if texts[k] == "" {
+				t.Errorf("%s lacks %s", filepath.Base(f), k)
+			}
+		}
+		if !strings.Contains(texts["s_vuln_check_desc"], "api.osv.dev") {
+			t.Errorf("%s: s_vuln_check_desc does not say where the package names go", filepath.Base(f))
+		}
+		for k, want := range counts {
+			v := texts["d_"+k]
+			if v == "" {
+				t.Errorf("%s lacks d_%s", filepath.Base(f), k)
+				continue
+			}
+			for _, ph := range want {
+				if !strings.Contains(v, ph) {
+					t.Errorf("%s: d_%s drops %s: %q", filepath.Base(f), k, ph, v)
+				}
+			}
+			if filepath.Base(f) == "en.json" {
+				quoted, _ := json.Marshal(v)
+				if !strings.Contains(js, k+": "+string(quoted)) {
+					t.Errorf("docker.js falls back to another English d_%s than en.json's %s", k, quoted)
+				}
+			}
+		}
+	}
+}
+
 // TestBubbleNamesOnlyAVouchedVersion keeps the window's "running → next" header
 // to tags the engine could prove. A rolling tag's newest changelog entry says
 // nothing about the image it serves.

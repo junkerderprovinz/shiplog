@@ -173,5 +173,22 @@
   "s_copy": "Copiar",
   "s_copied": "Copiado",
   "s_fortress": "Fortaleza",
-  "s_fortress_no_backup": "Hasta entonces, las actualizaciones automáticas se hacen sin copia de seguridad."
+  "s_fortress_no_backup": "Hasta entonces, las actualizaciones automáticas se hacen sin copia de seguridad.",
+  "s_vulns": "Vulnerabilidades conocidas",
+  "s_vulns_sub": "ShipLog puede consultar los paquetes de cada imagen en ejecución en una base de datos abierta de vulnerabilidades. La ventana del changelog muestra entonces cuántas vulnerabilidades conocidas críticas y altas tiene la imagen y cuántas cierra la imagen más reciente. Una actualización que cierra una crítica sube su indicador de riesgo un nivel.",
+  "s_vuln_check": "Buscar vulnerabilidades conocidas",
+  "s_vuln_check_desc": "Desactivado por defecto. ShipLog toma la lista de paquetes de cada imagen de su registro o, si la imagen no tiene, de la base de paquetes dentro del contenedor, y solo envía nombres y versiones de paquetes a la base abierta de vulnerabilidades en api.osv.dev. Los nombres de contenedores e imágenes, las etiquetas y todo lo demás de tu servidor se quedan contigo. Los resultados se guardan en caché, así que la comprobación cuesta unas pocas peticiones pequeñas al día.",
+  "d_vulnTitle": "Vulnerabilidades conocidas",
+  "d_vulnBadge": "%c críticas · %h altas",
+  "d_vulnBadgeFix": "la actualización cierra %n",
+  "d_vulnBadgeHint": "Vulnerabilidades conocidas de la imagen en ejecución. Haz clic para ver detalles.",
+  "d_vulnRunning": "La imagen en ejecución tiene %c vulnerabilidades conocidas críticas y %h altas.",
+  "d_vulnNone": "La imagen en ejecución no tiene vulnerabilidades conocidas críticas ni altas.",
+  "d_vulnCloses": "La imagen más reciente cierra %c críticas y %h altas de ellas.",
+  "d_vulnClosesNone": "La imagen más reciente todavía las tiene todas.",
+  "d_vulnNewestUnknown": "La imagen más reciente no trae lista de paquetes, así que ShipLog no puede saber qué cierra la actualización.",
+  "d_vulnSystem": "ShipLog solo pudo comprobar los paquetes del sistema dentro del contenedor.",
+  "d_vulnNoPackages": "ShipLog no pudo leer una lista de paquetes de esta imagen, así que no puede decir qué vulnerabilidades tiene.",
+  "d_vulnFailed": "No se pudo contactar con la base de vulnerabilidades. ShipLog lo intentará de nuevo en la próxima comprobación.",
+  "d_vulnFixed": "cerrada por la actualización"
 }

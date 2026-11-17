@@ -267,7 +267,7 @@ const (
 	// VulnNoPackages: no package list could be read, as for an image without
 	// a distribution the database covers.
 	VulnNoPackages = "no_packages"
-	// VulnLookupFailed: the database could not be asked; the next sweep tries again.
+	// VulnLookupFailed: the database could not be asked. The next sweep tries again.
 	VulnLookupFailed = "lookup_failed"
 )
 

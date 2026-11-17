@@ -173,5 +173,22 @@
   "s_copy": "Kopiera",
   "s_copied": "Kopierad",
   "s_fortress": "Fästning",
-  "s_fortress_no_backup": "Tills dess körs automatiska uppdateringar utan säkerhetskopia."
+  "s_fortress_no_backup": "Tills dess körs automatiska uppdateringar utan säkerhetskopia.",
+  "s_vulns": "Kända sårbarheter",
+  "s_vulns_sub": "ShipLog kan slå upp paketen i varje körande image i en öppen databas över sårbarheter. Changelog-fönstret visar då hur många kända kritiska och höga sårbarheter imagen har och hur många av dem den nyaste imagen täpper till. En uppdatering som täpper till en kritisk flyttar sin riskbricka ett steg upp.",
+  "s_vuln_check": "Sök efter kända sårbarheter",
+  "s_vuln_check_desc": "Av som standard. ShipLog hämtar varje images paketlista från dess registry eller, om imagen saknar en, från paketdatabasen i containern, och skickar bara paketnamn och versioner till den öppna sårbarhetsdatabasen på api.osv.dev. Containernamn, imagenamn, taggar och allt annat om din server stannar hos dig. Resultaten cachas, så kontrollen kostar bara några små förfrågningar om dagen.",
+  "d_vulnTitle": "Kända sårbarheter",
+  "d_vulnBadge": "%c kritiska · %h höga",
+  "d_vulnBadgeFix": "uppdateringen täpper till %n",
+  "d_vulnBadgeHint": "Kända sårbarheter i den körande imagen. Klicka för detaljer.",
+  "d_vulnRunning": "Den körande imagen har %c kritiska och %h höga kända sårbarheter.",
+  "d_vulnNone": "Den körande imagen har inga kända kritiska eller höga sårbarheter.",
+  "d_vulnCloses": "Den nyaste imagen täpper till %c kritiska och %h höga av dem.",
+  "d_vulnClosesNone": "Den nyaste imagen har fortfarande alla.",
+  "d_vulnNewestUnknown": "Den nyaste imagen saknar paketlista, så ShipLog kan inte säga vad uppdateringen täpper till.",
+  "d_vulnSystem": "ShipLog kunde bara kontrollera systempaketen i containern.",
+  "d_vulnNoPackages": "ShipLog kunde inte läsa någon paketlista för den här imagen och kan därför inte säga vilka sårbarheter den har.",
+  "d_vulnFailed": "Sårbarhetsdatabasen gick inte att nå. ShipLog försöker igen vid nästa kontroll.",
+  "d_vulnFixed": "åtgärdad av uppdateringen"
 }

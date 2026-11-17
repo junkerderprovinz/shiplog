@@ -173,5 +173,22 @@
   "s_copy": "Copiar",
   "s_copied": "Copiado",
   "s_fortress": "Fortaleza",
-  "s_fortress_no_backup": "Até lá, as atualizações automáticas rodam sem backup."
+  "s_fortress_no_backup": "Até lá, as atualizações automáticas rodam sem backup.",
+  "s_vulns": "Vulnerabilidades conhecidas",
+  "s_vulns_sub": "O ShipLog pode consultar os pacotes de cada imagem em execução numa base de dados aberta de vulnerabilidades. A janela do changelog mostra então quantas vulnerabilidades conhecidas críticas e altas a imagem tem e quantas delas a imagem mais recente fecha. Uma atualização que fecha uma crítica sobe o seu indicador de risco um nível.",
+  "s_vuln_check": "Procurar vulnerabilidades conhecidas",
+  "s_vuln_check_desc": "Desligado por padrão. O ShipLog obtém a lista de pacotes de cada imagem no seu registry ou, se a imagem não tiver, na base de pacotes dentro do contentor, e envia apenas nomes e versões de pacotes para a base aberta de vulnerabilidades em api.osv.dev. Nomes de contentores e imagens, tags e tudo o resto do seu servidor ficam consigo. Os resultados ficam em cache, por isso a verificação custa só alguns pedidos pequenos por dia.",
+  "d_vulnTitle": "Vulnerabilidades conhecidas",
+  "d_vulnBadge": "%c críticas · %h altas",
+  "d_vulnBadgeFix": "a atualização fecha %n",
+  "d_vulnBadgeHint": "Vulnerabilidades conhecidas na imagem em execução. Clique para ver detalhes.",
+  "d_vulnRunning": "A imagem em execução tem %c vulnerabilidades conhecidas críticas e %h altas.",
+  "d_vulnNone": "A imagem em execução não tem vulnerabilidades conhecidas críticas nem altas.",
+  "d_vulnCloses": "A imagem mais recente fecha %c críticas e %h altas delas.",
+  "d_vulnClosesNone": "A imagem mais recente ainda as tem todas.",
+  "d_vulnNewestUnknown": "A imagem mais recente vem sem lista de pacotes, por isso o ShipLog não consegue dizer o que a atualização fecha.",
+  "d_vulnSystem": "O ShipLog só conseguiu verificar os pacotes do sistema dentro do contentor.",
+  "d_vulnNoPackages": "O ShipLog não conseguiu ler uma lista de pacotes desta imagem, por isso não consegue dizer que vulnerabilidades tem.",
+  "d_vulnFailed": "Não foi possível contactar a base de vulnerabilidades. O ShipLog tenta de novo na próxima verificação.",
+  "d_vulnFixed": "fechada pela atualização"
 }

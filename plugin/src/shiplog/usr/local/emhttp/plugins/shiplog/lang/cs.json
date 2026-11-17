@@ -173,5 +173,22 @@
   "s_copy": "Kopírovat",
   "s_copied": "Zkopírováno",
   "s_fortress": "Pevnost",
-  "s_fortress_no_backup": "Do té doby poběží automatické aktualizace bez zálohy."
+  "s_fortress_no_backup": "Do té doby poběží automatické aktualizace bez zálohy.",
+  "s_vulns": "Známé zranitelnosti",
+  "s_vulns_sub": "ShipLog umí vyhledat balíčky každého běžícího image v otevřené databázi zranitelností. Okno changelogu pak ukáže, kolik známých kritických a vysokých zranitelností image má a kolik z nich nejnovější image uzavírá. Aktualizace, která uzavírá kritickou zranitelnost, posune svůj odznak rizika o stupeň výš.",
+  "s_vuln_check": "Hledat známé zranitelnosti",
+  "s_vuln_check_desc": "Ve výchozím stavu vypnuto. ShipLog vezme seznam balíčků každého image z jeho registru, nebo z databáze balíčků v kontejneru, když image žádný nemá, a do otevřené databáze zranitelností na api.osv.dev posílá jen názvy a verze balíčků. Názvy kontejnerů a image, tagy a vše ostatní o vašem serveru zůstává u vás. Výsledky se ukládají do mezipaměti, takže kontrola stojí jen pár malých požadavků denně.",
+  "d_vulnTitle": "Známé zranitelnosti",
+  "d_vulnBadge": "kritické: %c · vysoké: %h",
+  "d_vulnBadgeFix": "aktualizace uzavře %n",
+  "d_vulnBadgeHint": "Známé zranitelnosti v běžícím image. Klikněte pro podrobnosti.",
+  "d_vulnRunning": "Běžící image má známé zranitelnosti: kritické %c, vysoké %h.",
+  "d_vulnNone": "Běžící image nemá žádné známé kritické ani vysoké zranitelnosti.",
+  "d_vulnCloses": "Nejnovější image z nich uzavírá kritické %c a vysoké %h.",
+  "d_vulnClosesNone": "Nejnovější image je má stále všechny.",
+  "d_vulnNewestUnknown": "Nejnovější image nemá seznam balíčků, takže ShipLog nedokáže říct, co aktualizace uzavře.",
+  "d_vulnSystem": "ShipLog mohl zkontrolovat jen systémové balíčky v kontejneru.",
+  "d_vulnNoPackages": "ShipLog nemohl přečíst seznam balíčků tohoto image, a proto nedokáže říct, jaké zranitelnosti má.",
+  "d_vulnFailed": "Databáze zranitelností nebyla dostupná. ShipLog to zkusí znovu při další kontrole.",
+  "d_vulnFixed": "uzavřeno aktualizací"
 }

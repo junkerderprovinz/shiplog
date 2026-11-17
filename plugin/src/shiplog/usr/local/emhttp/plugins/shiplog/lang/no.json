@@ -173,5 +173,22 @@
   "s_copy": "Kopier",
   "s_copied": "Kopiert",
   "s_fortress": "Festning",
-  "s_fortress_no_backup": "Til da kjører automatiske oppdateringer uten sikkerhetskopi."
+  "s_fortress_no_backup": "Til da kjører automatiske oppdateringer uten sikkerhetskopi.",
+  "s_vulns": "Kjente sårbarheter",
+  "s_vulns_sub": "ShipLog kan slå opp pakkene i hvert kjørende image i en åpen database over sårbarheter. Changelog-vinduet viser da hvor mange kjente kritiske og høye sårbarheter imaget har, og hvor mange av dem det nyeste imaget lukker. En oppdatering som lukker en kritisk, flytter risikomerket sitt ett trinn opp.",
+  "s_vuln_check": "Se etter kjente sårbarheter",
+  "s_vuln_check_desc": "Av som standard. ShipLog henter pakkelisten til hvert image fra registryet eller, hvis imaget ikke har noen, fra pakkedatabasen i containeren, og sender bare pakkenavn og versjoner til den åpne sårbarhetsdatabasen på api.osv.dev. Containernavn, imagenavn, tagger og alt annet om serveren din blir hos deg. Resultatene lagres, så sjekken koster bare noen få små forespørsler om dagen.",
+  "d_vulnTitle": "Kjente sårbarheter",
+  "d_vulnBadge": "%c kritiske · %h høye",
+  "d_vulnBadgeFix": "oppdateringen lukker %n",
+  "d_vulnBadgeHint": "Kjente sårbarheter i det kjørende imaget. Klikk for detaljer.",
+  "d_vulnRunning": "Det kjørende imaget har %c kritiske og %h høye kjente sårbarheter.",
+  "d_vulnNone": "Det kjørende imaget har ingen kjente kritiske eller høye sårbarheter.",
+  "d_vulnCloses": "Det nyeste imaget lukker %c kritiske og %h høye av dem.",
+  "d_vulnClosesNone": "Det nyeste imaget har fortsatt alle.",
+  "d_vulnNewestUnknown": "Det nyeste imaget kommer uten pakkeliste, så ShipLog kan ikke si hva oppdateringen lukker.",
+  "d_vulnSystem": "ShipLog kunne bare sjekke systempakkene i containeren.",
+  "d_vulnNoPackages": "ShipLog klarte ikke å lese en pakkeliste for dette imaget og kan derfor ikke si hvilke sårbarheter det har.",
+  "d_vulnFailed": "Sårbarhetsdatabasen kunne ikke nås. ShipLog prøver igjen ved neste sjekk.",
+  "d_vulnFixed": "lukket av oppdateringen"
 }

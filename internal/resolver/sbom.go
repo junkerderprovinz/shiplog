@@ -15,7 +15,7 @@ const (
 )
 
 // SBOM returns the SPDX document a build attached to the image behind digest
-// for one architecture. BuildKit keeps it in the image index, as an
+// for one architecture. The build keeps it in the image index, as an
 // attestation manifest that refers to the platform's image. found is false
 // when the image has none, which never changes for a digest.
 func (r *Resolver) SBOM(ctx context.Context, repo, digest, arch string) (doc []byte, found bool, err error) {

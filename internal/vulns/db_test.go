@@ -20,7 +20,8 @@ type fakeDB struct {
 	fetches atomic.Int32
 	mu      sync.Mutex
 	queries []map[string]any
-	pages   map[string]int // package name -> extra pages of ids
+	pages   map[string]int    // package name -> extra pages of ids
+	listed  map[string]string // record id -> modified as querybatch spells it
 }
 
 func (f *fakeDB) server(t *testing.T) *httptest.Server {
@@ -66,7 +67,11 @@ func (f *fakeDB) server(t *testing.T) *httptest.Server {
 					}
 				}
 				for _, id := range ids {
-					res.Vulns = append(res.Vulns, hit{ID: id, Modified: f.records[id].Modified})
+					modified := f.records[id].Modified
+					if m, ok := f.listed[id]; ok {
+						modified = m
+					}
+					res.Vulns = append(res.Vulns, hit{ID: id, Modified: modified})
 				}
 				out.Results = append(out.Results, res)
 			}
@@ -175,6 +180,24 @@ func TestARecordIsFetchedAgainOnlyWhenItChanged(t *testing.T) {
 	}
 	if got["CVE-2024-1"].Severity != High {
 		t.Errorf("severity = %v, want the changed record's high", got["CVE-2024-1"].Severity)
+	}
+}
+
+func TestARecordWhoseTimeIsSpelledFinerIsNotFetchedAgain(t *testing.T) {
+	f := &fakeDB{
+		affects: map[string][]string{"openssl": {"DEBIAN-CVE-2024-1"}},
+		records: map[string]osvRecord{"DEBIAN-CVE-2024-1": rec("DEBIAN-CVE-2024-1", "2026-10-26T18:02:56.359328632Z", critVector, "CVE-2024-1")},
+		listed:  map[string]string{"DEBIAN-CVE-2024-1": "2026-10-26T18:02:56.359328Z"},
+	}
+	db := NewDB(f.server(t).URL, t.TempDir())
+	pkgs := []Package{{"Debian:12", "openssl", "3.0.11"}}
+	for range 2 {
+		if _, err := db.Find(context.Background(), pkgs); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := f.fetches.Load(); n != 1 {
+		t.Errorf("fetched %d times, want 1", n)
 	}
 }
 

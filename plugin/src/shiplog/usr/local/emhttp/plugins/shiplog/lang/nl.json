@@ -173,5 +173,22 @@
   "s_copy": "Kopiëren",
   "s_copied": "Gekopieerd",
   "s_fortress": "Vesting",
-  "s_fortress_no_backup": "Tot die tijd lopen automatische updates zonder back-up."
+  "s_fortress_no_backup": "Tot die tijd lopen automatische updates zonder back-up.",
+  "s_vulns": "Bekende kwetsbaarheden",
+  "s_vulns_sub": "ShipLog kan de pakketten van elk draaiend image opzoeken in een open database met kwetsbaarheden. Het changelog-venster toont dan hoeveel bekende kritieke en hoge kwetsbaarheden het image heeft en hoeveel daarvan het nieuwste image dicht. Een update die een kritieke dicht, zet zijn risicobadge een stap hoger.",
+  "s_vuln_check": "Controleren op bekende kwetsbaarheden",
+  "s_vuln_check_desc": "Standaard uit. ShipLog haalt de pakketlijst van elk image uit de registry of, als het image er geen heeft, uit de pakketdatabase in de container, en stuurt alleen pakketnamen en versies naar de open kwetsbaarhedendatabase op api.osv.dev. Containernamen, imagenamen, tags en al het andere over je server blijven bij jou. Resultaten worden bewaard, dus de controle kost maar een paar kleine verzoeken per dag.",
+  "d_vulnTitle": "Bekende kwetsbaarheden",
+  "d_vulnBadge": "%c kritiek · %h hoog",
+  "d_vulnBadgeFix": "update dicht %n",
+  "d_vulnBadgeHint": "Bekende kwetsbaarheden in het draaiende image. Klik voor details.",
+  "d_vulnRunning": "Het draaiende image heeft %c kritieke en %h hoge bekende kwetsbaarheden.",
+  "d_vulnNone": "Het draaiende image heeft geen bekende kritieke of hoge kwetsbaarheden.",
+  "d_vulnCloses": "Het nieuwste image dicht er %c kritieke en %h hoge van.",
+  "d_vulnClosesNone": "Het nieuwste image heeft ze nog allemaal.",
+  "d_vulnNewestUnknown": "Het nieuwste image komt zonder pakketlijst, dus ShipLog kan niet zeggen wat de update dicht.",
+  "d_vulnSystem": "ShipLog kon alleen de systeempakketten in de container controleren.",
+  "d_vulnNoPackages": "ShipLog kon geen pakketlijst voor dit image lezen en kan dus niet zeggen welke kwetsbaarheden het heeft.",
+  "d_vulnFailed": "De kwetsbaarhedendatabase was niet bereikbaar. ShipLog probeert het bij de volgende controle opnieuw.",
+  "d_vulnFixed": "gedicht door de update"
 }

@@ -26,8 +26,6 @@ type Package struct {
 var languageEcosystems = map[string]string{
 	"npm":      "npm",
 	"pypi":     "PyPI",
-	"golang":   "Go",
-	"maven":    "Maven",
 	"nuget":    "NuGet",
 	"cargo":    "crates.io",
 	"gem":      "RubyGems",
@@ -172,7 +170,7 @@ func ecosystem(osRelease string) string {
 }
 
 // stanzas splits a package database into its blank-line separated records.
-func stanzas(r io.Reader, sep string, each func(map[string]string)) {
+func stanzas(r io.Reader, each func(map[string]string)) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	rec := map[string]string{}
@@ -192,7 +190,7 @@ func stanzas(r io.Reader, sep string, each func(map[string]string)) {
 		if line[0] == ' ' || line[0] == '\t' {
 			continue
 		}
-		if k, v, ok := strings.Cut(line, sep); ok {
+		if k, v, ok := strings.Cut(line, ":"); ok {
 			rec[k] = strings.TrimSpace(v)
 		}
 	}
@@ -203,7 +201,7 @@ func stanzas(r io.Reader, sep string, each func(map[string]string)) {
 // counts under its source package, whose version a binNMU leaves behind.
 func parseDpkg(r io.Reader, eco string) []Package {
 	var l list
-	stanzas(r, ":", func(rec map[string]string) {
+	stanzas(r, func(rec map[string]string) {
 		if st, ok := rec["Status"]; ok && !strings.HasSuffix(st, " installed") {
 			return
 		}
@@ -223,7 +221,7 @@ func parseDpkg(r io.Reader, eco string) []Package {
 // origin.
 func parseApk(r io.Reader, eco string) []Package {
 	var l list
-	stanzas(r, ":", func(rec map[string]string) {
+	stanzas(r, func(rec map[string]string) {
 		name := rec["P"]
 		if o := rec["o"]; o != "" {
 			name = o

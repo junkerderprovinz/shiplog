@@ -173,5 +173,22 @@
   "s_copy": "Másolás",
   "s_copied": "Másolva",
   "s_fortress": "Erőd",
-  "s_fortress_no_backup": "Addig az automatikus frissítések mentés nélkül futnak."
+  "s_fortress_no_backup": "Addig az automatikus frissítések mentés nélkül futnak.",
+  "s_vulns": "Ismert sebezhetőségek",
+  "s_vulns_sub": "A ShipLog minden futó image csomagjait meg tudja keresni egy nyílt sebezhetőségi adatbázisban. A changelog ablak ezután megmutatja, hány ismert kritikus és magas sebezhetősége van az image-nek, és ebből mennyit zár be a legújabb image. Ha egy frissítés kritikus sebezhetőséget zár be, a kockázati jelvénye egy fokkal feljebb kerül.",
+  "s_vuln_check": "Ismert sebezhetőségek keresése",
+  "s_vuln_check_desc": "Alapból ki van kapcsolva. A ShipLog minden image csomaglistáját a registryből veszi, vagy ha az image-nek nincs ilyen, a konténer csomagadatbázisából, és csak a csomagneveket és verziókat küldi el az api.osv.dev nyílt sebezhetőségi adatbázisnak. A konténerek és image-ek neve, a tagek és minden más a szerveredről nálad marad. Az eredmények gyorsítótárba kerülnek, így az ellenőrzés naponta csak néhány kis kérésbe kerül.",
+  "d_vulnTitle": "Ismert sebezhetőségek",
+  "d_vulnBadge": "%c kritikus · %h magas",
+  "d_vulnBadgeFix": "a frissítés bezár %n",
+  "d_vulnBadgeHint": "A futó image ismert sebezhetőségei. Kattints a részletekért.",
+  "d_vulnRunning": "A futó image-ben %c kritikus és %h magas ismert sebezhetőség van.",
+  "d_vulnNone": "A futó image-ben nincs ismert kritikus vagy magas sebezhetőség.",
+  "d_vulnCloses": "A legújabb image ebből %c kritikusat és %h magasat zár be.",
+  "d_vulnClosesNone": "A legújabb image-ben még mind megvan.",
+  "d_vulnNewestUnknown": "A legújabb image csomaglista nélkül érkezik, ezért a ShipLog nem tudja megmondani, mit zár be a frissítés.",
+  "d_vulnSystem": "A ShipLog csak a konténer rendszercsomagjait tudta ellenőrizni.",
+  "d_vulnNoPackages": "A ShipLog nem tudta beolvasni az image csomaglistáját, ezért nem tudja megmondani, milyen sebezhetőségei vannak.",
+  "d_vulnFailed": "A sebezhetőségi adatbázis nem volt elérhető. A ShipLog a következő ellenőrzéskor újra próbálja.",
+  "d_vulnFixed": "a frissítés bezárja"
 }

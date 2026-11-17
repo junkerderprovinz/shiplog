@@ -173,5 +173,22 @@
   "s_copy": "Kopieren",
   "s_copied": "Kopiert",
   "s_fortress": "Festung",
-  "s_fortress_no_backup": "Bis dahin laufen Auto-Updates ohne Sicherung."
+  "s_fortress_no_backup": "Bis dahin laufen Auto-Updates ohne Sicherung.",
+  "s_vulns": "Bekannte Sicherheitslücken",
+  "s_vulns_sub": "ShipLog kann die Pakete jedes laufenden Images in einer offenen Datenbank für Sicherheitslücken nachschlagen. Das Changelog-Fenster zeigt dann, wie viele bekannte kritische und hohe Lücken das Image hat und wie viele davon das neueste Image schließt. Ein Update, das eine kritische Lücke schließt, rückt im Risiko-Badge eine Stufe nach oben.",
+  "s_vuln_check": "Nach bekannten Sicherheitslücken suchen",
+  "s_vuln_check_desc": "Standardmäßig aus. ShipLog holt die Paketliste jedes Images aus seiner Registry oder, wenn das Image keine hat, aus der Paketdatenbank im Container, und schickt nur Paketnamen und Versionen an die offene Lückendatenbank unter api.osv.dev. Containernamen, Imagenamen, Tags und alles andere über deinen Server bleiben bei dir. Die Ergebnisse werden zwischengespeichert, die Prüfung kostet also nur ein paar kleine Anfragen am Tag.",
+  "d_vulnTitle": "Bekannte Sicherheitslücken",
+  "d_vulnBadge": "%c kritisch · %h hoch",
+  "d_vulnBadgeFix": "Update schließt %n",
+  "d_vulnBadgeHint": "Bekannte Sicherheitslücken im laufenden Image. Klicken für Details.",
+  "d_vulnRunning": "Das laufende Image hat %c kritische und %h hohe bekannte Sicherheitslücken.",
+  "d_vulnNone": "Das laufende Image hat keine bekannten kritischen oder hohen Sicherheitslücken.",
+  "d_vulnCloses": "Das neueste Image schließt %c kritische und %h hohe davon.",
+  "d_vulnClosesNone": "Das neueste Image hat noch alle davon.",
+  "d_vulnNewestUnknown": "Das neueste Image kommt ohne Paketliste, deshalb kann ShipLog nicht sagen, was das Update schließt.",
+  "d_vulnSystem": "ShipLog konnte nur die Systempakete im Container prüfen.",
+  "d_vulnNoPackages": "ShipLog konnte für dieses Image keine Paketliste lesen und kann daher nicht sagen, welche Lücken es hat.",
+  "d_vulnFailed": "Die Lückendatenbank war nicht erreichbar. ShipLog versucht es bei der nächsten Prüfung wieder.",
+  "d_vulnFixed": "vom Update geschlossen"
 }

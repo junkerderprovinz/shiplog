@@ -42,6 +42,12 @@ html.tt-popups-on .sl-autoff{border:none;background:rgba(128,128,128,.18)}
    warning colour. */
 .sl-autoff.sl-guarded{color:#d08a1c;border-color:currentColor}
 html.tt-popups-on .sl-autoff.sl-guarded{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}
+/* Known vulnerabilities of the running image: amber for high ones, the risk
+   badge's high colour once a critical one is among them. */
+.sl-autoff.sl-vuln{color:#d08a1c;border-color:currentColor}
+.sl-autoff.sl-vuln.sl-vuln-crit{color:#d9534f}
+html.tt-popups-on .sl-autoff.sl-vuln{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}
+html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-crit{color:var(--tt-err-ink,#d9534f);background:color-mix(in srgb,var(--tt-err,#d9534f) 18%,transparent)}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
@@ -186,6 +192,9 @@ html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-u
 .sl-bubble li.sl-warn:before{content:none}
 .sl-bubble li.sl-warn .sl-g{position:absolute;left:1px;top:7px;display:inline-flex;line-height:0;color:#d6a243}
 .sl-bubble li.sl-warn .sl-g svg{width:12px;height:12px}
+.sl-bubble .sl-vulns ul{margin-top:6px}
+.sl-bubble .sl-vulns li.sl-vuln-crit:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d9534f}
+.sl-bubble .sl-vulns li.sl-vuln-high:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d6a243}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
   border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}

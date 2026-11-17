@@ -173,5 +173,22 @@
   "s_copy": "Copiază",
   "s_copied": "Copiat",
   "s_fortress": "Fortăreață",
-  "s_fortress_no_backup": "Până atunci, actualizările automate rulează fără copie de rezervă."
+  "s_fortress_no_backup": "Până atunci, actualizările automate rulează fără copie de rezervă.",
+  "s_vulns": "Vulnerabilități cunoscute",
+  "s_vulns_sub": "ShipLog poate căuta pachetele fiecărei imagini care rulează într-o bază de date deschisă de vulnerabilități. Fereastra changelog arată apoi câte vulnerabilități cunoscute critice și ridicate are imaginea și câte dintre ele închide cea mai nouă imagine. O actualizare care închide una critică își urcă insigna de risc cu o treaptă.",
+  "s_vuln_check": "Caută vulnerabilități cunoscute",
+  "s_vuln_check_desc": "Oprit implicit. ShipLog ia lista de pachete a fiecărei imagini din registry sau, dacă imaginea nu are, din baza de pachete din container, și trimite doar numele și versiunile pachetelor către baza deschisă de vulnerabilități de la api.osv.dev. Numele containerelor și imaginilor, tag-urile și tot restul despre serverul tău rămân la tine. Rezultatele sunt păstrate în cache, așa că verificarea costă doar câteva cereri mici pe zi.",
+  "d_vulnTitle": "Vulnerabilități cunoscute",
+  "d_vulnBadge": "%c critice · %h ridicate",
+  "d_vulnBadgeFix": "actualizarea închide %n",
+  "d_vulnBadgeHint": "Vulnerabilități cunoscute în imaginea care rulează. Clic pentru detalii.",
+  "d_vulnRunning": "Imaginea care rulează are %c vulnerabilități cunoscute critice și %h ridicate.",
+  "d_vulnNone": "Imaginea care rulează nu are vulnerabilități cunoscute critice sau ridicate.",
+  "d_vulnCloses": "Cea mai nouă imagine închide %c critice și %h ridicate dintre ele.",
+  "d_vulnClosesNone": "Cea mai nouă imagine le are încă pe toate.",
+  "d_vulnNewestUnknown": "Cea mai nouă imagine vine fără listă de pachete, așa că ShipLog nu poate spune ce închide actualizarea.",
+  "d_vulnSystem": "ShipLog a putut verifica doar pachetele de sistem din container.",
+  "d_vulnNoPackages": "ShipLog nu a putut citi o listă de pachete pentru această imagine, așa că nu poate spune ce vulnerabilități are.",
+  "d_vulnFailed": "Baza de vulnerabilități nu a putut fi contactată. ShipLog încearcă din nou la următoarea verificare.",
+  "d_vulnFixed": "închisă de actualizare"
 }

@@ -154,7 +154,7 @@ func (k *Checker) running(ctx context.Context, c model.Container) (cached, bool,
 
 // image returns the findings for the image behind digest. A registry that
 // cannot answer reads as an image without a list, since the system packages
-// can still stand in; only a failed database lookup is an error.
+// can still stand in. Only a failed database lookup is an error.
 func (k *Checker) image(ctx context.Context, c model.Container, digest string) (cached, bool, error) {
 	key := "img:" + digest
 	if res, ok := k.cached(key); ok {

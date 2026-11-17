@@ -173,5 +173,22 @@
   "s_copy": "Kopyala",
   "s_copied": "Kopyalandı",
   "s_fortress": "Kale",
-  "s_fortress_no_backup": "O zamana kadar otomatik güncellemeler yedeksiz çalışır."
+  "s_fortress_no_backup": "O zamana kadar otomatik güncellemeler yedeksiz çalışır.",
+  "s_vulns": "Bilinen güvenlik açıkları",
+  "s_vulns_sub": "ShipLog, çalışan her imajın paketlerini açık bir güvenlik açığı veritabanında arayabilir. Changelog penceresi o zaman imajda kaç bilinen kritik ve yüksek açık olduğunu ve en yeni imajın bunlardan kaçını kapattığını gösterir. Kritik bir açığı kapatan bir güncellemenin risk rozeti bir basamak yükselir.",
+  "s_vuln_check": "Bilinen güvenlik açıklarını denetle",
+  "s_vuln_check_desc": "Varsayılan olarak kapalı. ShipLog her imajın paket listesini kayıt deposundan ya da imajda yoksa konteynerdeki paket veritabanından alır ve api.osv.dev adresindeki açık güvenlik açığı veritabanına yalnızca paket adlarını ve sürümlerini gönderir. Konteyner ve imaj adları, etiketler ve sunucunla ilgili diğer her şey sende kalır. Sonuçlar önbelleğe alınır, bu yüzden denetim günde yalnızca birkaç küçük istek tutar.",
+  "d_vulnTitle": "Bilinen güvenlik açıkları",
+  "d_vulnBadge": "%c kritik · %h yüksek",
+  "d_vulnBadgeFix": "güncelleme %n tanesini kapatır",
+  "d_vulnBadgeHint": "Çalışan imajdaki bilinen güvenlik açıkları. Ayrıntılar için tıkla.",
+  "d_vulnRunning": "Çalışan imajda %c kritik ve %h yüksek bilinen güvenlik açığı var.",
+  "d_vulnNone": "Çalışan imajda bilinen kritik veya yüksek güvenlik açığı yok.",
+  "d_vulnCloses": "En yeni imaj bunlardan %c kritik ve %h yüksek açığı kapatıyor.",
+  "d_vulnClosesNone": "En yeni imajda hepsi hâlâ var.",
+  "d_vulnNewestUnknown": "En yeni imaj paket listesi olmadan geliyor, bu yüzden ShipLog güncellemenin neyi kapattığını söyleyemez.",
+  "d_vulnSystem": "ShipLog yalnızca konteynerdeki sistem paketlerini denetleyebildi.",
+  "d_vulnNoPackages": "ShipLog bu imajın paket listesini okuyamadı, bu yüzden hangi açıkları olduğunu söyleyemez.",
+  "d_vulnFailed": "Güvenlik açığı veritabanına ulaşılamadı. ShipLog bir sonraki denetimde yeniden dener.",
+  "d_vulnFixed": "güncellemeyle kapanır"
 }
