@@ -177,7 +177,7 @@
   "s_vulns": "Known vulnerabilities",
   "s_vulns_sub": "ShipLog can look up the packages of each running image in an open vulnerability database. The changelog window then shows how many known critical and high vulnerabilities the image has and how many of them the newest image closes. An update that closes a critical one moves its risk badge up a step.",
   "s_vuln_check": "Check for known vulnerabilities",
-  "s_vuln_check_desc": "Off by default. ShipLog takes each image's package list from its registry, or from the package database inside the container when the image has none, and sends only package names and versions to the open vulnerability database at api.osv.dev. Container names, image names, tags and everything else about your server stay with you. Results are cached, so the check costs a few small requests a day.",
+  "s_vuln_check_desc": "On by default. ShipLog takes each image's package list from its registry, or from the package database inside the container when the image has none, and sends only package names and versions to the open vulnerability database at api.osv.dev. Container names, image names, tags and everything else about your server stay with you. Results are cached, so the check costs a few small requests a day. Turning it off saves the little memory and traffic it uses.",
   "d_vulnTitle": "Known vulnerabilities",
   "d_vulnBadge": "%c critical · %h high",
   "d_vulnBadgeFix": "update closes %n",

@@ -177,7 +177,7 @@
   "s_vulns": "Bekende kwetsbaarheden",
   "s_vulns_sub": "ShipLog kan de pakketten van elk draaiend image opzoeken in een open database met kwetsbaarheden. Het changelog-venster toont dan hoeveel bekende kritieke en hoge kwetsbaarheden het image heeft en hoeveel daarvan het nieuwste image dicht. Een update die een kritieke dicht, zet zijn risicobadge een stap hoger.",
   "s_vuln_check": "Controleren op bekende kwetsbaarheden",
-  "s_vuln_check_desc": "Standaard uit. ShipLog haalt de pakketlijst van elk image uit de registry of, als het image er geen heeft, uit de pakketdatabase in de container, en stuurt alleen pakketnamen en versies naar de open kwetsbaarhedendatabase op api.osv.dev. Containernamen, imagenamen, tags en al het andere over je server blijven bij jou. Resultaten worden bewaard, dus de controle kost maar een paar kleine verzoeken per dag.",
+  "s_vuln_check_desc": "Standaard aan. ShipLog haalt de pakketlijst van elk image uit de registry of, als het image er geen heeft, uit de pakketdatabase in de container, en stuurt alleen pakketnamen en versies naar de open kwetsbaarhedendatabase op api.osv.dev. Containernamen, imagenamen, tags en al het andere over je server blijven bij jou. Resultaten worden bewaard, dus de controle kost maar een paar kleine verzoeken per dag. Zet je hem uit, dan bespaar je het beetje geheugen en verkeer dat hij gebruikt.",
   "d_vulnTitle": "Bekende kwetsbaarheden",
   "d_vulnBadge": "%c kritiek · %h hoog",
   "d_vulnBadgeFix": "update dicht %n",

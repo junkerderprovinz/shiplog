@@ -177,7 +177,7 @@
   "s_vulns": "Kjente sårbarheter",
   "s_vulns_sub": "ShipLog kan slå opp pakkene i hvert kjørende image i en åpen database over sårbarheter. Changelog-vinduet viser da hvor mange kjente kritiske og høye sårbarheter imaget har, og hvor mange av dem det nyeste imaget lukker. En oppdatering som lukker en kritisk, flytter risikomerket sitt ett trinn opp.",
   "s_vuln_check": "Se etter kjente sårbarheter",
-  "s_vuln_check_desc": "Av som standard. ShipLog henter pakkelisten til hvert image fra registryet eller, hvis imaget ikke har noen, fra pakkedatabasen i containeren, og sender bare pakkenavn og versjoner til den åpne sårbarhetsdatabasen på api.osv.dev. Containernavn, imagenavn, tagger og alt annet om serveren din blir hos deg. Resultatene lagres, så sjekken koster bare noen få små forespørsler om dagen.",
+  "s_vuln_check_desc": "På som standard. ShipLog henter pakkelisten til hvert image fra registryet eller, hvis imaget ikke har noen, fra pakkedatabasen i containeren, og sender bare pakkenavn og versjoner til den åpne sårbarhetsdatabasen på api.osv.dev. Containernavn, imagenavn, tagger og alt annet om serveren din blir hos deg. Resultatene lagres, så sjekken koster bare noen få små forespørsler om dagen. Slår du den av, sparer du det lille minnet og den trafikken den bruker.",
   "d_vulnTitle": "Kjente sårbarheter",
   "d_vulnBadge": "%c kritiske · %h høye",
   "d_vulnBadgeFix": "oppdateringen lukker %n",

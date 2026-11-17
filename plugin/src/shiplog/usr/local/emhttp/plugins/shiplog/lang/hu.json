@@ -177,7 +177,7 @@
   "s_vulns": "Ismert sebezhetőségek",
   "s_vulns_sub": "A ShipLog minden futó image csomagjait meg tudja keresni egy nyílt sebezhetőségi adatbázisban. A changelog ablak ezután megmutatja, hány ismert kritikus és magas sebezhetősége van az image-nek, és ebből mennyit zár be a legújabb image. Ha egy frissítés kritikus sebezhetőséget zár be, a kockázati jelvénye egy fokkal feljebb kerül.",
   "s_vuln_check": "Ismert sebezhetőségek keresése",
-  "s_vuln_check_desc": "Alapból ki van kapcsolva. A ShipLog minden image csomaglistáját a registryből veszi, vagy ha az image-nek nincs ilyen, a konténer csomagadatbázisából, és csak a csomagneveket és verziókat küldi el az api.osv.dev nyílt sebezhetőségi adatbázisnak. A konténerek és image-ek neve, a tagek és minden más a szerveredről nálad marad. Az eredmények gyorsítótárba kerülnek, így az ellenőrzés naponta csak néhány kis kérésbe kerül.",
+  "s_vuln_check_desc": "Alapból be van kapcsolva. A ShipLog minden image csomaglistáját a registryből veszi, vagy ha az image-nek nincs ilyen, a konténer csomagadatbázisából, és csak a csomagneveket és verziókat küldi el az api.osv.dev nyílt sebezhetőségi adatbázisnak. A konténerek és image-ek neve, a tagek és minden más a szerveredről nálad marad. Az eredmények gyorsítótárba kerülnek, így az ellenőrzés naponta csak néhány kis kérésbe kerül. Ha kikapcsolod, megspórolod azt a kevés memóriát és forgalmat, amit használ.",
   "d_vulnTitle": "Ismert sebezhetőségek",
   "d_vulnBadge": "%c kritikus · %h magas",
   "d_vulnBadgeFix": "a frissítés bezár %n",

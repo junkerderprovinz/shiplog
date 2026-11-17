@@ -37,14 +37,12 @@ func TestLoadSocket(t *testing.T) {
 	}
 }
 
-func TestTheVulnerabilityCheckIsOffUntilSwitchedOn(t *testing.T) {
-	t.Setenv("VULN_CHECK", "")
-	if Load().VulnCheck {
-		t.Fatal("VULN_CHECK unset: the check runs")
-	}
-	t.Setenv("VULN_CHECK", "true")
-	if !Load().VulnCheck {
-		t.Fatal("VULN_CHECK=true: the check stays off")
+func TestTheVulnerabilityCheckIsOnUntilSwitchedOff(t *testing.T) {
+	for v, want := range map[string]bool{"": true, "true": true, "yes": true, "false": false, "no": false, "0": false} {
+		t.Setenv("VULN_CHECK", v)
+		if got := Load().VulnCheck; got != want {
+			t.Errorf("VULN_CHECK=%q: check %v, want %v", v, got, want)
+		}
 	}
 }
 

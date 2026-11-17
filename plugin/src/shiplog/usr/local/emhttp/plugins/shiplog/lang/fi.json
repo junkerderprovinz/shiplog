@@ -177,7 +177,7 @@
   "s_vulns": "Tunnetut haavoittuvuudet",
   "s_vulns_sub": "ShipLog voi hakea jokaisen käynnissä olevan imagen paketit avoimesta haavoittuvuustietokannasta. Changelog-ikkuna näyttää silloin, montako tunnettua kriittistä ja korkeaa haavoittuvuutta imagessa on ja montako niistä uusin image korjaa. Päivitys, joka korjaa kriittisen, nostaa riskimerkkiään yhden pykälän.",
   "s_vuln_check": "Etsi tunnettuja haavoittuvuuksia",
-  "s_vuln_check_desc": "Oletuksena pois päältä. ShipLog ottaa kunkin imagen pakettiluettelon sen rekisteristä tai, jos imagella ei ole sellaista, kontin pakettitietokannasta, ja lähettää vain pakettien nimet ja versiot avoimeen haavoittuvuustietokantaan osoitteessa api.osv.dev. Konttien ja imageiden nimet, tagit ja kaikki muu palvelimestasi jäävät sinulle. Tulokset tallennetaan välimuistiin, joten tarkistus maksaa vain muutaman pienen pyynnön päivässä.",
+  "s_vuln_check_desc": "Oletuksena päällä. ShipLog ottaa kunkin imagen pakettiluettelon sen rekisteristä tai, jos imagella ei ole sellaista, kontin pakettitietokannasta, ja lähettää vain pakettien nimet ja versiot avoimeen haavoittuvuustietokantaan osoitteessa api.osv.dev. Konttien ja imageiden nimet, tagit ja kaikki muu palvelimestasi jäävät sinulle. Tulokset tallennetaan välimuistiin, joten tarkistus maksaa vain muutaman pienen pyynnön päivässä. Poistamalla sen käytöstä säästät sen vähäisen muistin ja liikenteen, jota se käyttää.",
   "d_vulnTitle": "Tunnetut haavoittuvuudet",
   "d_vulnBadge": "kriittisiä %c · korkeita %h",
   "d_vulnBadgeFix": "päivitys korjaa %n",

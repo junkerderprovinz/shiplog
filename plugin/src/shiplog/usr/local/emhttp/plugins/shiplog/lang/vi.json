@@ -177,7 +177,7 @@
   "s_vulns": "Lỗ hổng đã biết",
   "s_vulns_sub": "ShipLog có thể tra các gói của từng image đang chạy trong một cơ sở dữ liệu lỗ hổng mở. Cửa sổ changelog khi đó cho thấy image có bao nhiêu lỗ hổng đã biết mức nghiêm trọng và cao, và image mới nhất vá được bao nhiêu trong số đó. Bản cập nhật vá được một lỗ hổng nghiêm trọng sẽ được nâng huy hiệu rủi ro lên một bậc.",
   "s_vuln_check": "Kiểm tra lỗ hổng đã biết",
-  "s_vuln_check_desc": "Mặc định tắt. ShipLog lấy danh sách gói của từng image từ registry của nó, hoặc từ cơ sở dữ liệu gói trong container khi image không có, và chỉ gửi tên gói cùng phiên bản đến cơ sở dữ liệu lỗ hổng mở tại api.osv.dev. Tên container, tên image, tag và mọi thứ khác về máy chủ của bạn đều ở lại với bạn. Kết quả được lưu đệm, nên việc kiểm tra chỉ tốn vài yêu cầu nhỏ mỗi ngày.",
+  "s_vuln_check_desc": "Mặc định bật. ShipLog lấy danh sách gói của từng image từ registry của nó, hoặc từ cơ sở dữ liệu gói trong container khi image không có, và chỉ gửi tên gói cùng phiên bản đến cơ sở dữ liệu lỗ hổng mở tại api.osv.dev. Tên container, tên image, tag và mọi thứ khác về máy chủ của bạn đều ở lại với bạn. Kết quả được lưu đệm, nên việc kiểm tra chỉ tốn vài yêu cầu nhỏ mỗi ngày. Tắt đi sẽ tiết kiệm chút bộ nhớ và lưu lượng mà nó dùng.",
   "d_vulnTitle": "Lỗ hổng đã biết",
   "d_vulnBadge": "%c nghiêm trọng · %h cao",
   "d_vulnBadgeFix": "cập nhật vá %n",

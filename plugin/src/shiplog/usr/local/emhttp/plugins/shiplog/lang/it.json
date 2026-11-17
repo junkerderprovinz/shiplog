@@ -177,7 +177,7 @@
   "s_vulns": "Vulnerabilità note",
   "s_vulns_sub": "ShipLog può cercare i pacchetti di ogni immagine in esecuzione in un database aperto di vulnerabilità. La finestra del changelog mostra poi quante vulnerabilità note critiche e alte ha l'immagine e quante ne chiude l'immagine più recente. Un aggiornamento che chiude una vulnerabilità critica fa salire il suo badge di rischio di un livello.",
   "s_vuln_check": "Cerca vulnerabilità note",
-  "s_vuln_check_desc": "Disattivato per impostazione predefinita. ShipLog prende l'elenco dei pacchetti di ogni immagine dal suo registry o, se l'immagine non ne ha, dal database dei pacchetti nel container, e invia solo nomi e versioni dei pacchetti al database aperto di vulnerabilità su api.osv.dev. Nomi di container e immagini, tag e tutto il resto del tuo server restano a te. I risultati vengono memorizzati, quindi il controllo costa poche piccole richieste al giorno.",
+  "s_vuln_check_desc": "Attivo per impostazione predefinita. ShipLog prende l'elenco dei pacchetti di ogni immagine dal suo registry o, se l'immagine non ne ha, dal database dei pacchetti nel container, e invia solo nomi e versioni dei pacchetti al database aperto di vulnerabilità su api.osv.dev. Nomi di container e immagini, tag e tutto il resto del tuo server restano a te. I risultati vengono memorizzati, quindi il controllo costa poche piccole richieste al giorno. Disattivarlo fa risparmiare la poca memoria e il traffico che usa.",
   "d_vulnTitle": "Vulnerabilità note",
   "d_vulnBadge": "%c critiche · %h alte",
   "d_vulnBadgeFix": "l'aggiornamento ne chiude %n",

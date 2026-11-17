@@ -177,7 +177,7 @@
   "s_vulns": "Znane podatności",
   "s_vulns_sub": "ShipLog może sprawdzić pakiety każdego uruchomionego obrazu w otwartej bazie podatności. Okno changelogu pokaże wtedy, ile znanych krytycznych i wysokich podatności ma obraz i ile z nich zamyka najnowszy obraz. Aktualizacja, która zamyka krytyczną, podnosi swoją plakietkę ryzyka o jeden poziom.",
   "s_vuln_check": "Szukaj znanych podatności",
-  "s_vuln_check_desc": "Domyślnie wyłączone. ShipLog bierze listę pakietów każdego obrazu z jego rejestru albo, gdy obraz jej nie ma, z bazy pakietów w kontenerze, i wysyła tylko nazwy i wersje pakietów do otwartej bazy podatności pod adresem api.osv.dev. Nazwy kontenerów i obrazów, tagi i wszystko inne o Twoim serwerze zostaje u Ciebie. Wyniki są zapisywane w pamięci podręcznej, więc sprawdzanie kosztuje tylko kilka małych zapytań dziennie.",
+  "s_vuln_check_desc": "Domyślnie włączone. ShipLog bierze listę pakietów każdego obrazu z jego rejestru albo, gdy obraz jej nie ma, z bazy pakietów w kontenerze, i wysyła tylko nazwy i wersje pakietów do otwartej bazy podatności pod adresem api.osv.dev. Nazwy kontenerów i obrazów, tagi i wszystko inne o Twoim serwerze zostaje u Ciebie. Wyniki są zapisywane w pamięci podręcznej, więc sprawdzanie kosztuje tylko kilka małych zapytań dziennie. Wyłączenie oszczędza odrobinę pamięci i ruchu, których używa sprawdzanie.",
   "d_vulnTitle": "Znane podatności",
   "d_vulnBadge": "krytyczne: %c · wysokie: %h",
   "d_vulnBadgeFix": "aktualizacja zamyka %n",

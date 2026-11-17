@@ -156,6 +156,24 @@ func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 	}
 }
 
+// TestTheVulnerabilityCheckIsOnUntilSwitchedOff keeps the settings page and
+// the start script on the engine's default.
+func TestTheVulnerabilityCheckIsOnUntilSwitchedOff(t *testing.T) {
+	if page := read(t, "shiplog.page"); !strings.Contains(page, `$vulnCheck = (!isset($cfg['VULN_CHECK']) || $cfg['VULN_CHECK'] !== 'false');`) {
+		t.Error("shiplog.page does not show the check on without a saved setting")
+	}
+	if rc := read(t, filepath.Join("scripts", "rc.shiplog")); !strings.Contains(rc, "\nVULN_CHECK=\"true\"\n") {
+		t.Error("rc.shiplog does not start the engine with the check on")
+	}
+	var en map[string]string
+	if err := json.Unmarshal([]byte(read(t, filepath.Join("lang", "en.json"))), &en); err != nil {
+		t.Fatal(err)
+	}
+	if d := en["s_vuln_check_desc"]; !strings.HasPrefix(d, "On by default.") || !strings.Contains(d, "Turning it off saves") {
+		t.Errorf("s_vuln_check_desc = %q, want it on by default and what switching it off saves", d)
+	}
+}
+
 // TestBubbleNamesOnlyAVouchedVersion keeps the window's "running → next" header
 // to tags the engine could prove. A rolling tag's newest changelog entry says
 // nothing about the image it serves.

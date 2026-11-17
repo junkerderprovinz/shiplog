@@ -177,7 +177,7 @@
   "s_vulns": "Bekannte Sicherheitslücken",
   "s_vulns_sub": "ShipLog kann die Pakete jedes laufenden Images in einer offenen Datenbank für Sicherheitslücken nachschlagen. Das Changelog-Fenster zeigt dann, wie viele bekannte kritische und hohe Lücken das Image hat und wie viele davon das neueste Image schließt. Ein Update, das eine kritische Lücke schließt, rückt im Risiko-Badge eine Stufe nach oben.",
   "s_vuln_check": "Nach bekannten Sicherheitslücken suchen",
-  "s_vuln_check_desc": "Standardmäßig aus. ShipLog holt die Paketliste jedes Images aus seiner Registry oder, wenn das Image keine hat, aus der Paketdatenbank im Container, und schickt nur Paketnamen und Versionen an die offene Lückendatenbank unter api.osv.dev. Containernamen, Imagenamen, Tags und alles andere über deinen Server bleiben bei dir. Die Ergebnisse werden zwischengespeichert, die Prüfung kostet also nur ein paar kleine Anfragen am Tag.",
+  "s_vuln_check_desc": "Standardmäßig an. ShipLog holt die Paketliste jedes Images aus seiner Registry oder, wenn das Image keine hat, aus der Paketdatenbank im Container, und schickt nur Paketnamen und Versionen an die offene Lückendatenbank unter api.osv.dev. Containernamen, Imagenamen, Tags und alles andere über deinen Server bleiben bei dir. Die Ergebnisse werden zwischengespeichert, die Prüfung kostet also nur ein paar kleine Anfragen am Tag. Wer sie ausschaltet, spart den wenigen Speicher und Datenverkehr, den sie braucht.",
   "d_vulnTitle": "Bekannte Sicherheitslücken",
   "d_vulnBadge": "%c kritisch · %h hoch",
   "d_vulnBadgeFix": "Update schließt %n",

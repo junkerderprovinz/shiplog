@@ -177,7 +177,7 @@
   "s_vulns": "Vulnerabilidades conocidas",
   "s_vulns_sub": "ShipLog puede consultar los paquetes de cada imagen en ejecución en una base de datos abierta de vulnerabilidades. La ventana del changelog muestra entonces cuántas vulnerabilidades conocidas críticas y altas tiene la imagen y cuántas cierra la imagen más reciente. Una actualización que cierra una crítica sube su indicador de riesgo un nivel.",
   "s_vuln_check": "Buscar vulnerabilidades conocidas",
-  "s_vuln_check_desc": "Desactivado por defecto. ShipLog toma la lista de paquetes de cada imagen de su registro o, si la imagen no tiene, de la base de paquetes dentro del contenedor, y solo envía nombres y versiones de paquetes a la base abierta de vulnerabilidades en api.osv.dev. Los nombres de contenedores e imágenes, las etiquetas y todo lo demás de tu servidor se quedan contigo. Los resultados se guardan en caché, así que la comprobación cuesta unas pocas peticiones pequeñas al día.",
+  "s_vuln_check_desc": "Activado por defecto. ShipLog toma la lista de paquetes de cada imagen de su registro o, si la imagen no tiene, de la base de paquetes dentro del contenedor, y solo envía nombres y versiones de paquetes a la base abierta de vulnerabilidades en api.osv.dev. Los nombres de contenedores e imágenes, las etiquetas y todo lo demás de tu servidor se quedan contigo. Los resultados se guardan en caché, así que la comprobación cuesta unas pocas peticiones pequeñas al día. Desactivarla ahorra la poca memoria y el tráfico que usa.",
   "d_vulnTitle": "Vulnerabilidades conocidas",
   "d_vulnBadge": "%c críticas · %h altas",
   "d_vulnBadgeFix": "la actualización cierra %n",

@@ -177,7 +177,7 @@
   "s_vulns": "Kända sårbarheter",
   "s_vulns_sub": "ShipLog kan slå upp paketen i varje körande image i en öppen databas över sårbarheter. Changelog-fönstret visar då hur många kända kritiska och höga sårbarheter imagen har och hur många av dem den nyaste imagen täpper till. En uppdatering som täpper till en kritisk flyttar sin riskbricka ett steg upp.",
   "s_vuln_check": "Sök efter kända sårbarheter",
-  "s_vuln_check_desc": "Av som standard. ShipLog hämtar varje images paketlista från dess registry eller, om imagen saknar en, från paketdatabasen i containern, och skickar bara paketnamn och versioner till den öppna sårbarhetsdatabasen på api.osv.dev. Containernamn, imagenamn, taggar och allt annat om din server stannar hos dig. Resultaten cachas, så kontrollen kostar bara några små förfrågningar om dagen.",
+  "s_vuln_check_desc": "På som standard. ShipLog hämtar varje images paketlista från dess registry eller, om imagen saknar en, från paketdatabasen i containern, och skickar bara paketnamn och versioner till den öppna sårbarhetsdatabasen på api.osv.dev. Containernamn, imagenamn, taggar och allt annat om din server stannar hos dig. Resultaten cachas, så kontrollen kostar bara några små förfrågningar om dagen. Stänger du av den sparar du det lilla minne och den trafik den använder.",
   "d_vulnTitle": "Kända sårbarheter",
   "d_vulnBadge": "%c kritiska · %h höga",
   "d_vulnBadgeFix": "uppdateringen täpper till %n",

@@ -32,7 +32,7 @@ $unraidNotify = $NV['unraid'];
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
-$vulnCheck = (isset($cfg['VULN_CHECK']) && $cfg['VULN_CHECK']==='true'); // default off
+$vulnCheck = (!isset($cfg['VULN_CHECK']) || $cfg['VULN_CHECK'] !== 'false');
 /* Auto-update settings, all off by default. */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
 $auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';

@@ -23,7 +23,7 @@ DOCKERHUB_USERNAME=""
 DOCKERHUB_TOKEN=""
 IGNORE_UNMANAGED="false"
 # Looks the packages of each running image up in an open vulnerability database.
-VULN_CHECK="false"
+VULN_CHECK="true"
 OLLAMA_URL=""
 OLLAMA_MODEL=""
 LLAMASWAP_URL=""

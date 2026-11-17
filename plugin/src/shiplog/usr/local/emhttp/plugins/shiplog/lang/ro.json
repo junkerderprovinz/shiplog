@@ -177,7 +177,7 @@
   "s_vulns": "Vulnerabilități cunoscute",
   "s_vulns_sub": "ShipLog poate căuta pachetele fiecărei imagini care rulează într-o bază de date deschisă de vulnerabilități. Fereastra changelog arată apoi câte vulnerabilități cunoscute critice și ridicate are imaginea și câte dintre ele închide cea mai nouă imagine. O actualizare care închide una critică își urcă insigna de risc cu o treaptă.",
   "s_vuln_check": "Caută vulnerabilități cunoscute",
-  "s_vuln_check_desc": "Oprit implicit. ShipLog ia lista de pachete a fiecărei imagini din registry sau, dacă imaginea nu are, din baza de pachete din container, și trimite doar numele și versiunile pachetelor către baza deschisă de vulnerabilități de la api.osv.dev. Numele containerelor și imaginilor, tag-urile și tot restul despre serverul tău rămân la tine. Rezultatele sunt păstrate în cache, așa că verificarea costă doar câteva cereri mici pe zi.",
+  "s_vuln_check_desc": "Pornit implicit. ShipLog ia lista de pachete a fiecărei imagini din registry sau, dacă imaginea nu are, din baza de pachete din container, și trimite doar numele și versiunile pachetelor către baza deschisă de vulnerabilități de la api.osv.dev. Numele containerelor și imaginilor, tag-urile și tot restul despre serverul tău rămân la tine. Rezultatele sunt păstrate în cache, așa că verificarea costă doar câteva cereri mici pe zi. Dacă o oprești, economisești puțina memorie și traficul pe care le folosește.",
   "d_vulnTitle": "Vulnerabilități cunoscute",
   "d_vulnBadge": "%c critice · %h ridicate",
   "d_vulnBadgeFix": "actualizarea închide %n",
