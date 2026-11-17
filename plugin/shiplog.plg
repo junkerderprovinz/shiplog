@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "Junker der Provinz">
-  <!ENTITY version   "3.8.1">
+  <!ENTITY version   "3.8.2">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -33,6 +33,24 @@ Shows the changelog of your installed Docker containers, right in the Docker tab
 what changed from your running image to the newest, with a risk badge. Optional
 AI summaries (Ollama or llama-swap), Matrix or Apprise alerts, and an auto-update
 that backs up first when your fortress has a backup app.
+
+### 3.8.2
+A fresh install from Community Applications works again, and GlimStone 4.5.4 lights whatever you point at in a soft tint of your accent.
+
+✨ **Added**
+- **Discord on the Help card.** The card offers GitHub and the ShipLog Discord server in place of the forum.
+
+🎨 **Design**
+- **GlimStone 4.5.4.** Buttons and tabs light in a soft tint of your accent when the pointer reaches them. With TowerTorch they take its hover colour, the same as TowerTorch's own rows and buttons.
+- **A focus ring you can see.** Keyboard focus is a solid ring in the accent's ink instead of a faint halo, 2px wide and 3px when your system asks for more contrast.
+- **Placeholders you can read.** The hint in an empty field reaches 4.5:1 on every background.
+- **Reactive buttons keep their width.** In TowerTorch's reactive mode the buttons in the coffee, PayPal and crypto windows and the GitHub and Update buttons in the changelog window are as wide as with their glyph and words, and the words open inside them instead of the button growing under the pointer.
+
+🐛 **Fixed**
+- **A fresh install from Community Applications goes through again.** Its first step tidied old packages in a folder a new install does not have yet, and the failed lookup stopped the install. Thanks to @Revan335 (#117).
+
+🌐 **Translations**
+- **The Help sentence names GitHub and Discord in all 26 languages**, and French readers are addressed with tu.
 
 ### 3.8.1
 Security fixes in the network library and the fortress kit.
