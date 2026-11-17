@@ -28,7 +28,7 @@ env:
 
 jobs:
   glimstone:
-    uses: junkerderprovinz/junkerderprovinz/.github/workflows/glimstone-current.yml@main
+    uses: junkerderprovinz/junkerderprovinz/.github/workflows/glimstone-current.yml@d729ef4df900f020afff77fedb52a441b69acfdd # main
 
   release:
     needs: glimstone
