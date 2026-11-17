@@ -106,8 +106,10 @@ func TestAnUpdateThatClosesACriticalVulnerabilityRanksOneStepHigher(t *testing.T
 		if row.Risk != c.want {
 			t.Errorf("%s: risk = %s, want %s", c.name, row.Risk, c.want)
 		}
-		if !strings.Contains(row.RiskReason, "closes 1 known critical vulnerability") {
-			t.Errorf("%s: reason = %q", c.name, row.RiskReason)
+		// The window says why in the viewer's language, so the English reason
+		// stays as the version delta gave it.
+		if row.VulnRaised != (c.name != "major") || strings.Contains(row.RiskReason, "vulnerab") {
+			t.Errorf("%s: raised = %v, reason = %q", c.name, row.VulnRaised, row.RiskReason)
 		}
 	}
 }
@@ -121,7 +123,7 @@ func TestAFixThatIsNotKnownLeavesTheRiskAlone(t *testing.T) {
 		rows := sweepWithVulns(t, []model.Container{
 			{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "1.0.0", Digest: "sha256:a1"},
 		}, fakeResolver{byRepo: map[string]resolveResult{"ghcr.io/x/app": {tag: "1.0.1", dig: "sha256:a2"}}}, &fakeChangelog{}, v)
-		if row := rows["a"]; row.Risk != model.RiskLow || strings.Contains(row.RiskReason, "vulnerab") {
+		if row := rows["a"]; row.Risk != model.RiskLow || row.VulnRaised {
 			t.Errorf("%s: risk = %s (%q), want low", name, row.Risk, row.RiskReason)
 		}
 	}

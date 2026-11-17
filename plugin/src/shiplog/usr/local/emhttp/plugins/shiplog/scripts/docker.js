@@ -96,18 +96,25 @@
     rolledUnpin: "Its template now points at the old image. To update again, remove the @sha256 part from the repository.",
     guardHint: "Click to see why.",
     vulnTitle: "Known vulnerabilities",
-    vulnBadge: "%c critical · %h high",
-    vulnBadgeFix: "update closes %n",
-    vulnBadgeHint: "Known vulnerabilities in the running image. Click for details.",
-    vulnRunning: "The running image has %c critical and %h high known vulnerabilities.",
+    vulnBadgeHint: "Known critical and high vulnerabilities in this container's image. Click for details.",
+    vulnCrit_one: "%n critical",
+    vulnCrit_other: "%n critical",
+    vulnHigh_one: "%n high",
+    vulnHigh_other: "%n high",
+    vulnAnd: " and ",
+    vulnRunning: "Known vulnerabilities in the running image: %v.",
+    vulnInstalled: "Known vulnerabilities in the installed image: %v.",
     vulnNone: "The running image has no known critical or high vulnerabilities.",
-    vulnCloses: "The newest image closes %c critical and %h high of them.",
+    vulnNoneInstalled: "The installed image has no known critical or high vulnerabilities.",
+    vulnCloses: "The newest image closes %v of them.",
     vulnClosesNone: "The newest image still has all of them.",
     vulnNewestUnknown: "The newest image comes without a package list, so ShipLog can't tell what the update closes.",
+    vulnRaised: "Rated a step higher: the update closes %v.",
     vulnSystem: "ShipLog could only check the system packages inside the container.",
     vulnNoPackages: "ShipLog couldn't read a package list for this image, so it can't say which vulnerabilities it has.",
     vulnFailed: "The vulnerability database couldn't be reached. ShipLog tries again at the next check.",
     vulnFixed: "closed by the update",
+    vulnMore: "and %n more",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
   function T(k) { return I18N["d_" + k] || EN[k] || k; }
@@ -315,8 +322,20 @@
     return a;
   }
   // The check is off unless the engine sent a report. Counts that are not known
-  // say so instead of showing a zero.
-  function fillN(s, map) { return String(s).replace(/%([chn])/g, (m, k) => String(map[k] != null ? map[k] : m)); }
+  // say so instead of showing a zero, and a zero count is left out.
+  const PLURAL = (() => { try { return new Intl.PluralRules(PREFS.lang || "en"); } catch (e) { return null; } })();
+  function counted(kind, n) {
+    const cat = PLURAL ? PLURAL.select(n) : (n === 1 ? "one" : "other");
+    const s = I18N[`d_${kind}_${cat}`] || I18N[`d_${kind}_other`] || EN[`${kind}_${cat}`] || EN[`${kind}_other`];
+    return String(s).replace("%n", () => String(n));
+  }
+  function severities(critical, high) {
+    const parts = [];
+    if (critical) parts.push(counted("vulnCrit", critical));
+    if (high) parts.push(counted("vulnHigh", high));
+    return parts;
+  }
+  function fillList(s, parts) { return String(s).replace("%v", () => parts.join(T("vulnAnd"))); }
   function vulnCount(st) {
     const v = st && st.vulns;
     return v && !v.reason ? (v.critical || 0) + (v.high || 0) : 0;
@@ -325,34 +344,51 @@
     const v = st && st.vulns;
     return v && v.newest_known && isUpdate(st) ? (v.fixed_critical || 0) + (v.fixed_high || 0) : 0;
   }
+  // What the update closes, or "" when nobody can tell or it is not an update.
+  function vulnClosesLine(st) {
+    const v = st.vulns;
+    if (!isUpdate(st) || !vulnCount(st)) return "";
+    if (!v.newest_known) return T("vulnNewestUnknown");
+    if (!vulnFixes(st)) return T("vulnClosesNone");
+    return fillList(T("vulnCloses"), severities(v.fixed_critical, v.fixed_high));
+  }
+  // A stopped container has no running image, only the one it would start.
+  function running(st) { return !st.container || st.container.state === "running"; }
+  function vulnRaisedHTML(st) {
+    const v = st.vulns;
+    if (!st.vuln_raised || !v || !isUpdate(st)) return "";
+    return `<div class="sl-raised">${esc(fillList(T("vulnRaised"), severities(v.fixed_critical, 0)))}</div>`;
+  }
+  // The section stays folded to its counts line, so the release notes below
+  // it stay in view. A click opens the details.
   function vulnHTML(st) {
     const v = st && st.vulns;
     if (!v) return "";
-    const lines = [];
+    const title = `<h4>${esc(T("vulnTitle"))}</h4>`;
     if (v.reason) {
-      lines.push(T(v.reason === "lookup_failed" ? "vulnFailed" : "vulnNoPackages"));
-    } else {
-      lines.push(vulnCount(st) ? fillN(T("vulnRunning"), { c: v.critical || 0, h: v.high || 0 }) : T("vulnNone"));
-      if (isUpdate(st) && vulnCount(st)) {
-        if (!v.newest_known) lines.push(T("vulnNewestUnknown"));
-        else if (vulnFixes(st)) lines.push(fillN(T("vulnCloses"), { c: v.fixed_critical || 0, h: v.fixed_high || 0 }));
-        else lines.push(T("vulnClosesNone"));
-      }
-      if (v.scope === "system") lines.push(T("vulnSystem"));
+      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(v.reason === "lookup_failed" ? "vulnFailed" : "vulnNoPackages"))}</div></div>`;
     }
-    const items = (Array.isArray(v.items) ? v.items : []).map((it) =>
+    if (!vulnCount(st)) {
+      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(running(st) ? "vulnNone" : "vulnNoneInstalled"))}</div></div>`;
+    }
+    const counts = fillList(T(running(st) ? "vulnRunning" : "vulnInstalled"), severities(v.critical, v.high));
+    const lines = [vulnClosesLine(st), v.scope === "system" ? T("vulnSystem") : ""].filter(Boolean);
+    const list = Array.isArray(v.items) ? v.items : [];
+    const items = list.map((it) =>
       `<li class="sl-vuln-${it.severity === "critical" ? "crit" : "high"}"><code>${esc(it.id)}</code> · ${esc(it.package)}` +
       (it.fixed && isUpdate(st) ? ` <span class="sl-ai">${esc(T("vulnFixed"))}</span>` : "") + "</li>").join("");
-    return `<div class="sl-sec sl-vulns"><h4>${esc(T("vulnTitle"))}</h4>${lines.map((l) => `<div>${esc(l)}</div>`).join("")}` +
-      (items ? `<ul>${items}</ul>` : "") + "</div>";
+    const more = vulnCount(st) - list.length;
+    return `<details class="sl-sec sl-vulns"><summary>${title}<span class="sl-vuln-sum">${esc(counts)}</span></summary>` +
+      lines.map((l) => `<div>${esc(l)}</div>`).join("") +
+      (items ? `<ul>${items}</ul>` : "") +
+      (more > 0 ? `<div class="sl-vuln-more">${esc(T("vulnMore").replace("%n", () => String(more)))}</div>` : "") + "</details>";
   }
   function vulnBadge(st) {
     const v = st.vulns;
-    let words = fillN(T("vulnBadge"), { c: v.critical || 0, h: v.high || 0 });
-    if (vulnFixes(st)) words += " · " + fillN(T("vulnBadgeFix"), { n: vulnFixes(st) });
+    const words = severities(v.critical, v.high).join(" · ");
     const a = el("a", "sl-autoff sl-vuln" + (v.critical ? " sl-vuln-crit" : ""), `${WARN_ICON}<span>${esc(words)}</span>`);
     a.href = "#";
-    a.title = `ShipLog: ${T("vulnBadgeHint")}`;
+    a.title = ["ShipLog: " + T("vulnBadgeHint"), vulnClosesLine(st)].filter(Boolean).join(" ");
     a.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(a, st); });
     return a;
   }
@@ -670,7 +706,7 @@
       ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>${WARN_G}${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${nv ? `<div class="sl-unmaint-note sl-newer-note"><h4>${esc(T("pinned"))}</h4><div>${esc(fillV(T("newerNote"), nv))}</div><div class="sl-newer-why">${esc(fillV(T("newerWhy"), cur))}</div></div>` : ""}
       ${unraidStale(st) ? `<div class="sl-unmaint-note sl-newer-note sl-stale-note">${esc(T("unraidStale").replace("%d", () => fmtStamp(st.checked_at)))}</div>` : ""}
-      ${guardHTML(st)}${autoHTML(st)}${vulnHTML(st)}${summary}${raw}
+      ${vulnRaisedHTML(st)}${guardHTML(st)}${autoHTML(st)}${vulnHTML(st)}${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
 

@@ -246,7 +246,7 @@ func TestStatusPageShowsTheKnownVulnerabilities(t *testing.T) {
 	rr := httptest.NewRecorder()
 	New(src, &fakeOverrides{}, &fakeRefresher{}, "").Handler().ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
 	body := rr.Body.String()
-	if !strings.Contains(body, `<small class="vul">2 critical and 4 high known vulnerabilities, the update closes 2 critical and 0 high</small>`) {
+	if !strings.Contains(body, `<small class="vul">2 critical and 4 high known vulnerabilities, the update closes 2 critical</small>`) {
 		t.Errorf("status page lacks the counts: %s", body)
 	}
 	if strings.Count(body, `class="vul"`) != 1 {

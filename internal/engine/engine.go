@@ -504,16 +504,10 @@ func raiseForFixes(st *model.UpdateStatus) {
 	}
 	switch st.Risk {
 	case model.RiskLow:
-		st.Risk = model.RiskMedium
+		st.Risk, st.VulnRaised = model.RiskMedium, true
 	case model.RiskMedium:
-		st.Risk = model.RiskHigh
+		st.Risk, st.VulnRaised = model.RiskHigh, true
 	}
-	n := st.Vulns.FixedCritical
-	noun := "vulnerabilities"
-	if n == 1 {
-		noun = "vulnerability"
-	}
-	st.RiskReason = fmt.Sprintf("%s; closes %d known critical %s", st.RiskReason, n, noun)
 }
 
 // scanBreaking reads the release notes that are still ahead of the container.

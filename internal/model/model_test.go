@@ -113,10 +113,14 @@ func TestAVulnerabilityNoteSaysWhatAnUpdateCloses(t *testing.T) {
 		{"no update", &Vulns{Scope: VulnScopeImage, Critical: 2, High: 5}, false, "2 critical and 5 high known vulnerabilities"},
 		{"closes some", &Vulns{Scope: VulnScopeImage, Critical: 2, High: 5, NewestKnown: true, FixedCritical: 1, FixedHigh: 3}, true,
 			"2 critical and 5 high known vulnerabilities, the update closes 1 critical and 3 high"},
+		{"closes only high", &Vulns{Scope: VulnScopeImage, Critical: 2, High: 5, NewestKnown: true, FixedHigh: 3}, true,
+			"2 critical and 5 high known vulnerabilities, the update closes 3 high"},
 		{"closes none", &Vulns{Scope: VulnScopeImage, Critical: 1, NewestKnown: true}, true,
-			"1 critical and 0 high known vulnerabilities, the update closes none of them"},
-		{"newest unknown", &Vulns{Scope: VulnScopeImage, High: 1}, true,
-			"0 critical and 1 high known vulnerabilities, unknown what the update closes"},
+			"1 critical known vulnerability, the update does not close it"},
+		{"closes all", &Vulns{Scope: VulnScopeImage, High: 2, NewestKnown: true, FixedHigh: 2}, true,
+			"2 high known vulnerabilities, the update closes all of them"},
+		{"newest unknown", &Vulns{Scope: VulnScopeImage, High: 10}, true,
+			"10 high known vulnerabilities, unknown what the update closes"},
 	}
 	for _, c := range cases {
 		if got := c.v.Note(c.update); got != c.want {
@@ -135,7 +139,7 @@ func TestTheStatusLineSaysWhyNothingWasChecked(t *testing.T) {
 		"no packages": {UpdateStatus{Vulns: &Vulns{Reason: VulnNoPackages}}, "vulnerabilities unknown, no readable package list"},
 		"failed":      {UpdateStatus{Vulns: &Vulns{Reason: VulnLookupFailed}}, "vulnerability lookup failed, ShipLog tries again at the next check"},
 		"update": {UpdateStatus{Kind: KindPatch, Vulns: &Vulns{Scope: VulnScopeSystem, Critical: 1, NewestKnown: true, FixedCritical: 1}},
-			"1 critical and 0 high known vulnerabilities, the update closes 1 critical and 0 high (system packages only)"},
+			"1 critical known vulnerability, the update closes it (system packages only)"},
 	}
 	for name, c := range cases {
 		if got := c.st.VulnNote(); got != c.want {

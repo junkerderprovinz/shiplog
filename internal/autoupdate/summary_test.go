@@ -48,8 +48,8 @@ func TestRenderSummaryNamesTheVulnerabilitiesAnUpdateClosed(t *testing.T) {
 }
 
 func TestAnOutcomeCarriesOnlyAKnownFix(t *testing.T) {
-	st := model.UpdateStatus{Container: model.Container{Name: "a"}, Vulns: &model.Vulns{Critical: 2, High: 1, NewestKnown: true, FixedCritical: 1, FixedHigh: 1}}
-	if got := outcomeOf(st).Closes; got != "1 critical and 1 high known vulnerabilities" {
+	st := model.UpdateStatus{Container: model.Container{Name: "a"}, Vulns: &model.Vulns{Critical: 2, High: 1, NewestKnown: true, FixedCritical: 1}}
+	if got := outcomeOf(st).Closes; got != "1 critical known vulnerability" {
 		t.Errorf("Closes = %q", got)
 	}
 	for _, v := range []*model.Vulns{nil, {Critical: 2}, {Critical: 2, NewestKnown: true}} {

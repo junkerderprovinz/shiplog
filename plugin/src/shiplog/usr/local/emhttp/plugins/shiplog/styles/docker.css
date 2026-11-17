@@ -193,6 +193,14 @@ html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-u
 .sl-bubble li.sl-warn .sl-g{position:absolute;left:1px;top:7px;display:inline-flex;line-height:0;color:#d6a243}
 .sl-bubble li.sl-warn .sl-g svg{width:12px;height:12px}
 .sl-bubble .sl-vulns ul{margin-top:6px}
+.sl-bubble details.sl-vulns > summary{cursor:pointer;list-style:none}
+.sl-bubble details.sl-vulns > summary::-webkit-details-marker{display:none}
+.sl-bubble details.sl-vulns > summary h4:after{content:" B8";color:var(--sl-dim2)}
+.sl-bubble details.sl-vulns[open] > summary h4:after{content:" BE"}
+.sl-bubble details.sl-vulns[open] > summary{margin-bottom:6px}
+.sl-bubble .sl-vuln-more{margin-top:4px;color:var(--sl-dim2)}
+/* Why the risk went up, on its own line so it never runs in the header. */
+.sl-bubble .sl-raised{padding:6px 16px;font-size:12px;color:var(--sl-dim2)}
 .sl-bubble .sl-vulns li.sl-vuln-crit:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d9534f}
 .sl-bubble .sl-vulns li.sl-vuln-high:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d6a243}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);

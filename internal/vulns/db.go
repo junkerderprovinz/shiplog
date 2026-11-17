@@ -25,6 +25,10 @@ const (
 	maxRecord    = 8 << 20
 )
 
+// recordsFile changes its name whenever a summary means something new, so an
+// older cache is read again from the database.
+const recordsFile = "records-2.json"
+
 // Finding is one known vulnerability of a package list.
 type Finding struct {
 	Severity Severity
@@ -34,11 +38,12 @@ type Finding struct {
 // summary is what the check keeps of a record. Records can be large, so the
 // cache holds only this.
 type summary struct {
-	Modified  string   `json:"m"`
-	Key       string   `json:"k"`
-	Severity  Severity `json:"s"`
-	Minor     []string `json:"u,omitempty"`
-	Withdrawn bool     `json:"w,omitempty"`
+	Modified  string              `json:"m"`
+	Key       string              `json:"k"`
+	Severity  Severity            `json:"s"`
+	Minor     []string            `json:"u,omitempty"`
+	Release   map[string]Severity `json:"r,omitempty"`
+	Withdrawn bool                `json:"w,omitempty"`
 }
 
 // DB looks packages up in the vulnerability database. What it learns of a
@@ -58,7 +63,7 @@ func NewDB(base, dir string) *DB {
 	return &DB{
 		base:   base,
 		client: &http.Client{Timeout: 60 * time.Second},
-		file:   filepath.Join(dir, "records.json"),
+		file:   filepath.Join(dir, recordsFile),
 		known:  map[string]summary{},
 	}
 }
@@ -94,8 +99,12 @@ func (d *DB) Find(ctx context.Context, pkgs []Package) (map[string]Finding, erro
 		if s.Withdrawn || slices.Contains(s.Minor, h.pkg.Ecosystem) {
 			continue
 		}
-		if have, ok := out[s.Key]; !ok || s.Severity > have.Severity {
-			out[s.Key] = Finding{Severity: s.Severity, Package: h.pkg.Name}
+		sev := s.Severity
+		if r, ok := s.Release[h.pkg.Ecosystem]; ok {
+			sev = r
+		}
+		if have, ok := out[s.Key]; !ok || sev > have.Severity {
+			out[s.Key] = Finding{Severity: sev, Package: h.pkg.Name}
 		}
 	}
 	return out, nil
@@ -188,7 +197,7 @@ func (d *DB) fetchChanged(ctx context.Context, hits []hit) error {
 					continue
 				}
 				d.mu.Lock()
-				d.known[id] = summary{Modified: want[id], Key: r.key(), Severity: r.severity(), Minor: r.minor(), Withdrawn: r.Withdrawn != ""}
+				d.known[id] = summary{Modified: want[id], Key: r.key(), Severity: r.severity(), Minor: r.minor(), Release: r.releaseSeverity(), Withdrawn: r.Withdrawn != ""}
 				d.mu.Unlock()
 			}
 		}()

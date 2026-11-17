@@ -35,7 +35,7 @@ func bandOf(score float64) Severity {
 }
 
 func labelSeverity(label string) Severity {
-	switch strings.ToLower(strings.TrimSpace(label)) {
+	switch strings.ToLower(strings.TrimRight(strings.TrimSpace(label), "*")) {
 	case "critical":
 		return Critical
 	case "high", "important":
@@ -75,9 +75,17 @@ type osvPackage struct {
 	Name      string `json:"name"`
 }
 
-// severity prefers a CVSS 3 vector, which every source scores the same way,
-// over the label a single source gave.
+// severity prefers a distribution's own priority, which weighs the flaw for
+// the package it ships, then a CVSS 3 vector, which every source scores the
+// same way, over the label a single source gave.
 func (r osvRecord) severity() Severity {
+	for _, s := range r.Severity {
+		if s.Type == "Ubuntu" {
+			if sev := labelSeverity(s.Score); sev != Unrated {
+				return sev
+			}
+		}
+	}
 	for _, s := range r.Severity {
 		if s.Type == "CVSS_V3" {
 			if score, ok := baseScore(s.Score); ok {
@@ -90,12 +98,23 @@ func (r osvRecord) severity() Severity {
 			return sev
 		}
 	}
-	for _, s := range r.Severity {
-		if s.Type == "Ubuntu" {
-			return labelSeverity(s.Score)
+	return Unrated
+}
+
+// releaseSeverity holds the urgency a distribution gave the flaw per release,
+// which outranks the record's severity for the packages of that release.
+func (r osvRecord) releaseSeverity() map[string]Severity {
+	var out map[string]Severity
+	for _, a := range r.Affected {
+		u, _ := a.EcosystemSpecific["urgency"].(string)
+		if sev := labelSeverity(u); sev != Unrated {
+			if out == nil {
+				out = map[string]Severity{}
+			}
+			out[a.Package.Ecosystem] = sev
 		}
 	}
-	return Unrated
+	return out
 }
 
 // key is the CVE behind a record, so a flaw that a distribution and an

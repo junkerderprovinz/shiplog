@@ -108,8 +108,11 @@ type UpdateStatus struct {
 	// informational; Unmaintained takes precedence when both apply.
 	CADeprecated bool `json:"ca_deprecated,omitempty"`
 	// CADeprecatedNote is the moderator's stated reason.
-	CADeprecatedNote string     `json:"ca_deprecated_note,omitempty"`
-	Changelog        *Changelog `json:"changelog,omitempty"`
+	CADeprecatedNote string `json:"ca_deprecated_note,omitempty"`
+	// VulnRaised marks a risk the engine rated one step higher because the
+	// update closes a known critical vulnerability.
+	VulnRaised bool       `json:"vuln_raised,omitempty"`
+	Changelog  *Changelog `json:"changelog,omitempty"`
 	// Vulns holds the known vulnerabilities of the running image while the
 	// check is switched on.
 	Vulns     *Vulns    `json:"vulns,omitempty"`
@@ -283,15 +286,22 @@ func (v *Vulns) Note(update bool) string {
 	if v == nil || v.Reason != "" || v.Critical+v.High == 0 {
 		return ""
 	}
-	note := fmt.Sprintf("%d critical and %d high known vulnerabilities", v.Critical, v.High)
+	total, fixed := v.Critical+v.High, v.FixedCritical+v.FixedHigh
+	note := counted(v.Critical, v.High)
 	switch {
 	case !update:
 	case !v.NewestKnown:
 		note += ", unknown what the update closes"
-	case v.FixedCritical+v.FixedHigh == 0:
+	case fixed == 0 && total == 1:
+		note += ", the update does not close it"
+	case fixed == 0:
 		note += ", the update closes none of them"
+	case fixed == total && total == 1:
+		note += ", the update closes it"
+	case fixed == total:
+		note += ", the update closes all of them"
 	default:
-		note += fmt.Sprintf(", the update closes %d critical and %d high", v.FixedCritical, v.FixedHigh)
+		note += ", the update closes " + severities(v.FixedCritical, v.FixedHigh)
 	}
 	return note
 }
@@ -301,7 +311,27 @@ func (v *Vulns) Closes() string {
 	if v == nil || !v.NewestKnown || v.FixedCritical+v.FixedHigh == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%d critical and %d high known vulnerabilities", v.FixedCritical, v.FixedHigh)
+	return counted(v.FixedCritical, v.FixedHigh)
+}
+
+// severities names the counts that are not zero, such as "2 critical and 5 high".
+func severities(critical, high int) string {
+	var parts []string
+	if critical > 0 {
+		parts = append(parts, fmt.Sprintf("%d critical", critical))
+	}
+	if high > 0 {
+		parts = append(parts, fmt.Sprintf("%d high", high))
+	}
+	return strings.Join(parts, " and ")
+}
+
+func counted(critical, high int) string {
+	noun := "vulnerabilities"
+	if critical+high == 1 {
+		noun = "vulnerability"
+	}
+	return severities(critical, high) + " known " + noun
 }
 
 // VulnNote is the status page's line on the known vulnerabilities, which also

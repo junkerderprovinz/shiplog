@@ -53,6 +53,30 @@ func TestSeverityOfARecord(t *testing.T) {
 	}
 }
 
+func TestADistributionsOwnPriorityOutranksTheVector(t *testing.T) {
+	rec := osvRecord{Severity: []osvSeverity{
+		{Type: "CVSS_V3", Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"},
+		{Type: "Ubuntu", Score: "negligible"},
+	}}
+	if got := rec.severity(); got != Low {
+		t.Errorf("severity = %v, want the distribution's negligible as low", got)
+	}
+}
+
+func TestAReleasesUrgencyOutranksTheVector(t *testing.T) {
+	rec := osvRecord{Affected: []osvAffected{
+		{Package: osvPackage{Ecosystem: "Debian:12"}, EcosystemSpecific: map[string]any{"urgency": "low"}},
+		{Package: osvPackage{Ecosystem: "Debian:13"}, EcosystemSpecific: map[string]any{"urgency": "medium**"}},
+		{Package: osvPackage{Ecosystem: "Debian:14"}, EcosystemSpecific: map[string]any{"urgency": "not yet assigned"}},
+		{Package: osvPackage{Ecosystem: "Debian:11"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}},
+	}}
+	want := map[string]Severity{"Debian:12": Low, "Debian:13": Medium}
+	got := rec.releaseSeverity()
+	if len(got) != len(want) || got["Debian:12"] != Low || got["Debian:13"] != Medium {
+		t.Errorf("releaseSeverity = %v, want %v", got, want)
+	}
+}
+
 func TestAVectorOutranksALabel(t *testing.T) {
 	rec := osvRecord{
 		Severity:         []osvSeverity{{Type: "CVSS_V3", Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}},

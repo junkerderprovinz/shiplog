@@ -103,9 +103,11 @@ func TestEveryLanguageExplainsTheBackupBeforeAnUpdate(t *testing.T) {
 // tab's English fallback equal to en.json.
 func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 	counts := map[string][]string{
-		"vulnTitle": nil, "vulnBadge": {"%c", "%h"}, "vulnBadgeFix": {"%n"}, "vulnBadgeHint": nil,
-		"vulnRunning": {"%c", "%h"}, "vulnNone": nil, "vulnCloses": {"%c", "%h"}, "vulnClosesNone": nil,
-		"vulnNewestUnknown": nil, "vulnSystem": nil, "vulnNoPackages": nil, "vulnFailed": nil, "vulnFixed": nil,
+		"vulnTitle": nil, "vulnBadgeHint": nil, "vulnAnd": nil,
+		"vulnCrit_one": {"%n"}, "vulnCrit_other": {"%n"}, "vulnHigh_one": {"%n"}, "vulnHigh_other": {"%n"},
+		"vulnRunning": {"%v"}, "vulnInstalled": {"%v"}, "vulnNone": nil, "vulnNoneInstalled": nil,
+		"vulnCloses": {"%v"}, "vulnClosesNone": nil, "vulnNewestUnknown": nil, "vulnRaised": {"%v"},
+		"vulnSystem": nil, "vulnNoPackages": nil, "vulnFailed": nil, "vulnFixed": nil, "vulnMore": {"%n"},
 	}
 	js := read(t, filepath.Join("scripts", "docker.js"))
 	page := read(t, "shiplog.page")
@@ -153,6 +155,21 @@ func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestTheVulnerabilityListStaysFolded keeps the window's list of
+// vulnerabilities behind its counts line, so the release notes stay in view,
+// and says how many the list leaves out.
+func TestTheVulnerabilityListStaysFolded(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	for _, want := range []string{`<details class="sl-sec sl-vulns"><summary>`, `T("vulnMore")`, `vulnCount(st) - list.length`} {
+		if !strings.Contains(js, want) {
+			t.Errorf("docker.js lacks %s", want)
+		}
+	}
+	if strings.Contains(js, "<details open") {
+		t.Error("the vulnerability list opens by itself")
 	}
 }
 

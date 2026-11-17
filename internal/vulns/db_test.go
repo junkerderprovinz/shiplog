@@ -201,6 +201,24 @@ func TestARecordWhoseTimeIsSpelledFinerIsNotFetchedAgain(t *testing.T) {
 	}
 }
 
+func TestAReleasesUrgencyDecidesForItsPackages(t *testing.T) {
+	r := rec("DEBIAN-CVE-2024-1", "m1", critVector, "CVE-2024-1")
+	r.Affected = []osvAffected{{Package: osvPackage{Ecosystem: "Debian:12", Name: "openssl"}, EcosystemSpecific: map[string]any{"urgency": "low"}}}
+	f := &fakeDB{affects: map[string][]string{"openssl": {"DEBIAN-CVE-2024-1"}}, records: map[string]osvRecord{"DEBIAN-CVE-2024-1": r}}
+	db := NewDB(f.server(t).URL, t.TempDir())
+	got, err := db.Find(context.Background(), []Package{{"Debian:12", "openssl", "3.0.11"}, {"Debian:13", "openssl", "3.0.11"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["CVE-2024-1"].Severity != Critical {
+		t.Errorf("severity = %v, want critical from the release without an urgency", got["CVE-2024-1"].Severity)
+	}
+	got, _ = db.Find(context.Background(), []Package{{"Debian:12", "openssl", "3.0.11"}})
+	if got["CVE-2024-1"].Severity != Low {
+		t.Errorf("severity = %v, want Debian 12's low", got["CVE-2024-1"].Severity)
+	}
+}
+
 func TestUnimportantAndWithdrawnRecordsDoNotCount(t *testing.T) {
 	minor := rec("DEBIAN-CVE-2024-1", "m1", critVector, "CVE-2024-1")
 	minor.Affected = []osvAffected{{Package: osvPackage{Ecosystem: "Debian:12", Name: "openssl"}, EcosystemSpecific: map[string]any{"urgency": "unimportant"}}}
