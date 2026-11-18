@@ -19,16 +19,10 @@ $ourl   = isset($cfg['OLLAMA_URL'])        ? $cfg['OLLAMA_URL']        : '';
 $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $lsurl  = isset($cfg['LLAMASWAP_URL'])     ? $cfg['LLAMASWAP_URL']     : '';
 $lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
-/* Notifications live in notify.json beside shiplog.cfg, which still holds them
-   until the engine or this page has moved them (server/notify.php). */
+/* The engine keeps the notification channels in notify.json. Once that file
+   is there, the old keys in shiplog.cfg it was built from have done their job. */
 $N = include '/usr/local/emhttp/plugins/shiplog/include/notify.php';
-$nf = '/boot/config/plugins/shiplog/notify.json';
-$NV = $N['fields'](is_file($nf) ? json_decode((string)@file_get_contents($nf), true) : null, $cfg);
-$mhs    = $NV['hs'];
-$mtok   = $NV['token'];
-$mroom  = $NV['room'];
-$apprise= $NV['apprise'];
-$unraidNotify = $NV['unraid'];
+$N['tidy']('/boot/config/plugins/shiplog/notify.json', '/boot/config/plugins/shiplog/shiplog.cfg');
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
@@ -116,6 +110,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
 ?>
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/settings.css')?>">
 <link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/fortress-card.css')?>">
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/notify-card.css')?>">
 
 <div id="sl-cfg" class="sl-cfg" data-sl-labels="textGlyph">
 <div class="sl-hero">
@@ -249,34 +244,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
     <section class="sl-card" aria-labelledby="sl-h-channels">
       <h3 class="sl-h"><span id="sl-h-channels"><?=$slE($L['s_channels'])?></span><?=$slInfo($L['s_notif_sub'])?></h3>
       <p class="sl-hubnote" id="sl-hub-note" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_notify_hub'])?></span></p>
-      <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-unraid-notify-cb"><?=$slE($L['s_unraid_notify'])?></label><?=$slInfo($L['s_unraid_notify_desc'])?></div>
-        <div class="sl-ctl"><?=$slSwitch('sl-unraid-notify', 'UNRAID_NOTIFY', $unraidNotify)?></div>
-      </div>
-      <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-MATRIX_HOMESERVER"><?=$slE($L['s_mx_home'])?></label></div>
-        <div class="sl-ctl"><input type="text" class="sl-f" id="sl-MATRIX_HOMESERVER" name="MATRIX_HOMESERVER" value="<?=$slE($mhs)?>" placeholder="https://matrix.example.com" dir="ltr"></div>
-      </div>
-      <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-MATRIX_TOKEN"><?=$slE($L['s_mx_token'])?></label></div>
-        <div class="sl-ctl"><span class="sl-field"><input type="password" class="sl-f" id="sl-MATRIX_TOKEN" name="MATRIX_TOKEN" value="<?=$slE($mtok)?>" autocomplete="off" dir="ltr"><?=$slEye('sl-MATRIX_TOKEN')?></span></div>
-      </div>
-      <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-MATRIX_ROOM"><?=$slE($L['s_mx_room'])?></label></div>
-        <div class="sl-ctl">
-          <input type="text" class="sl-f" id="sl-MATRIX_ROOM" name="MATRIX_ROOM" value="<?=$slE($mroom)?>" placeholder="!roomid:server  or  #alias:server" dir="ltr">
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="matrix" data-sl-out="sl-matrix-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
-        </div>
-        <div class="sl-res" id="sl-matrix-result" role="status"></div>
-      </div>
-      <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-APPRISE_URL"><?=$slE($L['s_apprise'])?></label><?=$slInfo($L['s_apprise_hint'])?></div>
-        <div class="sl-ctl">
-          <span class="sl-field"><input type="password" class="sl-f" id="sl-APPRISE_URL" name="APPRISE_URL" value="<?=$slE($apprise)?>" placeholder="http://host:8000/notify/key" autocomplete="off" dir="ltr"><?=$slEye('sl-APPRISE_URL')?></span>
-          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="apprise" data-sl-out="sl-apprise-result"><?=$slBtn('SendTest', $L['s_apprise_test'])?></button></span>
-        </div>
-        <div class="sl-res" id="sl-apprise-result" role="status"></div>
-      </div>
+      <div id="sl-notify"></div>
     </section>
   </div>
 
@@ -466,6 +434,8 @@ var SLT = <?=json_encode($L, JSON_UNESCAPED_UNICODE)?>;
 var SL_GLYPHS = <?=json_encode(array('Check' => $G['Check'], 'Close' => $G['Close'], 'Copy' => $G['Copy'], 'Eye' => $G['Eye'], 'EyeOff' => $G['EyeOff']), JSON_UNESCAPED_SLASHES)?>;
 var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 </script>
+<script src="<?autov('/plugins/shiplog/scripts/notify-marks.js')?>"></script>
+<script src="<?autov('/plugins/shiplog/scripts/notify-card.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/fortress-card.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/fortress.js')?>"></script>

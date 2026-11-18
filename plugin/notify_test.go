@@ -5,12 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
-
-	kit "github.com/junkerderprovinz/parleyport/kit/notify"
-	"github.com/junkerderprovinz/parleyport/kit/notify/legacy"
 )
 
 // runPHP runs body after including include/notify.php as $N and decodes what
@@ -45,53 +41,85 @@ func runPHP(t *testing.T, body string, out any) {
 
 func phpString(s string) string { return "'" + strings.ReplaceAll(s, `'`, `\'`) + "'" }
 
-var oldSettings = map[string]string{
-	"MATRIX_HOMESERVER": "https://matrix.example.org",
-	"MATRIX_TOKEN":      "syt_c2hpcGxvZw_NotARealToken_0a1b2c",
-	"MATRIX_ROOM":       "#updates:example.org",
-	"APPRISE_URL":       "http://apprise.lan:8000/notify/shiplog",
-	"UNRAID_NOTIFY":     "true",
-}
-
-// TestThePageSavesWhatTheEngineMovesOnItsOwn keeps both ways to notify.json
-// alike: the engine's first start and the settings page's first save.
-func TestThePageSavesWhatTheEngineMovesOnItsOwn(t *testing.T) {
-	var got []kit.Channel
-	runPHP(t, `echo json_encode($N['merge']([], ['hs' => 'https://matrix.example.org', 'token' => 'syt_c2hpcGxvZw_NotARealToken_0a1b2c',
-		'room' => '#updates:example.org', 'apprise' => 'http://apprise.lan:8000/notify/shiplog', 'unraid' => true]));`, &got)
-	if want := legacy.FromEnv(oldSettings); !reflect.DeepEqual(got, want) {
-		t.Errorf("page saved\n %+v\nengine moves\n %+v", got, want)
+// TestTheOldKeysGoOnceTheChannelsAreKept keeps the secrets of the old
+// settings in notify.json alone, once the engine has built that file.
+func TestTheOldKeysGoOnceTheChannelsAreKept(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "shiplog.cfg")
+	channels := filepath.Join(dir, "notify.json")
+	if err := os.WriteFile(cfg, []byte("ENABLE=\"true\"\nMATRIX_TOKEN=\"syt_x\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var none string
+	runPHP(t, `$N['tidy'](`+phpString(channels)+`, `+phpString(cfg)+`); echo json_encode(file_get_contents(`+phpString(cfg)+`));`, &none)
+	if !strings.Contains(none, "MATRIX_TOKEN") {
+		t.Error("the old keys went before notify.json existed")
+	}
+	if err := os.WriteFile(channels, []byte("[]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var after string
+	runPHP(t, `$N['tidy'](`+phpString(channels)+`, `+phpString(cfg)+`); echo json_encode(file_get_contents(`+phpString(cfg)+`));`, &after)
+	if strings.Contains(after, "MATRIX_TOKEN") || !strings.Contains(after, `ENABLE="true"`) {
+		t.Errorf("cfg after the move = %q", after)
 	}
 }
 
-func TestThePageKeepsChannelsItDoesNotShow(t *testing.T) {
-	var got []kit.Channel
-	runPHP(t, `$ch = [
-		['id' => 'phone', 'kind' => 'ntfy', 'enabled' => true, 'on' => 'failure', 'ntfy' => ['url' => 'https://ntfy.example.org/updates']],
-		['id' => 'matrix', 'kind' => 'matrix', 'name' => 'Room', 'enabled' => true, 'on' => 'failure',
-		 'matrix' => ['homeserver' => 'https://hs', 'room' => '!r:hs', 'token' => 't']],
-		['id' => 'unraid', 'kind' => 'unraid', 'enabled' => true, 'on' => 'always'],
-	];
-	echo json_encode($N['merge']($ch, ['hs' => '', 'token' => '', 'room' => '', 'apprise' => 'apprise.lan/notify/x', 'unraid' => false]));`, &got)
-	want := []kit.Channel{
-		{ID: "phone", Kind: kit.KindNtfy, Enabled: true, On: kit.OnFailure, Ntfy: &kit.Ntfy{URL: "https://ntfy.example.org/updates"}},
-		{ID: "unraid", Kind: kit.KindUnraid, Enabled: false, On: kit.OnAlways},
-		{ID: "apprise", Kind: kit.KindApprise, Enabled: false, On: kit.OnAlways, Apprise: &kit.Apprise{URL: "apprise.lan/notify/x"}},
+// TestTheNotificationsTabCarriesTheSharedCard keeps the channel card on the
+// page with its files, the engine's routes behind the proxy and every text
+// of the card in every language.
+func TestTheNotificationsTabCarriesTheSharedCard(t *testing.T) {
+	page := read(t, "shiplog.page")
+	for _, want := range []string{`<div id="sl-notify"></div>`, "/plugins/shiplog/scripts/notify-card.js", "/plugins/shiplog/scripts/notify-marks.js", "/plugins/shiplog/styles/notify-card.css"} {
+		if !strings.Contains(page, want) {
+			t.Errorf("shiplog.page lacks %s", want)
+		}
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got  %+v\nwant %+v", got, want)
+	for _, f := range []string{"scripts/notify-card.js", "scripts/notify-marks.js", "styles/notify-card.css", "marks/README.md", "marks/LICENSE-dashboard-icons.txt"} {
+		if _, err := os.Stat(filepath.Join(pluginDir, f)); err != nil {
+			t.Errorf("%s: %v", f, err)
+		}
 	}
-}
-
-func TestThePageShowsTheSavedChannels(t *testing.T) {
-	var fromCfg, fromFile map[string]any
-	runPHP(t, `echo json_encode($N['fields'](null, ['MATRIX_HOMESERVER' => 'https://hs', 'MATRIX_TOKEN' => 't', 'MATRIX_ROOM' => '!r:hs',
-		'APPRISE_URL' => 'http://a/notify/k', 'UNRAID_NOTIFY' => 'true']));`, &fromCfg)
-	runPHP(t, `echo json_encode($N['fields']($N['merge']([], ['hs' => 'https://hs', 'token' => 't', 'room' => '!r:hs',
-		'apprise' => 'http://a/notify/k', 'unraid' => true]), []));`, &fromFile)
-	want := map[string]any{"hs": "https://hs", "token": "t", "room": "!r:hs", "apprise": "http://a/notify/k", "unraid": true}
-	if !reflect.DeepEqual(fromCfg, want) || !reflect.DeepEqual(fromFile, want) {
-		t.Errorf("from shiplog.cfg %v, from notify.json %v, want %v", fromCfg, fromFile, want)
+	proxy := read(t, filepath.Join("server", "status.php"))
+	for _, want := range []string{`'notify' => '/api/notify'`, `'notify' => ['PUT']`, `'notify/test' => ['POST']`} {
+		if !strings.Contains(proxy, want) {
+			t.Errorf("status.php lacks %s", want)
+		}
+	}
+	if !strings.Contains(read(t, filepath.Join("scripts", "settings.js")), "window.GlimNotifyCard.mount(byId(\"sl-notify\")") {
+		t.Error("settings.js does not mount the card")
+	}
+	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
+	if err != nil || len(files) < 26 {
+		t.Fatalf("lang files = %d, %v", len(files), err)
+	}
+	var en map[string]any
+	if err := json.Unmarshal([]byte(read(t, filepath.Join("lang", "en.json"))), &en); err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	for k := range en {
+		if strings.HasPrefix(k, "nc_") {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) < 70 {
+		t.Fatalf("en.json has %d card texts", len(keys))
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]any
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, k := range keys {
+			if v, _ := texts[k].(string); v == "" {
+				t.Errorf("%s lacks %s", filepath.Base(f), k)
+			}
+		}
 	}
 }
 

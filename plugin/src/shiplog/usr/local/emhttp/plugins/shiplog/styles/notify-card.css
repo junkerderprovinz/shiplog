@@ -1,0 +1,116 @@
+/* The notification channels card for a page without a framework
+ * (notify-card.js), as the fortress card does it: Unraid's colours and
+ * buttons on their own, the theme plugin's tokens under html.tt-popups-on.
+ * The host passes its own field, button and switch classes, so the card
+ * takes the page's controls and only lays them out. */
+
+.glim-nc {
+  --nc-raised: color-mix(in srgb, currentColor 5%, transparent);
+  --nc-line: color-mix(in srgb, currentColor 14%, transparent);
+  --nc-dim: var(--alt-text-color, #8d8d8d);
+  --nc-tile-rest: color-mix(in srgb, currentColor 7%, transparent);
+  --nc-ok: #3fae6a;
+  --nc-err: #e05252;
+  --nc-r-card: 4px;
+  --nc-r-ctl: 4px;
+  --nc-bubble: var(--mild-background-color, #262626);
+  --nc-bubble-ink: var(--text-color, #f2f2f2);
+  /* The marks drawn in black or navy are lifted on the dark grounds. */
+  --brand-discord-0: #6a76f3;
+  --brand-ntfy-0: #38907e;
+  --brand-matrix-0: #828282;
+  --brand-healthchecks-forced0: #ffffff;
+  --brand-apprise-forced0: #3fa9a6;
+  --brand-apprise-forced1: #319491;
+  --brand-apprise-forced2: #a6e8de;
+  display: flex; flex-direction: column; gap: 10px; margin-top: 10px;
+}
+html:is(.Theme--white, .Theme--azure) .glim-nc {
+  --nc-ok: #0e6027;
+  --nc-err: #da1e28;
+  --nc-bubble: #262626;
+  --nc-bubble-ink: #f2f2f2;
+  --brand-discord-0: #5865F2;
+  --brand-ntfy-0: #317F6F;
+  --brand-matrix-0: #000000;
+  --brand-healthchecks-forced0: #33333f;
+  --brand-apprise-forced0: #237171;
+  --brand-apprise-forced1: #185858;
+  --brand-apprise-forced2: #169e8d;
+}
+html.tt-popups-on .glim-nc {
+  --nc-raised: var(--tt-chip, #2e2e2e);
+  --nc-dim: var(--tt-text-dim, #8a8a8a);
+  --nc-tile-rest: var(--tt-fm-btn, #353535);
+  --nc-ok: var(--tt-ok-ink, #6fdc8c);
+  --nc-err: var(--tt-err-ink, #ff8389);
+  --nc-r-card: var(--tt-radius-card, 20px);
+  --nc-r-ctl: var(--tt-radius-control, 12px);
+  --nc-bubble: var(--tt-surface-window, #242424);
+  --nc-bubble-ink: var(--tt-text, #e6e6e6);
+}
+.glim-nc *, .glim-nc *::before, .glim-nc *::after { box-sizing: border-box; }
+.glim-nc .glim-nc-sub { margin: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
+
+/* A channel: its mark, name, (i) and switch on top, its rows under them. */
+.glim-nc-ch { padding: 8px 14px 10px; border: 1px solid var(--nc-line); border-radius: calc(var(--nc-r-card) * .7); background: var(--nc-raised); }
+.glim-nc-ch-hd { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.glim-nc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.glim-nc-ch-hd .glim-nc-switch { margin-inline-start: auto !important; flex: none; }
+.glim-nc .glim-nc-err { margin: 2px 0 4px; color: var(--nc-err); font-size: 13px; text-align: start; }
+
+.glim-nc-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; min-height: 40px; padding: 4px 0; }
+.glim-nc-lbl { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; }
+.glim-nc-lbl .glim-nc-name { margin: 0; font-size: 14px; font-weight: 400; }
+.glim-nc-ctl { flex: 0 1 380px; min-width: 0; max-width: 100%; margin-inline-start: auto; }
+.glim-nc .glim-nc-in { width: 100%; }
+.glim-nc .glim-nc-select { width: auto; font-family: inherit; }
+.glim-nc .glim-nc-lines { min-height: 4.5em; resize: vertical; }
+
+.glim-nc-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-top: 6px; }
+.glim-nc-gap { flex: 1 1 auto; }
+.glim-nc-res { font-size: 13px; }
+.glim-nc-run { color: var(--nc-dim); }
+.glim-nc-ok { color: var(--nc-ok); }
+.glim-nc-bad { color: var(--nc-err); }
+.glim-nc-addrow { display: flex; justify-content: flex-end; }
+
+/* The marks: the service's own drawing in its own colours, at one size. */
+.glim-nc-mark { display: inline-flex; flex: none; width: 20px; height: 20px; line-height: 0; }
+.glim-nc-mark svg { width: 100%; height: 100%; display: block; }
+
+/* The tiles to pick a service from. Under the pointer and on keyboard focus a
+   tile fills with the service's colour, and its mark and name take the ink
+   that holds on it. A mark paints each part with var(--mark-ink, its own
+   colour), or var(--mark-cut, ...) where a part lies on another part. */
+.glim-nc-pick { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 2px; }
+.glim-nc .glim-nc-pick-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--nc-dim); }
+.glim-nc-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.glim-nc-tilebox { position: relative; display: flex; margin: 0; }
+.glim-nc .glim-nc-tile {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 34px 8px 12px;
+  border: 1px solid var(--nc-line) !important; border-radius: var(--nc-r-ctl); background: var(--nc-tile-rest) !important; color: inherit !important;
+  font: inherit; font-size: 14px; text-align: start; cursor: pointer; box-shadow: none;
+}
+.glim-nc .glim-nc-tile:is(:hover, :focus-visible):not(:disabled) {
+  background: var(--nc-tile, var(--tt-accent, #486dba)) !important; color: var(--nc-tile-ink, #fff) !important;
+  --mark-ink: var(--nc-tile-ink, #fff); --mark-cut: var(--nc-tile, #486dba);
+}
+.glim-nc .glim-nc-tile:focus-visible { outline: 2px solid var(--nc-tile, #486dba); outline-offset: 2px; }
+.glim-nc .glim-nc-tile:disabled { opacity: .45; cursor: default; }
+.glim-nc-tile-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glim-nc-tilebox .glim-nc-info { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); }
+
+/* The (i) with its words in a bubble under the pointer and on keyboard focus. */
+.glim-nc-info { position: relative; display: inline-flex; flex: none; width: 15px; height: 15px; opacity: .8; cursor: help; }
+.glim-nc-info svg { width: 15px; height: 15px; fill: currentColor; }
+.glim-nc-info:is(:hover, :focus-visible) { opacity: 1; }
+.glim-nc-info::after {
+  content: attr(data-tip); position: absolute; z-index: 10; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(300px, 70vw); padding: 7px 10px; border-radius: var(--nc-r-ctl);
+  background: var(--nc-bubble); color: var(--nc-bubble-ink); box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: normal; text-transform: none; text-align: start; white-space: normal;
+  display: none; pointer-events: none;
+}
+.glim-nc-info:is(:hover, :focus-visible)::after { display: block; }
+.glim-nc-tilebox .glim-nc-info::after { left: auto; right: -10px; transform: none; }

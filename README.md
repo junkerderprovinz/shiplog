@@ -99,7 +99,7 @@ The containers in these pictures run public images at older versions in a test s
 - **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one. Both Community Applications verdicts go only to apps that came from there, never to your own images and templates.
 - **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog skips a container that already runs the newest image and checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself touches Docker only to start a container an update lost and to hold the old image while an update runs.
 - **A backup first, and a way back.** In a fortress with a backup app on the same server, every auto-update waits for a backup of its container. If the new image fails its check or turns unhealthy, ShipLog puts the container back on the old image. Your appdata stays as it is, and the backup from before the update waits in BombVault.
-- **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, and messages through Matrix, Apprise or Unraid's own notifications.
+- **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, and messages through Unraid's own notifications, chat and push services, mail or a webhook.
 - **26 languages**, following Unraid's own setting.
 
 <br>
@@ -129,9 +129,7 @@ The status page has no login, so keep port 8484 inside your network.
 
 ### Notifications
 
-ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications** you pick the channels: Unraid's own notifications, which reach every agent you set up there, a Matrix room, or an [Apprise API](https://github.com/caronc/apprise-api) server.
-
-For Apprise, save your services in Apprise API under a key of your choosing and enter the notify address with that key, for example `http://192.168.1.10:8000/notify/shiplog`. Apprise passes each message on to all of them, be it Discord, ntfy, Gotify, Telegram or email. **Send test message** tries the address right away, so you know it works before the first update comes in. ShipLog keeps the key out of its log and names only the server.
+ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications** you add a channel by picking its service from a tile: Unraid's own notifications, which reach every agent you set up there, Discord, Slack, ntfy, Gotify, Matrix, an [Apprise API](https://github.com/caronc/apprise-api) server, mail or a webhook. A service can be added more than once, each channel can send everything or only what went wrong, and its **Test** button tries it right away. Every change is saved as you make it, and a token or password you saved is never shown again.
 
 Without Unraid, set `APPRISE_URL` on the container, or `MATRIX_HOMESERVER`, `MATRIX_TOKEN` and `MATRIX_ROOM` for Matrix.
 

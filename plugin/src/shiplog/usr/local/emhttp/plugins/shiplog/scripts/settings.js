@@ -80,8 +80,6 @@
      so a burst of edits restarts the engine once. A switch or a pick that could
      not be saved goes back and shakes; a typed value stays as it is. */
   var UI_ONLY = { CONFIRM_UPDATE: true, SILENT_UPDATE: true };
-  // Notifications go to notify.json through notify.php, which restarts the engine.
-  var NOTIFY = { MATRIX_HOMESERVER: true, MATRIX_TOKEN: true, MATRIX_ROOM: true, APPRISE_URL: true, UNRAID_NOTIFY: true };
   var savedEl = byId("sl-saved");
   var saving = false, queued = null, typed = null, typeTimer = 0;
   // A failure also comes as a toast where TowerTorch draws them.
@@ -92,16 +90,13 @@
   }
   function job(names, undo, ctl) {
     return {
-      restart: names.some(function (n) { return !UI_ONLY[n] && !NOTIFY[n]; }),
-      cfg: names.some(function (n) { return !NOTIFY[n]; }),
-      notify: names.some(function (n) { return NOTIFY[n]; }),
+      restart: names.some(function (n) { return !UI_ONLY[n]; }),
       undo: undo ? [undo] : [], ctl: ctl ? [ctl] : []
     };
   }
   function merged(a, b) {
     if (!a) return b;
-    return { restart: a.restart || b.restart, cfg: a.cfg || b.cfg, notify: a.notify || b.notify,
-      undo: a.undo.concat(b.undo), ctl: a.ctl.concat(b.ctl) };
+    return { restart: a.restart || b.restart, undo: a.undo.concat(b.undo), ctl: a.ctl.concat(b.ctl) };
   }
   function posted(r) {
     // An expired session answers with the login page.
@@ -110,28 +105,18 @@
   function saveCfg(restart) {
     // update.php never answers a multipart body, so the form goes URL-encoded.
     var body = new URLSearchParams(new FormData(form));
-    Object.keys(NOTIFY).forEach(function (k) { body.delete(k); });
     if (!restart) { body.delete("#command"); body.delete("#arg[1]"); }
     return fetch("/update.php", { method: "POST", body: body, credentials: "same-origin" }).then(posted);
-  }
-  function saveNotify() {
-    var body = new URLSearchParams({
-      unraid: val("UNRAID_NOTIFY"), hs: val("MATRIX_HOMESERVER"), token: val("MATRIX_TOKEN"),
-      room: val("MATRIX_ROOM"), apprise: val("APPRISE_URL"), csrf_token: window.csrf_token || ""
-    });
-    return fetch("/plugins/shiplog/server/notify.php", { method: "POST", body: body, credentials: "same-origin" }).then(posted);
   }
   function save(j) {
     if (saving) { queued = merged(queued, j); return; }
     saving = true;
-    note("run", j.restart || j.notify ? T.s_saving_restart : T.s_saving);
-    Promise.resolve()
-      .then(function () { if (j.cfg) return saveCfg(j.restart); })
-      .then(function () { if (j.notify) return saveNotify(); })
+    note("run", j.restart ? T.s_saving_restart : T.s_saving);
+    saveCfg(j.restart)
       .then(function () {
         var t = new Date().toLocaleTimeString(window.SL_LANG, { hour: "2-digit", minute: "2-digit" });
         note("ok", T.s_saved + " · " + t);
-        if (j.restart || j.notify) loadStatus();
+        if (j.restart) loadStatus();
       })
       .catch(function (e) {
         j.undo.forEach(function (fn) { fn(); });
@@ -413,18 +398,8 @@
     dockerhub: function () { return "dockerhub-check.php?user=" + encodeURIComponent(val("DOCKERHUB_USERNAME")) + "&token=" + encodeURIComponent(val("DOCKERHUB_TOKEN")); },
     ollama: function () { return "ollama-check.php?url=" + encodeURIComponent(val("OLLAMA_URL")) + "&model=" + encodeURIComponent(val("OLLAMA_MODEL")); },
     "ollama-detect": function () { return "ollama-detect.php?url=" + encodeURIComponent(val("OLLAMA_URL")); },
-    llamaswap: function () { return "llamaswap-check.php?url=" + encodeURIComponent(val("LLAMASWAP_URL")) + "&model=" + encodeURIComponent(val("LLAMASWAP_MODEL")); },
-    matrix: function () {
-      return "matrix-check.php?hs=" + encodeURIComponent(val("MATRIX_HOMESERVER")) + "&token=" + encodeURIComponent(val("MATRIX_TOKEN")) +
-        "&room=" + encodeURIComponent(val("MATRIX_ROOM"));
-    },
-    apprise: function () { return "apprise-test.php"; }
+    llamaswap: function () { return "llamaswap-check.php?url=" + encodeURIComponent(val("LLAMASWAP_URL")) + "&model=" + encodeURIComponent(val("LLAMASWAP_MODEL")); }
   };
-  // The Apprise URL carries its key, so it goes in a POST body rather than a query string.
-  function post(kind) {
-    if (kind !== "apprise") return undefined;
-    return { method: "POST", body: new URLSearchParams({ url: val("APPRISE_URL"), csrf_token: window.csrf_token || "" }) };
-  }
   root.querySelectorAll("[data-sl-check]").forEach(function (btn) {
     var kind = btn.getAttribute("data-sl-check"), out = byId(btn.getAttribute("data-sl-out"));
     var glyph = btn.querySelector(".sl-g") ? btn.querySelector(".sl-g").innerHTML : "";
@@ -433,8 +408,8 @@
       if (btn.querySelector(".sl-g")) btn.querySelector(".sl-g").innerHTML = glyph;
       btn.setAttribute("aria-busy", "true");
       out.className = "sl-res run";
-      out.textContent = (kind === "ollama-detect" ? T.s_autodetect : kind === "apprise" ? T.s_apprise_test : T.s_check) + " …";
-      fetch("/plugins/shiplog/server/" + CHECKS[kind](), post(kind))
+      out.textContent = (kind === "ollama-detect" ? T.s_autodetect : T.s_check) + " …";
+      fetch("/plugins/shiplog/server/" + CHECKS[kind]())
         .then(function (r) { return r.json(); })
         .then(function (d) {
           verdict(btn, out, !!d.ok, d.message);
@@ -490,6 +465,44 @@
       .catch(function () {});
   }
   loadHub();
+
+  /* The notification channels, in the card every plugin of the house shares.
+     The engine keeps them in notify.json, sends with a saved change at once,
+     answers a save with the channels as kept, secrets masked, and refuses a
+     list that does not validate with the problems in it. */
+  function engine(path, method, data) {
+    var body = new URLSearchParams({ path: path, method: method, data: JSON.stringify(data), csrf_token: window.csrf_token || "" });
+    return fetch("/plugins/shiplog/server/status.php", { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (r) { return r.json(); });
+  }
+  window.GlimNotifyCard.mount(byId("sl-notify"), {
+    load: function () {
+      return fetch("/plugins/shiplog/server/status.php?path=notify", { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!r.channels) throw { code: "engine" };
+          return r.channels;
+        });
+    },
+    save: function (list) {
+      return engine("notify", "PUT", { channels: list }).then(function (r) {
+        if (!r.channels) throw { code: r.error || "engine", problems: r.problems };
+        return r.channels;
+      });
+    },
+    test: function (channel) {
+      return engine("notify/test", "POST", { channel: channel }).then(function (r) { return { ok: !!r.ok, code: r.error }; });
+    }
+  }, {
+    t: T, lang: window.SL_LANG, marks: window.GlimNotifyMarks,
+    kinds: ["unraid", "discord", "slack", "ntfy", "gotify", "matrix", "apprise", "smtp", "webhook"],
+    classes: { input: "sl-f", button: "sl-btn", switch: "sl-sw" },
+    // A saved change reads like every other save on the page.
+    saved: function (ok, text) {
+      if (!ok) { note("err", text); return; }
+      note("ok", T.s_saved + " · " + new Date().toLocaleTimeString(window.SL_LANG, { hour: "2-digit", minute: "2-digit" }));
+    }
+  });
 
   /* Auto-update. Everything below the main switch only matters while it is on,
      so those rows are left out while it is off. */
