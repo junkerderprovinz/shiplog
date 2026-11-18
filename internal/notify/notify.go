@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	kit "github.com/junkerderprovinz/parleyport/kit/notify"
 	"github.com/junkerderprovinz/parleyport/kit/notify/legacy"
@@ -71,10 +72,77 @@ func save(path string, channels []kit.Channel) error {
 	return os.Rename(tmp.Name(), path)
 }
 
-// Notifier sends ShipLog's events. A nil *Notifier sends nothing.
+// Notifier sends ShipLog's events. A nil *Notifier sends nothing. One from
+// Open also keeps the channels the settings page edits, so a saved change
+// sends at once.
 type Notifier struct {
-	d   *kit.Dispatcher
-	hub *Hub
+	path string
+	opt  kit.Options
+	hub  *Hub
+
+	mu   sync.Mutex
+	list []kit.Channel
+	d    *kit.Dispatcher
+}
+
+// Open keeps channels in path, which Replace writes. An empty path keeps
+// them in memory alone.
+func Open(path string, channels []kit.Channel, opt kit.Options) (*Notifier, error) {
+	opt.Source = source
+	d, err := kit.NewDispatcher(channels, opt)
+	if err != nil {
+		return nil, err
+	}
+	return &Notifier{path: path, opt: opt, list: channels, d: d}, nil
+}
+
+// Public returns the channels with every secret masked.
+func (n *Notifier) Public() []kit.Channel {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	return public(n.list)
+}
+
+func public(list []kit.Channel) []kit.Channel {
+	if out := kit.Redacted(list); out != nil {
+		return out
+	}
+	return []kit.Channel{}
+}
+
+// Replace saves next in place of the channels, after putting back the
+// secrets Public masked. A list that does not validate leaves everything as
+// it was and comes back as kit.Problems.
+func (n *Notifier) Replace(next []kit.Channel) ([]kit.Channel, error) {
+	if n.path == "" {
+		return nil, errors.New("notify: no file to keep the channels in")
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	list := kit.Merge(next, n.list)
+	d, err := kit.NewDispatcher(list, n.opt)
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		list = []kit.Channel{}
+	}
+	if err := save(n.path, list); err != nil {
+		return nil, err
+	}
+	n.list, n.d = list, d
+	return public(list), nil
+}
+
+// Test sends a test message once to ch as the settings page has it, saved
+// or not, with the saved secrets of a channel whose address is unchanged.
+func (n *Notifier) Test(ctx context.Context, ch kit.Channel) kit.Result {
+	n.mu.Lock()
+	ch = kit.Merge([]kit.Channel{ch}, n.list)[0]
+	d := n.d
+	n.mu.Unlock()
+	return d.Test(ctx, ch, kit.Event{Kind: "test", Severity: kit.SeverityInfo,
+		Title: "ShipLog test", Body: "ShipLog can reach this channel."})
 }
 
 // New returns a Notifier for channels, or nil when none is switched on.
@@ -86,12 +154,7 @@ func New(channels []kit.Channel, opt kit.Options) (*Notifier, error) {
 	if !on {
 		return nil, nil
 	}
-	opt.Source = source
-	d, err := kit.NewDispatcher(channels, opt)
-	if err != nil {
-		return nil, err
-	}
-	return &Notifier{d: d}, nil
+	return Open("", channels, opt)
 }
 
 // Notify announces a newly sighted update or an app that is no longer
@@ -106,11 +169,14 @@ func (n *Notifier) Send(ctx context.Context, e kit.Event) error {
 	if n == nil || n.hub != nil && n.hub.Take(ctx, e) {
 		return nil
 	}
-	if n.d == nil {
+	n.mu.Lock()
+	d := n.d
+	n.mu.Unlock()
+	if d == nil {
 		return nil
 	}
 	var errs []error
-	for _, r := range n.d.Send(ctx, e) {
+	for _, r := range d.Send(ctx, e) {
 		if !r.OK() {
 			errs = append(errs, fmt.Errorf("%s: %w", r.Channel, r.Err))
 		}

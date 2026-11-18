@@ -120,12 +120,12 @@ func (h *Hub) timeout() time.Duration {
 // WithHub lets h carry n's messages while a TollRoll takes them. Without own
 // channels the hub alone carries them.
 func WithHub(n *Notifier, h *Hub) *Notifier {
-	if h == nil {
+	switch {
+	case h == nil:
 		return n
+	case n == nil:
+		return &Notifier{hub: h}
 	}
-	out := &Notifier{hub: h}
-	if n != nil {
-		out.d = n.d
-	}
-	return out
+	n.hub = h
+	return n
 }

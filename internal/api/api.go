@@ -87,6 +87,7 @@ type API struct {
 	backup     func() bool
 	door       Door
 	hub        func(context.Context) bool
+	channels   Channels
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -183,6 +184,11 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/unmaintained-suppression", a.deleteSuppression)
 	mux.HandleFunc("GET /api/guards", a.listGuards)
 	mux.HandleFunc("GET /api/notify-hub", a.notifyHub)
+	if a.channels != nil {
+		mux.HandleFunc("GET /api/notify", a.listChannels)
+		mux.HandleFunc("PUT /api/notify", a.replaceChannels)
+		mux.HandleFunc("POST /api/notify/test", a.testChannel)
+	}
 	if a.fortress != nil {
 		h := status.Handler(a.fortress, fromSocket)
 		mux.Handle("GET "+status.StatusPath, h)

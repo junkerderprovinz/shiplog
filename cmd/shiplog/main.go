@@ -166,6 +166,9 @@ func main() {
 		WithUpdateCheck(docker, msg).
 		WithFortress(report).
 		WithGuards(db, func() bool { return backups != nil && backups.Available() })
+	if notifier != nil && cfg.NotifyFile != "" {
+		a.WithChannels(notifier)
+	}
 	if hub != nil {
 		a.WithHub(func(ctx context.Context) bool {
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -376,8 +379,9 @@ func instance(db *store.Store) status.Instance {
 	return status.Instance{ID: id, Name: name}
 }
 
-// loadNotifier returns nil when no channel is switched on or the channels
-// cannot be read; ShipLog then runs without notifications.
+// loadNotifier returns nil when the channels cannot be read, and ShipLog then
+// runs without notifications. Without a channel switched on it sends nothing
+// until the settings page switches one on.
 func loadNotifier(cfg config.Config) *notify.Notifier {
 	channels, migrated, err := notify.Load(cfg.NotifyFile, cfg.OldNotify)
 	if err != nil {
@@ -398,12 +402,12 @@ func loadNotifier(cfg config.Config) *notify.Notifier {
 	if len(off) > 0 {
 		log.Printf("shiplog: notification channels switched off: %s", strings.Join(off, ", "))
 	}
-	n, err := notify.New(channels, kitnotify.Options{})
+	n, err := notify.Open(cfg.NotifyFile, channels, kitnotify.Options{})
 	if err != nil {
 		log.Printf("shiplog: notifications off: %v", err)
 		return nil
 	}
-	if n != nil {
+	if len(on) > 0 {
 		log.Printf("shiplog: notifications on: %s", strings.Join(on, ", "))
 	}
 	return n
