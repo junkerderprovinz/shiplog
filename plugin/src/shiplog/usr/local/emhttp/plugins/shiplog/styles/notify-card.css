@@ -232,10 +232,10 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-wins .glim-nc-none { margin: 0; padding-block: 24px; color: var(--nc-w-dim); font-size: 13px; text-align: center; }
 
 /* The tiles: GlimStone's README buttons, three to a row in the window and two
-   on a phone. At rest a mark wears the window's ink alone. Under the pointer
-   and on keyboard focus a tile fills with the service's colour, a glyph that
-   belongs to nobody with the accent, and the mark and the name take the ink
-   that holds on it. A mark paints each part
+   on a phone. At rest a mark keeps its own colours. Under the pointer and on
+   keyboard focus a tile fills with the service's colour, a glyph that belongs
+   to nobody with the accent, and the mark and the name take the ink that
+   holds on it. A mark paints each part
    with var(--mark-ink, its own colour), or var(--mark-cut, ...) where a part
    lies on another part. */
 .glim-nc-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(208px, calc((100% - 12px) / 2)), 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
@@ -245,7 +245,6 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   position: relative; display: flex; margin: 0;
 }
 .glim-nc-wins button.glim-nc-tile {
-  --mark-ink: var(--nc-w-ink); --mark-cut: var(--nc-w-raised);
   position: relative; flex: 1; width: auto; min-width: 0; height: 46.6px; margin: 0; padding: 0;
   border: none; border-radius: var(--nc-w-r-pill); box-shadow: none; background: var(--nc-w-raised); color: var(--nc-w-ink);
   font: inherit; letter-spacing: normal; text-transform: none; text-align: start; cursor: pointer;
@@ -256,6 +255,8 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   overflow: hidden; white-space: nowrap; font-size: 14px; font-weight: 700; line-height: 1.15;
 }
 .glim-nc-tile-hinted .glim-nc-tile-name { inset-inline-end: 28px; }
+/* Matrix's black mark would vanish on the tile, so at rest it wears the ink. */
+.glim-nc-wins button.glim-nc-tile[data-kind="matrix"] { --mark-ink: var(--nc-w-ink); }
 .glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) button.glim-nc-tile {
   background: var(--nc-lit); color: var(--nc-lit-ink);
   --mark-ink: var(--nc-lit-ink); --mark-cut: var(--nc-lit);
