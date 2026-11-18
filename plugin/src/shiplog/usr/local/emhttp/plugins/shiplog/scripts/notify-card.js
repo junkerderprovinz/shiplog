@@ -453,7 +453,7 @@
         draw();
         save(true);
       });
-      card.appendChild(h('div', { class: 'glim-nc-tools' }, [test.button, test.result, h('span', { class: 'glim-nc-gap' }), remove]));
+      card.appendChild(h('div', { class: 'glim-nc-tools' }, [test.result, test.button, remove]));
       return card;
     }
 
@@ -559,7 +559,7 @@
             }, true));
           });
           body.appendChild(rows);
-          body.appendChild(h('div', { class: 'glim-nc-tools' }, [test.button, test.result]));
+          body.appendChild(h('div', { class: 'glim-nc-tools' }, [test.result, test.button]));
           body.appendChild(err);
         }
         fill();
