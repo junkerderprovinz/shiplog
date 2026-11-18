@@ -23,8 +23,18 @@
 
   var MASK = '********';
 
-  // GlimStone's IconInfo, the glyph every (i) of the house wears.
-  var INFO = "<svg class=\"gl\" viewBox=\"0 0 14 14\" aria-hidden=\"true\" focusable=\"false\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M7 14c3.866 0 7 -3.134 7 -7 0 -3.86599 -3.134 -7 -7 -7 -3.86599 0 -7 3.13401 -7 7 0 3.866 3.13401 7 7 7ZM5.5 9.375c-0.34518 0 -0.625 0.27982 -0.625 0.625 0 0.3452 0.27982 0.625 0.625 0.625h3c0.34518 0 0.625 -0.2798 0.625 -0.625 0 -0.34518 -0.27982 -0.625 -0.625 -0.625h-0.875V6.5c0 -0.34518 -0.27982 -0.625 -0.625 -0.625H6c-0.34518 0 -0.625 0.27982 -0.625 0.625s0.27982 0.625 0.625 0.625h0.375v2.25H5.5ZM8 4c0 0.55228 -0.44772 1 -1 1s-1 -0.44772 -1 -1 0.44772 -1 1 -1 1 0.44772 1 1Z\" clip-rule=\"evenodd\" stroke-width=\"1\"></path></svg>";
+  // GlimStone's infoIcon(), the stroked (i) every app of the house wears.
+  var INFO = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="4.6" r="0.9" fill="currentColor"/><path d="M8 7v4.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+
+  // The glyphs of GlimStone's glyphs.json the card's buttons wear before their words.
+  var GLYPHS = {
+    add: "<svg viewBox=\"0.006 0.006 13.988 13.988\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M5.756 12.873 L5.774 12.994 L5.845 13.228 L5.961 13.444 L6.034 13.543 L6.207 13.716 L6.411 13.852 L6.522 13.905 L6.756 13.976 L6.877 13.994 L7.123 13.994 L7.244 13.976 L7.478 13.905 L7.694 13.789 L7.793 13.716 L7.966 13.543 L8.102 13.339 L8.155 13.228 L8.226 12.994 L8.25 12.75 L8.25 8.25 L12.75 8.25 L12.994 8.226 L13.228 8.155 L13.444 8.039 L13.543 7.966 L13.716 7.793 L13.789 7.694 L13.905 7.478 L13.976 7.244 L13.994 7.123 L13.994 6.877 L13.976 6.756 L13.905 6.522 L13.789 6.306 L13.634 6.116 L13.444 5.961 L13.228 5.845 L12.994 5.774 L12.75 5.75 L8.25 5.75 L8.25 1.25 L8.226 1.006 L8.155 0.772 L8.039 0.556 L7.884 0.366 L7.793 0.284 L7.589 0.148 L7.478 0.095 L7.363 0.054 L7.123 0.006 L6.877 0.006 L6.637 0.054 L6.411 0.148 L6.306 0.211 L6.116 0.366 L5.961 0.556 L5.845 0.772 L5.774 1.006 L5.75 1.25 L5.75 5.75 L1.25 5.75 L1.006 5.774 L0.887 5.804 L0.661 5.898 L0.556 5.961 L0.366 6.116 L0.211 6.306 L0.148 6.411 L0.054 6.637 L0.006 6.877 L0.006 7.123 L0.054 7.363 L0.148 7.589 L0.284 7.793 L0.457 7.966 L0.661 8.102 L0.772 8.155 L1.006 8.226 L1.25 8.25 L5.75 8.25Z\" /></svg>",
+    test: "<svg viewBox=\"0 0 14 14\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><g> <path fill-rule=\"evenodd\" d=\"M13.8536 0.146461c0.1397 0.13972 0.184 0.348619 0.1131 0.533043L8.96667 13.6795c-0.07232 0.188 -0.25043 0.3143 -0.45181 0.3203 -0.20138 0.006 -0.38667 -0.1095 -0.47004 -0.2929L5.95386 9.1068l3.07647 -3.07647c0.29289 -0.29289 0.29289 -0.76777 0 -1.06066s-0.76777 -0.29289 -1.06066 0L4.89319 8.04615 0.2931 5.9552c-0.183409 -0.08337 -0.29886581 -0.26867 -0.292877753 -0.47005C0.00621034 5.28378 0.132474 5.10566 0.320512 5.03334L13.3205 0.0333416c0.1844 -0.0709322 0.3933 -0.02660085 0.5331 0.1131194Z\" clip-rule=\"evenodd\" stroke-width=\"1\"></path> </g></svg>",
+    remove: "<svg viewBox=\"0 0 14 14\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><g> <path fill-rule=\"evenodd\" d=\"M5.76256 2.01256C6.09075 1.68437 6.53587 1.5 7 1.5c0.46413 0 0.90925 0.18437 1.23744 0.51256 0.20736 0.20737 0.35731 0.46141 0.43961 0.73744h-3.3541c0.0823 -0.27603 0.23225 -0.53007 0.43961 -0.73744ZM3.78868 2.75c0.10537 -0.67679 0.42285 -1.30773 0.91322 -1.798097C5.3114 0.34241 6.13805 0 7 0c0.86195 0 1.6886 0.34241 2.2981 0.951903 0.49037 0.490367 0.8079 1.121307 0.9132 1.798097H13c0.4142 0 0.75 0.33579 0.75 0.75 0 0.41422 -0.3358 0.75 -0.75 0.75h-1v8.25c0 0.3978 -0.158 0.7794 -0.4393 1.0607S10.8978 14 10.5 14h-7c-0.39783 0 -0.77936 -0.158 -1.06066 -0.4393C2.15804 13.2794 2 12.8978 2 12.5V4.25H1c-0.414214 0 -0.75 -0.33578 -0.75 -0.75 0 -0.41421 0.335786 -0.75 0.75 -0.75h2.78868ZM5 5.87646c0.34518 0 0.625 0.27983 0.625 0.625V10.503c0 0.3451 -0.27982 0.625 -0.625 0.625s-0.625 -0.2799 -0.625 -0.625V6.50146c0 -0.34517 0.27982 -0.625 0.625 -0.625Zm4.625 0.625c0 -0.34517 -0.27982 -0.625 -0.625 -0.625s-0.625 0.27983 -0.625 0.625V10.503c0 0.3451 0.27982 0.625 0.625 0.625s0.625 -0.2799 0.625 -0.625V6.50146Z\" clip-rule=\"evenodd\" stroke-width=\"1\"></path> </g></svg>",
+    close: "<svg viewBox=\"0 0 14 14\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M11.957 13.716 L12.056 13.789 L12.272 13.905 L12.506 13.976 L12.75 14 L12.994 13.976 L13.228 13.905 L13.444 13.789 L13.543 13.716 L13.716 13.543 L13.789 13.444 L13.905 13.228 L13.976 12.994 L14 12.75 L13.976 12.506 L13.905 12.272 L13.852 12.161 L13.789 12.056 L13.634 11.866 L8.768 7 L13.716 2.043 L13.789 1.944 L13.905 1.728 L13.976 1.494 L14 1.25 L13.976 1.006 L13.905 0.772 L13.789 0.556 L13.716 0.457 L13.543 0.284 L13.339 0.148 L13.113 0.054 L12.873 0.006 L12.627 0.006 L12.387 0.054 L12.272 0.095 L12.056 0.211 L11.866 0.366 L7 5.232 L2.043 0.284 L1.839 0.148 L1.613 0.054 L1.494 0.024 L1.25 0 L1.127 0.006 L0.887 0.054 L0.661 0.148 L0.457 0.284 L0.284 0.457 L0.211 0.556 L0.095 0.772 L0.024 1.006 L0 1.25 L0.024 1.494 L0.095 1.728 L0.211 1.944 L0.366 2.134 L5.232 7 L0.284 11.957 L0.211 12.056 L0.095 12.272 L0.024 12.506 L0 12.75 L0.024 12.994 L0.095 13.228 L0.211 13.444 L0.284 13.543 L0.457 13.716 L0.661 13.852 L0.772 13.905 L1.006 13.976 L1.25 14 L1.494 13.976 L1.728 13.905 L1.944 13.789 L2.134 13.634 L7 8.768Z\" /></svg>",
+    back: "<svg viewBox=\"4.25 3.6 12.8 12.8\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M6.6 10 13 3.6l1.7 1.7L10 10l4.7 4.7-1.7 1.7L6.6 10Z\" /></svg>",
+    save: "<svg viewBox=\"3 3 18 18\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z\" /></svg>"
+  };
 
   // The services' own names, which no language translates. Mail and
   // webhooks are nobody's and go by the page's words.
@@ -212,12 +222,64 @@
     return t['nc_fail_' + code] || t.nc_test_failed;
   }
 
+  /* GlimStone's one floating bubble for an (i): a body child placed from the
+   * trigger's box, clamped 8px into the viewport, above the trigger when below
+   * would clip, with its arrow on the trigger. Focus opens it only after a key,
+   * a press, Escape or a scroll closes it. The theme plugin draws the same
+   * bubble for every data-tip of the page, so under its look the card leaves
+   * the (i) to it. */
+  var bubbled = null;
+  function wireBubble(doc) {
+    if (bubbled === doc) return;
+    bubbled = doc;
+    var bubble = null, on = null, keys = false;
+    function hide() {
+      if (bubble) bubble.style.display = 'none';
+      on = null;
+    }
+    function show(trigger) {
+      if (!bubble) {
+        bubble = doc.createElement('div');
+        bubble.className = 'glim-nc-bubble';
+        doc.body.appendChild(bubble);
+      }
+      var r = trigger.getBoundingClientRect(), root = doc.documentElement;
+      bubble.textContent = trigger.getAttribute('data-tip');
+      bubble.style.display = 'block';
+      var w = bubble.offsetWidth, ht = bubble.offsetHeight, cx = r.left + r.width / 2;
+      var x = Math.max(8 + w / 2, Math.min(root.clientWidth - 8 - w / 2, cx));
+      var above = r.bottom + 8 + ht > root.clientHeight && r.top - 8 - ht >= 0;
+      bubble.classList.toggle('glim-nc-bubble-above', above);
+      bubble.style.left = x + 'px';
+      bubble.style.top = (above ? r.top - 8 - ht : r.bottom + 8) + 'px';
+      bubble.style.setProperty('--nc-tip-ax', Math.max(10, Math.min(w - 10, cx - (x - w / 2))) + 'px');
+    }
+    function over(e) {
+      if (doc.documentElement.classList.contains('tt-popups-on') || (e.type === 'focusin' && !keys)) return;
+      var t = e.target && e.target.closest ? e.target.closest('.glim-nc-info[data-tip]') : null;
+      if (!t || t === on) return;
+      on = t;
+      show(t);
+    }
+    function out(e) {
+      if (on && !(e.relatedTarget && on.contains(e.relatedTarget))) hide();
+    }
+    doc.addEventListener('mouseover', over);
+    doc.addEventListener('mouseout', out);
+    doc.addEventListener('focusin', over);
+    doc.addEventListener('focusout', out);
+    doc.addEventListener('pointerdown', function () { keys = false; hide(); }, true);
+    doc.addEventListener('keydown', function (e) { keys = true; if (e.key === 'Escape') hide(); }, true);
+    if (doc.defaultView) doc.defaultView.addEventListener('scroll', hide, true);
+  }
+
   function mount(el, adapter, opts) {
     var doc = el.ownerDocument || document;
     var t = opts.t || {}, lang = opts.lang || 'en', kinds = opts.kinds || Object.keys(FIELDS);
     var marks = (opts.marks && opts.marks.marks) || {}, lit = (opts.marks && opts.marks.tiles) || {};
     var cls = Object.assign({ input: '', button: '', switch: '' }, opts.classes);
     var list = [], typing = 0, problems = {}, addBtn = null;
+    wireBubble(doc);
 
     function h(tag, attrs, kids) {
       var n = doc.createElement(tag);
@@ -245,8 +307,18 @@
       return i;
     }
 
-    function button(text, extra, onclick) {
-      var b = h('button', { type: 'button', class: (cls.button + ' glim-nc-btn ' + (extra || '')).trim(), text: text });
+    // A button's glyph stands before its words, as on every button of the
+    // house. The theme plugin leaves a button with its own glyph alone.
+    function labelled(b, glyph, text) {
+      var g = h('span', { class: 'glim-nc-g', 'aria-hidden': 'true' });
+      g.innerHTML = GLYPHS[glyph] || '';
+      b.appendChild(g);
+      b.appendChild(h('span', { class: 'glim-nc-l', text: text }));
+      return b;
+    }
+
+    function button(text, glyph, extra, onclick) {
+      var b = labelled(h('button', { type: 'button', class: (cls.button + ' glim-nc-btn ' + (extra || '')).trim() }), glyph, text);
       b.addEventListener('click', onclick);
       return b;
     }
@@ -334,7 +406,7 @@
     // The test of a channel, its button and the line that says how it went.
     function tester(of, make) {
       var res = h('span', { class: 'glim-nc-res', role: 'status' });
-      var b = (make || button)(t.nc_test, '', function () {
+      var b = (make || button)(t.nc_test, 'test', '', function () {
         var ch = of();
         if (!ch) return;
         res.className = 'glim-nc-res glim-nc-run';
@@ -363,7 +435,7 @@
         save(true);
       });
       var card = h('section', { class: 'glim-nc-ch', 'data-kind': c.kind }, [
-        h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: title }), info(t[HINTS[c.kind]]), sw])
+        h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: title }), info(t[HINTS[c.kind]]), h('span', { class: 'glim-nc-gap' }), sw])
       ]);
       if (problems[c.id]) card.appendChild(h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }));
       if (c.enabled) {
@@ -376,7 +448,7 @@
       }
       var test = tester(of);
       test.button.disabled = !c.enabled;
-      var remove = button(t.nc_remove, '', function () {
+      var remove = button(t.nc_remove, 'remove', '', function () {
         list = list.filter(function (o) { return o.id !== c.id; });
         draw();
         save(true);
@@ -410,8 +482,8 @@
         (addBtn && addBtn.isConnected ? addBtn : el).focus();
       }
 
-      function winButton(text, extra, onclick) {
-        var b = h('button', { type: 'button', class: 'glim-nc-win-btn' + (extra ? ' ' + extra : ''), text: text });
+      function winButton(text, glyph, extra, onclick) {
+        var b = labelled(h('button', { type: 'button', class: 'glim-nc-win-btn' + (extra ? ' ' + extra : '') }), glyph, text);
         b.addEventListener('click', onclick);
         return b;
       }
@@ -460,7 +532,7 @@
         body.appendChild(search);
         body.appendChild(scroll);
         grid();
-        act.appendChild(winButton(t.nc_close, '', close));
+        act.appendChild(winButton(t.nc_close, 'close', '', close));
         if (scroll.clientHeight) scroll.style.minHeight = scroll.clientHeight + 'px';
         search.focus();
       }
@@ -492,7 +564,7 @@
         }
         fill();
         act.textContent = '';
-        var keep = winButton(t.nc_save, 'glim-nc-key', function () {
+        var keep = winButton(t.nc_save, 'save', 'glim-nc-key', function () {
           if (busy) return;
           busy = true;
           keep.disabled = true;
@@ -513,8 +585,8 @@
             err.textContent = t.nc_not_saved + ': ' + fail(t, mine ? mine.code : (e && e.code) || 'engine');
           });
         });
-        act.appendChild(winButton(t.nc_cancel, '', close));
-        act.appendChild(winButton(t.nc_back, '', tiles));
+        act.appendChild(winButton(t.nc_cancel, 'close', '', close));
+        act.appendChild(winButton(t.nc_back, 'back', '', tiles));
         act.appendChild(keep);
         var first = body.querySelector('input, textarea');
         if (first) first.focus();
@@ -554,7 +626,7 @@
       var root = h('div', { class: 'glim-nc' });
       if (!list.length) root.appendChild(h('p', { class: 'glim-nc-sub', text: t.nc_empty }));
       list.forEach(function (c) { root.appendChild(channel(c)); });
-      addBtn = button(t.nc_add, 'glim-nc-add', function () { picker(); });
+      addBtn = button(t.nc_add, 'add', 'glim-nc-add', function () { picker(); });
       addBtn.setAttribute('aria-haspopup', 'dialog');
       root.appendChild(h('div', { class: 'glim-nc-addrow' }, [addBtn]));
       el.appendChild(root);

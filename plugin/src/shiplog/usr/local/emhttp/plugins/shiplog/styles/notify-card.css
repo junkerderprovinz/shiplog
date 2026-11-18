@@ -12,12 +12,11 @@
   --nc-field-focus: color-mix(in srgb, currentColor 14%, transparent);
   --nc-btn: color-mix(in srgb, currentColor 13%, transparent);
   --nc-dim: var(--alt-text-color, #8d8d8d);
+  --nc-focus: var(--link-text-color, #486dba);
   --nc-ok: #3fae6a;
   --nc-err: #e05252;
   --nc-r-card: 4px;
   --nc-r-ctl: 4px;
-  --nc-bubble: var(--mild-background-color, #262626);
-  --nc-bubble-ink: var(--text-color, #f2f2f2);
   /* The marks drawn in black or navy are lifted on the dark grounds. */
   --brand-discord-0: #6a76f3;
   --brand-ntfy-0: #38907e;
@@ -31,8 +30,6 @@
 html:is(.Theme--white, .Theme--azure) .glim-nc {
   --nc-ok: #0e6027;
   --nc-err: #da1e28;
-  --nc-bubble: #262626;
-  --nc-bubble-ink: #f2f2f2;
   --brand-discord-0: #5865F2;
   --brand-ntfy-0: #317F6F;
   --brand-matrix-0: #000000;
@@ -47,12 +44,11 @@ html.tt-popups-on .glim-nc {
   --nc-field-focus: color-mix(in srgb, var(--nc-sub), currentColor 16%);
   --nc-btn: color-mix(in srgb, var(--nc-sub), currentColor 13%);
   --nc-dim: var(--tt-text-dim, #8a8a8a);
+  --nc-focus: var(--tt-accent-ink, #FCC419);
   --nc-ok: var(--tt-ok-ink, #6fdc8c);
   --nc-err: var(--tt-err-ink, #ff8389);
   --nc-r-card: var(--tt-radius-card, 20px);
   --nc-r-ctl: var(--tt-radius-control, 12px);
-  --nc-bubble: var(--tt-surface-window, #242424);
-  --nc-bubble-ink: var(--tt-text, #e6e6e6);
 }
 .glim-nc *, .glim-nc *::before, .glim-nc *::after { box-sizing: border-box; }
 .glim-nc .glim-nc-sub { margin: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
@@ -61,7 +57,7 @@ html.tt-popups-on .glim-nc {
 .glim-nc-ch { padding: 8px 14px 10px; border-radius: calc(var(--nc-r-card) * .7); background: var(--nc-sub); }
 .glim-nc-ch-hd { display: flex; align-items: center; gap: 8px; min-height: 36px; }
 .glim-nc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.glim-nc-ch-hd .glim-nc-switch { margin-inline-start: auto !important; flex: none; }
+.glim-nc-ch-hd .glim-nc-switch { flex: none; }
 .glim-nc-err { margin: 2px 0 4px; color: var(--nc-err); font-size: 13px; text-align: start; }
 .glim-nc-err:empty { display: none; }
 
@@ -85,18 +81,43 @@ html.tt-popups-on .glim-nc {
 .glim-nc-mark { display: inline-flex; flex: none; width: 20px; height: 20px; line-height: 0; }
 .glim-nc-mark svg { width: 100%; height: 100%; display: block; }
 
-/* The (i) with its words in a bubble under the pointer and on keyboard focus. */
-.glim-nc-info { position: relative; display: inline-flex; flex: none; width: 15px; height: 15px; opacity: .8; cursor: help; }
-.glim-nc-info svg { width: 15px; height: 15px; fill: currentColor; }
-.glim-nc-info:is(:hover, :focus-visible) { opacity: 1; }
-.glim-nc-info::after {
-  content: attr(data-tip); position: absolute; z-index: 10; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-  width: max-content; max-width: min(300px, 70vw); padding: 7px 10px; border-radius: var(--nc-r-ctl);
-  background: var(--nc-bubble); color: var(--nc-bubble-ink); box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
-  font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: normal; text-transform: none; text-align: start; white-space: normal;
-  display: none; pointer-events: none;
+/* A button's glyph before its words, at the words' size. */
+.glim-nc-g { display: inline-flex; flex: none; line-height: 0; }
+.glim-nc-g svg { width: 14px; height: 14px; display: block; }
+.glim-nc-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* GlimStone's (i): a bare stroked glyph in the muted ink, whose opacity
+   carries hover and focus. Keyboard focus also draws the ring, the one line
+   GlimStone allows. Its words open in the bubble below. */
+.glim-nc-info {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 15px; height: 15px;
+  border-radius: 9999px; color: var(--nc-dim, var(--tt-text-dim, var(--alt-text-color, #8d8d8d))); opacity: .8; cursor: help;
 }
-.glim-nc-info:is(:hover, :focus-visible)::after { display: block; }
+.glim-nc-info svg { width: 15px; height: 15px; display: block; }
+.glim-nc-info:is(:hover, :focus) { opacity: 1; }
+.glim-nc-info:focus { outline: none; }
+.glim-nc-info:focus-visible { outline: 2px solid var(--nc-focus, var(--tt-accent-ink, var(--link-text-color, #486dba))); outline-offset: 2px; }
+/* On a filled badge the (i) takes the badge's ink. */
+:is(.glim-nc-win-title, .trs-h) .glim-nc-info { color: inherit; opacity: 1; }
+
+/* The one floating bubble, a body child (notify-card.js), in the look the
+   theme plugin gives every bubble: clamped into the viewport, above the
+   trigger when below would clip, its arrow on the trigger. */
+.glim-nc-bubble {
+  position: fixed; z-index: 2147483647; display: none; transform: translateX(-50%);
+  width: max-content; max-width: 280px; padding: 9px 12px; border: none; border-radius: 4px;
+  background: #393939; color: #f4f4f4; box-shadow: 0 8px 24px rgba(0, 0, 0, .55); pointer-events: none;
+  font-size: 12px; font-weight: 400; line-height: 1.45; letter-spacing: normal; text-transform: none; text-align: start; white-space: pre-line;
+}
+.glim-nc-bubble::before {
+  content: ""; position: absolute; left: var(--nc-tip-ax, 50%); top: -6px; transform: translateX(-50%);
+  width: 0; height: 0; border-style: solid; border-width: 0 6px 6px; border-color: transparent transparent #393939;
+}
+.glim-nc-bubble.glim-nc-bubble-above::before { top: auto; bottom: -6px; border-width: 6px 6px 0; border-color: #393939 transparent transparent; }
+@keyframes glim-nc-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .glim-nc-bubble { animation: glim-nc-fade 110ms ease both; }
+}
 
 /* The picker window lives in <body>, outside the card, so it carries its own
    colours, as the fortress card's windows do: Unraid's theme on its own, and
@@ -118,9 +139,8 @@ html.tt-popups-on .glim-nc {
   --nc-ok: #3fae6a;
   --nc-err: #e05252;
   --nc-dim: var(--nc-w-dim);
+  --nc-focus: var(--nc-w-focus);
   --nc-r-ctl: var(--nc-w-r-ctl);
-  --nc-bubble: color-mix(in srgb, var(--nc-w-ground), currentColor 14%);
-  --nc-bubble-ink: var(--nc-w-ink);
   --brand-discord-0: #6a76f3;
   --brand-ntfy-0: #38907e;
   --brand-matrix-0: #828282;
@@ -157,7 +177,6 @@ html.tt-popups-on .glim-nc-wins {
   --nc-w-shadow: var(--tt-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
   --nc-ok: #6fdc8c;
   --nc-err: #ff8389;
-  --nc-bubble: #2e2e2e;
 }
 /* Under OLED, which counts only on a dark Unraid theme, the window takes the
    theme plugin's lowered surfaces. */
@@ -242,8 +261,7 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) .glim-nc-info { color: var(--nc-lit-ink); }
 .glim-nc-wins button.glim-nc-tile:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 2px; }
 .glim-nc-wins button.glim-nc-tile:disabled { opacity: .45; cursor: default; }
-.glim-nc-tilebox .glim-nc-info { position: absolute; top: 50%; inset-inline-end: 10px; translate: 0 -50%; color: var(--nc-w-ink); }
-.glim-nc-tilebox .glim-nc-info::after { left: auto; right: -10px; transform: none; }
+.glim-nc-tilebox .glim-nc-info { position: absolute; top: 50%; inset-inline-end: 10px; translate: 0 -50%; }
 @media (prefers-reduced-motion: no-preference) {
   html:not([data-tt-motion="off"]) .glim-nc-wins button.glim-nc-tile { transition: background-color var(--tt-motion-control-dur, 150ms), color var(--tt-motion-control-dur, 150ms); }
 }
@@ -284,6 +302,7 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-wins button.glim-nc-win-btn:disabled { opacity: .5; cursor: default; }
 .glim-nc-wins button.glim-nc-win-btn:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 2px; }
 html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-raised), var(--nc-w-head) 22%); }
+html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hover, :focus-visible):not(:disabled) .glim-nc-g { color: var(--nc-w-head); }
 
 /* On a phone the window is a sheet from the bottom edge with its foot
    always in view, the search spans its width and the tiles go two to a row,
@@ -312,7 +331,7 @@ html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hov
     border: none !important; box-shadow: none !important; background-color: var(--nc-field) !important;
   }
   .glim-nc .glim-nc-ch :is(input.glim-nc-in, textarea.glim-nc-in, .tt-tsel-trigger):focus { background-color: var(--nc-field-focus) !important; }
-  .glim-nc button.glim-nc-btn { border: none !important; }
+  .glim-nc button.glim-nc-btn { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: none !important; }
   html.tt-popups-on .glim-nc .glim-nc-ch button.glim-nc-btn:not(:hover):not(:focus-visible) { background-color: var(--nc-btn) !important; }
   .glim-nc-wins button.glim-nc-tile { border: none !important; }
   .glim-nc-wins .glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) button.glim-nc-tile {
