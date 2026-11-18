@@ -41,7 +41,12 @@ func (m *memStore) Save(raw []byte) error {
 
 func waitFor(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(20 * time.Second)
+	waitUpTo(t, 20*time.Second, what, cond)
+}
+
+func waitUpTo(t *testing.T, limit time.Duration, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(limit)
 	for time.Now().Before(deadline) {
 		if cond() {
 			return
