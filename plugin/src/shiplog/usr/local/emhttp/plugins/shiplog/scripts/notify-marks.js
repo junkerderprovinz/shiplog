@@ -40,7 +40,7 @@
       gotify: { tile: '#71caee', ink: '#161616' },
       matrix: { tile: '#000000', ink: '#ffffff' },
       apprise: { tile: '#237171', ink: '#ffffff' },
-      healthchecks: { tile: '#33333f', ink: '#ffffff' },
+      healthchecks: { tile: '#5cb85f', ink: '#161616' },
       unraid: { tile: '#f15a2c', ink: '#ffffff' },
     }
   };
