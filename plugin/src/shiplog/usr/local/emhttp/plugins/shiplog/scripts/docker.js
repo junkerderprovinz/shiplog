@@ -1009,6 +1009,9 @@
     bd.addEventListener("click", () => close());
     document.body.appendChild(bd);
     const b = el("div", "sl-bubble", bubbleHTML(st));
+    b.setAttribute("role", "dialog");
+    b.setAttribute("aria-modal", "true");
+    b.setAttribute("aria-label", `ShipLog: ${(st.container && st.container.name) || ""}`);
     if (isLightBg()) b.classList.add("sl-light");
     document.body.appendChild(b);
     b._backdrop = bd;

@@ -279,6 +279,17 @@ func TestAnImageWithoutAFixSaysWhatToDo(t *testing.T) {
 	}
 }
 
+// TestTheWindowIsAModalDialog keeps the window announced as a modal dialog, so
+// screen readers and overlays leave the page behind its backdrop alone.
+func TestTheWindowIsAModalDialog(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	for _, want := range []string{`b.setAttribute("role", "dialog")`, `b.setAttribute("aria-modal", "true")`} {
+		if !strings.Contains(js, want) {
+			t.Errorf("docker.js lacks %s", want)
+		}
+	}
+}
+
 // TestTheVulnerabilityListStaysFolded keeps the window's list of
 // vulnerabilities behind its counts line, so the release notes stay in view,
 // and says how many the list leaves out.
