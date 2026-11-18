@@ -1100,7 +1100,10 @@
       const st = byName[norm(rowName(tr))];
       if (!st) continue;
       const cell = findUpdateCell(tr);
-      if (!cell || cell.getAttribute(MARK)) continue;
+      if (!cell) continue;
+      // A row Folder View re-renders keeps the mark but loses the chip, so the
+      // mark only counts while the chip is still there.
+      if (cell.getAttribute(MARK) && cell.querySelector(":scope > .sl-chiprow")) continue;
       const upd = isUpdate(st), seUpd = hasUpdate(st);
       let chip;
       // An unmaintained or demoted app gets a warning chip in place of the
