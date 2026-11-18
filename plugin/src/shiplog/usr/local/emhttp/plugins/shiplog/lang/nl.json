@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Bekende kwetsbaarheden in het geïnstalleerde image: %v.",
   "d_vulnNoneInstalled": "Het geïnstalleerde image heeft geen bekende kritieke of hoge kwetsbaarheden.",
   "d_vulnRaised": "Een stap hoger ingeschat: de update dicht %v.",
-  "d_vulnMore": "en nog %n"
+  "d_vulnMore": "en nog %n",
+  "d_reason_digest": "zelfde tag, nieuwe image-digest",
+  "d_reason_current": "up-to-date",
+  "d_reason_non_semver": "tags zonder semver, automatisch vergelijken kan niet",
+  "d_reason_major": "major-sprong %1.x → %2.x (controleer brekende wijzigingen)",
+  "d_reason_minor": "minor-sprong %1 → %2 (nieuwe functies, lees de changelog)",
+  "d_reason_patch": "patch %1 → %2 (alleen fixes, laag risico)",
+  "d_reason_pinned_newer": "vastgezet op %1, nieuwere versie %2 beschikbaar, wijzig de tag om bij te werken",
+  "d_reason_breaking_in": "brekende wijziging gemeld in de release notes van %1 (\"%2\"), controleer voor het bijwerken",
+  "d_reason_breaking": "brekende wijziging gemeld in de release notes (\"%1\"), controleer voor het bijwerken",
+  "d_reason_digest_pinned": "vastgezet op digest, werkt pas bij als de vastzetting verandert",
+  "d_reason_local": "geen registry-digest (lokaal gebouwd of geladen), niet met een registry vergeleken",
+  "d_reason_image_id": "aangeduid met image-ID, geen tag om te vergelijken",
+  "d_reason_removed": "image uit de registry verwijderd",
+  "d_reason_lookup_failed": "opvragen bij de bron mislukt"
 }

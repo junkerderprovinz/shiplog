@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Kendte sårbarheder i det installerede image: %v.",
   "d_vulnNoneInstalled": "Det installerede image har ingen kendte kritiske eller høje sårbarheder.",
   "d_vulnRaised": "Et trin højere: opdateringen lukker %v.",
-  "d_vulnMore": "og %n mere"
+  "d_vulnMore": "og %n mere",
+  "d_reason_digest": "samme tag, nyt image-digest",
+  "d_reason_current": "opdateret",
+  "d_reason_non_semver": "tags uden semver, kan ikke sammenlignes automatisk",
+  "d_reason_major": "major-spring %1.x → %2.x (gennemgå inkompatible ændringer)",
+  "d_reason_minor": "minor-spring %1 → %2 (nye funktioner, læs changelog)",
+  "d_reason_patch": "patch %1 → %2 (kun rettelser, lav risiko)",
+  "d_reason_pinned_newer": "låst til %1, nyere version %2 findes, skift tag for at opdatere",
+  "d_reason_breaking_in": "inkompatibel ændring nævnt i release notes for %1 (\"%2\"), tjek før opdatering",
+  "d_reason_breaking": "inkompatibel ændring nævnt i release notes (\"%1\"), tjek før opdatering",
+  "d_reason_digest_pinned": "låst med digest, opdateres først når låsen ændres",
+  "d_reason_local": "intet registry-digest (bygget eller indlæst lokalt), ikke sammenlignet med et registry",
+  "d_reason_image_id": "angivet med image-ID, intet tag at sammenligne",
+  "d_reason_removed": "image fjernet fra registry",
+  "d_reason_lookup_failed": "opslag hos kilden mislykkedes"
 }

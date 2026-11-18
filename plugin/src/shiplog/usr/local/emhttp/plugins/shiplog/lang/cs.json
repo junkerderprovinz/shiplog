@@ -199,5 +199,19 @@
   "d_vulnInstalled": "Známé zranitelnosti v nainstalovaném image: %v.",
   "d_vulnNoneInstalled": "Nainstalovaný image nemá žádné známé kritické ani vysoké zranitelnosti.",
   "d_vulnRaised": "Hodnocení o stupeň výš. Aktualizace uzavírá: %v.",
-  "d_vulnMore": "a %n dalších"
+  "d_vulnMore": "a %n dalších",
+  "d_reason_digest": "stejný tag, nový digest image",
+  "d_reason_current": "aktuální",
+  "d_reason_non_semver": "tagy bez semver, automatické porovnání nelze",
+  "d_reason_major": "velká verze %1.x → %2.x (zkontrolujte nekompatibilní změny)",
+  "d_reason_minor": "menší verze %1 → %2 (nové funkce, přečtěte si changelog)",
+  "d_reason_patch": "oprava %1 → %2 (jen opravy, nízké riziko)",
+  "d_reason_pinned_newer": "připnuto na %1, novější verze %2 je k dispozici, pro aktualizaci změňte tag",
+  "d_reason_breaking_in": "nekompatibilní změna v poznámkách k %1 (\"%2\"), před aktualizací zkontrolujte",
+  "d_reason_breaking": "nekompatibilní změna v poznámkách k vydání (\"%1\"), před aktualizací zkontrolujte",
+  "d_reason_digest_pinned": "připnuto přes digest, aktualizuje se až se změnou připnutí",
+  "d_reason_local": "žádný digest z registru (sestaveno nebo načteno lokálně), neporovnáno s registrem",
+  "d_reason_image_id": "odkazováno přes ID image, žádný tag k porovnání",
+  "d_reason_removed": "image odstraněn z registru",
+  "d_reason_lookup_failed": "dotaz u zdroje selhal"
 }

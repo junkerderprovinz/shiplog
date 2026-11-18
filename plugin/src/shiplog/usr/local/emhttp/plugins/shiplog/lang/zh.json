@@ -197,5 +197,19 @@
   "d_vulnInstalled": "已安装镜像的已知漏洞：%v。",
   "d_vulnNoneInstalled": "已安装的镜像没有已知的严重或高危漏洞。",
   "d_vulnRaised": "风险提高一级：更新修复了%v。",
-  "d_vulnMore": "另有 %n 个"
+  "d_vulnMore": "另有 %n 个",
+  "d_reason_digest": "相同标签，新的镜像摘要",
+  "d_reason_current": "已是最新",
+  "d_reason_non_semver": "非 semver 标签，无法自动比较",
+  "d_reason_major": "主版本跳升 %1.x → %2.x（请检查不兼容的变更）",
+  "d_reason_minor": "次版本跳升 %1 → %2（新功能，请阅读更新日志）",
+  "d_reason_patch": "补丁 %1 → %2（仅修复，低风险）",
+  "d_reason_pinned_newer": "固定在 %1，已有新版本 %2，更改标签即可更新",
+  "d_reason_breaking_in": "%1 的发布说明提到不兼容的变更（\"%2\"），更新前请检查",
+  "d_reason_breaking": "发布说明提到不兼容的变更（\"%1\"），更新前请检查",
+  "d_reason_digest_pinned": "按摘要固定，只有固定变化时才会更新",
+  "d_reason_local": "没有仓库摘要（本地构建或加载），未与仓库比对",
+  "d_reason_image_id": "按镜像 ID 引用，没有可比较的标签",
+  "d_reason_removed": "镜像已从仓库删除",
+  "d_reason_lookup_failed": "向上游查询失败"
 }

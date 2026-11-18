@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Vulnerabilità note nell'immagine installata: %v.",
   "d_vulnNoneInstalled": "L'immagine installata non ha vulnerabilità note critiche o alte.",
   "d_vulnRaised": "Un livello più in alto: l'aggiornamento chiude %v.",
-  "d_vulnMore": "e altre %n"
+  "d_vulnMore": "e altre %n",
+  "d_reason_digest": "stesso tag, nuovo digest dell'immagine",
+  "d_reason_current": "aggiornato",
+  "d_reason_non_semver": "tag non semver, confronto automatico impossibile",
+  "d_reason_major": "salto maggiore %1.x → %2.x (controlla le modifiche incompatibili)",
+  "d_reason_minor": "salto minore %1 → %2 (nuove funzioni, leggi il changelog)",
+  "d_reason_patch": "patch %1 → %2 (solo correzioni, rischio basso)",
+  "d_reason_pinned_newer": "fissato su %1, versione %2 disponibile, cambia il tag per aggiornare",
+  "d_reason_breaking_in": "modifica incompatibile segnalata nelle note di %1 (\"%2\"), controlla prima di aggiornare",
+  "d_reason_breaking": "modifica incompatibile segnalata nelle note di rilascio (\"%1\"), controlla prima di aggiornare",
+  "d_reason_digest_pinned": "fissato per digest, si aggiorna solo quando cambia il vincolo",
+  "d_reason_local": "nessun digest del registry (creata o caricata in locale), non confrontata con un registry",
+  "d_reason_image_id": "indicata per ID immagine, nessun tag da confrontare",
+  "d_reason_removed": "immagine rimossa dal registry",
+  "d_reason_lookup_failed": "ricerca a monte non riuscita"
 }

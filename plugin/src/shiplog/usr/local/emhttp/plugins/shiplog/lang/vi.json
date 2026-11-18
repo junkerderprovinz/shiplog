@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Lỗ hổng đã biết trong image đã cài: %v.",
   "d_vulnNoneInstalled": "Image đã cài không có lỗ hổng đã biết mức nghiêm trọng hoặc cao.",
   "d_vulnRaised": "Tăng một bậc rủi ro: bản cập nhật vá được %v.",
-  "d_vulnMore": "và %n lỗ hổng khác"
+  "d_vulnMore": "và %n lỗ hổng khác",
+  "d_reason_digest": "cùng tag, digest image mới",
+  "d_reason_current": "đã mới nhất",
+  "d_reason_non_semver": "tag không theo semver, không so sánh tự động được",
+  "d_reason_major": "nhảy phiên bản chính %1.x → %2.x (xem các thay đổi không tương thích)",
+  "d_reason_minor": "nhảy phiên bản phụ %1 → %2 (tính năng mới, đọc changelog)",
+  "d_reason_patch": "bản vá %1 → %2 (chỉ sửa lỗi, rủi ro thấp)",
+  "d_reason_pinned_newer": "cố định ở %1, đã có phiên bản %2, đổi tag để cập nhật",
+  "d_reason_breaking_in": "ghi chú phát hành %1 có thay đổi không tương thích (\"%2\"), xem trước khi cập nhật",
+  "d_reason_breaking": "ghi chú phát hành có thay đổi không tương thích (\"%1\"), xem trước khi cập nhật",
+  "d_reason_digest_pinned": "cố định theo digest, chỉ cập nhật khi đổi phần cố định",
+  "d_reason_local": "không có digest từ registry (build hoặc nạp tại chỗ), chưa so với registry",
+  "d_reason_image_id": "tham chiếu bằng ID image, không có tag để so",
+  "d_reason_removed": "image đã bị xóa khỏi registry",
+  "d_reason_lookup_failed": "truy vấn nguồn thất bại"
 }

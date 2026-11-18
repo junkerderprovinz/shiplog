@@ -199,5 +199,19 @@
   "d_vulnInstalled": "Vulnerabilități cunoscute în imaginea instalată: %v.",
   "d_vulnNoneInstalled": "Imaginea instalată nu are vulnerabilități cunoscute critice sau ridicate.",
   "d_vulnRaised": "Cu o treaptă mai sus: actualizarea închide %v.",
-  "d_vulnMore": "și încă %n"
+  "d_vulnMore": "și încă %n",
+  "d_reason_digest": "același tag, digest nou de imagine",
+  "d_reason_current": "la zi",
+  "d_reason_non_semver": "taguri fără semver, nu se pot compara automat",
+  "d_reason_major": "salt major %1.x → %2.x (verifică schimbările incompatibile)",
+  "d_reason_minor": "salt minor %1 → %2 (funcții noi, citește changelogul)",
+  "d_reason_patch": "patch %1 → %2 (doar remedieri, risc mic)",
+  "d_reason_pinned_newer": "fixat pe %1, versiunea %2 e disponibilă, schimbă tagul pentru actualizare",
+  "d_reason_breaking_in": "schimbare incompatibilă semnalată în notele %1 (\"%2\"), verifică înainte de actualizare",
+  "d_reason_breaking": "schimbare incompatibilă semnalată în notele de lansare (\"%1\"), verifică înainte de actualizare",
+  "d_reason_digest_pinned": "fixat prin digest, se actualizează doar când se schimbă fixarea",
+  "d_reason_local": "niciun digest din registry (construită sau încărcată local), necomparată cu un registry",
+  "d_reason_image_id": "indicată prin ID-ul imaginii, niciun tag de comparat",
+  "d_reason_removed": "imagine eliminată din registry",
+  "d_reason_lookup_failed": "interogarea sursei a eșuat"
 }

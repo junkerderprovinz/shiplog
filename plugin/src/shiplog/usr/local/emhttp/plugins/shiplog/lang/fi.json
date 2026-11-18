@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Asennetun imagen tunnetut haavoittuvuudet: %v.",
   "d_vulnNoneInstalled": "Asennetussa imagessa ei ole tunnettuja kriittisiä tai korkeita haavoittuvuuksia.",
   "d_vulnRaised": "Arvio pykälää korkeampi. Päivitys korjaa: %v.",
-  "d_vulnMore": "ja %n muuta"
+  "d_vulnMore": "ja %n muuta",
+  "d_reason_digest": "sama tagi, uusi imagen digest",
+  "d_reason_current": "ajan tasalla",
+  "d_reason_non_semver": "tagit eivät ole semver-muotoisia, automaattinen vertailu ei onnistu",
+  "d_reason_major": "pääversion hyppy %1.x → %2.x (tarkista yhteensopimattomat muutokset)",
+  "d_reason_minor": "sivuversion hyppy %1 → %2 (uusia ominaisuuksia, lue changelog)",
+  "d_reason_patch": "korjausversio %1 → %2 (vain korjauksia, pieni riski)",
+  "d_reason_pinned_newer": "kiinnitetty versioon %1, uudempi versio %2 saatavilla, vaihda tagi päivittääksesi",
+  "d_reason_breaking_in": "yhteensopimaton muutos mainittu version %1 julkaisutiedoissa (\"%2\"), tarkista ennen päivitystä",
+  "d_reason_breaking": "yhteensopimaton muutos mainittu julkaisutiedoissa (\"%1\"), tarkista ennen päivitystä",
+  "d_reason_digest_pinned": "kiinnitetty digestillä, päivittyy vasta kun kiinnitys muuttuu",
+  "d_reason_local": "ei rekisterin digestiä (rakennettu tai ladattu paikallisesti), ei verrattu rekisteriin",
+  "d_reason_image_id": "viitattu imagen ID:llä, ei tagia verrattavaksi",
+  "d_reason_removed": "image poistettu rekisteristä",
+  "d_reason_lookup_failed": "haku lähteestä epäonnistui"
 }

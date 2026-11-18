@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Vulnérabilités connues de l'image installée : %v.",
   "d_vulnNoneInstalled": "L'image installée n'a aucune vulnérabilité connue critique ou élevée.",
   "d_vulnRaised": "Classée un cran plus haut : la mise à jour corrige %v.",
-  "d_vulnMore": "et %n de plus"
+  "d_vulnMore": "et %n de plus",
+  "d_reason_digest": "même tag, nouveau digest d'image",
+  "d_reason_current": "à jour",
+  "d_reason_non_semver": "tags hors semver, comparaison automatique impossible",
+  "d_reason_major": "saut majeur %1.x → %2.x (vérifiez les changements cassants)",
+  "d_reason_minor": "saut mineur %1 → %2 (nouvelles fonctions, lisez le changelog)",
+  "d_reason_patch": "correctif %1 → %2 (corrections seulement, risque faible)",
+  "d_reason_pinned_newer": "figé sur %1, version %2 disponible, changez le tag pour mettre à jour",
+  "d_reason_breaking_in": "changement cassant signalé dans les notes de %1 (\"%2\"), à vérifier avant la mise à jour",
+  "d_reason_breaking": "changement cassant signalé dans les notes de version (\"%1\"), à vérifier avant la mise à jour",
+  "d_reason_digest_pinned": "figé par digest, ne se met à jour que si l'épinglage change",
+  "d_reason_local": "aucun digest de registre (construite ou chargée localement), non comparée à un registre",
+  "d_reason_image_id": "référencée par ID d'image, aucun tag à comparer",
+  "d_reason_removed": "image supprimée du registre",
+  "d_reason_lookup_failed": "échec de la recherche en amont"
 }

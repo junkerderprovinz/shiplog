@@ -336,20 +336,20 @@ func memoResolve(r Resolver) resolveFunc {
 }
 
 // noUpstreamReason reports why c has no registry counterpart to check.
-func noUpstreamReason(c model.Container) (string, bool) {
+func noUpstreamReason(c model.Container) (model.Reason, bool) {
 	switch {
 	case c.PinnedDigest != "":
 		// Docker runs the pinned digest even when the ref also names a tag, so an
 		// update could not be applied until the pin changes.
-		return "pinned by digest, updates only when the pin changes", true
+		return model.Why(model.ReasonDigestPinned), true
 	case c.IsLocal:
 		// A locally built or loaded image may share its name with an unrelated
 		// registry repository.
-		return "no registry digest (built or loaded locally), not checked against a registry", true
+		return model.Why(model.ReasonLocal), true
 	case c.Repo == "":
-		return "referenced by image ID, no tag to compare", true
+		return model.Why(model.ReasonImageID), true
 	}
-	return "", false
+	return model.Reason{}, false
 }
 
 func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, suppressed map[string]bool, projects map[string]string, templateURLs map[string]string, caFeed caFeedLookuper) model.UpdateStatus {
@@ -367,7 +367,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
 
 	if reason, ok := noUpstreamReason(c); ok {
-		st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, reason
+		st.Kind, st.Risk = model.KindNone, model.RiskNone
+		st.SetReason(reason)
 		switch {
 		case isVersion(c.Tag):
 			st.RunningVersion = c.Tag
@@ -394,7 +395,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	newestTag, newestDigest, newestVerTag, newestVerDigest, err := resolve(ctx, c.Repo, c.Tag, c.Digest)
 	if err != nil {
 		if errors.Is(err, resolver.ErrRepoNotFound) {
-			st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, "image removed from the registry"
+			st.Kind, st.Risk = model.KindNone, model.RiskNone
+			st.SetReason(model.Why(model.ReasonRemoved))
 			if !silenced {
 				st.Unmaintained, st.UnmaintainedReason = true, "Image no longer in the registry"
 			}
@@ -428,7 +430,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		st.Error = "could not resolve upstream: " + err.Error()
 		st.Kind = model.KindUnknown
 		st.Risk = model.RiskUnknown
-		st.RiskReason = "upstream lookup failed"
+		st.SetReason(model.Why(model.ReasonLookupFailed))
 		switch {
 		case hasPrior && prior.RunningVersion != "":
 			st.RunningVersion = prior.RunningVersion
@@ -444,7 +446,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	st.RunningVersion = decideRunningVersion(c, newestVerTag, newestVerDigest, prior, hasPrior)
 
 	v := classify(c, st.RunningVersion, newestTag, newestDigest, newestVerTag, newestVerDigest)
-	st.Kind, st.Risk, st.RiskReason, st.NewerVersion = v.kind, v.risk, v.reason, v.newer
+	st.Kind, st.Risk, st.NewerVersion = v.kind, v.risk, v.newer
+	st.SetReason(v.reason)
 	if v.newest != "" {
 		st.NewestTag = v.newest
 	}
@@ -484,7 +487,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// show. They only ever raise the verdict.
 		if st.HasUpdate() {
 			if reason, breaking := scanBreaking(cl, st.RunningVersion, v.to); breaking && model.RiskCritical.MoreSevere(st.Risk) {
-				st.Risk, st.RiskReason = model.RiskCritical, reason
+				st.Risk = model.RiskCritical
+				st.SetReason(reason)
 			}
 		}
 		if st.HasUpdate() {
@@ -557,7 +561,7 @@ func raiseForFixes(st *model.UpdateStatus) {
 
 // scanBreaking reads the release notes that are still ahead of the container.
 // Without a running version that is only the release classify vouched for.
-func scanBreaking(cl *model.Changelog, running, vouched string) (string, bool) {
+func scanBreaking(cl *model.Changelog, running, vouched string) (model.Reason, bool) {
 	if running == "" {
 		return risk.ScanRelease(cl, vouched)
 	}
@@ -679,7 +683,7 @@ func isVersion(tag string) bool { return versionLike.MatchString(tag) }
 type verdict struct {
 	kind   model.Kind
 	risk   model.RiskLevel
-	reason string
+	reason model.Reason
 	newer  string // advisory for a pinned tag; set only with KindNone
 	newest string // replaces the resolved newest tag when set
 	to     string // end of the changelog span; empty means the newest tag
@@ -721,12 +725,12 @@ func classify(c model.Container, running, newestTag, newestDigest, newestVerTag,
 		// The container is pinned to a version tag and a newer one exists, but a
 		// pull of the pinned tag cannot reach it.
 		if tagMoved(c, newestDigest) {
-			v.kind, v.risk, v.reason = model.KindDigest, model.RiskLow, "same tag, new image digest"
+			v.kind, v.risk, v.reason = model.KindDigest, model.RiskLow, model.Why(model.ReasonDigest)
 			v.newest, v.to = c.Tag, c.Tag
 			break
 		}
 		v.kind, v.risk = model.KindNone, model.RiskNone
-		v.reason = fmt.Sprintf("pinned to %s; newer version %s available, change the tag to update", c.Tag, newestTag)
+		v.reason = model.Why(model.ReasonPinnedNewer, c.Tag, newestTag)
 		v.newer = newestTag
 	}
 	return v

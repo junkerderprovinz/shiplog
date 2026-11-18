@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Bekannte Sicherheitslücken im installierten Image: %v.",
   "d_vulnNoneInstalled": "Das installierte Image hat keine bekannten kritischen oder hohen Sicherheitslücken.",
   "d_vulnRaised": "Eine Stufe höher eingestuft: Das Update schließt %v.",
-  "d_vulnMore": "und %n weitere"
+  "d_vulnMore": "und %n weitere",
+  "d_reason_digest": "gleicher Tag, neuer Image-Digest",
+  "d_reason_current": "aktuell",
+  "d_reason_non_semver": "Tags ohne Semver, kein automatischer Vergleich möglich",
+  "d_reason_major": "Major-Sprung %1.x → %2.x (Breaking Changes prüfen)",
+  "d_reason_minor": "Minor-Sprung %1 → %2 (neue Funktionen, Changelog lesen)",
+  "d_reason_patch": "Patch-Sprung %1 → %2 (nur Fehlerbehebungen, geringes Risiko)",
+  "d_reason_pinned_newer": "auf %1 festgelegt, neuere Version %2 verfügbar, zum Aktualisieren den Tag ändern",
+  "d_reason_breaking_in": "Breaking Change in den Release Notes von %1 („%2“), vor dem Update prüfen",
+  "d_reason_breaking": "Breaking Change in den Release Notes („%1“), vor dem Update prüfen",
+  "d_reason_digest_pinned": "per Digest festgelegt, aktualisiert sich erst, wenn sich die Festlegung ändert",
+  "d_reason_local": "kein Registry-Digest (lokal gebaut oder geladen), nicht mit einer Registry abgeglichen",
+  "d_reason_image_id": "über die Image-ID angesprochen, kein Tag zum Vergleichen",
+  "d_reason_removed": "Image aus der Registry entfernt",
+  "d_reason_lookup_failed": "Abfrage beim Anbieter fehlgeschlagen"
 }

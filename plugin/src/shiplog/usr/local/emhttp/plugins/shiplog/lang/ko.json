@@ -197,5 +197,19 @@
   "d_vulnInstalled": "설치된 이미지의 알려진 취약점: %v.",
   "d_vulnNoneInstalled": "설치된 이미지에 알려진 심각 또는 높음 취약점이 없습니다.",
   "d_vulnRaised": "위험을 한 단계 올렸습니다. 업데이트로 %v가 해결됩니다.",
-  "d_vulnMore": "외 %n개"
+  "d_vulnMore": "외 %n개",
+  "d_reason_digest": "같은 태그, 새 이미지 다이제스트",
+  "d_reason_current": "최신",
+  "d_reason_non_semver": "semver가 아닌 태그라 자동으로 비교할 수 없음",
+  "d_reason_major": "메이저 업데이트 %1.x → %2.x (호환되지 않는 변경 확인)",
+  "d_reason_minor": "마이너 업데이트 %1 → %2 (새 기능, 변경 기록 확인)",
+  "d_reason_patch": "패치 %1 → %2 (수정만, 낮은 위험)",
+  "d_reason_pinned_newer": "%1에 고정됨, 새 버전 %2 있음, 업데이트하려면 태그 변경",
+  "d_reason_breaking_in": "%1 릴리스 노트에 호환되지 않는 변경 (\"%2\"), 업데이트 전에 확인",
+  "d_reason_breaking": "릴리스 노트에 호환되지 않는 변경 (\"%1\"), 업데이트 전에 확인",
+  "d_reason_digest_pinned": "다이제스트로 고정됨, 고정이 바뀔 때만 업데이트",
+  "d_reason_local": "레지스트리 다이제스트 없음 (로컬에서 빌드하거나 불러옴), 레지스트리와 비교하지 않음",
+  "d_reason_image_id": "이미지 ID로 참조됨, 비교할 태그 없음",
+  "d_reason_removed": "이미지가 레지스트리에서 삭제됨",
+  "d_reason_lookup_failed": "원본 조회 실패"
 }

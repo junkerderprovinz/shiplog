@@ -4,6 +4,7 @@ package model
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -77,6 +78,63 @@ const (
 	KindUnknown Kind = "unknown" // non-semver tag, can't classify
 )
 
+// Reason says why a status has its risk.
+type Reason struct {
+	Code string   `json:"code"`
+	Args []string `json:"args,omitempty"`
+}
+
+const (
+	ReasonDigest       = "digest"
+	ReasonCurrent      = "current"
+	ReasonNonSemver    = "non_semver"
+	ReasonMajor        = "major"
+	ReasonMinor        = "minor"
+	ReasonPatch        = "patch"
+	ReasonPinnedNewer  = "pinned_newer"
+	ReasonBreakingIn   = "breaking_in"
+	ReasonBreaking     = "breaking"
+	ReasonDigestPinned = "digest_pinned"
+	ReasonLocal        = "local"
+	ReasonImageID      = "image_id"
+	ReasonRemoved      = "removed"
+	ReasonLookupFailed = "lookup_failed"
+)
+
+// ReasonCodes holds the English text of each code, with %1 and %2 for its
+// values. The Docker tab's language files carry the same texts.
+var ReasonCodes = map[string]string{
+	ReasonDigest:       "same tag, new image digest",
+	ReasonCurrent:      "up to date",
+	ReasonNonSemver:    "non-semver tags, cannot compare automatically",
+	ReasonMajor:        "major version bump %1.x → %2.x (review breaking changes)",
+	ReasonMinor:        "minor version bump %1 → %2 (new features, review the changelog)",
+	ReasonPatch:        "patch version bump %1 → %2 (fixes only, low risk)",
+	ReasonPinnedNewer:  "pinned to %1, newer version %2 available, change the tag to update",
+	ReasonBreakingIn:   `breaking change flagged in %1 release notes ("%2"), review before updating`,
+	ReasonBreaking:     `breaking change flagged in the release notes ("%1"), review before updating`,
+	ReasonDigestPinned: "pinned by digest, updates only when the pin changes",
+	ReasonLocal:        "no registry digest (built or loaded locally), not checked against a registry",
+	ReasonImageID:      "referenced by image ID, no tag to compare",
+	ReasonRemoved:      "image removed from the registry",
+	ReasonLookupFailed: "upstream lookup failed",
+}
+
+// Why builds a reason from its code and values.
+func Why(code string, args ...string) Reason { return Reason{Code: code, Args: args} }
+
+// String is the reason in English.
+func (r Reason) String() string {
+	s := ReasonCodes[r.Code]
+	for i, a := range r.Args {
+		s = strings.ReplaceAll(s, "%"+strconv.Itoa(i+1), a)
+	}
+	return s
+}
+
+// SetReason records why the status has its risk, as text and as a code.
+func (s *UpdateStatus) SetReason(r Reason) { s.RiskCode, s.RiskReason = r, r.String() }
+
 // UpdateStatus is the per-container result the engine stores and serves.
 type UpdateStatus struct {
 	Container Container `json:"container"`
@@ -90,6 +148,9 @@ type UpdateStatus struct {
 	Kind           Kind      `json:"kind"`
 	Risk           RiskLevel `json:"risk"`
 	RiskReason     string    `json:"risk_reason"`
+	// RiskCode is RiskReason as a code with its values, which the Docker tab
+	// says in the viewer's language.
+	RiskCode Reason `json:"risk_code,omitzero"`
 	// NewerVersion is the newest version tag when the container is pinned to an
 	// older version tag that the registry still serves unchanged. A pull of the
 	// pinned tag cannot reach it, so Kind stays none: never counted, notified

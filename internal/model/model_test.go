@@ -147,3 +147,33 @@ func TestTheStatusLineSaysWhyNothingWasChecked(t *testing.T) {
 		}
 	}
 }
+
+func TestAReasonReadsAsBeforeInEnglish(t *testing.T) {
+	cases := []struct {
+		r    Reason
+		want string
+	}{
+		{Reason{Code: ReasonDigest}, "same tag, new image digest"},
+		{Reason{Code: ReasonCurrent}, "up to date"},
+		{Reason{Code: ReasonNonSemver}, "non-semver tags, cannot compare automatically"},
+		{Reason{Code: ReasonMajor, Args: []string{"1", "2"}}, "major version bump 1.x → 2.x (review breaking changes)"},
+		{Reason{Code: ReasonMinor, Args: []string{"1.2", "1.3"}}, "minor version bump 1.2 → 1.3 (new features, review the changelog)"},
+		{Reason{Code: ReasonPatch, Args: []string{"1.2.3", "1.2.4"}}, "patch version bump 1.2.3 → 1.2.4 (fixes only, low risk)"},
+		{Reason{Code: ReasonPinnedNewer, Args: []string{"1.2", "1.4"}}, "pinned to 1.2, newer version 1.4 available, change the tag to update"},
+		{Reason{Code: ReasonBreakingIn, Args: []string{"v2.0.0", "breaking change"}}, `breaking change flagged in v2.0.0 release notes ("breaking change"), review before updating`},
+		{Reason{Code: ReasonBreaking, Args: []string{"migration required"}}, `breaking change flagged in the release notes ("migration required"), review before updating`},
+		{Reason{Code: ReasonDigestPinned}, "pinned by digest, updates only when the pin changes"},
+		{Reason{Code: ReasonLocal}, "no registry digest (built or loaded locally), not checked against a registry"},
+		{Reason{Code: ReasonImageID}, "referenced by image ID, no tag to compare"},
+		{Reason{Code: ReasonRemoved}, "image removed from the registry"},
+		{Reason{Code: ReasonLookupFailed}, "upstream lookup failed"},
+	}
+	if len(cases) != len(ReasonCodes) {
+		t.Fatalf("%d cases for %d codes", len(cases), len(ReasonCodes))
+	}
+	for _, c := range cases {
+		if got := c.r.String(); got != c.want {
+			t.Errorf("%s = %q, want %q", c.r.Code, got, c.want)
+		}
+	}
+}

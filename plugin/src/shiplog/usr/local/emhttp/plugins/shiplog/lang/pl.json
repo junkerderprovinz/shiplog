@@ -201,5 +201,19 @@
   "d_vulnInstalled": "Znane podatności w zainstalowanym obrazie: %v.",
   "d_vulnNoneInstalled": "Zainstalowany obraz nie ma znanych krytycznych ani wysokich podatności.",
   "d_vulnRaised": "Ocena o poziom wyżej. Aktualizacja zamyka: %v.",
-  "d_vulnMore": "i %n więcej"
+  "d_vulnMore": "i %n więcej",
+  "d_reason_digest": "ten sam tag, nowy digest obrazu",
+  "d_reason_current": "aktualny",
+  "d_reason_non_semver": "tagi bez semver, nie da się ich porównać automatycznie",
+  "d_reason_major": "skok główny %1.x → %2.x (sprawdź niezgodne zmiany)",
+  "d_reason_minor": "skok pomniejszy %1 → %2 (nowe funkcje, przeczytaj changelog)",
+  "d_reason_patch": "poprawka %1 → %2 (tylko poprawki, niskie ryzyko)",
+  "d_reason_pinned_newer": "przypięty do %1, dostępna nowsza wersja %2, zmień tag, aby zaktualizować",
+  "d_reason_breaking_in": "niezgodna zmiana w informacjach o wydaniu %1 (\"%2\"), sprawdź przed aktualizacją",
+  "d_reason_breaking": "niezgodna zmiana w informacjach o wydaniu (\"%1\"), sprawdź przed aktualizacją",
+  "d_reason_digest_pinned": "przypięty przez digest, aktualizuje się dopiero po zmianie przypięcia",
+  "d_reason_local": "brak digestu z rejestru (zbudowany lub wczytany lokalnie), nie porównano z rejestrem",
+  "d_reason_image_id": "wskazany przez ID obrazu, brak tagu do porównania",
+  "d_reason_removed": "obraz usunięty z rejestru",
+  "d_reason_lookup_failed": "zapytanie do źródła nie powiodło się"
 }

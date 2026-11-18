@@ -197,5 +197,19 @@
   "d_vulnInstalled": "インストール済みイメージの既知の脆弱性: %v。",
   "d_vulnNoneInstalled": "インストール済みのイメージには既知の重大または高の脆弱性はありません。",
   "d_vulnRaised": "リスクを1段階上げました。更新で %v が解消されます。",
-  "d_vulnMore": "ほか %n 件"
+  "d_vulnMore": "ほか %n 件",
+  "d_reason_digest": "同じタグ、新しいイメージダイジェスト",
+  "d_reason_current": "最新",
+  "d_reason_non_semver": "semver ではないタグのため自動比較できません",
+  "d_reason_major": "メジャー更新 %1.x → %2.x(互換性のない変更を確認してください)",
+  "d_reason_minor": "マイナー更新 %1 → %2(新機能、変更履歴を確認してください)",
+  "d_reason_patch": "パッチ更新 %1 → %2(修正のみ、低リスク)",
+  "d_reason_pinned_newer": "%1 に固定、新しいバージョン %2 があります。更新するにはタグを変更してください",
+  "d_reason_breaking_in": "%1 のリリースノートに互換性のない変更 (\"%2\")。更新前に確認してください",
+  "d_reason_breaking": "リリースノートに互換性のない変更 (\"%1\")。更新前に確認してください",
+  "d_reason_digest_pinned": "ダイジェストで固定、固定を変えるまで更新されません",
+  "d_reason_local": "レジストリのダイジェストなし(ローカルでビルドまたは読み込み)、レジストリと照合していません",
+  "d_reason_image_id": "イメージ ID で参照、比較するタグがありません",
+  "d_reason_removed": "イメージがレジストリから削除されました",
+  "d_reason_lookup_failed": "提供元への問い合わせに失敗しました"
 }

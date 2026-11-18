@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Known vulnerabilities in the installed image: %v.",
   "d_vulnNoneInstalled": "The installed image has no known critical or high vulnerabilities.",
   "d_vulnRaised": "Rated a step higher: the update closes %v.",
-  "d_vulnMore": "and %n more"
+  "d_vulnMore": "and %n more",
+  "d_reason_digest": "same tag, new image digest",
+  "d_reason_current": "up to date",
+  "d_reason_non_semver": "non-semver tags, cannot compare automatically",
+  "d_reason_major": "major version bump %1.x → %2.x (review breaking changes)",
+  "d_reason_minor": "minor version bump %1 → %2 (new features, review the changelog)",
+  "d_reason_patch": "patch version bump %1 → %2 (fixes only, low risk)",
+  "d_reason_pinned_newer": "pinned to %1, newer version %2 available, change the tag to update",
+  "d_reason_breaking_in": "breaking change flagged in %1 release notes (\"%2\"), review before updating",
+  "d_reason_breaking": "breaking change flagged in the release notes (\"%1\"), review before updating",
+  "d_reason_digest_pinned": "pinned by digest, updates only when the pin changes",
+  "d_reason_local": "no registry digest (built or loaded locally), not checked against a registry",
+  "d_reason_image_id": "referenced by image ID, no tag to compare",
+  "d_reason_removed": "image removed from the registry",
+  "d_reason_lookup_failed": "upstream lookup failed"
 }

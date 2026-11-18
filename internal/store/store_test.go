@@ -284,6 +284,25 @@ func TestTheStateAndARaisedRiskComeBack(t *testing.T) {
 	}
 }
 
+func TestTheReasonCodeComesBack(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{Container: model.Container{ID: "a"}, CheckedAt: time.Now()}
+	st.SetReason(model.Why(model.ReasonPatch, "1.2.3", "1.2.4"))
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "b"}, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	a, _ := s.Get("a")
+	if a.RiskCode.Code != model.ReasonPatch || len(a.RiskCode.Args) != 2 || a.RiskCode.Args[1] != "1.2.4" {
+		t.Errorf("code = %+v", a.RiskCode)
+	}
+	if b, _ := s.Get("b"); b.RiskCode.Code != "" {
+		t.Errorf("a row without a code reads back %+v", b.RiskCode)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	s := newTestStore(t)
 	_, err := s.Get("does-not-exist")

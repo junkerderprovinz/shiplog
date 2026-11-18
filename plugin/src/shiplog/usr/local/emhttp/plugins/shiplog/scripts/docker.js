@@ -115,6 +115,20 @@
     vulnFailed: "The vulnerability database couldn't be reached. ShipLog tries again at the next check.",
     vulnFixed: "closed by the update",
     vulnMore: "and %n more",
+    reason_digest: "same tag, new image digest",
+    reason_current: "up to date",
+    reason_non_semver: "non-semver tags, cannot compare automatically",
+    reason_major: "major version bump %1.x → %2.x (review breaking changes)",
+    reason_minor: "minor version bump %1 → %2 (new features, review the changelog)",
+    reason_patch: "patch version bump %1 → %2 (fixes only, low risk)",
+    reason_pinned_newer: "pinned to %1, newer version %2 available, change the tag to update",
+    reason_breaking_in: "breaking change flagged in %1 release notes (\"%2\"), review before updating",
+    reason_breaking: "breaking change flagged in the release notes (\"%1\"), review before updating",
+    reason_digest_pinned: "pinned by digest, updates only when the pin changes",
+    reason_local: "no registry digest (built or loaded locally), not checked against a registry",
+    reason_image_id: "referenced by image ID, no tag to compare",
+    reason_removed: "image removed from the registry",
+    reason_lookup_failed: "upstream lookup failed",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
   function T(k) { return I18N["d_" + k] || EN[k] || k; }
@@ -336,6 +350,15 @@
     return parts;
   }
   function fillList(s, parts) { return String(s).replace("%v", () => parts.join(T("vulnAnd"))); }
+  // The engine sends its reason as a code with values. An older row has only
+  // the English text, which stays as it is.
+  function riskReason(st) {
+    const r = st && st.risk_code;
+    const s = r && r.code ? (I18N["d_reason_" + r.code] || EN["reason_" + r.code]) : "";
+    if (!s) return (st && st.risk_reason) || "";
+    const args = Array.isArray(r.args) ? r.args : [];
+    return String(s).replace(/%([12])/g, (m, i) => (args[i - 1] != null ? String(args[i - 1]) : m));
+  }
   function vulnCount(st) {
     const v = st && st.vulns;
     return v && !v.reason ? (v.critical || 0) + (v.high || 0) : 0;
@@ -637,7 +660,7 @@
     };
     // An up-to-date container carries no version jump line, and neither does an
     // update only Unraid flags, since the engine's reason then reads "up to date".
-    let jump = upd && seUpd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "")) : "";
+    let jump = upd && seUpd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : riskReason(st)) : "";
     if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
     let summary = "";

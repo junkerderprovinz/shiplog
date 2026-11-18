@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Kända sårbarheter i den installerade imagen: %v.",
   "d_vulnNoneInstalled": "Den installerade imagen har inga kända kritiska eller höga sårbarheter.",
   "d_vulnRaised": "Ett steg högre: uppdateringen täpper till %v.",
-  "d_vulnMore": "och %n till"
+  "d_vulnMore": "och %n till",
+  "d_reason_digest": "samma tagg, ny image-digest",
+  "d_reason_current": "uppdaterad",
+  "d_reason_non_semver": "taggar utan semver, kan inte jämföras automatiskt",
+  "d_reason_major": "major-steg %1.x → %2.x (granska inkompatibla ändringar)",
+  "d_reason_minor": "minor-steg %1 → %2 (nya funktioner, läs changelog)",
+  "d_reason_patch": "patch %1 → %2 (bara rättningar, låg risk)",
+  "d_reason_pinned_newer": "låst till %1, nyare version %2 finns, byt tagg för att uppdatera",
+  "d_reason_breaking_in": "inkompatibel ändring nämnd i release notes för %1 (\"%2\"), kontrollera före uppdatering",
+  "d_reason_breaking": "inkompatibel ändring nämnd i release notes (\"%1\"), kontrollera före uppdatering",
+  "d_reason_digest_pinned": "låst med digest, uppdateras först när låsningen ändras",
+  "d_reason_local": "ingen registry-digest (byggd eller laddad lokalt), inte jämförd med ett registry",
+  "d_reason_image_id": "angiven med image-ID, ingen tagg att jämföra",
+  "d_reason_removed": "image borttagen från registryt",
+  "d_reason_lookup_failed": "uppslag hos källan misslyckades"
 }

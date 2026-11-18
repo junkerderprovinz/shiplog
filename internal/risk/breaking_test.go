@@ -36,7 +36,7 @@ func TestScanRelease(t *testing.T) {
 			if hit != c.wantHit {
 				t.Fatalf("ScanRelease hit = %v, want %v (reason %q)", hit, c.wantHit, reason)
 			}
-			if hit && !strings.Contains(reason, c.wantIn) {
+			if hit && !strings.Contains(reason.String(), c.wantIn) {
 				t.Errorf("reason %q does not mention %q", reason, c.wantIn)
 			}
 		})
@@ -158,10 +158,10 @@ func TestScanBreaking(t *testing.T) {
 				t.Fatalf("ScanBreaking hit = %v, want %v (reason %q)", hit, c.wantHit, reason)
 			}
 			if hit {
-				if reason == "" {
+				if reason.String() == "" {
 					t.Fatal("a hit must carry a non-empty reason")
 				}
-				if c.wantIn != "" && !strings.Contains(reason, c.wantIn) {
+				if c.wantIn != "" && !strings.Contains(reason.String(), c.wantIn) {
 					t.Errorf("reason %q does not mention %q", reason, c.wantIn)
 				}
 			}

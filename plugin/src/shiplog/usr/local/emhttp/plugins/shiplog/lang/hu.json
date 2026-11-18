@@ -197,5 +197,19 @@
   "d_vulnInstalled": "A telepített image ismert sebezhetőségei: %v.",
   "d_vulnNoneInstalled": "A telepített image-ben nincs ismert kritikus vagy magas sebezhetőség.",
   "d_vulnRaised": "Egy fokkal feljebb: a frissítés %v sebezhetőséget zár be.",
-  "d_vulnMore": "és még %n"
+  "d_vulnMore": "és még %n",
+  "d_reason_digest": "ugyanaz a tag, új image digest",
+  "d_reason_current": "naprakész",
+  "d_reason_non_semver": "nem semver tagek, automatikus összevetés nem lehetséges",
+  "d_reason_major": "főverzió-ugrás %1.x → %2.x (nézd át a nem kompatibilis változásokat)",
+  "d_reason_minor": "alverzió-ugrás %1 → %2 (új funkciók, olvasd el a changelogot)",
+  "d_reason_patch": "javítás %1 → %2 (csak javítások, kis kockázat)",
+  "d_reason_pinned_newer": "%1 verzióra rögzítve, elérhető a %2 verzió, a frissítéshez változtasd meg a taget",
+  "d_reason_breaking_in": "nem kompatibilis változás a %1 kiadási jegyzetében (\"%2\"), frissítés előtt nézd át",
+  "d_reason_breaking": "nem kompatibilis változás a kiadási jegyzetben (\"%1\"), frissítés előtt nézd át",
+  "d_reason_digest_pinned": "digesttel rögzítve, csak a rögzítés változásakor frissül",
+  "d_reason_local": "nincs registry digest (helyben épített vagy betöltött), nincs registryvel összevetve",
+  "d_reason_image_id": "image ID-vel hivatkozva, nincs tag az összevetéshez",
+  "d_reason_removed": "az image törölve a registryből",
+  "d_reason_lookup_failed": "a forrás lekérdezése nem sikerült"
 }

@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/junkerderprovinz/shiplog/internal/model"
 )
 
 var pluginDir = filepath.Join("src", "shiplog", "usr", "local", "emhttp", "plugins", "shiplog")
@@ -155,6 +157,51 @@ func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestEveryLanguageGivesTheRiskReasons keeps a text for every reason the
+// engine sends as a code, with its values, and the English one equal to the
+// engine's own.
+func TestEveryLanguageGivesTheRiskReasons(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
+	if err != nil || len(files) < 26 {
+		t.Fatalf("lang files = %d, %v", len(files), err)
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]string
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for code, en := range model.ReasonCodes {
+			v := texts["d_reason_"+code]
+			if v == "" {
+				t.Errorf("%s lacks d_reason_%s", filepath.Base(f), code)
+				continue
+			}
+			for _, ph := range []string{"%1", "%2"} {
+				if strings.Contains(en, ph) != strings.Contains(v, ph) {
+					t.Errorf("%s: d_reason_%s and English differ in %s: %q", filepath.Base(f), code, ph, v)
+				}
+			}
+			if filepath.Base(f) == "en.json" {
+				if v != en {
+					t.Errorf("en.json d_reason_%s = %q, the engine says %q", code, v, en)
+				}
+				quoted, _ := json.Marshal(v)
+				if !strings.Contains(js, "reason_"+code+": "+string(quoted)) {
+					t.Errorf("docker.js falls back to another English reason_%s than en.json's %s", code, quoted)
+				}
+			}
+		}
+	}
+	if !strings.Contains(js, "riskReason(st)") {
+		t.Error("the window does not say the reason from its code")
 	}
 }
 

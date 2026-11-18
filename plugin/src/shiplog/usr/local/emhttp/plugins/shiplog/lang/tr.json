@@ -197,5 +197,19 @@
   "d_vulnInstalled": "Kurulu imajdaki bilinen güvenlik açıkları: %v.",
   "d_vulnNoneInstalled": "Kurulu imajda bilinen kritik veya yüksek güvenlik açığı yok.",
   "d_vulnRaised": "Bir basamak yüksek: güncelleme %v açığı kapatıyor.",
-  "d_vulnMore": "ve %n tane daha"
+  "d_vulnMore": "ve %n tane daha",
+  "d_reason_digest": "aynı etiket, yeni imaj özeti",
+  "d_reason_current": "güncel",
+  "d_reason_non_semver": "semver olmayan etiketler, otomatik karşılaştırılamaz",
+  "d_reason_major": "ana sürüm atlaması %1.x → %2.x (uyumsuz değişiklikleri incele)",
+  "d_reason_minor": "ara sürüm atlaması %1 → %2 (yeni özellikler, changelog'u oku)",
+  "d_reason_patch": "yama %1 → %2 (yalnızca düzeltmeler, düşük risk)",
+  "d_reason_pinned_newer": "%1 sürümüne sabitlenmiş, daha yeni %2 sürümü var, güncellemek için etiketi değiştir",
+  "d_reason_breaking_in": "%1 sürüm notlarında uyumsuz değişiklik var (\"%2\"), güncellemeden önce incele",
+  "d_reason_breaking": "sürüm notlarında uyumsuz değişiklik var (\"%1\"), güncellemeden önce incele",
+  "d_reason_digest_pinned": "özetle sabitlenmiş, yalnızca sabitleme değişince güncellenir",
+  "d_reason_local": "kayıt deposu özeti yok (yerelde derlenmiş veya yüklenmiş), bir kayıt deposuyla karşılaştırılmadı",
+  "d_reason_image_id": "imaj kimliğiyle belirtilmiş, karşılaştırılacak etiket yok",
+  "d_reason_removed": "imaj kayıt deposundan kaldırılmış",
+  "d_reason_lookup_failed": "kaynakta sorgu başarısız oldu"
 }
