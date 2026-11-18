@@ -235,6 +235,7 @@
   "nc_on_always": "Mindent",
   "nc_on_failure": "Csak a problémákat",
   "nc_close": "Bezárás",
+  "nc_clear": "Keresés törlése",
   "nc_search": "Szolgáltatások keresése",
   "nc_none": "Semmi sem felel meg ennek: „{query}”. Egy webhook szinte bármelyik szolgáltatást eléri.",
   "nc_cancel": "Mégse",

@@ -235,6 +235,7 @@
   "nc_on_always": "Allt",
   "nc_on_failure": "Bara problem",
   "nc_close": "Stäng",
+  "nc_clear": "Rensa sökningen",
   "nc_search": "Sök tjänster",
   "nc_none": "Inget matchar ”{query}”. En webhook når nästan vilken tjänst som helst.",
   "nc_cancel": "Avbryt",

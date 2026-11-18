@@ -33,6 +33,7 @@
     remove: "<svg viewBox=\"0 0 14 14\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><g> <path fill-rule=\"evenodd\" d=\"M5.76256 2.01256C6.09075 1.68437 6.53587 1.5 7 1.5c0.46413 0 0.90925 0.18437 1.23744 0.51256 0.20736 0.20737 0.35731 0.46141 0.43961 0.73744h-3.3541c0.0823 -0.27603 0.23225 -0.53007 0.43961 -0.73744ZM3.78868 2.75c0.10537 -0.67679 0.42285 -1.30773 0.91322 -1.798097C5.3114 0.34241 6.13805 0 7 0c0.86195 0 1.6886 0.34241 2.2981 0.951903 0.49037 0.490367 0.8079 1.121307 0.9132 1.798097H13c0.4142 0 0.75 0.33579 0.75 0.75 0 0.41422 -0.3358 0.75 -0.75 0.75h-1v8.25c0 0.3978 -0.158 0.7794 -0.4393 1.0607S10.8978 14 10.5 14h-7c-0.39783 0 -0.77936 -0.158 -1.06066 -0.4393C2.15804 13.2794 2 12.8978 2 12.5V4.25H1c-0.414214 0 -0.75 -0.33578 -0.75 -0.75 0 -0.41421 0.335786 -0.75 0.75 -0.75h2.78868ZM5 5.87646c0.34518 0 0.625 0.27983 0.625 0.625V10.503c0 0.3451 -0.27982 0.625 -0.625 0.625s-0.625 -0.2799 -0.625 -0.625V6.50146c0 -0.34517 0.27982 -0.625 0.625 -0.625Zm4.625 0.625c0 -0.34517 -0.27982 -0.625 -0.625 -0.625s-0.625 0.27983 -0.625 0.625V10.503c0 0.3451 0.27982 0.625 0.625 0.625s0.625 -0.2799 0.625 -0.625V6.50146Z\" clip-rule=\"evenodd\" stroke-width=\"1\"></path> </g></svg>",
     close: "<svg viewBox=\"0 0 14 14\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M11.957 13.716 L12.056 13.789 L12.272 13.905 L12.506 13.976 L12.75 14 L12.994 13.976 L13.228 13.905 L13.444 13.789 L13.543 13.716 L13.716 13.543 L13.789 13.444 L13.905 13.228 L13.976 12.994 L14 12.75 L13.976 12.506 L13.905 12.272 L13.852 12.161 L13.789 12.056 L13.634 11.866 L8.768 7 L13.716 2.043 L13.789 1.944 L13.905 1.728 L13.976 1.494 L14 1.25 L13.976 1.006 L13.905 0.772 L13.789 0.556 L13.716 0.457 L13.543 0.284 L13.339 0.148 L13.113 0.054 L12.873 0.006 L12.627 0.006 L12.387 0.054 L12.272 0.095 L12.056 0.211 L11.866 0.366 L7 5.232 L2.043 0.284 L1.839 0.148 L1.613 0.054 L1.494 0.024 L1.25 0 L1.127 0.006 L0.887 0.054 L0.661 0.148 L0.457 0.284 L0.284 0.457 L0.211 0.556 L0.095 0.772 L0.024 1.006 L0 1.25 L0.024 1.494 L0.095 1.728 L0.211 1.944 L0.366 2.134 L5.232 7 L0.284 11.957 L0.211 12.056 L0.095 12.272 L0.024 12.506 L0 12.75 L0.024 12.994 L0.095 13.228 L0.211 13.444 L0.284 13.543 L0.457 13.716 L0.661 13.852 L0.772 13.905 L1.006 13.976 L1.25 14 L1.494 13.976 L1.728 13.905 L1.944 13.789 L2.134 13.634 L7 8.768Z\" /></svg>",
     back: "<svg viewBox=\"4.25 3.6 12.8 12.8\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M6.6 10 13 3.6l1.7 1.7L10 10l4.7 4.7-1.7 1.7L6.6 10Z\" /></svg>",
+    search: "<svg viewBox=\"-0.001 0 13.988 13.988\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M2 6a4 4 0 1 1 8 0 4 4 0 0 1 -8 0Zm4 -6a6 6 0 1 0 3.476 10.89l2.817 2.817a1 1 0 0 0 1.414 -1.414l-2.816 -2.816A6 6 0 0 0 6 0Z\" clip-rule=\"evenodd\"/></svg>",
     save: "<svg viewBox=\"3 3 18 18\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z\" /></svg>"
   };
 
@@ -403,22 +404,39 @@
       return h('div', { class: 'glim-nc-row' }, [h('span', { class: 'glim-nc-lbl' }, [lbl, info(t[f.hint])]), h('div', { class: 'glim-nc-ctl' }, [input])]);
     }
 
-    // The test of a channel, its button and the line that says how it went.
-    function tester(of, make) {
+    /* The test of a channel, its button and the line that says how it went.
+     * In the window's foot the button also shows it, as GlimStone's window
+     * actions do: busy while it runs, then in the colour of the outcome with
+     * the outcome as its title, its words as they were. */
+    function tester(of, make, toned) {
       var res = h('span', { class: 'glim-nc-res', role: 'status' });
       var b = (make || button)(t.nc_test, 'test', '', function () {
         var ch = of();
         if (!ch) return;
-        res.className = 'glim-nc-res glim-nc-run';
+        function done(ok, text) {
+          res.className = 'glim-nc-res ' + (ok ? 'glim-nc-ok' : 'glim-nc-bad') + (toned ? ' glim-nc-win-start' : '');
+          res.textContent = text;
+          if (!toned) return;
+          b.removeAttribute('aria-busy');
+          b.disabled = false;
+          b.classList.add(ok ? 'glim-nc-tone-ok' : 'glim-nc-tone-bad');
+          b.setAttribute('title', text);
+        }
+        res.className = 'glim-nc-res glim-nc-run' + (toned ? ' glim-nc-win-start' : '');
         res.textContent = t.nc_testing;
+        if (toned) {
+          b.classList.remove('glim-nc-tone-ok', 'glim-nc-tone-bad');
+          b.removeAttribute('title');
+          b.setAttribute('aria-busy', 'true');
+          b.disabled = true;
+        }
         adapter.test(JSON.parse(JSON.stringify(ch))).then(function (r) {
-          res.className = 'glim-nc-res ' + (r.ok ? 'glim-nc-ok' : 'glim-nc-bad');
-          res.textContent = r.ok ? t.nc_test_ok : t.nc_test_failed + ': ' + fail(t, r.code);
+          done(r.ok, r.ok ? t.nc_test_ok : t.nc_test_failed + ': ' + fail(t, r.code));
         }, function () {
-          res.className = 'glim-nc-res glim-nc-bad';
-          res.textContent = t.nc_test_failed;
+          done(false, t.nc_test_failed);
         });
       });
+      if (toned) res.className = 'glim-nc-res glim-nc-win-start';
       return { button: b, result: res };
     }
 
@@ -513,12 +531,29 @@
 
       function tiles() {
         draft = null;
+        box.classList.remove('glim-nc-win-form');
         body.className = 'glim-nc-win-body glim-nc-win-pick';
         body.textContent = '';
         act.textContent = '';
+        // The search wears its glyph and clears with a grey button of its own.
         search = h('input', { type: 'search', class: 'glim-nc-search', 'aria-label': t.nc_search, placeholder: t.nc_search, spellcheck: 'false', autocomplete: 'off' });
         search.value = query;
-        search.addEventListener('input', function () { query = search.value; grid(); });
+        var lens = h('span', { class: 'glim-nc-search-g', 'aria-hidden': 'true' });
+        lens.innerHTML = GLYPHS.search;
+        var clear = h('button', { type: 'button', class: 'glim-nc-search-clear', 'aria-label': t.nc_clear, title: t.nc_clear });
+        clear.innerHTML = GLYPHS.close;
+        clear.hidden = !query;
+        function typed() {
+          query = search.value;
+          clear.hidden = !query;
+          grid();
+        }
+        search.oninput = typed;
+        clear.addEventListener('click', function () {
+          search.value = '';
+          typed();
+          search.focus();
+        });
         scroll = h('div', { class: 'glim-nc-scroll' });
         scroll.addEventListener('keydown', function (e) {
           var all = tilesOf(), from = all.indexOf(e.target);
@@ -529,7 +564,7 @@
           e.preventDefault();
           (to === 'search' ? search : all[to]).focus();
         });
-        body.appendChild(search);
+        body.appendChild(h('span', { class: 'glim-nc-search-box' }, [lens, search, clear]));
         body.appendChild(scroll);
         grid();
         act.appendChild(winButton(t.nc_close, 'close', '', close));
@@ -537,11 +572,14 @@
         search.focus();
       }
 
+      // The form narrows the window to a form's width around the same middle,
+      // and its test stands in the foot with its verdict at the foot's start.
       function form(c) {
         draft = c;
+        box.classList.add('glim-nc-win-form');
         var of = function () { return draft; };
         var err = h('p', { class: 'glim-nc-err', role: 'alert' });
-        var test = tester(of, winButton);
+        var test = tester(of, winButton, true);
         function fill() {
           body.className = 'glim-nc-win-body';
           body.textContent = '';
@@ -559,7 +597,6 @@
             }, true));
           });
           body.appendChild(rows);
-          body.appendChild(h('div', { class: 'glim-nc-tools' }, [test.result, test.button]));
           body.appendChild(err);
         }
         fill();
@@ -585,8 +622,10 @@
             err.textContent = t.nc_not_saved + ': ' + fail(t, mine ? mine.code : (e && e.code) || 'engine');
           });
         });
+        act.appendChild(test.result);
         act.appendChild(winButton(t.nc_cancel, 'close', '', close));
         act.appendChild(winButton(t.nc_back, 'back', '', tiles));
+        act.appendChild(test.button);
         act.appendChild(keep);
         var first = body.querySelector('input, textarea');
         if (first) first.focus();
@@ -598,8 +637,7 @@
           e.stopPropagation();
           if (search && e.target === search && search.value !== '') {
             search.value = '';
-            query = '';
-            grid();
+            search.oninput();
           } else if (!busy) close();
         } else if (e.key === 'Enter' && search && e.target === search && query.trim() !== '') {
           var one = tilesOf();
@@ -615,7 +653,8 @@
           else if (!e.shiftKey && doc.activeElement === last) { e.preventDefault(); first.focus(); }
         }
       }
-      scrim.addEventListener('click', function () { if (!busy) close(); });
+      // A press beside the window would throw away what was typed into a form.
+      scrim.addEventListener('click', function () { if (!busy && !draft) close(); });
       doc.addEventListener('keydown', onKey, true);
       tiles();
       return { close: close, box: box };

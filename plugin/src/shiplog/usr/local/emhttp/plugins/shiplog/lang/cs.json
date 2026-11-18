@@ -235,6 +235,7 @@
   "nc_on_always": "Vše",
   "nc_on_failure": "Jen problémy",
   "nc_close": "Zavřít",
+  "nc_clear": "Vymazat hledání",
   "nc_search": "Hledat služby",
   "nc_none": "Nic neodpovídá „{query}“. Webhook dosáhne téměř na každou službu.",
   "nc_cancel": "Zrušit",

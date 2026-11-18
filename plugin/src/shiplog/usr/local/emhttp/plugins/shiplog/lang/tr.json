@@ -235,6 +235,7 @@
   "nc_on_always": "Her şey",
   "nc_on_failure": "Yalnızca sorunlar",
   "nc_close": "Kapat",
+  "nc_clear": "Aramayı temizle",
   "nc_search": "Servis ara",
   "nc_none": "“{query}” ile eşleşen bir şey yok. Bir webhook neredeyse her servise ulaşır.",
   "nc_cancel": "İptal",

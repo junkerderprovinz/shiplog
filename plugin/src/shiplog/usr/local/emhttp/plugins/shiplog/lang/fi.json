@@ -235,6 +235,7 @@
   "nc_on_always": "Kaikki",
   "nc_on_failure": "Vain ongelmat",
   "nc_close": "Sulje",
+  "nc_clear": "Tyhjennä haku",
   "nc_search": "Hae palveluita",
   "nc_none": "Mikään ei vastaa hakua ”{query}”. Webhook tavoittaa lähes minkä tahansa palvelun.",
   "nc_cancel": "Peruuta",

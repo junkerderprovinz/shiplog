@@ -235,6 +235,7 @@
   "nc_on_always": "Alt",
   "nc_on_failure": "Kun problemer",
   "nc_close": "Luk",
+  "nc_clear": "Ryd søgningen",
   "nc_search": "Søg i tjenester",
   "nc_none": "Intet passer til “{query}”. En webhook når næsten enhver tjeneste.",
   "nc_cancel": "Annuller",

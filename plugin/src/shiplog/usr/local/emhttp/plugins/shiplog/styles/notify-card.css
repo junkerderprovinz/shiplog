@@ -203,6 +203,11 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   background: var(--nc-w-ground); color: var(--nc-w-ink); box-shadow: var(--nc-w-shadow); text-align: start;
 }
 .glim-nc-win:focus { outline: none; }
+/* The form after a pick narrows the window around the same middle. */
+.glim-nc-win.glim-nc-win-form { width: min(640px, calc(100vw - 32px)); }
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-tt-motion="off"]) .glim-nc-win { transition: width var(--tt-motion-modal-dur, 150ms) cubic-bezier(.2, .6, .2, 1); }
+}
 @keyframes glim-nc-in { from { opacity: 0; scale: .97; } }
 @media (prefers-reduced-motion: no-preference) {
   html:not([data-tt-motion="off"]) .glim-nc-win { animation: glim-nc-in var(--tt-motion-modal-dur, 150ms) cubic-bezier(.16, 1, .3, 1); }
@@ -215,14 +220,32 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 }
 .glim-nc-win-body { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 4px; }
 .glim-nc-win-body.glim-nc-win-pick { overflow: hidden; }
-.glim-nc-win-act { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
+.glim-nc-win-act { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
+/* The verdict of a test at the start of the foot gives way first and wraps. */
+.glim-nc-win-act .glim-nc-win-start { flex: 1 1 0; min-width: min(64px, 100%); overflow-wrap: anywhere; font-size: 12px; }
+.glim-nc-win-act .glim-nc-win-start:not(.glim-nc-ok, .glim-nc-bad) { color: var(--nc-w-dim); }
 
-/* The search, open at the top end from the start. */
+/* The search, open at the top end from the start, with its glyph and a grey
+   clear button of its own in place of the browser's. A long placeholder ends
+   in an ellipsis. */
+.glim-nc-search-box { position: relative; flex: none; align-self: flex-end; display: flex; width: 256px; max-width: 100%; }
+.glim-nc-search-g { position: absolute; z-index: 1; top: 50%; inset-inline-start: 11px; translate: 0 -50%; display: flex; color: var(--nc-w-dim); pointer-events: none; }
+.glim-nc-search-g svg { width: 13px; height: 13px; display: block; }
 .glim-nc-wins input.glim-nc-search {
-  flex: none; align-self: flex-end; width: 256px; max-width: 100%; height: 32px; margin: 0; padding: 0 12px;
+  flex: 1; min-width: 0; height: 32px; margin: 0; padding: 0 34px;
   border: none; border-radius: var(--nc-w-r-ctl); box-shadow: none; outline: none;
-  background: var(--nc-w-raised); color: var(--nc-w-ink); font: inherit; font-size: 13px;
+  background: var(--nc-w-raised); color: var(--nc-w-ink); font: inherit; font-size: 13px; text-overflow: ellipsis;
 }
+.glim-nc-wins input.glim-nc-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+.glim-nc-wins button.glim-nc-search-clear {
+  position: absolute; top: 50%; inset-inline-end: 6px; translate: 0 -50%;
+  display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin: 0; padding: 0;
+  border: none; border-radius: calc(var(--nc-w-r-ctl) * .6); box-shadow: none; background: var(--nc-w-raised-hover); color: var(--nc-w-dim); cursor: pointer;
+}
+.glim-nc-wins button.glim-nc-search-clear[hidden] { display: none; }
+.glim-nc-wins button.glim-nc-search-clear:hover { color: var(--nc-w-ink); }
+.glim-nc-wins button.glim-nc-search-clear:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 1px; }
+.glim-nc-search-clear svg { width: 9px; height: 9px; display: block; }
 .glim-nc-wins input.glim-nc-search:focus { background: var(--nc-w-raised-hover); }
 .glim-nc-wins input.glim-nc-search::placeholder { color: var(--nc-w-dim); opacity: 1; }
 /* The few pixels around the tiles keep their focus ring inside the scroll. */
@@ -303,9 +326,15 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-wins button.glim-nc-win-btn.glim-nc-key { background: var(--nc-w-head); color: var(--nc-w-head-ink); }
 .glim-nc-wins button.glim-nc-win-btn.glim-nc-key:is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-head), #000 12%); }
 .glim-nc-wins button.glim-nc-win-btn:disabled { opacity: .5; cursor: default; }
+.glim-nc-wins button.glim-nc-win-btn[aria-busy="true"] { opacity: .7; cursor: progress; }
+.glim-nc-wins button.glim-nc-win-btn:is(.glim-nc-tone-ok, .glim-nc-tone-bad) { color: #161616; }
+.glim-nc-wins button.glim-nc-win-btn.glim-nc-tone-ok,
+.glim-nc-wins button.glim-nc-win-btn.glim-nc-tone-ok:is(:hover, :focus-visible):not(:disabled) { background: var(--nc-ok); }
+.glim-nc-wins button.glim-nc-win-btn.glim-nc-tone-bad,
+.glim-nc-wins button.glim-nc-win-btn.glim-nc-tone-bad:is(:hover, :focus-visible):not(:disabled) { background: var(--nc-err); }
 .glim-nc-wins button.glim-nc-win-btn:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 2px; }
-html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-raised), var(--nc-w-head) 22%); }
-html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hover, :focus-visible):not(:disabled) .glim-nc-g { color: var(--nc-w-head); }
+html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key, .glim-nc-tone-ok, .glim-nc-tone-bad):is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-raised), var(--nc-w-head) 22%); }
+html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key, .glim-nc-tone-ok, .glim-nc-tone-bad):is(:hover, :focus-visible):not(:disabled) .glim-nc-g { color: var(--nc-w-head); }
 
 /* On a phone the window is a sheet from the bottom edge with its foot
    always in view, the search spans its width and the tiles go two to a row,
@@ -316,7 +345,7 @@ html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hov
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     border-end-start-radius: 0; border-end-end-radius: 0;
   }
-  .glim-nc-wins input.glim-nc-search { width: 100%; }
+  .glim-nc-search-box { width: 100%; }
   .glim-nc-tiles { gap: 8px; }
   .glim-nc-win-body { padding-inline: 16px; }
   .glim-nc-win-act { padding-inline: 16px; }
@@ -354,6 +383,10 @@ html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hov
   .glim-nc button.glim-nc-btn { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: none !important; }
   html.tt-popups-on .glim-nc .glim-nc-ch button.glim-nc-btn:not(:hover):not(:focus-visible) { background-color: var(--nc-btn) !important; }
   .glim-nc-wins button.glim-nc-tile { border: none !important; }
+  .glim-nc-wins button.glim-nc-search-clear {
+    width: 22px !important; min-width: 0 !important; height: 22px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
+    border: none !important; box-shadow: none !important; background: var(--nc-w-raised-hover) !important; filter: none !important;
+  }
   .glim-nc-wins .glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) button.glim-nc-tile {
     background-color: var(--nc-lit) !important; color: var(--nc-lit-ink) !important; box-shadow: none !important;
   }

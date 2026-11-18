@@ -235,6 +235,7 @@
   "nc_on_always": "הכול",
   "nc_on_failure": "רק בעיות",
   "nc_close": "סגירה",
+  "nc_clear": "ניקוי החיפוש",
   "nc_search": "חיפוש שירותים",
   "nc_none": "שום דבר לא תואם ל־„{query}”. Webhook מגיע כמעט לכל שירות.",
   "nc_cancel": "ביטול",

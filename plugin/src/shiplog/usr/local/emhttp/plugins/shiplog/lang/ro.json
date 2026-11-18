@@ -235,6 +235,7 @@
   "nc_on_always": "Tot",
   "nc_on_failure": "Doar problemele",
   "nc_close": "Închide",
+  "nc_clear": "Golește căutarea",
   "nc_search": "Caută servicii",
   "nc_none": "Nimic nu se potrivește cu „{query}”. Un webhook ajunge la aproape orice serviciu.",
   "nc_cancel": "Anulează",

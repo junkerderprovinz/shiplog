@@ -235,6 +235,7 @@
   "nc_on_always": "すべて",
   "nc_on_failure": "問題のみ",
   "nc_close": "閉じる",
+  "nc_clear": "検索をクリア",
   "nc_search": "サービスを検索",
   "nc_none": "「{query}」に一致するものはありません。Webhook ならほとんどのサービスに届きます。",
   "nc_cancel": "キャンセル",

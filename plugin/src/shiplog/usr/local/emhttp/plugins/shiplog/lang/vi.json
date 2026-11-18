@@ -235,6 +235,7 @@
   "nc_on_always": "Tất cả",
   "nc_on_failure": "Chỉ khi có sự cố",
   "nc_close": "Đóng",
+  "nc_clear": "Xóa tìm kiếm",
   "nc_search": "Tìm dịch vụ",
   "nc_none": "Không có gì khớp với “{query}”. Webhook đến được gần như mọi dịch vụ.",
   "nc_cancel": "Hủy",

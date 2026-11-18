@@ -235,6 +235,7 @@
   "nc_on_always": "全部",
   "nc_on_failure": "仅问题",
   "nc_close": "关闭",
+  "nc_clear": "清除搜索",
   "nc_search": "搜索服务",
   "nc_none": "没有与“{query}”匹配的结果。Webhook 几乎能送达任何服务。",
   "nc_cancel": "取消",

@@ -235,6 +235,7 @@
   "nc_on_always": "Tudo",
   "nc_on_failure": "Só problemas",
   "nc_close": "Fechar",
+  "nc_clear": "Limpar a pesquisa",
   "nc_search": "Pesquisar serviços",
   "nc_none": "Nada corresponde a “{query}”. Um webhook chega a quase qualquer serviço.",
   "nc_cancel": "Cancelar",

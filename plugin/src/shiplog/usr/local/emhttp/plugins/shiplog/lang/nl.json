@@ -235,6 +235,7 @@
   "nc_on_always": "Alles",
   "nc_on_failure": "Alleen problemen",
   "nc_close": "Sluiten",
+  "nc_clear": "Zoekopdracht wissen",
   "nc_search": "Diensten zoeken",
   "nc_none": "Niets past bij ‘{query}’. Een webhook bereikt bijna elke dienst.",
   "nc_cancel": "Annuleren",
