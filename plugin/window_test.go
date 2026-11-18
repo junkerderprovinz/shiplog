@@ -225,9 +225,9 @@ func TestStylesCarryNoControlCharacters(t *testing.T) {
 	}
 }
 
-// TestTheWindowHeaderNeverScrolls keeps the risk reason in the window's
-// header still: it is cut short there, with the whole text in its tooltip.
-func TestTheWindowHeaderNeverScrolls(t *testing.T) {
+// TestTheWindowHeaderShowsTheWholeReason keeps the risk reason in full on a
+// line of its own under the title, without a marquee and without cutting it.
+func TestTheWindowHeaderShowsTheWholeReason(t *testing.T) {
 	js := read(t, filepath.Join("scripts", "docker.js"))
 	css := read(t, filepath.Join("styles", "docker.css"))
 	for _, gone := range []string{"armJumpMarquee", "sl-jump-marquee", "sl-jump-scroll"} {
@@ -235,8 +235,20 @@ func TestTheWindowHeaderNeverScrolls(t *testing.T) {
 			t.Errorf("the header still scrolls through %s", gone)
 		}
 	}
-	if !strings.Contains(js, `<span class="sl-jump" title="${esc(jump)}">`) {
-		t.Error("the header's reason lacks its tooltip")
+	rule := regexp.MustCompile(`\.sl-bubble \.sl-jump\{([^}]*)\}`).FindStringSubmatch(css)
+	if rule == nil {
+		t.Fatal("docker.css has no rule for the reason")
+	}
+	for _, want := range []string{"flex:1 0 100%", "white-space:normal", "order:9"} {
+		if !strings.Contains(rule[1], want) {
+			t.Errorf("the reason's rule lacks %s: %s", want, rule[1])
+		}
+	}
+	if strings.Contains(rule[1], "ellipsis") || strings.Contains(rule[1], "nowrap") {
+		t.Errorf("the reason is still cut short: %s", rule[1])
+	}
+	if !regexp.MustCompile(`\.sl-bubble \.sl-bh\{[^}]*flex-wrap:wrap`).MatchString(css) {
+		t.Error("the header row does not wrap the reason onto its own line")
 	}
 }
 
