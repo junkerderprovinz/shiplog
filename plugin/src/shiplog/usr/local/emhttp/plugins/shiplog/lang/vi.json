@@ -70,7 +70,7 @@
   "d_updateAllHint": "kích hoạt bản cập nhật riêng của Unraid cho mọi container có bản cập nhật đang chờ",
   "d_none": "Không tìm thấy văn bản changelog cho image này: mở repo (góc trên bên phải) để xem ghi chú phát hành.",
   "d_noSource": "Image này không nêu repo nguồn nào, nên ShipLog không có ghi chú phát hành để hiển thị. Nếu dự án đăng chúng trên GitHub hoặc trong một tệp changelog, hãy đặt ở mục \"source\" trong hàng của nó trên trang trạng thái của ShipLog.",
-  "d_unraidStale": "Unraid vẫn hiển thị một bản cập nhật, nhưng ở lần kiểm tra gần nhất của ShipLog (%d) container này đã chạy image mới nhất của tag của nó.",
+  "d_unraidStale": "Unraid vẫn hiện một bản cập nhật ở đây, nhưng container này đã chạy image mới nhất của tag rồi (đã kiểm tra %d). Chỉ là hiển thị của Unraid đã cũ: bấm \"Kiểm tra cập nhật\" ở cuối tab Docker để xóa nó.",
   "d_rateLimited": "Đã đạt đến giới hạn yêu cầu mỗi giờ của GitHub, nên không thể tải ghi chú phát hành. Thêm token GitHub trong cài đặt của ShipLog (Nguồn) để nâng giới hạn.",
   "d_pinned": "đã ghim",
   "d_localimg": "image cục bộ",
@@ -211,5 +211,7 @@
   "d_reason_local": "không có digest từ registry (build hoặc nạp tại chỗ), chưa so với registry",
   "d_reason_image_id": "tham chiếu bằng ID image, không có tag để so",
   "d_reason_removed": "image đã bị xóa khỏi registry",
-  "d_reason_lookup_failed": "truy vấn nguồn thất bại"
+  "d_reason_lookup_failed": "truy vấn nguồn thất bại",
+  "d_vulnChecked": "Đã kiểm tra %t, image %i.",
+  "d_vulnNoUpdate": "Chưa có bản cập nhật nào sửa được, vì chúng nằm trong image do nhà phát hành dựng. Bạn có thể nhờ dự án làm image đã sửa, hoặc chuyển sang tag hay image khác."
 }

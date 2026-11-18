@@ -70,7 +70,7 @@
   "d_updateAllHint": "spustí vlastní aktualizaci Unraidu pro každý kontejner s čekající aktualizací",
   "d_none": "Pro tento obraz nebyl nalezen žádný text changelogu: otevřete repo (vpravo nahoře) pro poznámky k vydání.",
   "d_noSource": "Tento obraz neuvádí žádný zdrojový repozitář, takže ShipLog nemá žádné poznámky k vydání, které by mohl zobrazit. Pokud je projekt zveřejňuje na GitHubu nebo v souboru changelogu, nastavte to pod \"source\" v jeho řádku na stavové stránce ShipLogu.",
-  "d_unraidStale": "Unraid stále hlásí aktualizaci, ale při poslední kontrole ShipLogu (%d) už tento kontejner běžel s nejnovějším obrazem svého tagu.",
+  "d_unraidStale": "Unraid tu stále ukazuje aktualizaci, ale tento kontejner už běží s nejnovějším image svého tagu (kontrola %d). Zobrazení v Unraidu je jen zastaralé: kliknutím na „Vyhledat aktualizace“ dole na kartě Docker ho smažete.",
   "d_rateLimited": "Byl dosažen hodinový limit požadavků GitHubu, takže se poznámky k vydání nepodařilo načíst. Přidejte v nastavení ShipLog (Zdroje) token GitHubu, abyste jej zvýšili.",
   "d_pinned": "připnuto",
   "d_localimg": "místní obraz",
@@ -213,5 +213,7 @@
   "d_reason_local": "žádný digest z registru (sestaveno nebo načteno lokálně), neporovnáno s registrem",
   "d_reason_image_id": "odkazováno přes ID image, žádný tag k porovnání",
   "d_reason_removed": "image odstraněn z registru",
-  "d_reason_lookup_failed": "dotaz u zdroje selhal"
+  "d_reason_lookup_failed": "dotaz u zdroje selhal",
+  "d_vulnChecked": "Kontrola %t, image %i.",
+  "d_vulnNoUpdate": "Žádná aktualizace je zatím neopravuje, protože jsou v image, který sestavuje vydavatel. Můžete projekt požádat o opravený image, nebo přejít na jiný tag či jiný image."
 }

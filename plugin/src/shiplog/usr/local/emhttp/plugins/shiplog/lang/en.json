@@ -70,7 +70,7 @@
   "d_updateAllHint": "triggers Unraid's own update for every container with a pending update",
   "d_none": "No changelog text found for this image. Open the repo (top-right) for the release notes.",
   "d_noSource": "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
-  "d_unraidStale": "Unraid still lists an update, but at ShipLog's last check (%d) this container already ran the newest image of its tag.",
+  "d_unraidStale": "Unraid still shows an update here, but this container already runs the newest image of its tag (checked %d). Unraid's display is just out of date: click Check for Updates at the bottom of the Docker tab to clear it.",
   "d_rateLimited": "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
   "d_pinned": "pinned",
   "d_localimg": "local image",
@@ -211,5 +211,7 @@
   "d_reason_local": "no registry digest (built or loaded locally), not checked against a registry",
   "d_reason_image_id": "referenced by image ID, no tag to compare",
   "d_reason_removed": "image removed from the registry",
-  "d_reason_lookup_failed": "upstream lookup failed"
+  "d_reason_lookup_failed": "upstream lookup failed",
+  "d_vulnChecked": "Checked %t, image %i.",
+  "d_vulnNoUpdate": "No update fixes these yet, because they are in the image the publisher builds. You can ask the project for a fixed image, or switch to another tag or image."
 }

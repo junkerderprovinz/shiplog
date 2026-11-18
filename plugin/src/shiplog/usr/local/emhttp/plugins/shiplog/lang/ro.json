@@ -70,7 +70,7 @@
   "d_updateAllHint": "declanșează propria actualizare a Unraid pentru fiecare container cu o actualizare în așteptare",
   "d_none": "Nu s-a găsit text de changelog pentru această imagine: deschide repo-ul (dreapta sus) pentru notele de lansare.",
   "d_noSource": "Această imagine nu indică niciun repository sursă, așa că ShipLog nu are note de lansare de afișat. Dacă proiectul le publică pe GitHub sau într-un fișier changelog, setează asta la \"source\" pe rândul lui din pagina de stare ShipLog.",
-  "d_unraidStale": "Unraid încă arată o actualizare, dar la ultima verificare ShipLog (%d) acest container rula deja cea mai nouă imagine a tag-ului său.",
+  "d_unraidStale": "Unraid încă arată o actualizare aici, dar acest container rulează deja cea mai nouă imagine a tagului său (verificat %d). Afișarea Unraid e doar învechită: apasă „Caută actualizări” în partea de jos a filei Docker ca să dispară.",
   "d_rateLimited": "Limita orară de solicitări a GitHub a fost atinsă, așa că notele de lansare nu au putut fi încărcate. Adaugă un token GitHub în setările ShipLog (Surse) pentru a o crește.",
   "d_pinned": "fixat",
   "d_localimg": "imagine locală",
@@ -213,5 +213,7 @@
   "d_reason_local": "niciun digest din registry (construită sau încărcată local), necomparată cu un registry",
   "d_reason_image_id": "indicată prin ID-ul imaginii, niciun tag de comparat",
   "d_reason_removed": "imagine eliminată din registry",
-  "d_reason_lookup_failed": "interogarea sursei a eșuat"
+  "d_reason_lookup_failed": "interogarea sursei a eșuat",
+  "d_vulnChecked": "Verificat %t, imagine %i.",
+  "d_vulnNoUpdate": "Nicio actualizare nu le repară încă, pentru că sunt în imaginea pe care o construiește editorul. Poți cere proiectului o imagine reparată sau poți trece la alt tag ori altă imagine."
 }

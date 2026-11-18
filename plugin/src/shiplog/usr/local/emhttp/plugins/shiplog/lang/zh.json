@@ -70,7 +70,7 @@
   "d_updateAllHint": "为每个有待处理更新的容器触发 Unraid 自己的更新",
   "d_none": "未找到此镜像的更新日志文本：请打开仓库（右上角）查看发行说明。",
   "d_noSource": "此镜像未指明源码仓库，因此 ShipLog 没有可显示的发行说明。如果项目在 GitHub 或更新日志文件中发布它们，请在 ShipLog 状态页面该容器所在行的“source”中设置。",
-  "d_unraidStale": "Unraid 仍显示有更新，但在 ShipLog 上次检查时（%d），此容器已在运行其标签的最新镜像。",
+  "d_unraidStale": "Unraid 这里仍显示有更新，但这个容器已经在运行其标签的最新镜像（检查于 %d）。只是 Unraid 的显示过时了：点击 Docker 标签页底部的“检查更新”即可清除。",
   "d_rateLimited": "已达到 GitHub 每小时的请求速率限制，因此无法加载发行说明。请在 ShipLog 设置（来源）中添加 GitHub 令牌以提高限制。",
   "d_pinned": "已固定",
   "d_localimg": "本地镜像",
@@ -211,5 +211,7 @@
   "d_reason_local": "没有仓库摘要（本地构建或加载），未与仓库比对",
   "d_reason_image_id": "按镜像 ID 引用，没有可比较的标签",
   "d_reason_removed": "镜像已从仓库删除",
-  "d_reason_lookup_failed": "向上游查询失败"
+  "d_reason_lookup_failed": "向上游查询失败",
+  "d_vulnChecked": "检查于 %t，镜像 %i。",
+  "d_vulnNoUpdate": "目前还没有更新能修复它们，因为它们在发布者构建的镜像里。你可以请项目提供修复后的镜像，或换用其他标签或镜像。"
 }

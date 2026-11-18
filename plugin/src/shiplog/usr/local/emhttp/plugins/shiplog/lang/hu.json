@@ -70,7 +70,7 @@
   "d_updateAllHint": "elindítja az Unraid saját frissítését minden függőben lévő frissítéssel rendelkező konténerhez",
   "d_none": "Nem található changelog-szöveg ehhez a képhez: nyisd meg a repót (jobbra fent) a kiadási jegyzetekért.",
   "d_noSource": "Ez a kép nem nevez meg forrásrepót, így a ShipLog nem tud kiadási jegyzeteket mutatni. Ha a projekt a GitHubon vagy egy changelog-fájlban közli őket, állítsd be a ShipLog állapotoldalán a sorában a \"source\" alatt.",
-  "d_unraidStale": "Az Unraid még frissítést jelez, de a ShipLog legutóbbi ellenőrzésekor (%d) ez a konténer már a címkéje legújabb képével futott.",
+  "d_unraidStale": "Az Unraid itt még frissítést mutat, de ez a konténer már a tagje legújabb image-ével fut (ellenőrizve: %d). Az Unraid kijelzése csak elavult: a Docker fül alján a „Frissítések keresése” gombra kattintva eltűnik.",
   "d_rateLimited": "Elérted a GitHub óránkénti kéréslimitjét, ezért a kiadási jegyzeteket nem sikerült betölteni. Adj hozzá egy GitHub-tokent a ShipLog beállításaiban (Források), hogy megemeld.",
   "d_pinned": "rögzítve",
   "d_localimg": "helyi kép",
@@ -211,5 +211,7 @@
   "d_reason_local": "nincs registry digest (helyben épített vagy betöltött), nincs registryvel összevetve",
   "d_reason_image_id": "image ID-vel hivatkozva, nincs tag az összevetéshez",
   "d_reason_removed": "az image törölve a registryből",
-  "d_reason_lookup_failed": "a forrás lekérdezése nem sikerült"
+  "d_reason_lookup_failed": "a forrás lekérdezése nem sikerült",
+  "d_vulnChecked": "Ellenőrizve: %t, image: %i.",
+  "d_vulnNoUpdate": "Még egy frissítés sem javítja őket, mert a kiadó által épített image-ben vannak. Kérhetsz a projekttől javított image-et, vagy válthatsz másik tagre vagy image-re."
 }

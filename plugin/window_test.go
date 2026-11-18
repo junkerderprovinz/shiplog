@@ -110,6 +110,7 @@ func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 		"vulnRunning": {"%v"}, "vulnInstalled": {"%v"}, "vulnNone": nil, "vulnNoneInstalled": nil,
 		"vulnCloses": {"%v"}, "vulnClosesNone": nil, "vulnNewestUnknown": nil, "vulnRaised": {"%v"},
 		"vulnSystem": nil, "vulnNoPackages": nil, "vulnFailed": nil, "vulnFixed": nil, "vulnMore": {"%n"},
+		"vulnChecked": {"%t", "%i"}, "vulnNoUpdate": nil, "unraidStale": {"%d"},
 	}
 	js := read(t, filepath.Join("scripts", "docker.js"))
 	page := read(t, "shiplog.page")
@@ -249,6 +250,32 @@ func TestTheWindowHeaderShowsTheWholeReason(t *testing.T) {
 	}
 	if !regexp.MustCompile(`\.sl-bubble \.sl-bh\{[^}]*flex-wrap:wrap`).MatchString(css) {
 		t.Error("the header row does not wrap the reason onto its own line")
+	}
+}
+
+// TestACardWithoutABadgeCentresItsText keeps a note or section that has no
+// badge on the card's top edge from keeping the room that badge would need,
+// and spaced like the switch bar above it.
+func TestACardWithoutABadgeCentresItsText(t *testing.T) {
+	css := read(t, filepath.Join("styles", "docker.css"))
+	rule := regexp.MustCompile(`html\.tt-popups-on \.sl-bubble :is\(\.sl-sec,\.sl-unmaint-note\):not\(:has\(> h4, > summary > h4\)\)\{([^}]*)\}`).FindStringSubmatch(css)
+	if rule == nil {
+		t.Fatal("docker.css has no rule for a card without a badge")
+	}
+	if !strings.Contains(rule[1], "padding:12px 14px") || !strings.Contains(rule[1], "margin-top:10px") {
+		t.Errorf("a card without a badge = %s", rule[1])
+	}
+}
+
+// TestAnImageWithoutAFixSaysWhatToDo keeps the hint for vulnerabilities no
+// update closes to a window without an update, and the check's time and
+// image on every list.
+func TestAnImageWithoutAFixSaysWhatToDo(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	for _, want := range []string{`!isUpdate(st) ? T("vulnNoUpdate")`, `T("vulnChecked")`} {
+		if !strings.Contains(js, want) {
+			t.Errorf("docker.js lacks %s", want)
+		}
 	}
 }
 

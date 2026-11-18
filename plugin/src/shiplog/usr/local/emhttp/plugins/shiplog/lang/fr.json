@@ -70,7 +70,7 @@
   "d_updateAllHint": "déclenche la propre mise à jour d'Unraid pour chaque conteneur avec une mise à jour en attente",
   "d_none": "Aucun texte de changelog trouvé pour cette image: ouvre le repo (en haut à droite) pour les notes de version.",
   "d_noSource": "Cette image n'indique aucun dépôt source, ShipLog n'a donc aucune note de version à afficher. Si le projet les publie sur GitHub ou dans un fichier changelog, indique-le sous « source » dans sa ligne sur la page d'état de ShipLog.",
-  "d_unraidStale": "Unraid signale encore une mise à jour, mais lors de la dernière vérification de ShipLog (%d), ce conteneur utilisait déjà l'image la plus récente de son tag.",
+  "d_unraidStale": "Unraid affiche encore une mise à jour ici, mais ce conteneur utilise déjà la dernière image de son tag (vérifié %d). L'affichage d'Unraid est simplement en retard : cliquez sur « Rechercher des mises à jour » en bas de l'onglet Docker pour l'effacer.",
   "d_rateLimited": "La limite horaire de requêtes de GitHub a été atteinte, les notes de version n'ont donc pas pu se charger. Ajoute un token GitHub dans les réglages de ShipLog (Sources) pour l'augmenter.",
   "d_pinned": "épinglé",
   "d_localimg": "image locale",
@@ -211,5 +211,7 @@
   "d_reason_local": "aucun digest de registre (construite ou chargée localement), non comparée à un registre",
   "d_reason_image_id": "référencée par ID d'image, aucun tag à comparer",
   "d_reason_removed": "image supprimée du registre",
-  "d_reason_lookup_failed": "échec de la recherche en amont"
+  "d_reason_lookup_failed": "échec de la recherche en amont",
+  "d_vulnChecked": "Vérifié %t, image %i.",
+  "d_vulnNoUpdate": "Aucune mise à jour ne les corrige encore, car elles sont dans l'image que construit l'éditeur. Vous pouvez demander au projet une image corrigée, ou passer à un autre tag ou une autre image."
 }

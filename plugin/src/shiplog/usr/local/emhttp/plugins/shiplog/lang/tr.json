@@ -70,7 +70,7 @@
   "d_updateAllHint": "bekleyen güncellemesi olan her konteyner için Unraid'in kendi güncellemesini tetikler",
   "d_none": "Bu imaj için changelog metni bulunamadı: sürüm notları için depoyu (sağ üst) aç.",
   "d_noSource": "Bu imaj bir kaynak depo belirtmiyor, bu yüzden ShipLog'un gösterecek sürüm notu yok. Proje bunları GitHub'da veya bir changelog dosyasında yayınlıyorsa, ShipLog durum sayfasında satırındaki \"source\" altında ayarla.",
-  "d_unraidStale": "Unraid hâlâ bir güncelleme gösteriyor, ancak ShipLog'un son kontrolünde (%d) bu konteyner zaten etiketinin en yeni imajıyla çalışıyordu.",
+  "d_unraidStale": "Unraid burada hâlâ bir güncelleme gösteriyor, ama bu konteyner zaten etiketinin en yeni imajıyla çalışıyor (denetlendi: %d). Unraid'in görünümü yalnızca eskimiş: Docker sekmesinin altındaki \"Güncellemeleri denetle\"ye tıklayınca kaybolur.",
   "d_rateLimited": "GitHub'ın saatlik istek sınırına ulaşıldı, bu yüzden sürüm notları yüklenemedi. Sınırı yükseltmek için ShipLog ayarlarında (Kaynaklar) bir GitHub token'ı ekle.",
   "d_pinned": "sabitlendi",
   "d_localimg": "yerel imaj",
@@ -211,5 +211,7 @@
   "d_reason_local": "kayıt deposu özeti yok (yerelde derlenmiş veya yüklenmiş), bir kayıt deposuyla karşılaştırılmadı",
   "d_reason_image_id": "imaj kimliğiyle belirtilmiş, karşılaştırılacak etiket yok",
   "d_reason_removed": "imaj kayıt deposundan kaldırılmış",
-  "d_reason_lookup_failed": "kaynakta sorgu başarısız oldu"
+  "d_reason_lookup_failed": "kaynakta sorgu başarısız oldu",
+  "d_vulnChecked": "Denetlendi %t, imaj %i.",
+  "d_vulnNoUpdate": "Henüz bunları düzelten bir güncelleme yok, çünkü yayıncının derlediği imajın içindeler. Projeden düzeltilmiş bir imaj isteyebilir ya da başka bir etikete veya imaja geçebilirsin."
 }

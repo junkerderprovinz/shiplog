@@ -193,6 +193,7 @@ html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-u
 .sl-bubble details.sl-vulns[open] > summary h4:after{content:" \25BE"}
 .sl-bubble details.sl-vulns[open] > summary{margin-bottom:6px}
 .sl-bubble .sl-vuln-more{margin-top:4px;color:var(--sl-dim2)}
+.sl-bubble .sl-vuln-checked{margin-top:8px;font-size:12px;color:var(--sl-dim2)}
 /* Why the risk went up, on its own line so it never runs in the header. */
 .sl-bubble .sl-raised{padding:6px 16px;font-size:12px;color:var(--sl-dim2)}
 .sl-bubble .sl-vulns li.sl-vuln-crit:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d9534f}
@@ -253,6 +254,9 @@ html.tt-popups-on .sl-bubble .sl-unmaint-note{
   margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--tt-elev-1,0 1px 4px rgba(0,0,0,.35));
   position:relative;
 }
+/* A card without a badge keeps no room for one: its text sits in the middle,
+   and it stands as far from its neighbour as the switch bar does. */
+html.tt-popups-on .sl-bubble :is(.sl-sec,.sl-unmaint-note):not(:has(> h4, > summary > h4)){padding:12px 14px;margin-top:10px}
 html.tt-popups-on .sl-bubble .sl-unmaint-note h4{
   display:inline-flex;background:var(--tt-err,#d9433f);color:var(--tt-err-fg,#fff);
   border-radius:999px;padding:3px 12px;

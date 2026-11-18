@@ -70,7 +70,7 @@
   "d_updateAllHint": "utlöser Unraids egen uppdatering för varje container med en väntande uppdatering",
   "d_none": "Ingen changelog-text hittades för denna avbildning: öppna repot (uppe till höger) för versionsinformationen.",
   "d_noSource": "Den här avbildningen anger inget källrepo, så ShipLog har ingen versionsinformation att visa. Om projektet publicerar den på GitHub eller i en changelog-fil, ange det under \"source\" på dess rad på ShipLogs statussida.",
-  "d_unraidStale": "Unraid visar fortfarande en uppdatering, men vid ShipLogs senaste kontroll (%d) körde den här containern redan den senaste avbildningen för sin tagg.",
+  "d_unraidStale": "Unraid visar fortfarande en uppdatering här, men containern kör redan den nyaste imagen för sin tagg (kontrollerat %d). Unraids visning är bara inaktuell: klicka på ”Sök efter uppdateringar” längst ned på Docker-fliken för att ta bort den.",
   "d_rateLimited": "GitHubs timgräns för förfrågningar nåddes, så versionsinformationen kunde inte läsas in. Lägg till en GitHub-token i ShipLogs inställningar (Källor) för att höja den.",
   "d_pinned": "fäst",
   "d_localimg": "lokal avbildning",
@@ -211,5 +211,7 @@
   "d_reason_local": "ingen registry-digest (byggd eller laddad lokalt), inte jämförd med ett registry",
   "d_reason_image_id": "angiven med image-ID, ingen tagg att jämföra",
   "d_reason_removed": "image borttagen från registryt",
-  "d_reason_lookup_failed": "uppslag hos källan misslyckades"
+  "d_reason_lookup_failed": "uppslag hos källan misslyckades",
+  "d_vulnChecked": "Kontrollerat %t, image %i.",
+  "d_vulnNoUpdate": "Ingen uppdatering åtgärdar dem än, eftersom de finns i den image som utgivaren bygger. Du kan be projektet om en åtgärdad image eller byta till en annan tagg eller image."
 }

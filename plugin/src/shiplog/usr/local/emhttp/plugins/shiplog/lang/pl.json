@@ -70,7 +70,7 @@
   "d_updateAllHint": "wyzwala własną aktualizację Unraid dla każdego kontenera z oczekującą aktualizacją",
   "d_none": "Nie znaleziono tekstu changeloga dla tego obrazu: otwórz repo (prawy górny róg), aby zobaczyć informacje o wydaniu.",
   "d_noSource": "Ten obraz nie wskazuje repozytorium źródłowego, więc ShipLog nie ma informacji o wydaniu do pokazania. Jeśli projekt publikuje je na GitHubie lub w pliku changelog, ustaw to w polu \"source\" w jego wierszu na stronie stanu ShipLog.",
-  "d_unraidStale": "Unraid nadal pokazuje aktualizację, ale przy ostatnim sprawdzeniu przez ShipLog (%d) ten kontener działał już na najnowszym obrazie swojego tagu.",
+  "d_unraidStale": "Unraid wciąż pokazuje tu aktualizację, ale ten kontener działa już na najnowszym obrazie swojego tagu (sprawdzono %d). Widok Unraida jest po prostu nieaktualny: kliknij „Sprawdź aktualizacje” na dole karty Docker, aby go usunąć.",
   "d_rateLimited": "Osiągnięto godzinny limit żądań GitHuba, więc nie udało się załadować informacji o wydaniu. Dodaj token GitHub w ustawieniach ShipLog (Źródła), aby go zwiększyć.",
   "d_pinned": "przypięte",
   "d_localimg": "obraz lokalny",
@@ -215,5 +215,7 @@
   "d_reason_local": "brak digestu z rejestru (zbudowany lub wczytany lokalnie), nie porównano z rejestrem",
   "d_reason_image_id": "wskazany przez ID obrazu, brak tagu do porównania",
   "d_reason_removed": "obraz usunięty z rejestru",
-  "d_reason_lookup_failed": "zapytanie do źródła nie powiodło się"
+  "d_reason_lookup_failed": "zapytanie do źródła nie powiodło się",
+  "d_vulnChecked": "Sprawdzono %t, obraz %i.",
+  "d_vulnNoUpdate": "Żadna aktualizacja jeszcze ich nie usuwa, bo tkwią w obrazie budowanym przez wydawcę. Możesz poprosić projekt o poprawiony obraz albo przejść na inny tag lub inny obraz."
 }

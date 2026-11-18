@@ -70,7 +70,7 @@
   "d_updateAllHint": "laukaisee Unraidin oman päivityksen jokaiselle kontille, jolla on odottava päivitys",
   "d_none": "Tälle vedokselle ei löytynyt changelog-tekstiä: avaa repo (oikea yläkulma) nähdäksesi julkaisutiedot.",
   "d_noSource": "Tämä vedos ei kerro lähdekoodivarastoa, joten ShipLogilla ei ole julkaisutietoja näytettäväksi. Jos projekti julkaisee ne GitHubissa tai changelog-tiedostossa, aseta se kohtaan \"source\" sen rivillä ShipLogin tilasivulla.",
-  "d_unraidStale": "Unraid näyttää yhä päivityksen, mutta ShipLogin viimeisimmässä tarkistuksessa (%d) tämä kontti ajoi jo tunnisteensa uusinta vedosta.",
+  "d_unraidStale": "Unraid näyttää tässä yhä päivityksen, mutta kontti ajaa jo taginsa uusinta imagea (tarkistettu %d). Unraidin näkymä on vain vanhentunut: napsauta Docker-välilehden alareunassa ”Tarkista päivitykset”, niin se poistuu.",
   "d_rateLimited": "GitHubin tuntikohtainen pyyntöraja täyttyi, joten julkaisutietoja ei voitu ladata. Nosta rajaa lisäämällä GitHub-token ShipLogin asetuksiin (Lähteet).",
   "d_pinned": "kiinnitetty",
   "d_localimg": "paikallinen vedos",
@@ -211,5 +211,7 @@
   "d_reason_local": "ei rekisterin digestiä (rakennettu tai ladattu paikallisesti), ei verrattu rekisteriin",
   "d_reason_image_id": "viitattu imagen ID:llä, ei tagia verrattavaksi",
   "d_reason_removed": "image poistettu rekisteristä",
-  "d_reason_lookup_failed": "haku lähteestä epäonnistui"
+  "d_reason_lookup_failed": "haku lähteestä epäonnistui",
+  "d_vulnChecked": "Tarkistettu %t, image %i.",
+  "d_vulnNoUpdate": "Mikään päivitys ei vielä korjaa niitä, koska ne ovat julkaisijan rakentamassa imagessa. Voit pyytää projektilta korjattua imagea tai vaihtaa toiseen tagiin tai imageen."
 }

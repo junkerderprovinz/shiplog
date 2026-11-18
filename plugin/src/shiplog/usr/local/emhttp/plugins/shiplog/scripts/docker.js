@@ -71,7 +71,7 @@
     updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
     none: "No changelog text found for this image. Open the repo (top-right) for the release notes.",
     noSource: "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
-    unraidStale: "Unraid still lists an update, but at ShipLog's last check (%d) this container already ran the newest image of its tag.",
+    unraidStale: "Unraid still shows an update here, but this container already runs the newest image of its tag (checked %d). Unraid's display is just out of date: click Check for Updates at the bottom of the Docker tab to clear it.",
     rateLimited: "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
     pinned: "pinned", localimg: "local image",
     autoLabel: "Auto-update this container",
@@ -115,6 +115,8 @@
     vulnFailed: "The vulnerability database couldn't be reached. ShipLog tries again at the next check.",
     vulnFixed: "closed by the update",
     vulnMore: "and %n more",
+    vulnChecked: "Checked %t, image %i.",
+    vulnNoUpdate: "No update fixes these yet, because they are in the image the publisher builds. You can ask the project for a fixed image, or switch to another tag or image.",
     reason_digest: "same tag, new image digest",
     reason_current: "up to date",
     reason_non_semver: "non-semver tags, cannot compare automatically",
@@ -389,13 +391,13 @@
     if (!v) return "";
     const title = `<h4>${esc(T("vulnTitle"))}</h4>`;
     if (v.reason) {
-      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(v.reason === "lookup_failed" ? "vulnFailed" : "vulnNoPackages"))}</div></div>`;
+      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(v.reason === "lookup_failed" ? "vulnFailed" : "vulnNoPackages"))}</div>${vulnChecked(st)}</div>`;
     }
     if (!vulnCount(st)) {
-      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(running(st) ? "vulnNone" : "vulnNoneInstalled"))}</div></div>`;
+      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(running(st) ? "vulnNone" : "vulnNoneInstalled"))}</div>${vulnChecked(st)}</div>`;
     }
     const counts = fillList(T(running(st) ? "vulnRunning" : "vulnInstalled"), severities(v.critical, v.high));
-    const lines = [vulnClosesLine(st), v.scope === "system" ? T("vulnSystem") : ""].filter(Boolean);
+    const lines = [vulnClosesLine(st), !isUpdate(st) ? T("vulnNoUpdate") : "", v.scope === "system" ? T("vulnSystem") : ""].filter(Boolean);
     const list = Array.isArray(v.items) ? v.items : [];
     const items = list.map((it) =>
       `<li class="sl-vuln-${it.severity === "critical" ? "crit" : "high"}"><code>${esc(it.id)}</code> · ${esc(it.package)}` +
@@ -404,7 +406,18 @@
     return `<details class="sl-sec sl-vulns"><summary>${title}<span class="sl-vuln-sum">${esc(counts)}</span></summary>` +
       lines.map((l) => `<div>${esc(l)}</div>`).join("") +
       (items ? `<ul>${items}</ul>` : "") +
-      (more > 0 ? `<div class="sl-vuln-more">${esc(T("vulnMore").replace("%n", () => String(more)))}</div>` : "") + "</details>";
+      (more > 0 ? `<div class="sl-vuln-more">${esc(T("vulnMore").replace("%n", () => String(more)))}</div>` : "") +
+      vulnChecked(st) + "</details>";
+  }
+  // When the check ran and on which image, so a list from before an update
+  // reads as such.
+  function vulnChecked(st) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec((st && st.checked_at) || "");
+    const c = (st && st.container) || {};
+    const img = String(c.digest || c.image_id || "").replace(/^sha256:/, "").slice(0, 12);
+    if (!m || !img) return "";
+    const at = `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
+    return `<div class="sl-vuln-checked">${esc(T("vulnChecked").replace("%t", () => at).replace("%i", () => img))}</div>`;
   }
   function vulnBadge(st) {
     const v = st.vulns;

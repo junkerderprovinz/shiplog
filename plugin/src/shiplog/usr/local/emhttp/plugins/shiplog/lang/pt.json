@@ -70,7 +70,7 @@
   "d_updateAllHint": "aciona a própria atualização do Unraid para cada contêiner com uma atualização pendente",
   "d_none": "Nenhum texto de changelog encontrado para esta imagem: abra o repo (canto superior direito) para as notas de versão.",
   "d_noSource": "Esta imagem não indica nenhum repositório de origem, então o ShipLog não tem notas de versão para mostrar. Se o projeto as publica no GitHub ou em um arquivo de changelog, defina isso em \"source\" na linha dele na página de status do ShipLog.",
-  "d_unraidStale": "O Unraid ainda mostra uma atualização, mas na última verificação do ShipLog (%d) este contêiner já rodava a imagem mais recente da sua tag.",
+  "d_unraidStale": "O Unraid ainda mostra uma atualização aqui, mas este contentor já usa a imagem mais recente da sua tag (verificado %d). A vista do Unraid está só desatualizada: clique em «Procurar atualizações» no fundo do separador Docker para a limpar.",
   "d_rateLimited": "O limite de solicitações por hora do GitHub foi atingido, por isso não foi possível carregar as notas de versão. Adicione um token do GitHub nas configurações do ShipLog (Fontes) para aumentá-lo.",
   "d_pinned": "fixado",
   "d_localimg": "imagem local",
@@ -211,5 +211,7 @@
   "d_reason_local": "sem digest de registry (criada ou carregada localmente), não comparada com um registry",
   "d_reason_image_id": "referida pelo ID da imagem, sem tag para comparar",
   "d_reason_removed": "imagem removida do registry",
-  "d_reason_lookup_failed": "falhou a consulta à origem"
+  "d_reason_lookup_failed": "falhou a consulta à origem",
+  "d_vulnChecked": "Verificado %t, imagem %i.",
+  "d_vulnNoUpdate": "Nenhuma atualização as corrige ainda, porque estão na imagem que o editor constrói. Pode pedir ao projeto uma imagem corrigida ou mudar para outra tag ou outra imagem."
 }
