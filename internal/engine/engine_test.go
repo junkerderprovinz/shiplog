@@ -1456,3 +1456,17 @@ func TestANewContainerStartingAsksForASweep(t *testing.T) {
 		t.Error("a container ShipLog does not know yet started without a sweep")
 	}
 }
+
+func TestASkippedUnmanagedContainerStartingAsksForNoSweep(t *testing.T) {
+	col := fakeCollector{list: []model.Container{{ID: "loose", Name: "scratch", Repo: "debian", Tag: "12"}}}
+	e := New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{rows: map[string]model.UpdateStatus{}}, time.Hour).WithIgnoreUnmanaged(true)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	e.Started("loose")
+	select {
+	case <-e.refresh:
+		t.Error("a restart of a container the sweep skips asked for a sweep")
+	default:
+	}
+}

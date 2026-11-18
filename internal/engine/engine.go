@@ -86,6 +86,8 @@ type Engine struct {
 	now        func() time.Time
 
 	ignoreUnmanaged bool
+	skippedMu       sync.Mutex
+	skipped         map[string]bool // ids the last sweep left out as unmanaged
 	// autoApplies reports whether the scheduled auto-update run will apply an
 	// update. Without a run it stays nil.
 	autoApplies  func(model.UpdateStatus) bool
@@ -233,9 +235,11 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
 	var tally vulnTally
+	skipped := map[string]bool{}
 	for _, c := range containers {
 		if e.ignoreUnmanaged && !c.Managed {
 			_ = e.store.Delete(c.ID)
+			skipped[c.ID] = true
 			continue
 		}
 		wg.Add(1)
@@ -249,6 +253,9 @@ func (e *Engine) Sweep(ctx context.Context) error {
 			_ = e.store.Upsert(st)
 		}(c)
 	}
+	e.skippedMu.Lock()
+	e.skipped = skipped
+	e.skippedMu.Unlock()
 	wg.Wait()
 	if e.vulns != nil {
 		log.Printf("shiplog: %s", tally.String())
@@ -775,6 +782,12 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 // nothing worth a sweep.
 func (e *Engine) Started(id string) {
 	if _, err := e.store.Get(id); err == nil {
+		return
+	}
+	e.skippedMu.Lock()
+	skipped := e.skipped[id]
+	e.skippedMu.Unlock()
+	if skipped {
 		return
 	}
 	e.Refresh()
