@@ -331,6 +331,7 @@ html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hov
     border: none !important; box-shadow: none !important; background-color: var(--nc-field) !important;
   }
   .glim-nc .glim-nc-ch :is(input.glim-nc-in, textarea.glim-nc-in, .tt-tsel-trigger):focus { background-color: var(--nc-field-focus) !important; }
+  .glim-nc input.glim-nc-switch { margin: 0 !important; }
   .glim-nc button.glim-nc-btn { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: none !important; }
   html.tt-popups-on .glim-nc .glim-nc-ch button.glim-nc-btn:not(:hover):not(:focus-visible) { background-color: var(--nc-btn) !important; }
   .glim-nc-wins button.glim-nc-tile { border: none !important; }
