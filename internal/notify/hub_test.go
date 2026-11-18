@@ -12,6 +12,7 @@ import (
 	"github.com/junkerderprovinz/parleyport/kit/fortress"
 	"github.com/junkerderprovinz/parleyport/kit/member"
 	kit "github.com/junkerderprovinz/parleyport/kit/notify"
+	"github.com/junkerderprovinz/parleyport/kit/status"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
 )
@@ -167,4 +168,36 @@ func TestAKeyStaysWithinWhatTollRollTakes(t *testing.T) {
 	if k := update(st).Key; len(k) > 100 || k == "" {
 		t.Errorf("key %q has %d bytes, want 1 to 100", k, len(k))
 	}
+}
+
+func TestTheHubIsActiveWhileTollRollSaysSo(t *testing.T) {
+	f := &fakeFortress{members: []fortress.Member{tollroll("tr", true, DeliverAction)}}
+	caps := []string{}
+	h := &Hub{Fortress: f, Report: func(_ context.Context, id string) (status.Report, error) {
+		return status.Report{Capabilities: caps}, nil
+	}}
+	if h.Active(context.Background()) {
+		t.Error("Active without the capability")
+	}
+	caps = []string{HubCapability}
+	if !h.Active(context.Background()) {
+		t.Error("Active = false while TollRoll lists the capability")
+	}
+	f.members[0].Direct = false
+	if h.Active(context.Background()) {
+		t.Error("Active for a TollRoll that is away")
+	}
+}
+
+func TestAnAppliedUpdateClosesItsMessage(t *testing.T) {
+	own, sent := ownChannel(t)
+	f := &fakeFortress{members: []fortress.Member{tollroll("tr", true, DeliverAction)}, answer: map[string]func() ([]byte, error){"tr": taken}}
+	WithHub(own, &Hub{Fortress: f}).Resolve(context.Background(), planka)
+	if len(f.bodies) != 1 || f.bodies[0]["key"] != "update:planka@0123456789ab" || f.bodies[0]["resolved"] != true {
+		t.Errorf("bodies = %v, want the update's key resolved", f.bodies)
+	}
+	if sent.Load() != 0 {
+		t.Errorf("ShipLog sent %d messages itself, want none for a resolved key", sent.Load())
+	}
+	own.Resolve(context.Background(), planka)
 }

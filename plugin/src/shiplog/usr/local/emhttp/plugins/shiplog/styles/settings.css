@@ -240,6 +240,13 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   color: var(--sl-warn); font-size: 13px; line-height: 1.45;
 }
 .sl-warn .sl-g { padding-top: 2px; }
+.sl-hubnote {
+  display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 6px; padding: 9px 12px;
+  border-radius: var(--sl-r-ctl); background: color-mix(in srgb, var(--sl-dim) 14%, transparent);
+  color: var(--sl-dim); font-size: 13px; line-height: 1.45;
+}
+.sl-hubnote[hidden] { display: none; }
+.sl-hubnote .sl-g { padding-top: 2px; }
 
 /* The auto-update container list: a switch per container, in a well. */
 .sl-ct {

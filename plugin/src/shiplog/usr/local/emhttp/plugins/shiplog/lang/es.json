@@ -173,5 +173,6 @@
   "s_copy": "Copiar",
   "s_copied": "Copiado",
   "s_fortress": "Fortaleza",
-  "s_fortress_no_backup": "Hasta entonces, las actualizaciones automáticas se hacen sin copia de seguridad."
+  "s_fortress_no_backup": "Hasta entonces, las actualizaciones automáticas se hacen sin copia de seguridad.",
+  "s_notify_hub": "TollRoll envía las notificaciones de ShipLog mientras sea el hub de la fortaleza. Si deja de hacerlo, los canales de abajo vuelven a encargarse."
 }

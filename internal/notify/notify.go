@@ -118,6 +118,14 @@ func (n *Notifier) Send(ctx context.Context, e kit.Event) error {
 	return errors.Join(errs...)
 }
 
+// Resolve tells the hub that the update st offered is applied, so the
+// message about it is over. ShipLog's own channels hear nothing of it.
+func (n *Notifier) Resolve(ctx context.Context, st model.UpdateStatus) {
+	if n != nil && n.hub != nil {
+		n.hub.Resolve(ctx, updateKey(st))
+	}
+}
+
 // Summary is the message after an auto-update run.
 func Summary(text, html string, failed bool) kit.Event {
 	sev := kit.SeveritySuccess

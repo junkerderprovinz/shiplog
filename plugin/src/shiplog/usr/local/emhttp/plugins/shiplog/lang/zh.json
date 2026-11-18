@@ -173,5 +173,6 @@
   "s_copy": "复制",
   "s_copied": "已复制",
   "s_fortress": "堡垒",
-  "s_fortress_no_backup": "在此之前，自动更新会在没有备份的情况下进行。"
+  "s_fortress_no_backup": "在此之前，自动更新会在没有备份的情况下进行。",
+  "s_notify_hub": "TollRoll 作为堡垒的中枢期间，由它发送 ShipLog 的通知。它停止后，下面的渠道会重新接手。"
 }

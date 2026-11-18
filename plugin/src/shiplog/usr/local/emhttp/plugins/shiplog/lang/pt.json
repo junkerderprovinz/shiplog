@@ -173,5 +173,6 @@
   "s_copy": "Copiar",
   "s_copied": "Copiado",
   "s_fortress": "Fortaleza",
-  "s_fortress_no_backup": "Até lá, as atualizações automáticas rodam sem backup."
+  "s_fortress_no_backup": "Até lá, as atualizações automáticas rodam sem backup.",
+  "s_notify_hub": "O TollRoll envia as notificações do ShipLog enquanto for o hub da fortaleza. Se parar, os canais abaixo voltam a tratar delas."
 }

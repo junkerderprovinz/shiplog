@@ -1438,3 +1438,39 @@ func TestSweepNotifiesABreakingReleaseOfAnUnknownRunningVersion(t *testing.T) {
 		t.Errorf("got %d notifications, want 1", nf.count())
 	}
 }
+
+// closingNotifier records the updates it was told are applied.
+type closingNotifier struct {
+	fakeNotifier
+	mu     sync.Mutex
+	closed []string
+}
+
+func (c *closingNotifier) Resolve(_ context.Context, st model.UpdateStatus) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.closed = append(c.closed, st.Container.Name+"@"+st.NewestDigest)
+}
+
+func TestAnAppliedUpdateClosesItsMessage(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"a": {Container: model.Container{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "1.0.0", Digest: "sha256:a1"},
+			Kind: model.KindDigest, Risk: model.RiskLow, NewestTag: "1.0.0", NewestDigest: "sha256:a2"},
+		"b": {Container: model.Container{ID: "b", Name: "other", Repo: "ghcr.io/x/other", Tag: "1.0.0", Digest: "sha256:b1"},
+			Kind: model.KindDigest, Risk: model.RiskLow, NewestTag: "1.0.0", NewestDigest: "sha256:b2"},
+	}}
+	n := &closingNotifier{}
+	e := New(fakeCollector{list: []model.Container{
+		{ID: "a", Name: "app", Repo: "ghcr.io/x/app", Tag: "1.0.0", Digest: "sha256:a2"},
+		{ID: "b", Name: "other", Repo: "ghcr.io/x/other", Tag: "1.0.0", Digest: "sha256:b1"},
+	}}, fakeResolver{byRepo: map[string]resolveResult{
+		"ghcr.io/x/app":   {tag: "1.0.0", dig: "sha256:a2"},
+		"ghcr.io/x/other": {tag: "1.0.0", dig: "sha256:b2"},
+	}}, &fakeChangelog{}, st, time.Hour).WithNotifier(n)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.closed) != 1 || n.closed[0] != "app@sha256:a2" {
+		t.Errorf("closed = %v, want the applied update of app alone", n.closed)
+	}
+}

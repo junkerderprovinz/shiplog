@@ -173,5 +173,6 @@
   "s_copy": "Másolás",
   "s_copied": "Másolva",
   "s_fortress": "Erőd",
-  "s_fortress_no_backup": "Addig az automatikus frissítések mentés nélkül futnak."
+  "s_fortress_no_backup": "Addig az automatikus frissítések mentés nélkül futnak.",
+  "s_notify_hub": "A TollRoll küldi a ShipLog értesítéseit, amíg ő az erőd központja. Ha abbahagyja, újra a lenti csatornák veszik át."
 }

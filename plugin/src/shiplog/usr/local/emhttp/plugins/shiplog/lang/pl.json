@@ -173,5 +173,6 @@
   "s_copy": "Kopiuj",
   "s_copied": "Skopiowano",
   "s_fortress": "Twierdza",
-  "s_fortress_no_backup": "Do tego czasu automatyczne aktualizacje idą bez kopii zapasowej."
+  "s_fortress_no_backup": "Do tego czasu automatyczne aktualizacje idą bez kopii zapasowej.",
+  "s_notify_hub": "TollRoll wysyła powiadomienia ShipLog, dopóki jest centrum twierdzy. Gdy przestanie, znów zajmą się nimi kanały poniżej."
 }

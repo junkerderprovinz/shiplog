@@ -173,5 +173,6 @@
   "s_copy": "Kopírovat",
   "s_copied": "Zkopírováno",
   "s_fortress": "Pevnost",
-  "s_fortress_no_backup": "Do té doby poběží automatické aktualizace bez zálohy."
+  "s_fortress_no_backup": "Do té doby poběží automatické aktualizace bez zálohy.",
+  "s_notify_hub": "TollRoll posílá oznámení ShipLogu, dokud je centrem pevnosti. Jakmile přestane, převezmou je znovu kanály níže."
 }

@@ -173,5 +173,6 @@
   "s_copy": "Kopioi",
   "s_copied": "Kopioitu",
   "s_fortress": "Linnoitus",
-  "s_fortress_no_backup": "Siihen asti automaattiset päivitykset tehdään ilman varmuuskopiota."
+  "s_fortress_no_backup": "Siihen asti automaattiset päivitykset tehdään ilman varmuuskopiota.",
+  "s_notify_hub": "TollRoll lähettää ShipLogin ilmoitukset niin kauan kuin se on linnoituksen keskus. Kun se lopettaa, alla olevat kanavat jatkavat taas."
 }

@@ -248,6 +248,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
   <div class="sl-pane" role="tabpanel" id="sl-pane-notify" aria-labelledby="sl-tab-notify" hidden>
     <section class="sl-card" aria-labelledby="sl-h-channels">
       <h3 class="sl-h"><span id="sl-h-channels"><?=$slE($L['s_channels'])?></span><?=$slInfo($L['s_notif_sub'])?></h3>
+      <p class="sl-hubnote" id="sl-hub-note" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_notify_hub'])?></span></p>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-unraid-notify-cb"><?=$slE($L['s_unraid_notify'])?></label><?=$slInfo($L['s_unraid_notify_desc'])?></div>
         <div class="sl-ctl"><?=$slSwitch('sl-unraid-notify', 'UNRAID_NOTIFY', $unraidNotify)?></div>

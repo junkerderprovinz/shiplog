@@ -173,5 +173,6 @@
   "s_copy": "Kopyala",
   "s_copied": "Kopyalandı",
   "s_fortress": "Kale",
-  "s_fortress_no_backup": "O zamana kadar otomatik güncellemeler yedeksiz çalışır."
+  "s_fortress_no_backup": "O zamana kadar otomatik güncellemeler yedeksiz çalışır.",
+  "s_notify_hub": "TollRoll, kalenin merkezi olduğu sürece ShipLog'un bildirimlerini gönderir. Durursa aşağıdaki kanallar yeniden devralır."
 }

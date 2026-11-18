@@ -173,5 +173,6 @@
   "s_copy": "Copy",
   "s_copied": "Copied",
   "s_fortress": "Fortress",
-  "s_fortress_no_backup": "Until then, auto-updates run without a backup."
+  "s_fortress_no_backup": "Until then, auto-updates run without a backup.",
+  "s_notify_hub": "TollRoll sends ShipLog's notifications while it is the fortress's hub. The channels below take over again as soon as it stops."
 }

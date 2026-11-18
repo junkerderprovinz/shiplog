@@ -173,5 +173,6 @@
   "s_copy": "Kopier",
   "s_copied": "Kopiert",
   "s_fortress": "Festning",
-  "s_fortress_no_backup": "Til da kjører automatiske oppdateringer uten sikkerhetskopi."
+  "s_fortress_no_backup": "Til da kjører automatiske oppdateringer uten sikkerhetskopi.",
+  "s_notify_hub": "TollRoll sender varslene fra ShipLog så lenge det er festningens hub. Slutter det, tar kanalene nedenfor over igjen."
 }

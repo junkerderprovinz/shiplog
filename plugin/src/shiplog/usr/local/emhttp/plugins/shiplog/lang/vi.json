@@ -173,5 +173,6 @@
   "s_copy": "Sao chép",
   "s_copied": "Đã sao chép",
   "s_fortress": "Pháo đài",
-  "s_fortress_no_backup": "Cho đến lúc đó, cập nhật tự động sẽ chạy mà không sao lưu."
+  "s_fortress_no_backup": "Cho đến lúc đó, cập nhật tự động sẽ chạy mà không sao lưu.",
+  "s_notify_hub": "TollRoll gửi thông báo của ShipLog trong lúc nó là trung tâm của pháo đài. Khi nó dừng, các kênh bên dưới sẽ đảm nhận lại."
 }

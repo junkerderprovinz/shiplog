@@ -120,3 +120,37 @@ func TestTheProxyReachesTheStatusContract(t *testing.T) {
 		}
 	}
 }
+
+// TestTheNotificationsTabSaysWhenTollRollSendsThem keeps the hint about the
+// hub on the page, hidden until the engine says TollRoll takes the messages,
+// and in every language.
+func TestTheNotificationsTabSaysWhenTollRollSendsThem(t *testing.T) {
+	page := read(t, "shiplog.page")
+	if !strings.Contains(page, `<p class="sl-hubnote" id="sl-hub-note" role="note" hidden>`) || !strings.Contains(page, "$L['s_notify_hub']") {
+		t.Error("shiplog.page lacks the hidden hub note")
+	}
+	if !strings.Contains(read(t, filepath.Join("server", "status.php")), `'notify-hub' => '/api/notify-hub'`) {
+		t.Error("status.php does not pass the hub's state on")
+	}
+	js := read(t, filepath.Join("scripts", "settings.js"))
+	if !strings.Contains(js, `status.php?path=notify-hub`) || !strings.Contains(js, `byId("sl-hub-note").hidden = !(d && d.hub === true)`) {
+		t.Error("settings.js does not show the note from the engine's answer")
+	}
+	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
+	if err != nil || len(files) < 26 {
+		t.Fatalf("lang files = %d, %v", len(files), err)
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var texts map[string]any
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		if v, _ := texts["s_notify_hub"].(string); !strings.Contains(v, "TollRoll") {
+			t.Errorf("%s: s_notify_hub = %q", filepath.Base(f), v)
+		}
+	}
+}

@@ -123,6 +123,7 @@ func main() {
 		actions = append(actions, runs.Action())
 	}
 	door, backups := openFortress(cfg, report, actions...)
+	var hub *notify.Hub
 	if door != nil {
 		defer func() { _ = door.Close() }()
 		go door.Watch(ctx)
@@ -135,7 +136,11 @@ func main() {
 		})
 		// A TollRoll of the fortress that takes over sends the messages. While
 		// none does, ShipLog's own channels go on as before.
-		notifier = notify.WithHub(notifier, &notify.Hub{Fortress: door})
+		hub = &notify.Hub{Fortress: door, Report: func(ctx context.Context, id string) (status.Report, error) {
+			s, err := door.Status(ctx, id, "")
+			return s.Report, err
+		}}
+		notifier = notify.WithHub(notifier, hub)
 	}
 	// The engine starts once the notifier knows the fortress, since its first
 	// sweep may already notify.
@@ -161,6 +166,13 @@ func main() {
 		WithUpdateCheck(docker, msg).
 		WithFortress(report).
 		WithGuards(db, func() bool { return backups != nil && backups.Available() })
+	if hub != nil {
+		a.WithHub(func(ctx context.Context) bool {
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			return hub.Active(ctx)
+		})
+	}
 	if door != nil && cfg.Socket != "" {
 		a.WithDoor(door)
 	}

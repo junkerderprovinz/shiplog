@@ -8,7 +8,7 @@
  *   GET  status.php?id=<container id>                   -> /api/container/{id}
  *   GET  status.php?applied=<name>&digest=<sha256:...>  -> /api/applied
  *   GET  status.php?path=page[&mono=1]                  -> the status page
- *   GET  status.php?path=logo|overrides|unmaintained-suppressions|guards
+ *   GET  status.php?path=logo|overrides|unmaintained-suppressions|guards|notify-hub
  *   GET  status.php?path=fortress-status[&lang=de]      -> the status contract
  *   GET  status.php?path=fortress-log[&after=<id>&limit=<n>&lang=de]
  *   GET  status.php?path=fortress                       -> ShipLog's place in a fortress
@@ -24,7 +24,8 @@ $self   = '/plugins/shiplog/server/status.php';
 $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides',
            'unmaintained-suppressions' => '/api/unmaintained-suppressions', 'guards' => '/api/guards',
            'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
-           'fortress' => '/api/fortress', 'fortress-member' => '/api/fortress/members/'];
+           'fortress' => '/api/fortress', 'fortress-member' => '/api/fortress/members/',
+           'notify-hub' => '/api/notify-hub'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
            'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST'],
            'fortress/leave' => ['POST'], 'fortress/member' => ['DELETE']];

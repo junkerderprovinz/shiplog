@@ -143,7 +143,7 @@ Once it is in, the other apps of the fortress can see how ShipLog is doing: how 
 
 A maintenance plan in another app can also ask ShipLog to update chosen containers, with the same backup and the same way back.
 
-With TollRoll in the fortress and its notification hub switched on, ShipLog hands its messages to TollRoll, which sends them through its own channels and keeps quiet hours. While no TollRoll takes them, ShipLog sends them through its own channels as before.
+With TollRoll in the fortress and its notification hub switched on, ShipLog hands its messages to TollRoll, which sends them through its own channels and keeps quiet hours. The Notifications tab says so while it does, and once an update is applied, ShipLog tells TollRoll that its message is over. While no TollRoll takes them, ShipLog sends them through its own channels as before.
 
 <br>
 

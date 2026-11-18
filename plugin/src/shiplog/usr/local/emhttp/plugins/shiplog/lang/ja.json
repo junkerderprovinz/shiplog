@@ -173,5 +173,6 @@
   "s_copy": "コピー",
   "s_copied": "コピーしました",
   "s_fortress": "要塞",
-  "s_fortress_no_backup": "それまでは、自動更新はバックアップなしで実行されます。"
+  "s_fortress_no_backup": "それまでは、自動更新はバックアップなしで実行されます。",
+  "s_notify_hub": "TollRoll が要塞のハブである間は、TollRoll が ShipLog の通知を送ります。やめると、下のチャネルが再び引き継ぎます。"
 }

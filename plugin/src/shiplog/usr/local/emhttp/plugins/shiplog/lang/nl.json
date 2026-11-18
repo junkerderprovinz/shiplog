@@ -173,5 +173,6 @@
   "s_copy": "Kopiëren",
   "s_copied": "Gekopieerd",
   "s_fortress": "Vesting",
-  "s_fortress_no_backup": "Tot die tijd lopen automatische updates zonder back-up."
+  "s_fortress_no_backup": "Tot die tijd lopen automatische updates zonder back-up.",
+  "s_notify_hub": "TollRoll verstuurt de meldingen van ShipLog zolang het de hub van de vesting is. Stopt het daarmee, dan nemen de kanalen hieronder het weer over."
 }

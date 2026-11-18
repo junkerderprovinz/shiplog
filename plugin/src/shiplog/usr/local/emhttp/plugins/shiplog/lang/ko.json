@@ -173,5 +173,6 @@
   "s_copy": "복사",
   "s_copied": "복사됨",
   "s_fortress": "요새",
-  "s_fortress_no_backup": "그때까지 자동 업데이트는 백업 없이 실행됩니다."
+  "s_fortress_no_backup": "그때까지 자동 업데이트는 백업 없이 실행됩니다.",
+  "s_notify_hub": "TollRoll이 요새의 허브인 동안에는 TollRoll이 ShipLog의 알림을 보냅니다. 멈추면 아래 채널이 다시 맡습니다."
 }

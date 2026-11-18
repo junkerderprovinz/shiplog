@@ -481,6 +481,16 @@
   }
   loadStatus();
 
+  /* While a TollRoll of the fortress takes the messages over, the
+     notifications tab says so above the channels it stands in for. */
+  function loadHub() {
+    fetch("/plugins/shiplog/server/status.php?path=notify-hub", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { byId("sl-hub-note").hidden = !(d && d.hub === true); })
+      .catch(function () {});
+  }
+  loadHub();
+
   /* Auto-update. Everything below the main switch only matters while it is on,
      so those rows are left out while it is off. */
   function auShown() {
