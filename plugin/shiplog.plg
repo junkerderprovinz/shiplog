@@ -34,6 +34,12 @@ what changed from your running image to the newest, with a risk badge. Optional
 AI summaries (Ollama or llama-swap), Matrix or Apprise alerts, and an auto-update
 that backs up first when your fortress has a backup app.
 
+### 3.8.3
+Containers inside folders get their changelog chip back.
+
+🐛 **Fixed**
+- **The changelog chip shows on containers in folders.** A folder plugin rebuilds the rows of the containers it groups, and the rebuilt rows kept ShipLog's mark but lost the chip, so those containers stayed without one. ShipLog tags such a row again (thanks @repires, #124, #123).
+
 ### 3.8.2
 A fresh install from Community Applications works again, and GlimStone 4.5.4 lights whatever you point at in a soft tint of your accent.
 
