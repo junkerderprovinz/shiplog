@@ -1438,3 +1438,21 @@ func TestSweepNotifiesABreakingReleaseOfAnUnknownRunningVersion(t *testing.T) {
 		t.Errorf("got %d notifications, want 1", nf.count())
 	}
 }
+
+func TestANewContainerStartingAsksForASweep(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{"known": {Container: model.Container{ID: "known", Name: "nginx"}}}}
+	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
+	e.Started("known")
+	select {
+	case <-e.refresh:
+		t.Fatal("a restart of a container ShipLog knows asked for a sweep")
+	default:
+	}
+	// An update recreates the container under a new id.
+	e.Started("recreated")
+	select {
+	case <-e.refresh:
+	default:
+		t.Error("a container ShipLog does not know yet started without a sweep")
+	}
+}

@@ -109,6 +109,7 @@ func main() {
 	defer stop()
 
 	go eng.Run(ctx)
+	go followStarts(ctx, docker, eng)
 
 	run := &fortress.Run{}
 	report := &fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}
@@ -184,6 +185,23 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// followStarts hands the engine every container that starts, so a container
+// an update recreated is checked at once. A lost stream is opened again.
+func followStarts(ctx context.Context, docker *dockercli.Client, eng *engine.Engine) {
+	for {
+		err := docker.Starts(ctx, eng.Started)
+		if ctx.Err() != nil {
+			return
+		}
+		log.Printf("shiplog: lost Docker's events, listening again in a minute: %v", err)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Minute):
+		}
+	}
 }
 
 // openFortress takes part in the fortress the plugin joined and returns the

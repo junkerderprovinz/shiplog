@@ -512,3 +512,24 @@ func TestFilesReadsAFileOrAFolderFromTheContainer(t *testing.T) {
 		t.Errorf("first request = %q, want a GET", asked[0])
 	}
 }
+
+func TestStartsHandsOnEveryContainerThatStarts(t *testing.T) {
+	var query string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/events", func(w http.ResponseWriter, r *http.Request) {
+		query = r.URL.Query().Get("filters")
+		_, _ = w.Write([]byte(`{"Type":"container","Action":"start","Actor":{"ID":"509380ab"}}` + "\n" +
+			`{"status":"start","id":"77aa01","Type":"container","Action":"start","Actor":{"ID":"77aa01"}}` + "\n"))
+	})
+	var got []string
+	err := serveDocker(t, mux).Starts(context.Background(), func(id string) { got = append(got, id) })
+	if err == nil {
+		t.Error("Starts returned nil when the stream ended")
+	}
+	if strings.Join(got, ",") != "509380ab,77aa01" {
+		t.Errorf("started = %v", got)
+	}
+	if query != `{"event":["start"],"type":["container"]}` {
+		t.Errorf("filters = %s", query)
+	}
+}

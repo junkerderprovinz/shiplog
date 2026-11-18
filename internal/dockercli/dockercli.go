@@ -221,6 +221,38 @@ func (c *Client) Files(ctx context.Context, id, path string) (map[string][]byte,
 	}
 }
 
+// Starts calls started with the id of every container that starts, until
+// ctx ends or Docker closes the stream, which it reports as an error.
+func (c *Client) Starts(ctx context.Context, started func(id string)) error {
+	q := url.Values{"filters": {`{"event":["start"],"type":["container"]}`}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/events?"+q.Encode(), nil)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("docker returned %s", resp.Status)
+	}
+	dec := json.NewDecoder(resp.Body)
+	for {
+		var ev struct {
+			Actor struct {
+				ID string `json:"ID"`
+			} `json:"Actor"`
+		}
+		if err := dec.Decode(&ev); err != nil {
+			return fmt.Errorf("read docker events: %w", err)
+		}
+		if ev.Actor.ID != "" {
+			started(ev.Actor.ID)
+		}
+	}
+}
+
 // heldRepo is where Hold keeps an image. Unraid removes the old image after an
 // update unless another tag still points at it.
 const heldRepo = "shiplog/before-update"

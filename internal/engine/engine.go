@@ -769,6 +769,17 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 	_ = e.notifier.Notify(ctx, st)
 }
 
+// Started hears that the container id started. An update recreates its
+// container under a new id, and a sweep then checks the new image at once
+// instead of on the next interval. A restart of a known container changes
+// nothing worth a sweep.
+func (e *Engine) Started(id string) {
+	if _, err := e.store.Get(id); err == nil {
+		return
+	}
+	e.Refresh()
+}
+
 // Refresh asks for an extra sweep without blocking; pending requests coalesce.
 func (e *Engine) Refresh() {
 	select {
