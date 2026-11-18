@@ -221,9 +221,10 @@ func (c *Client) Files(ctx context.Context, id, path string) (map[string][]byte,
 	}
 }
 
-// Starts calls started with the id of every container that starts, until
-// ctx ends or Docker closes the stream, which it reports as an error.
-func (c *Client) Starts(ctx context.Context, started func(id string)) error {
+// Starts calls started with the id, name and template flag of every container
+// that starts, until ctx ends or Docker closes the stream, which it reports as
+// an error.
+func (c *Client) Starts(ctx context.Context, started func(model.Container)) error {
 	q := url.Values{"filters": {`{"event":["start"],"type":["container"]}`}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/events?"+q.Encode(), nil)
 	if err != nil {
@@ -241,14 +242,16 @@ func (c *Client) Starts(ctx context.Context, started func(id string)) error {
 	for {
 		var ev struct {
 			Actor struct {
-				ID string `json:"ID"`
+				ID         string            `json:"ID"`
+				Attributes map[string]string `json:"Attributes"`
 			} `json:"Actor"`
 		}
 		if err := dec.Decode(&ev); err != nil {
 			return fmt.Errorf("read docker events: %w", err)
 		}
 		if ev.Actor.ID != "" {
-			started(ev.Actor.ID)
+			a := ev.Actor.Attributes
+			started(model.Container{ID: ev.Actor.ID, Name: a["name"], Managed: a[managedLabel] != ""})
 		}
 	}
 }

@@ -1439,34 +1439,39 @@ func TestSweepNotifiesABreakingReleaseOfAnUnknownRunningVersion(t *testing.T) {
 	}
 }
 
-func TestANewContainerStartingAsksForASweep(t *testing.T) {
-	st := &fakeStore{rows: map[string]model.UpdateStatus{"known": {Container: model.Container{ID: "known", Name: "nginx"}}}}
-	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
-	e.Started("known")
+func asked(e *Engine) bool {
 	select {
 	case <-e.refresh:
-		t.Fatal("a restart of a container ShipLog knows asked for a sweep")
+		return true
 	default:
-	}
-	// An update recreates the container under a new id.
-	e.Started("recreated")
-	select {
-	case <-e.refresh:
-	default:
-		t.Error("a container ShipLog does not know yet started without a sweep")
+		return false
 	}
 }
 
-func TestASkippedUnmanagedContainerStartingAsksForNoSweep(t *testing.T) {
-	col := fakeCollector{list: []model.Container{{ID: "loose", Name: "scratch", Repo: "debian", Tag: "12"}}}
-	e := New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{rows: map[string]model.UpdateStatus{}}, time.Hour).WithIgnoreUnmanaged(true)
-	if err := e.Sweep(context.Background()); err != nil {
-		t.Fatal(err)
+func TestARecreatedContainerAsksForASweep(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{"known": {Container: model.Container{ID: "known", Name: "nginx"}}}}
+	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
+	if e.Started(model.Container{ID: "known", Name: "nginx"}); asked(e) {
+		t.Error("a restart of a container ShipLog knows asked for a sweep")
 	}
-	e.Started("loose")
-	select {
-	case <-e.refresh:
-		t.Error("a restart of a container the sweep skips asked for a sweep")
-	default:
+	// An update recreates the container under its name with a new id.
+	if e.Started(model.Container{ID: "recreated", Name: "nginx"}); !asked(e) {
+		t.Error("a recreated container started without a sweep")
+	}
+}
+
+func TestANewTemplateContainerAsksForASweep(t *testing.T) {
+	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, &fakeStore{rows: map[string]model.UpdateStatus{}}, time.Hour)
+	if e.Started(model.Container{ID: "fresh", Name: "immich", Managed: true}); !asked(e) {
+		t.Error("a container installed from a template started without a sweep")
+	}
+}
+
+func TestAPassingContainerAsksForNoSweep(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{"known": {Container: model.Container{ID: "known", Name: "nginx"}}}}
+	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
+	// A build or a one-off docker run starts under a fresh id and a made-up name.
+	if e.Started(model.Container{ID: "b1", Name: "fervent_robinson"}); asked(e) {
+		t.Error("a one-off container asked for a sweep")
 	}
 }

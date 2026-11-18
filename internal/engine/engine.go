@@ -86,8 +86,6 @@ type Engine struct {
 	now        func() time.Time
 
 	ignoreUnmanaged bool
-	skippedMu       sync.Mutex
-	skipped         map[string]bool // ids the last sweep left out as unmanaged
 	// autoApplies reports whether the scheduled auto-update run will apply an
 	// update. Without a run it stays nil.
 	autoApplies  func(model.UpdateStatus) bool
@@ -235,11 +233,9 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
 	var tally vulnTally
-	skipped := map[string]bool{}
 	for _, c := range containers {
 		if e.ignoreUnmanaged && !c.Managed {
 			_ = e.store.Delete(c.ID)
-			skipped[c.ID] = true
 			continue
 		}
 		wg.Add(1)
@@ -253,9 +249,6 @@ func (e *Engine) Sweep(ctx context.Context) error {
 			_ = e.store.Upsert(st)
 		}(c)
 	}
-	e.skippedMu.Lock()
-	e.skipped = skipped
-	e.skippedMu.Unlock()
 	wg.Wait()
 	if e.vulns != nil {
 		log.Printf("shiplog: %s", tally.String())
@@ -776,21 +769,29 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 	_ = e.notifier.Notify(ctx, st)
 }
 
-// Started hears that the container id started. An update recreates its
-// container under a new id, and a sweep then checks the new image at once
-// instead of on the next interval. A restart of a known container changes
-// nothing worth a sweep.
-func (e *Engine) Started(id string) {
-	if _, err := e.store.Get(id); err == nil {
+// Started hears that container c started. An update recreates a container
+// under its name with a new id, and a sweep then checks the new image at once
+// instead of on the next interval; so does a container installed from a
+// template. Builds and one-off runs start under made-up names all day and wait
+// for the interval.
+func (e *Engine) Started(c model.Container) {
+	if _, err := e.store.Get(c.ID); err == nil {
 		return
 	}
-	e.skippedMu.Lock()
-	skipped := e.skipped[id]
-	e.skippedMu.Unlock()
-	if skipped {
+	if c.Managed {
+		e.Refresh()
 		return
 	}
-	e.Refresh()
+	rows, err := e.store.List()
+	if err != nil {
+		return
+	}
+	for _, r := range rows {
+		if r.Container.Name == c.Name {
+			e.Refresh()
+			return
+		}
+	}
 }
 
 // Refresh asks for an extra sweep without blocking; pending requests coalesce.

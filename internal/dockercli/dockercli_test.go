@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -513,20 +514,22 @@ func TestFilesReadsAFileOrAFolderFromTheContainer(t *testing.T) {
 	}
 }
 
-func TestStartsHandsOnEveryContainerThatStarts(t *testing.T) {
+func TestStartsHandsOnEveryContainerThatStartsWithItsNameAndTemplate(t *testing.T) {
 	var query string
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1.43/events", func(w http.ResponseWriter, r *http.Request) {
 		query = r.URL.Query().Get("filters")
-		_, _ = w.Write([]byte(`{"Type":"container","Action":"start","Actor":{"ID":"509380ab"}}` + "\n" +
-			`{"status":"start","id":"77aa01","Type":"container","Action":"start","Actor":{"ID":"77aa01"}}` + "\n"))
+		_, _ = w.Write([]byte(`{"Type":"container","Action":"start","Actor":{"ID":"509380ab","Attributes":{"name":"Nginx","net.unraid.docker.managed":"dockerman"}}}` + "\n" +
+			`{"status":"start","id":"77aa01","Type":"container","Action":"start","Actor":{"ID":"77aa01","Attributes":{"name":"fervent_robinson"}}}` + "\n"))
 	})
 	var got []string
-	err := serveDocker(t, mux).Starts(context.Background(), func(id string) { got = append(got, id) })
+	err := serveDocker(t, mux).Starts(context.Background(), func(c model.Container) {
+		got = append(got, fmt.Sprintf("%s %s %t", c.ID, c.Name, c.Managed))
+	})
 	if err == nil {
 		t.Error("Starts returned nil when the stream ended")
 	}
-	if strings.Join(got, ",") != "509380ab,77aa01" {
+	if strings.Join(got, ",") != "509380ab Nginx true,77aa01 fervent_robinson false" {
 		t.Errorf("started = %v", got)
 	}
 	if query != `{"event":["start"],"type":["container"]}` {
