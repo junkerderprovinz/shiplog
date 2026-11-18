@@ -1,17 +1,20 @@
 /* The notification channels of a plugin's settings page, for a page without
- * a framework. Every channel is a card of its own with its switch, what it
- * sends, its few fields and a test. A channel is added by picking its
- * service from tiles with the service's mark, in the kit's notify format, so
- * the same file serves every plugin that keeps its channels that way.
+ * a framework. Every channel is a sub-card of its own with its switch, what it
+ * sends, its few fields and a test. A channel is added in a picker window, as
+ * GlimStone's PickerWindow draws one: the services as tiles with their marks
+ * under a search, and once one is picked its fields in the same window.
+ * The channels keep to the kit's notify format, so the same file serves every plugin
+ * that keeps its channels that way.
  *
  * mount(el, adapter, opts) draws the card into el. The adapter loads the
  * channels, saves the whole list (it answers with the list as saved, secrets
  * masked) and tests one channel. opts carries the strings (t, the nc_ keys),
  * the language, the kinds the plugin offers, the marks (notify-marks.js), the
  * host's classes for fields, buttons and switches, and saved(ok, text) for
- * the page's saved line. Every change is saved at once, text a moment after
- * the last key. A secret the service keeps is never shown: its field stays
- * empty and says so, and an empty field keeps it. */
+ * the page's saved line. Every change on the page is saved at once, text a
+ * moment after the last key, and a new channel when its window is saved. A
+ * secret the service keeps is never shown: its field stays empty and says
+ * so, and an empty field keeps it. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.GlimNotifyCard = factory();
@@ -116,19 +119,55 @@
     return c;
   }
 
-  /* sections are the tiles of the kinds offered: the services, then mail and
-   * webhooks, each by the name shown in the reader's order. A kind a page
-   * can have once is off while it is there. */
-  function sections(kinds, channels, t, lang) {
+  // Lowercases and drops accents and hyphens, so "e-mail" finds "Email".
+  function fold(s) {
+    return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/-/g, '').toLowerCase();
+  }
+
+  // Whether every word of the query turns up in at least one of the names.
+  function matches(query, names) {
+    var said = names.map(fold);
+    return fold(query).split(/\s+/).filter(Boolean).every(function (w) {
+      return said.some(function (n) { return n.indexOf(w) >= 0; });
+    });
+  }
+
+  /* sections are the tiles of the kinds offered that the query leaves: the
+   * services, then mail and webhooks, each by the name shown in the reader's
+   * order. A kind a page can have once is off while it is there. */
+  function sections(kinds, channels, t, lang, query) {
     var have = {};
     (channels || []).forEach(function (c) { have[c.kind] = true; });
     function tiles(standard) {
-      return kinds.filter(function (k) { return (STANDARDS.indexOf(k) >= 0) === standard; })
+      return kinds.filter(function (k) { return (STANDARDS.indexOf(k) >= 0) === standard && matches(query || '', [name(k, t), k]); })
         .map(function (k) { return { kind: k, name: name(k, t), hint: t[HINTS[k]] || '', off: SINGLE.indexOf(k) >= 0 && !!have[k] }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name, lang, { sensitivity: 'base' }); });
     }
     return [{ id: 'services', title: t.nc_services, tiles: tiles(false) }, { id: 'standards', title: t.nc_standards, tiles: tiles(true) }]
       .filter(function (s) { return s.tiles.length; });
+  }
+
+  /* Where a key moves the focus from tile from, given every tile's box in
+   * order: the tile beside it, the nearest one in the row above or below,
+   * the first or the last. Up from the first row is the search. Null for a
+   * key the grid leaves alone. GlimStone's pickKey. */
+  function pickKey(key, from, boxes, rtl) {
+    var last = boxes.length - 1;
+    if (key === 'Home') return 0;
+    if (key === 'End') return last;
+    if (key === (rtl ? 'ArrowLeft' : 'ArrowRight')) return Math.min(from + 1, last);
+    if (key === (rtl ? 'ArrowRight' : 'ArrowLeft')) return Math.max(from - 1, 0);
+    if (key !== 'ArrowUp' && key !== 'ArrowDown') return null;
+    var here = boxes[from], down = key === 'ArrowDown';
+    function centre(b) { return b.left + b.width / 2; }
+    // A row is every tile whose top lies within half a tile of the first one's.
+    function sameRow(a, b) { return Math.abs(a.top - b.top) < Math.min(a.height, b.height) / 2; }
+    var beyond = boxes.map(function (box, index) { return { box: box, index: index }; })
+      .filter(function (o) { return !sameRow(o.box, here) && (down ? o.box.top > here.top : o.box.top < here.top); });
+    if (!beyond.length) return down ? from : 'search';
+    var near = beyond.reduce(function (a, b) { return Math.abs(b.box.top - here.top) < Math.abs(a.box.top - here.top) ? b : a; });
+    return beyond.filter(function (o) { return sameRow(o.box, near.box); })
+      .reduce(function (a, b) { return Math.abs(centre(b.box) - centre(here)) < Math.abs(centre(a.box) - centre(here)) ? b : a; }).index;
   }
 
   // The text a field shows. A kept secret shows nothing, a list one line.
@@ -159,6 +198,16 @@
     return f.type === 'lines' ? s : s.trim();
   }
 
+  // The fields a channel shows, its name and what it sends first.
+  function fieldsOf(c, t) {
+    return [
+      { path: 'name', label: 'nc_name', hint: 'nc_name_hint', ph: name(c.kind, t) },
+      { path: 'on', label: 'nc_on', type: 'choice', options: [['always', 'nc_on_always'], ['failure', 'nc_on_failure']], dflt: 'always' }
+    ].concat((FIELDS[c.kind] || []).filter(function (f) {
+      return !(f.unless && String(get(c, f.unless[0]) || '').toUpperCase() === f.unless[1]);
+    }));
+  }
+
   function fail(t, code) {
     return t['nc_fail_' + code] || t.nc_test_failed;
   }
@@ -168,7 +217,7 @@
     var t = opts.t || {}, lang = opts.lang || 'en', kinds = opts.kinds || Object.keys(FIELDS);
     var marks = (opts.marks && opts.marks.marks) || {}, lit = (opts.marks && opts.marks.tiles) || {};
     var cls = Object.assign({ input: '', button: '', switch: '' }, opts.classes);
-    var list = [], picking = false, typing = 0, problems = {};
+    var list = [], typing = 0, problems = {}, addBtn = null;
 
     function h(tag, attrs, kids) {
       var n = doc.createElement(tag);
@@ -183,8 +232,8 @@
 
     // The marks and glyphs are fixed strings of this file and its marks
     // file, never anything a channel holds.
-    function mark(kind) {
-      var m = h('span', { class: 'glim-nc-mark', 'aria-hidden': 'true' });
+    function mark(kind, extra) {
+      var m = h('span', { class: 'glim-nc-mark' + (extra ? ' ' + extra : ''), 'aria-hidden': 'true' });
       m.innerHTML = marks[kind] || '';
       return m;
     }
@@ -194,6 +243,12 @@
       var i = h('span', { class: 'glim-nc-info', tabindex: '0', role: 'img', 'aria-label': tip, 'data-tip': tip });
       i.innerHTML = INFO;
       return i;
+    }
+
+    function button(text, extra, onclick) {
+      var b = h('button', { type: 'button', class: (cls.button + ' glim-nc-btn ' + (extra || '')).trim(), text: text });
+      b.addEventListener('click', onclick);
+      return b;
     }
 
     function byId(id) {
@@ -219,70 +274,68 @@
       });
     }
 
-    function field(c, f) {
-      var id = 'glim-nc-' + c.id + '-' + f.path.replace(/\./g, '-');
+    /* One field of the channel that of() returns. changed(done, redraw) hears
+     * every edit: done once the edit is over, redraw when other fields may
+     * come or go with it. On the page a choice is a select, as the page's
+     * others are; in the window it is a row of segments, since the window
+     * draws its own controls. */
+    function field(of, f, changed, inWindow) {
+      var c = of();
+      var id = 'glim-nc-' + (inWindow ? 'new' : c.id) + '-' + f.path.replace(/\./g, '-');
       var v = get(c, f.path), input;
-      if (f.type === 'choice') {
-        input = h('select', { id: id, class: (cls.input + ' glim-nc-in glim-nc-select').trim() });
-        f.options.forEach(function (o) {
-          var opt = h('option', { value: o[0], text: t[o[1]] || o[1] });
-          input.appendChild(opt);
-        });
-        input.value = shown(f, v);
-      } else if (f.type === 'lines' || f.type === 'headers') {
-        input = h('textarea', { id: id, class: (cls.input + ' glim-nc-in glim-nc-lines').trim(), rows: '3', spellcheck: 'false', placeholder: f.ph });
-        input.value = shown(f, v);
-      } else {
-        input = h('input', {
-          id: id, class: (cls.input + ' glim-nc-in').trim(), spellcheck: 'false',
-          type: f.type === 'secret' ? 'password' : f.type === 'number' ? 'number' : 'text',
-          autocomplete: f.type === 'secret' ? 'new-password' : 'off',
-          placeholder: f.type === 'secret' && v === MASK ? t.nc_saved : f.ph, min: f.min, max: f.max
-        });
-        input.value = shown(f, v);
-      }
-      function take(now) {
-        var ch = byId(c.id);
+      var fieldCls = inWindow ? 'glim-nc-in glim-nc-win-in' : (cls.input + ' glim-nc-in').trim();
+      function take(text, done) {
+        var ch = of();
         if (!ch) return;
-        set(ch, f.path, taken(f, input.value, get(ch, f.path)));
-        if (f.type === 'choice') { draw(); save(true); return; }
-        save(now);
+        set(ch, f.path, taken(f, text, get(ch, f.path)));
+        changed(done, f.type === 'choice');
       }
-      input.addEventListener(f.type === 'choice' ? 'change' : 'input', function () { take(f.type === 'choice'); });
-      if (f.type !== 'choice') input.addEventListener('change', function () { take(true); });
-      var lbl = h('label', { class: 'glim-nc-name', for: id, text: t[f.label] || f.label });
+      if (f.type === 'choice' && inWindow) {
+        input = h('span', { id: id, class: 'glim-nc-seg', role: 'radiogroup' });
+        f.options.forEach(function (o) {
+          var on = o[0] === shown(f, v);
+          var s = h('button', { type: 'button', role: 'radio', class: 'glim-nc-seg-opt', 'aria-checked': String(on), tabindex: on ? '0' : '-1', 'data-value': o[0], text: t[o[1]] || o[1] });
+          s.addEventListener('click', function () { take(o[0], true); });
+          input.appendChild(s);
+        });
+        input.addEventListener('keydown', function (e) {
+          var i = f.options.map(function (o) { return o[0]; }).indexOf(shown(f, get(of(), f.path)));
+          var step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+          if (!step) return;
+          e.preventDefault();
+          take(f.options[(i + step + f.options.length) % f.options.length][0], true);
+        });
+      } else if (f.type === 'choice') {
+        input = h('select', { id: id, class: fieldCls + ' glim-nc-select' });
+        f.options.forEach(function (o) { input.appendChild(h('option', { value: o[0], text: t[o[1]] || o[1] })); });
+        input.value = shown(f, v);
+        input.addEventListener('change', function () { take(input.value, true); });
+      } else {
+        var lines = f.type === 'lines' || f.type === 'headers';
+        input = lines
+          ? h('textarea', { id: id, class: fieldCls + ' glim-nc-lines', rows: '3', spellcheck: 'false', placeholder: f.ph })
+          : h('input', {
+            id: id, class: fieldCls, spellcheck: 'false',
+            type: f.type === 'secret' ? 'password' : f.type === 'number' ? 'number' : 'text',
+            autocomplete: f.type === 'secret' ? 'new-password' : 'off',
+            placeholder: f.type === 'secret' && v === MASK ? t.nc_saved : f.ph, min: f.min, max: f.max
+          });
+        input.value = shown(f, v);
+        input.addEventListener('input', function () { take(input.value, false); });
+        input.addEventListener('change', function () { take(input.value, true); });
+      }
+      var lbl = f.type === 'choice' && inWindow
+        ? h('span', { class: 'glim-nc-name', id: id + '-l', text: t[f.label] || f.label })
+        : h('label', { class: 'glim-nc-name', for: id, text: t[f.label] || f.label });
+      if (f.type === 'choice' && inWindow) input.setAttribute('aria-labelledby', id + '-l');
       return h('div', { class: 'glim-nc-row' }, [h('span', { class: 'glim-nc-lbl' }, [lbl, info(t[f.hint])]), h('div', { class: 'glim-nc-ctl' }, [input])]);
     }
 
-    function channel(c) {
-      var title = (c.name || '').trim() || name(c.kind, t);
-      var sw = h('input', { type: 'checkbox', role: 'switch', class: (cls.switch + ' glim-nc-switch').trim(), 'aria-label': t.nc_use + ', ' + title });
-      sw.checked = !!c.enabled;
-      sw.addEventListener('change', function () {
-        var ch = byId(c.id);
-        if (!ch) return;
-        ch.enabled = sw.checked;
-        draw();
-        save(true);
-      });
-      var card = h('section', { class: 'glim-nc-ch', 'data-kind': c.kind }, [
-        h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: title }), info(t[HINTS[c.kind]]), sw])
-      ]);
-      if (problems[c.id]) card.appendChild(h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }));
-      if (c.enabled) {
-        var nameIn = { path: 'name', label: 'nc_name', hint: 'nc_name_hint', ph: name(c.kind, t) };
-        card.appendChild(field(c, nameIn));
-        card.appendChild(field(c, { path: 'on', label: 'nc_on', type: 'choice', options: [['always', 'nc_on_always'], ['failure', 'nc_on_failure']], dflt: 'always' }));
-        (FIELDS[c.kind] || []).forEach(function (f) {
-          if (f.unless && String(get(c, f.unless[0]) || '').toUpperCase() === f.unless[1]) return;
-          card.appendChild(field(c, f));
-        });
-      }
+    // The test of a channel, its button and the line that says how it went.
+    function tester(of, make) {
       var res = h('span', { class: 'glim-nc-res', role: 'status' });
-      var test = h('button', { type: 'button', class: (cls.button + ' glim-nc-btn').trim(), text: t.nc_test });
-      test.disabled = !c.enabled;
-      test.addEventListener('click', function () {
-        var ch = byId(c.id);
+      var b = (make || button)(t.nc_test, '', function () {
+        var ch = of();
         if (!ch) return;
         res.className = 'glim-nc-res glim-nc-run';
         res.textContent = t.nc_testing;
@@ -294,37 +347,206 @@
           res.textContent = t.nc_test_failed;
         });
       });
-      var remove = h('button', { type: 'button', class: (cls.button + ' glim-nc-btn').trim(), text: t.nc_remove });
-      remove.addEventListener('click', function () {
+      return { button: b, result: res };
+    }
+
+    function channel(c) {
+      var title = (c.name || '').trim() || name(c.kind, t);
+      var of = function () { return byId(c.id); };
+      var sw = h('input', { type: 'checkbox', role: 'switch', class: (cls.switch + ' glim-nc-switch').trim(), 'aria-label': t.nc_use + ', ' + title });
+      sw.checked = !!c.enabled;
+      sw.addEventListener('change', function () {
+        var ch = of();
+        if (!ch) return;
+        ch.enabled = sw.checked;
+        draw();
+        save(true);
+      });
+      var card = h('section', { class: 'glim-nc-ch', 'data-kind': c.kind }, [
+        h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: title }), info(t[HINTS[c.kind]]), sw])
+      ]);
+      if (problems[c.id]) card.appendChild(h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }));
+      if (c.enabled) {
+        fieldsOf(c, t).forEach(function (f) {
+          card.appendChild(field(of, f, function (done, redraw) {
+            if (redraw) draw();
+            save(done || redraw);
+          }));
+        });
+      }
+      var test = tester(of);
+      test.button.disabled = !c.enabled;
+      var remove = button(t.nc_remove, '', function () {
         list = list.filter(function (o) { return o.id !== c.id; });
         draw();
         save(true);
       });
-      card.appendChild(h('div', { class: 'glim-nc-tools' }, [test, res, h('span', { class: 'glim-nc-gap' }), remove]));
+      card.appendChild(h('div', { class: 'glim-nc-tools' }, [test.button, test.result, h('span', { class: 'glim-nc-gap' }), remove]));
       return card;
     }
 
+    var FOCUSABLE = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    /* The picker window: its title as a badge on the top edge with the (i),
+     * the search at the top end and the tiles in their groups under it, which
+     * alone scroll and keep the height they opened with while a query narrows
+     * them. A picked tile's fields take the tiles' place, with Back and Save
+     * beside Cancel in the foot. Escape empties the search first, then closes;
+     * the focus goes back to Add. */
     function picker() {
-      var box = h('div', { class: 'glim-nc-pick' }, [h('p', { class: 'glim-nc-sub', text: t.nc_add_hint })]);
-      sections(kinds, list, t, lang).forEach(function (s) {
-        box.appendChild(h('h4', { class: 'glim-nc-pick-h', text: s.title }));
-        var ul = h('ul', { class: 'glim-nc-tiles' });
-        s.tiles.forEach(function (tile) {
-          var b = h('button', { type: 'button', class: 'glim-nc-tile', 'data-kind': tile.kind }, [mark(tile.kind), h('span', { class: 'glim-nc-tile-name', text: tile.name })]);
-          var l = lit[tile.kind];
-          if (l) b.setAttribute('style', '--nc-tile:' + l.tile + ';--nc-tile-ink:' + l.ink);
-          b.disabled = tile.off;
-          b.addEventListener('click', function () {
-            list = list.concat([newChannel(tile.kind, list)]);
-            picking = false;
-            draw();
-            save(true);
+      var query = '', draft = null, busy = false, scroll = null, search = null;
+      var title = h('h2', { class: 'glim-nc-win-title', id: 'glim-nc-win-t' }, [h('span', { text: t.nc_add }), info(t.nc_add_hint)]);
+      var body = h('div', { class: 'glim-nc-win-body' });
+      var act = h('div', { class: 'glim-nc-win-act' });
+      var box = h('div', { class: 'glim-nc-win', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' }, [title, body, act]);
+      var scrim = h('div', { class: 'glim-nc-scrim' });
+      var wins = h('div', { class: 'glim-nc-wins' }, [scrim, box]);
+      doc.body.appendChild(wins);
+
+      function close() {
+        if (!wins.parentNode) return;
+        wins.parentNode.removeChild(wins);
+        doc.removeEventListener('keydown', onKey, true);
+        (addBtn && addBtn.isConnected ? addBtn : el).focus();
+      }
+
+      function winButton(text, extra, onclick) {
+        var b = h('button', { type: 'button', class: 'glim-nc-win-btn' + (extra ? ' ' + extra : ''), text: text });
+        b.addEventListener('click', onclick);
+        return b;
+      }
+
+      function tilesOf() {
+        return scroll ? Array.prototype.filter.call(scroll.querySelectorAll('button.glim-nc-tile'), function (b) { return !b.disabled; }) : [];
+      }
+
+      function grid() {
+        scroll.textContent = '';
+        var secs = sections(kinds, list, t, lang, query);
+        if (!secs.length) scroll.appendChild(h('p', { class: 'glim-nc-none', text: (t.nc_none || '').replace('{query}', query.trim()) }));
+        secs.forEach(function (s) {
+          var ul = h('ul', { class: 'glim-nc-tiles' });
+          s.tiles.forEach(function (tile) {
+            var b = h('button', { type: 'button', class: 'glim-nc-tile', 'data-kind': tile.kind }, [mark(tile.kind, 'glim-nc-tile-mark'), h('span', { class: 'glim-nc-tile-name', text: tile.name })]);
+            b.disabled = tile.off;
+            b.addEventListener('click', function () { form(newChannel(tile.kind, list)); });
+            var li = h('li', { class: 'glim-nc-tilebox' + (tile.hint ? ' glim-nc-tile-hinted' : '') }, [b, info(tile.hint)]);
+            var l = lit[tile.kind];
+            if (l) li.setAttribute('style', '--nc-tile:' + l.tile + ';--nc-tile-ink:' + l.ink);
+            ul.appendChild(li);
           });
-          ul.appendChild(h('li', { class: 'glim-nc-tilebox' }, [b, info(tile.hint)]));
+          scroll.appendChild(h('section', { class: 'glim-nc-sec' }, [h('h3', { class: 'glim-nc-eyebrow', text: s.title }), ul]));
         });
-        box.appendChild(ul);
-      });
-      return box;
+      }
+
+      function tiles() {
+        draft = null;
+        body.className = 'glim-nc-win-body glim-nc-win-pick';
+        body.textContent = '';
+        act.textContent = '';
+        search = h('input', { type: 'search', class: 'glim-nc-search', 'aria-label': t.nc_search, placeholder: t.nc_search, spellcheck: 'false', autocomplete: 'off' });
+        search.value = query;
+        search.addEventListener('input', function () { query = search.value; grid(); });
+        scroll = h('div', { class: 'glim-nc-scroll' });
+        scroll.addEventListener('keydown', function (e) {
+          var all = tilesOf(), from = all.indexOf(e.target);
+          if (from < 0) return;
+          var rtl = doc.defaultView && doc.defaultView.getComputedStyle(scroll).direction === 'rtl';
+          var to = pickKey(e.key, from, all.map(function (b) { return b.getBoundingClientRect(); }), rtl);
+          if (to === null) return;
+          e.preventDefault();
+          (to === 'search' ? search : all[to]).focus();
+        });
+        body.appendChild(search);
+        body.appendChild(scroll);
+        grid();
+        act.appendChild(winButton(t.nc_close, '', close));
+        if (scroll.clientHeight) scroll.style.minHeight = scroll.clientHeight + 'px';
+        search.focus();
+      }
+
+      function form(c) {
+        draft = c;
+        var of = function () { return draft; };
+        var err = h('p', { class: 'glim-nc-err', role: 'alert' });
+        var test = tester(of, winButton);
+        function fill() {
+          body.className = 'glim-nc-win-body';
+          body.textContent = '';
+          body.appendChild(h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: name(c.kind, t) }), info(t[HINTS[c.kind]])]));
+          var rows = h('div', { class: 'glim-nc-form' });
+          fieldsOf(draft, t).forEach(function (f) {
+            rows.appendChild(field(of, f, function (done, redraw) {
+              if (!redraw) return;
+              // A segment's group keeps the focus, on the segment chosen.
+              var on = doc.activeElement, at = on && (on.id || (on.parentNode && on.parentNode.id));
+              fill();
+              var back = at ? doc.getElementById(at) : null;
+              if (back && back.getAttribute('role') === 'radiogroup') back = back.querySelector('[aria-checked="true"]');
+              if (back) back.focus();
+            }, true));
+          });
+          body.appendChild(rows);
+          body.appendChild(h('div', { class: 'glim-nc-tools' }, [test.button, test.result]));
+          body.appendChild(err);
+        }
+        fill();
+        act.textContent = '';
+        var keep = winButton(t.nc_save, 'glim-nc-key', function () {
+          if (busy) return;
+          busy = true;
+          keep.disabled = true;
+          err.textContent = '';
+          clearTimeout(typing);
+          var sent = JSON.parse(JSON.stringify(list.concat([draft])));
+          adapter.save(sent).then(function (saved) {
+            busy = false;
+            problems = {};
+            list = saved;
+            if (opts.saved) opts.saved(true, t.nc_saved_line || '');
+            draw();
+            close();
+          }, function (e) {
+            busy = false;
+            keep.disabled = false;
+            var mine = ((e && e.problems) || []).filter(function (p) { return p.index === sent.length - 1; })[0];
+            err.textContent = t.nc_not_saved + ': ' + fail(t, mine ? mine.code : (e && e.code) || 'engine');
+          });
+        });
+        act.appendChild(winButton(t.nc_cancel, '', close));
+        act.appendChild(winButton(t.nc_back, '', tiles));
+        act.appendChild(keep);
+        var first = body.querySelector('input, textarea');
+        if (first) first.focus();
+      }
+
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (search && e.target === search && search.value !== '') {
+            search.value = '';
+            query = '';
+            grid();
+          } else if (!busy) close();
+        } else if (e.key === 'Enter' && search && e.target === search && query.trim() !== '') {
+          var one = tilesOf();
+          if (one.length === 1) { e.preventDefault(); one[0].click(); }
+        } else if (e.key === 'ArrowDown' && search && e.target === search) {
+          var all = tilesOf();
+          if (all[0]) { e.preventDefault(); all[0].focus(); }
+        } else if (e.key === 'Tab') {
+          var stops = Array.prototype.filter.call(box.querySelectorAll(FOCUSABLE), function (n) { return n.offsetParent !== null; });
+          if (!stops.length) return;
+          var first = stops[0], last = stops[stops.length - 1];
+          if (e.shiftKey && doc.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && doc.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+      scrim.addEventListener('click', function () { if (!busy) close(); });
+      doc.addEventListener('keydown', onKey, true);
+      tiles();
+      return { close: close, box: box };
     }
 
     function draw() {
@@ -332,10 +554,9 @@
       var root = h('div', { class: 'glim-nc' });
       if (!list.length) root.appendChild(h('p', { class: 'glim-nc-sub', text: t.nc_empty }));
       list.forEach(function (c) { root.appendChild(channel(c)); });
-      var add = h('button', { type: 'button', class: (cls.button + ' glim-nc-btn glim-nc-add').trim(), 'aria-expanded': String(picking), text: picking ? t.nc_close : t.nc_add });
-      add.addEventListener('click', function () { picking = !picking; draw(); });
-      root.appendChild(h('div', { class: 'glim-nc-addrow' }, [add]));
-      if (picking) root.appendChild(picker());
+      addBtn = button(t.nc_add, 'glim-nc-add', function () { picker(); });
+      addBtn.setAttribute('aria-haspopup', 'dialog');
+      root.appendChild(h('div', { class: 'glim-nc-addrow' }, [addBtn]));
       el.appendChild(root);
     }
 
@@ -345,8 +566,8 @@
     }, function (e) {
       if (opts.saved) opts.saved(false, fail(t, (e && e.code) || 'engine'));
     });
-    return { list: function () { return list; }, draw: draw };
+    return { list: function () { return list; }, draw: draw, pick: picker };
   }
 
-  return { MASK: MASK, FIELDS: FIELDS, newChannel: newChannel, sections: sections, shown: shown, taken: taken, name: name, get: get, set: set, mount: mount };
+  return { MASK: MASK, FIELDS: FIELDS, newChannel: newChannel, sections: sections, matches: matches, pickKey: pickKey, shown: shown, taken: taken, name: name, get: get, set: set, mount: mount };
 });

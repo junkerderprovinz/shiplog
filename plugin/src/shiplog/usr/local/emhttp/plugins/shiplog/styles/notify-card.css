@@ -2,13 +2,16 @@
  * (notify-card.js), as the fortress card does it: Unraid's colours and
  * buttons on their own, the theme plugin's tokens under html.tt-popups-on.
  * The host passes its own field, button and switch classes, so the card
- * takes the page's controls and only lays them out. */
+ * takes the page's controls and only lays them out. Nothing carries a line:
+ * a channel is a filled sub-card, a field a filled ground one step above it,
+ * as in GlimStone. */
 
 .glim-nc {
-  --nc-raised: color-mix(in srgb, currentColor 5%, transparent);
-  --nc-line: color-mix(in srgb, currentColor 14%, transparent);
+  --nc-sub: color-mix(in srgb, currentColor 5%, transparent);
+  --nc-field: color-mix(in srgb, currentColor 9%, transparent);
+  --nc-field-focus: color-mix(in srgb, currentColor 14%, transparent);
+  --nc-btn: color-mix(in srgb, currentColor 13%, transparent);
   --nc-dim: var(--alt-text-color, #8d8d8d);
-  --nc-tile-rest: color-mix(in srgb, currentColor 7%, transparent);
   --nc-ok: #3fae6a;
   --nc-err: #e05252;
   --nc-r-card: 4px;
@@ -39,9 +42,11 @@ html:is(.Theme--white, .Theme--azure) .glim-nc {
   --brand-apprise-forced2: #169e8d;
 }
 html.tt-popups-on .glim-nc {
-  --nc-raised: var(--tt-chip, #2e2e2e);
+  --nc-sub: var(--tt-surface-3, #2e2e2e);
+  --nc-field: color-mix(in srgb, var(--nc-sub), currentColor 9%);
+  --nc-field-focus: color-mix(in srgb, var(--nc-sub), currentColor 16%);
+  --nc-btn: color-mix(in srgb, var(--nc-sub), currentColor 13%);
   --nc-dim: var(--tt-text-dim, #8a8a8a);
-  --nc-tile-rest: var(--tt-fm-btn, #353535);
   --nc-ok: var(--tt-ok-ink, #6fdc8c);
   --nc-err: var(--tt-err-ink, #ff8389);
   --nc-r-card: var(--tt-radius-card, 20px);
@@ -53,17 +58,18 @@ html.tt-popups-on .glim-nc {
 .glim-nc .glim-nc-sub { margin: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
 
 /* A channel: its mark, name, (i) and switch on top, its rows under them. */
-.glim-nc-ch { padding: 8px 14px 10px; border: 1px solid var(--nc-line); border-radius: calc(var(--nc-r-card) * .7); background: var(--nc-raised); }
+.glim-nc-ch { padding: 8px 14px 10px; border-radius: calc(var(--nc-r-card) * .7); background: var(--nc-sub); }
 .glim-nc-ch-hd { display: flex; align-items: center; gap: 8px; min-height: 36px; }
 .glim-nc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .glim-nc-ch-hd .glim-nc-switch { margin-inline-start: auto !important; flex: none; }
-.glim-nc .glim-nc-err { margin: 2px 0 4px; color: var(--nc-err); font-size: 13px; text-align: start; }
+.glim-nc-err { margin: 2px 0 4px; color: var(--nc-err); font-size: 13px; text-align: start; }
+.glim-nc-err:empty { display: none; }
 
 .glim-nc-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; min-height: 40px; padding: 4px 0; }
 .glim-nc-lbl { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 160px; min-width: 0; }
 .glim-nc-lbl .glim-nc-name { margin: 0; font-size: 14px; font-weight: 400; }
 .glim-nc-ctl { flex: 0 1 380px; min-width: 0; max-width: 100%; margin-inline-start: auto; }
-.glim-nc .glim-nc-in { width: 100%; }
+.glim-nc .glim-nc-in { width: 100%; border: none; }
 .glim-nc .glim-nc-select { width: auto; font-family: inherit; }
 .glim-nc .glim-nc-lines { min-height: 4.5em; resize: vertical; }
 
@@ -79,28 +85,6 @@ html.tt-popups-on .glim-nc {
 .glim-nc-mark { display: inline-flex; flex: none; width: 20px; height: 20px; line-height: 0; }
 .glim-nc-mark svg { width: 100%; height: 100%; display: block; }
 
-/* The tiles to pick a service from. Under the pointer and on keyboard focus a
-   tile fills with the service's colour, and its mark and name take the ink
-   that holds on it. A mark paints each part with var(--mark-ink, its own
-   colour), or var(--mark-cut, ...) where a part lies on another part. */
-.glim-nc-pick { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 2px; }
-.glim-nc .glim-nc-pick-h { margin: 6px 0 0; font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--nc-dim); }
-.glim-nc-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-.glim-nc-tilebox { position: relative; display: flex; margin: 0; }
-.glim-nc .glim-nc-tile {
-  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 34px 8px 12px;
-  border: 1px solid var(--nc-line) !important; border-radius: var(--nc-r-ctl); background: var(--nc-tile-rest) !important; color: inherit !important;
-  font: inherit; font-size: 14px; text-align: start; cursor: pointer; box-shadow: none;
-}
-.glim-nc .glim-nc-tile:is(:hover, :focus-visible):not(:disabled) {
-  background: var(--nc-tile, var(--tt-accent, #486dba)) !important; color: var(--nc-tile-ink, #fff) !important;
-  --mark-ink: var(--nc-tile-ink, #fff); --mark-cut: var(--nc-tile, #486dba);
-}
-.glim-nc .glim-nc-tile:focus-visible { outline: 2px solid var(--nc-tile, #486dba); outline-offset: 2px; }
-.glim-nc .glim-nc-tile:disabled { opacity: .45; cursor: default; }
-.glim-nc-tile-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.glim-nc-tilebox .glim-nc-info { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); }
-
 /* The (i) with its words in a bubble under the pointer and on keyboard focus. */
 .glim-nc-info { position: relative; display: inline-flex; flex: none; width: 15px; height: 15px; opacity: .8; cursor: help; }
 .glim-nc-info svg { width: 15px; height: 15px; fill: currentColor; }
@@ -113,4 +97,225 @@ html.tt-popups-on .glim-nc {
   display: none; pointer-events: none;
 }
 .glim-nc-info:is(:hover, :focus-visible)::after { display: block; }
+
+/* The picker window lives in <body>, outside the card, so it carries its own
+   colours, as the fortress card's windows do: Unraid's theme on its own, and
+   with the theme plugin a window that stays dark on every theme. */
+.glim-nc-wins {
+  --nc-w-ground: var(--background-color, #1c1b1b);
+  --nc-w-raised: color-mix(in srgb, currentColor 12%, transparent);
+  --nc-w-raised-hover: color-mix(in srgb, currentColor 20%, transparent);
+  --nc-w-head: var(--hover-button-background, #e22828);
+  --nc-w-head-ink: var(--hover-button-text-color, #fff);
+  --nc-w-dim: var(--alt-text-color, #8d8d8d);
+  --nc-w-focus: var(--link-text-color, #486dba);
+  --nc-w-ink: var(--text-color, #f2f2f2);
+  --nc-w-scrim: rgba(0, 0, 0, .6);
+  --nc-w-r-card: 4px;
+  --nc-w-r-ctl: 4px;
+  --nc-w-r-pill: 4px;
+  --nc-w-shadow: 0 12px 48px rgba(0, 0, 0, .55);
+  --nc-ok: #3fae6a;
+  --nc-err: #e05252;
+  --nc-dim: var(--nc-w-dim);
+  --nc-r-ctl: var(--nc-w-r-ctl);
+  --nc-bubble: color-mix(in srgb, var(--nc-w-ground), currentColor 14%);
+  --nc-bubble-ink: var(--nc-w-ink);
+  --brand-discord-0: #6a76f3;
+  --brand-ntfy-0: #38907e;
+  --brand-matrix-0: #828282;
+  --brand-healthchecks-forced0: #ffffff;
+  --brand-apprise-forced0: #3fa9a6;
+  --brand-apprise-forced1: #319491;
+  --brand-apprise-forced2: #a6e8de;
+  color: var(--nc-w-ink); font-size: 14px; line-height: 1.45;
+}
+html:is(.Theme--white, .Theme--azure):not(.tt-popups-on) .glim-nc-wins {
+  --nc-ok: #0e6027;
+  --nc-err: #da1e28;
+  --brand-discord-0: #5865F2;
+  --brand-ntfy-0: #317F6F;
+  --brand-matrix-0: #000000;
+  --brand-healthchecks-forced0: #33333f;
+  --brand-apprise-forced0: #237171;
+  --brand-apprise-forced1: #185858;
+  --brand-apprise-forced2: #169e8d;
+}
+html.tt-popups-on .glim-nc-wins {
+  --nc-w-ground: #1a1a1a;
+  --nc-w-raised: #2e2e2e;
+  --nc-w-raised-hover: #383838;
+  --nc-w-head: var(--tt-accent, #FCC419);
+  --nc-w-head-ink: var(--tt-accent-text, #161616);
+  --nc-w-dim: #8a8a8a;
+  --nc-w-focus: var(--tt-accent, #FCC419);
+  --nc-w-ink: #e6e6e6;
+  --nc-w-scrim: var(--tt-backdrop-dim, rgba(0, 0, 0, .72));
+  --nc-w-r-card: var(--tt-radius-card, 20px);
+  --nc-w-r-ctl: var(--tt-radius-control, 12px);
+  --nc-w-r-pill: var(--tt-radius-pill, 9999px);
+  --nc-w-shadow: var(--tt-elev-3, 0 12px 30px rgba(0, 0, 0, .6));
+  --nc-ok: #6fdc8c;
+  --nc-err: #ff8389;
+  --nc-bubble: #2e2e2e;
+}
+/* Under OLED, which counts only on a dark Unraid theme, the window takes the
+   theme plugin's lowered surfaces. */
+html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
+  --nc-w-ground: var(--tt-surface-window, #161616);
+  --nc-w-raised: var(--tt-surface-3, #262626);
+}
+.glim-nc-wins *, .glim-nc-wins *::before, .glim-nc-wins *::after { box-sizing: border-box; }
+
+/* The scrim darkens and blurs the page; the window sits above Unraid's own
+   popovers, whose z-index reaches 999999. */
+.glim-nc-scrim { position: fixed; inset: 0; z-index: 1000000; background: var(--nc-w-scrim); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+@media (prefers-reduced-transparency: reduce) { .glim-nc-scrim { -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* GlimStone's picker window: 48rem wide and at most 85% of the screen tall,
+   the heading, the search and the foot fixed and only the tiles scrolling.
+   Unraid sets the root font at 10px, so GlimStone's rems stand here as the
+   pixels they are on a 16px root. */
+.glim-nc-win {
+  position: fixed; z-index: 1000001; left: 50%; top: 50%; translate: -50% -50%;
+  display: flex; flex-direction: column;
+  width: min(768px, calc(100vw - 32px)); max-height: 85vh;
+  padding: 21px 0 16px; border-radius: var(--nc-w-r-card);
+  background: var(--nc-w-ground); color: var(--nc-w-ink); box-shadow: var(--nc-w-shadow); text-align: start;
+}
+.glim-nc-win:focus { outline: none; }
+@keyframes glim-nc-in { from { opacity: 0; scale: .97; } }
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-tt-motion="off"]) .glim-nc-win { animation: glim-nc-in var(--tt-motion-modal-dur, 150ms) cubic-bezier(.16, 1, .3, 1); }
+}
+.glim-nc-wins .glim-nc-win-title {
+  position: absolute; top: 0; inset-inline-start: 24px; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 6px; max-width: calc(100% - 48px); min-height: 22px; margin: 0; padding: 0 12px;
+  border-radius: var(--nc-w-r-pill); background: var(--nc-w-head); color: var(--nc-w-head-ink);
+  font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.2; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.glim-nc-win-body { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 4px; }
+.glim-nc-win-body.glim-nc-win-pick { overflow: hidden; }
+.glim-nc-win-act { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
+
+/* The search, open at the top end from the start. */
+.glim-nc-wins input.glim-nc-search {
+  flex: none; align-self: flex-end; width: 256px; max-width: 100%; height: 32px; margin: 0; padding: 0 12px;
+  border: none; border-radius: var(--nc-w-r-ctl); box-shadow: none; outline: none;
+  background: var(--nc-w-raised); color: var(--nc-w-ink); font: inherit; font-size: 13px;
+}
+.glim-nc-wins input.glim-nc-search:focus { background: var(--nc-w-raised-hover); }
+.glim-nc-wins input.glim-nc-search::placeholder { color: var(--nc-w-dim); opacity: 1; }
+/* The few pixels around the tiles keep their focus ring inside the scroll. */
+.glim-nc-scroll { display: flex; flex-direction: column; gap: 24px; flex: 1 1 auto; min-height: 0; margin: 0 -4px; padding: 4px; overflow-y: auto; overscroll-behavior: contain; }
+.glim-nc-sec { display: flex; flex-direction: column; gap: 12px; }
+.glim-nc-wins .glim-nc-eyebrow { margin: 0; color: var(--nc-w-dim); font-size: 12px; font-weight: 500; letter-spacing: 1.2px; line-height: 1.2; text-transform: uppercase; }
+.glim-nc-wins .glim-nc-none { margin: 0; padding-block: 24px; color: var(--nc-w-dim); font-size: 13px; text-align: center; }
+
+/* The tiles: GlimStone's README buttons, three to a row in the window and two
+   on a phone. Under the pointer and on keyboard focus a tile fills with the
+   service's colour, a glyph that belongs to nobody with the accent, and the
+   mark and the name take the ink that holds on it. A mark paints each part
+   with var(--mark-ink, its own colour), or var(--mark-cut, ...) where a part
+   lies on another part. */
+.glim-nc-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(208px, calc((100% - 12px) / 2)), 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.glim-nc-tilebox {
+  --nc-lit: var(--nc-tile, var(--nc-w-head));
+  --nc-lit-ink: var(--nc-tile-ink, var(--nc-w-head-ink));
+  position: relative; display: flex; margin: 0;
+}
+.glim-nc-wins button.glim-nc-tile {
+  position: relative; flex: 1; width: auto; min-width: 0; height: 46.6px; margin: 0; padding: 0;
+  border: none; border-radius: var(--nc-w-r-pill); box-shadow: none; background: var(--nc-w-raised); color: var(--nc-w-ink);
+  font: inherit; letter-spacing: normal; text-transform: none; text-align: start; cursor: pointer;
+}
+.glim-nc-wins .glim-nc-tile-mark { position: absolute; top: 50%; inset-inline-start: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; justify-content: center; }
+.glim-nc-tile-name {
+  position: absolute; inset-block: 0; inset-inline: 53px 10px; display: flex; align-items: center;
+  overflow: hidden; white-space: nowrap; font-size: 14px; font-weight: 700; line-height: 1.15;
+}
+.glim-nc-tile-hinted .glim-nc-tile-name { inset-inline-end: 28px; }
+.glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) button.glim-nc-tile {
+  background: var(--nc-lit); color: var(--nc-lit-ink);
+  --mark-ink: var(--nc-lit-ink); --mark-cut: var(--nc-lit);
+}
+.glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) .glim-nc-info { color: var(--nc-lit-ink); }
+.glim-nc-wins button.glim-nc-tile:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 2px; }
+.glim-nc-wins button.glim-nc-tile:disabled { opacity: .45; cursor: default; }
+.glim-nc-tilebox .glim-nc-info { position: absolute; top: 50%; inset-inline-end: 10px; translate: 0 -50%; color: var(--nc-w-ink); }
 .glim-nc-tilebox .glim-nc-info::after { left: auto; right: -10px; transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-tt-motion="off"]) .glim-nc-wins button.glim-nc-tile { transition: background-color var(--tt-motion-control-dur, 150ms), color var(--tt-motion-control-dur, 150ms); }
+}
+
+/* The picked channel's fields in the window, on the window's own grounds. */
+.glim-nc-form { display: flex; flex-direction: column; }
+.glim-nc-wins :is(input, textarea).glim-nc-win-in {
+  width: 100%; min-width: 0; height: 32px; margin: 0; padding: 0 10px;
+  border: none; border-radius: var(--nc-w-r-ctl); box-shadow: none; outline: none;
+  background: var(--nc-w-raised); color: var(--nc-w-ink); font: inherit; font-size: 13px;
+}
+.glim-nc-wins textarea.glim-nc-win-in { height: auto; min-height: 4.5em; padding: 7px 10px; resize: vertical; }
+.glim-nc-wins :is(input, textarea).glim-nc-win-in:focus { background: var(--nc-w-raised-hover); }
+.glim-nc-wins :is(input, textarea).glim-nc-win-in::placeholder { color: var(--nc-w-dim); opacity: 1; }
+.glim-nc-wins .glim-nc-ch-hd { padding-bottom: 2px; }
+
+/* A choice in the window is a row of segments, the chosen one filled. */
+.glim-nc-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: var(--nc-w-r-ctl); background: var(--nc-w-raised); }
+.glim-nc-wins button.glim-nc-seg-opt {
+  min-height: 28px; margin: 0; padding: 0 12px; border: none; border-radius: calc(var(--nc-w-r-ctl) - 2px); box-shadow: none;
+  background: transparent; color: var(--nc-w-ink); font: inherit; font-size: 13px; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+.glim-nc-wins button.glim-nc-seg-opt:hover { background: var(--nc-w-raised-hover); }
+.glim-nc-wins button.glim-nc-seg-opt[aria-checked="true"] { background: var(--nc-w-head); color: var(--nc-w-head-ink); }
+.glim-nc-wins button.glim-nc-seg-opt:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 1px; }
+
+/* The window's buttons in the look of the page's: rounded, never a pill, the
+   one that goes on in the window's colour. */
+.glim-nc-wins button.glim-nc-win-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 88px; min-height: 32px; height: auto; margin: 0; padding: 6px 14px;
+  border: none; border-radius: var(--nc-w-r-ctl); box-shadow: none; background: var(--nc-w-raised); color: var(--nc-w-ink);
+  font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
+}
+.glim-nc-wins button.glim-nc-win-btn:is(:hover, :focus-visible):not(:disabled) { background: var(--nc-w-raised-hover); }
+.glim-nc-wins button.glim-nc-win-btn.glim-nc-key { background: var(--nc-w-head); color: var(--nc-w-head-ink); }
+.glim-nc-wins button.glim-nc-win-btn.glim-nc-key:is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-head), #000 12%); }
+.glim-nc-wins button.glim-nc-win-btn:disabled { opacity: .5; cursor: default; }
+.glim-nc-wins button.glim-nc-win-btn:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 2px; }
+html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key):is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-raised), var(--nc-w-head) 22%); }
+
+/* On a phone the window is a sheet from the bottom edge with its foot
+   always in view, the search spans its width and the tiles go two to a row,
+   closer together. */
+@media (max-width: 600px) {
+  .glim-nc-win {
+    left: 0; right: 0; top: auto; bottom: 0; translate: none; width: 100%;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    border-end-start-radius: 0; border-end-end-radius: 0;
+  }
+  .glim-nc-wins input.glim-nc-search { width: 100%; }
+  .glim-nc-tiles { gap: 8px; }
+  .glim-nc-win-body { padding-inline: 16px; }
+  .glim-nc-win-act { padding-inline: 16px; }
+}
+
+/* The theme plugin's sheets reach every button, field and switch on a page
+   with !important, its buttons a ground the sub-card already wears and its
+   fields a line or the sub-card's own ground. An important declaration in a
+   cascade layer outranks every unlayered one, so what the card keeps sits
+   here: no line anywhere, and fields and buttons one step above the sub-card.
+   The ground of a resting button only, since the theme plugin lights it under
+   the pointer and draws its glyph as a background image. */
+@layer glim-notify-card {
+  .glim-nc .glim-nc-ch :is(input.glim-nc-in, textarea.glim-nc-in, select.glim-nc-in, .tt-tsel-trigger) {
+    border: none !important; box-shadow: none !important; background-color: var(--nc-field) !important;
+  }
+  .glim-nc .glim-nc-ch :is(input.glim-nc-in, textarea.glim-nc-in, .tt-tsel-trigger):focus { background-color: var(--nc-field-focus) !important; }
+  .glim-nc button.glim-nc-btn { border: none !important; }
+  html.tt-popups-on .glim-nc .glim-nc-ch button.glim-nc-btn:not(:hover):not(:focus-visible) { background-color: var(--nc-btn) !important; }
+  .glim-nc-wins button.glim-nc-tile { border: none !important; }
+  .glim-nc-wins .glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) button.glim-nc-tile {
+    background-color: var(--nc-lit) !important; color: var(--nc-lit-ink) !important; box-shadow: none !important;
+  }
+}
