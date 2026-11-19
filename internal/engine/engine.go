@@ -86,8 +86,8 @@ type Engine struct {
 	// watch is how often Run looks for a container no sweep has checked yet,
 	// such as one created or recreated since the last sweep.
 	watch time.Duration
-	// asked holds the unchecked containers that already started a sweep, so one
-	// whose row cannot be stored does not start a sweep on every look.
+	// asked holds the unchecked containers that were already checked on their
+	// own, so one whose row cannot be stored is not checked again on every look.
 	asked map[string]struct{}
 
 	ignoreUnmanaged bool
@@ -201,6 +201,12 @@ func getStatus(ctx context.Context, client *http.Client, url string) int {
 // Sweep checks every container and stores its status. A failing container ends
 // up in its row's Error; only a failure to list the containers is returned.
 func (e *Engine) Sweep(ctx context.Context) error {
+	return e.sweep(ctx, nil)
+}
+
+// sweep checks the containers whose ID is in only, or all of them when only is
+// nil. Either way it drops stale rows, which costs no registry request.
+func (e *Engine) sweep(ctx context.Context, only map[string]struct{}) error {
 	containers, err := e.collector.List(ctx)
 	if err != nil {
 		return err
@@ -235,6 +241,9 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	for _, c := range containers {
 		if e.ignoreUnmanaged && !c.Managed {
 			_ = e.store.Delete(c.ID)
+			continue
+		}
+		if _, ok := only[c.ID]; only != nil && !ok {
 			continue
 		}
 		wg.Add(1)
@@ -703,8 +712,8 @@ func (e *Engine) Refresh() {
 }
 
 // Run sweeps once immediately, then on the interval, plus whenever Refresh is
-// called or a container shows up that no sweep has checked yet. It returns when
-// ctx is cancelled.
+// called. A container that shows up in between is checked on its own at the
+// next look. It returns when ctx is cancelled.
 func (e *Engine) Run(ctx context.Context) {
 	_ = e.Sweep(ctx)
 	t := time.NewTicker(e.interval)
@@ -720,18 +729,18 @@ func (e *Engine) Run(ctx context.Context) {
 		case <-e.refresh:
 			_ = e.Sweep(ctx)
 		case <-watch.C:
-			if e.unchecked(ctx) {
-				_ = e.Sweep(ctx)
+			if ids := e.unchecked(ctx); len(ids) > 0 {
+				_ = e.sweep(ctx, ids)
 			}
 		}
 	}
 }
 
-// unchecked reports whether Docker lists a container that has no stored row and
-// has not started a sweep before. Without it a container created or recreated
+// unchecked returns the IDs of the containers Docker lists that have no stored
+// row and were not returned before. Without it a container created or recreated
 // after a sweep has no status, and no chip in the Docker tab, until the next
 // interval. It only reads the container list and the store.
-func (e *Engine) unchecked(ctx context.Context) bool {
+func (e *Engine) unchecked(ctx context.Context) map[string]struct{} {
 	var containers []model.Container
 	var err error
 	if l, ok := e.collector.(idLister); ok {
@@ -740,28 +749,28 @@ func (e *Engine) unchecked(ctx context.Context) bool {
 		containers, err = e.collector.List(ctx)
 	}
 	if err != nil {
-		return false
+		return nil
 	}
 	rows, err := e.store.List()
 	if err != nil {
-		return false
+		return nil
 	}
 	known := make(map[string]struct{}, len(rows))
 	for _, r := range rows {
 		known[r.Container.ID] = struct{}{}
 	}
-	found := false
+	fresh := map[string]struct{}{}
 	asked := map[string]struct{}{}
 	for _, c := range containers {
 		if _, ok := known[c.ID]; ok || (e.ignoreUnmanaged && !c.Managed) {
 			continue
 		}
 		if _, ok := e.asked[c.ID]; !ok {
-			found = true
+			fresh[c.ID] = struct{}{}
 		}
 		asked[c.ID] = struct{}{}
 	}
 	// Containers that got a row or went away drop out of the set.
 	e.asked = asked
-	return found
+	return fresh
 }
