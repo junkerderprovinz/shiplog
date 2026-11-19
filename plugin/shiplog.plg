@@ -35,6 +35,16 @@ known vulnerabilities. Optional AI summaries (Ollama or llama-swap), alerts on
 Unraid, Discord, Matrix and more, and an auto-update that backs up first when
 your fortress has a backup app.
 
+### 3.9.2
+Names in the channel window and on the buttons in Info keep their descenders.
+
+🐛 **Fixed**
+- **Tile names keep their descenders.** The bottom of a g, p or y in a tile's name in the channel window is no longer cut off.
+- **GlimStone 4.7.0.** The buttons under Help and About in Info keep their descenders too.
+
+🌐 **Translations**
+- **Hebrew uses the same word for a session as the other apps,** in the note that it ran out.
+
 ### 3.9.1
 The buttons on the settings page size their labels again.
 
