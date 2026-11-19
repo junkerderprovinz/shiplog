@@ -1,7 +1,6 @@
 <?php
-/* The keys in shiplog.cfg the engine built notify.json from, before the
- * settings page edited the channels through the engine. Closures instead of
- * functions, because Unraid may include a .page more than once. */
+/* The keys in shiplog.cfg that notify.json is first built from. Closures
+ * instead of functions, because Unraid may include a .page more than once. */
 
 $keys = ['MATRIX_HOMESERVER', 'MATRIX_TOKEN', 'MATRIX_ROOM', 'APPRISE_URL', 'UNRAID_NOTIFY'];
 

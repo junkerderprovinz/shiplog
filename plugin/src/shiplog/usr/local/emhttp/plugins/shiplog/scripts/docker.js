@@ -71,7 +71,7 @@
     updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
     none: "No changelog text found for this image. Open the repo (top-right) for the release notes.",
     noSource: "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
-    unraidStale: "Unraid still shows an update here, but this container already runs the newest image of its tag (checked %d). Unraid's display is just out of date: click Check for Updates at the bottom of the Docker tab to clear it.",
+    unraidStale: "Unraid still shows an update here, but this container already runs the newest image of its tag (checked %d). Unraid's display is out of date: click Check for Updates at the bottom of the Docker tab to clear it.",
     rateLimited: "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
     pinned: "pinned", localimg: "local image",
     autoLabel: "Auto-update this container",

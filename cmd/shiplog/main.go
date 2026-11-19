@@ -141,7 +141,7 @@ func main() {
 			WithoutBackup: autoupdate.ParseExcludeContainers(cfg.AutoUpdate.WithoutBackup),
 		})
 		// A TollRoll of the fortress that takes over sends the messages. While
-		// none does, ShipLog's own channels go on as before.
+		// none does, ShipLog sends them on its own channels.
 		hub = &notify.Hub{Fortress: door, Report: func(ctx context.Context, id string) (status.Report, error) {
 			s, err := door.Status(ctx, id, "")
 			return s.Report, err
