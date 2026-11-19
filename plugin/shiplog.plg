@@ -35,6 +35,12 @@ known vulnerabilities. Optional AI summaries (Ollama or llama-swap), alerts on
 Unraid, Discord, Matrix and more, and an auto-update that backs up first when
 your fortress has a backup app.
 
+### 3.9.1
+The buttons on the settings page size their labels again.
+
+🐛 **Fixed**
+- **Buttons on the settings page fit their labels again.** The channel card's buttons have labels of their own, and the script that sizes the page's button labels stopped at them. With TowerTorch's reactive or glyph-only labels, the other buttons on the page then kept their plain width and showed no tip. ShipLog leaves the card's buttons to themselves.
+
 ### 3.9.0
 ShipLog names the known vulnerabilities in your running images, can hand its notifications to TollRoll, and checks a new container within a minute.
 
