@@ -12,6 +12,7 @@ import (
 	"github.com/junkerderprovinz/parleyport/kit/status"
 
 	"github.com/junkerderprovinz/shiplog/internal/backup"
+	"github.com/junkerderprovinz/shiplog/internal/notify"
 )
 
 // Membership is ShipLog taking part in a fortress.
@@ -45,9 +46,7 @@ func Join(dir string, app status.App, host string, src status.Source, removed fu
 	cfg.Status = src
 	cfg.Actions = append(cfg.Actions, actions...)
 	cfg.OnRemoved = removed
-	if !slices.Contains(cfg.Uses, backup.Action) {
-		cfg.Uses = append(cfg.Uses, backup.Action)
-	}
+	cfg.Uses = uses(cfg.Uses)
 	if cfg.LAN == nil {
 		f, err := kitfortress.Open(cfg)
 		if err != nil {
@@ -76,6 +75,18 @@ func Join(dir string, app status.App, host string, src status.Source, removed fu
 		m.close = func() error { return errors.Join(srv.Close(), f.Close(), cfg.LAN.Close()) }
 	}
 	return m, nil
+}
+
+// uses adds the actions ShipLog calls at the others to those a membership
+// kept, since one joined before an action existed lacks it.
+func uses(kept []string) []string {
+	out := slices.Clone(kept)
+	for _, a := range []string{backup.Action, notify.DeliverAction} {
+		if !slices.Contains(out, a) {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // listenDirect opens the port the other members call ShipLog on, on the

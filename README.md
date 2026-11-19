@@ -100,7 +100,7 @@ The containers in these pictures run public images at older versions in a test s
 - **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog skips a container that already runs the newest image and checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself touches Docker only to start a container an update lost and to hold the old image while an update runs.
 - **A backup first, and a way back.** In a fortress with a backup app on the same server, every auto-update waits for a backup of its container. If the new image fails its check or turns unhealthy, ShipLog puts the container back on the old image. Your appdata stays as it is, and the backup from before the update waits in BombVault.
 - **Known vulnerabilities.** ShipLog counts the known critical and high vulnerabilities of each running image and tells you how many of them the newest image closes. An update that closes a critical one moves up a step on the risk badge. The package list comes from the image's registry or from inside the container, and only package names and versions go to an open vulnerability database at api.osv.dev. When the newest image comes without a package list, the window says it cannot tell what the update closes. The check is on by default, and switching it off in the settings saves the little memory and traffic it uses.
-- **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, and messages through Matrix, Apprise or Unraid's own notifications.
+- **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, and messages through Unraid's own notifications, chat and push services, mail or a webhook.
 - **26 languages**, following Unraid's own setting.
 
 <br>
@@ -130,9 +130,7 @@ The status page has no login, so keep port 8484 inside your network.
 
 ### Notifications
 
-ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications** you pick the channels: Unraid's own notifications, which reach every agent you set up there, a Matrix room, or an [Apprise API](https://github.com/caronc/apprise-api) server.
-
-For Apprise, save your services in Apprise API under a key of your choosing and enter the notify address with that key, for example `http://192.168.1.10:8000/notify/shiplog`. Apprise passes each message on to all of them, be it Discord, ntfy, Gotify, Telegram or email. **Send test message** tries the address right away, so you know it works before the first update comes in. ShipLog keeps the key out of its log and names only the server.
+ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications** you add a channel by picking its service from a tile: Unraid's own notifications, which reach every agent you set up there, Discord, Slack, ntfy, Gotify, Matrix, an [Apprise API](https://github.com/caronc/apprise-api) server, mail or a webhook. A service can be added more than once, each channel can send everything or only what went wrong, and its **Test** button tries it right away. Every change is saved as you make it, and a token or password you saved is never shown again.
 
 Without Unraid, set `APPRISE_URL` on the container, or `MATRIX_HOMESERVER`, `MATRIX_TOKEN` and `MATRIX_ROOM` for Matrix.
 
@@ -143,6 +141,8 @@ ShipLog can join the fortress your other apps share. Under **Settings → ShipLo
 Once it is in, the other apps of the fortress can see how ShipLog is doing: how many containers have an update, which ones look risky, and the auto-update log. A backup app on the same server backs up each container before ShipLog's auto-update touches it. If the backup fails, the update waits and ShipLog tells you why. A container that needs no backup gets **Update without a backup** in its changelog window. ShipLog waits 30 minutes at most for a backup. To change that, set `AUTOUPDATE_BACKUP_MINUTES` in `/boot/config/plugins/shiplog/shiplog.cfg`.
 
 A maintenance plan in another app can also ask ShipLog to update chosen containers, with the same backup and the same way back.
+
+With TollRoll in the fortress and its notification hub switched on, ShipLog hands its messages to TollRoll, which sends them through its own channels and keeps quiet hours. The Notifications tab says so while it does, and once an update is applied, ShipLog tells TollRoll that its message is over. While no TollRoll takes them, ShipLog sends them through its own channels as before.
 
 <br>
 

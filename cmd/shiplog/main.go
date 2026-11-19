@@ -90,9 +90,6 @@ func main() {
 	}
 
 	notifier := loadNotifier(cfg)
-	if notifier != nil {
-		eng.WithNotifier(notifier)
-	}
 
 	upd := updater.Unraid{}
 	autoUpdating := cfg.AutoUpdate.Enabled && upd.Supported()
@@ -107,9 +104,6 @@ func main() {
 	// The binary is PID 1 in the container.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
-
-	go eng.Run(ctx)
-	go followStarts(ctx, docker, eng)
 
 	run := &fortress.Run{}
 	report := &fortress.Source{App: app(), Instance: instance(db), Store: db, Run: run, Now: time.Now}
@@ -135,6 +129,7 @@ func main() {
 		actions = append(actions, runs.Action())
 	}
 	door, backups := openFortress(cfg, report, actions...)
+	var hub *notify.Hub
 	if door != nil {
 		defer func() { _ = door.Close() }()
 		go door.Watch(ctx)
@@ -145,7 +140,21 @@ func main() {
 			Guards:        db,
 			WithoutBackup: autoupdate.ParseExcludeContainers(cfg.AutoUpdate.WithoutBackup),
 		})
+		// A TollRoll of the fortress that takes over sends the messages. While
+		// none does, ShipLog's own channels go on as before.
+		hub = &notify.Hub{Fortress: door, Report: func(ctx context.Context, id string) (status.Report, error) {
+			s, err := door.Status(ctx, id, "")
+			return s.Report, err
+		}}
+		notifier = notify.WithHub(notifier, hub)
 	}
+	// The engine starts once the notifier knows the fortress, since its first
+	// sweep may already notify.
+	if notifier != nil {
+		eng.WithNotifier(notifier)
+	}
+	go eng.Run(ctx)
+	go followStarts(ctx, docker, eng)
 	updating.Unlock()
 	switch {
 	case autoUpdating:
@@ -164,6 +173,16 @@ func main() {
 		WithUpdateCheck(docker, msg).
 		WithFortress(report).
 		WithGuards(db, func() bool { return backups != nil && backups.Available() })
+	if notifier != nil && cfg.NotifyFile != "" {
+		a.WithChannels(notifier)
+	}
+	if hub != nil {
+		a.WithHub(func(ctx context.Context) bool {
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			return hub.Active(ctx)
+		})
+	}
 	if door != nil && cfg.Socket != "" {
 		a.WithDoor(door)
 	}
@@ -384,8 +403,9 @@ func instance(db *store.Store) status.Instance {
 	return status.Instance{ID: id, Name: name}
 }
 
-// loadNotifier returns nil when no channel is switched on or the channels
-// cannot be read; ShipLog then runs without notifications.
+// loadNotifier returns nil when the channels cannot be read, and ShipLog then
+// runs without notifications. Without a channel switched on it sends nothing
+// until the settings page switches one on.
 func loadNotifier(cfg config.Config) *notify.Notifier {
 	channels, migrated, err := notify.Load(cfg.NotifyFile, cfg.OldNotify)
 	if err != nil {
@@ -406,12 +426,12 @@ func loadNotifier(cfg config.Config) *notify.Notifier {
 	if len(off) > 0 {
 		log.Printf("shiplog: notification channels switched off: %s", strings.Join(off, ", "))
 	}
-	n, err := notify.New(channels, kitnotify.Options{})
+	n, err := notify.Open(cfg.NotifyFile, channels, kitnotify.Options{})
 	if err != nil {
 		log.Printf("shiplog: notifications off: %v", err)
 		return nil
 	}
-	if n != nil {
+	if len(on) > 0 {
 		log.Printf("shiplog: notifications on: %s", strings.Join(on, ", "))
 	}
 	return n

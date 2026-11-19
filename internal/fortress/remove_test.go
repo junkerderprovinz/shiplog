@@ -147,7 +147,9 @@ func TestANewPhraseClearsTheRemovedList(t *testing.T) {
 	if err := d.Open(); err != nil {
 		t.Fatal(err)
 	}
-	waitFor(t, "ShipLog to reach BombVault on the old phrase", func() bool { return seesOnline(d, bv.id.ID()) })
+	// When ShipLog learns of the change before it sees BombVault, it follows
+	// first: two calls and a retry, each call allowed the kit's 15 seconds.
+	waitUpTo(t, 40*time.Second, "ShipLog to reach BombVault on the old phrase", func() bool { return seesOnline(d, bv.id.ID()) })
 	if _, err := d.Act(context.Background(), bv.id.ID(), "backup.request", []byte(`{}`)); err != nil {
 		t.Fatalf("act after the change: %v", err)
 	}

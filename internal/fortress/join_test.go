@@ -4,10 +4,14 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	kitfortress "github.com/junkerderprovinz/parleyport/kit/fortress"
 	"github.com/junkerderprovinz/parleyport/kit/status"
+
+	"github.com/junkerderprovinz/shiplog/internal/backup"
+	"github.com/junkerderprovinz/shiplog/internal/notify"
 )
 
 // joined lets dir join a fortress the way the plugin does, with the kit's
@@ -67,5 +71,14 @@ func TestJoinRefusesADamagedMembership(t *testing.T) {
 	if m, err := Join(dir, status.App{ID: "shiplog"}, "", nil, nil); err == nil {
 		_ = m.Close()
 		t.Fatal("want an error")
+	}
+}
+
+func TestShipLogCallsTheBackupAndTheNotificationHub(t *testing.T) {
+	for _, kept := range [][]string{nil, {backup.Action}, {backup.Action, notify.DeliverAction}} {
+		got := uses(kept)
+		if len(got) != 2 || !slices.Contains(got, backup.Action) || !slices.Contains(got, notify.DeliverAction) {
+			t.Errorf("uses(%v) = %v, want the backup and the hub once each", kept, got)
+		}
 	}
 }

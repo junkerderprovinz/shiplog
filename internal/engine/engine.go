@@ -502,6 +502,7 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 			e.maybeNotify(ctx, st, prior, hasPrior)
 		}
 	}
+	e.maybeResolve(ctx, st, prior, hasPrior)
 	// An up-to-date app can still be at a dead end: its template was pulled from
 	// Community Applications or its source repo was archived.
 	if !st.Unmaintained && !silenced {
@@ -749,6 +750,22 @@ func trustedVersion(newestDigest, newestVerTag, newestVerDigest string) string {
 // than the one running. With either digest unknown it claims nothing.
 func tagMoved(c model.Container, tagDigest string) bool {
 	return c.Digest != "" && tagDigest != "" && !c.HasDigest(tagDigest)
+}
+
+// closer hears that an update a message offered is applied, as
+// notify.Notifier does.
+type closer interface {
+	Resolve(ctx context.Context, prior model.UpdateStatus)
+}
+
+// maybeResolve closes the message about the update prior offered once the
+// container runs it, so the notification hub stops counting it as open.
+func (e *Engine) maybeResolve(ctx context.Context, st, prior model.UpdateStatus, hasPrior bool) {
+	r, ok := e.notifier.(closer)
+	if !ok || !hasPrior || !prior.HasUpdate() || st.HasUpdate() {
+		return
+	}
+	r.Resolve(ctx, prior)
 }
 
 // maybeNotify notifies when a known container gets an update target it did not

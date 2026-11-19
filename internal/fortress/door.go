@@ -15,8 +15,6 @@ import (
 	"github.com/junkerderprovinz/parleyport/kit/member"
 	"github.com/junkerderprovinz/parleyport/kit/phrase"
 	"github.com/junkerderprovinz/parleyport/kit/status"
-
-	"github.com/junkerderprovinz/shiplog/internal/backup"
 )
 
 var (
@@ -228,7 +226,7 @@ func (d *Door) enter(words string) error {
 		_ = d.m.Close()
 		d.m = nil
 	}
-	m := kitfortress.Membership{App: d.App.ID, Device: d.Device, Relay: d.Relay, LAN: true, Uses: []string{backup.Action}}
+	m := kitfortress.Membership{App: d.App.ID, Device: d.Device, Relay: d.Relay, LAN: true, Uses: uses(nil)}
 	joinErr := kitfortress.Join(d.Dir, secret, m)
 	in, err := d.join()
 	if err != nil || joinErr != nil {
