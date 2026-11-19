@@ -1441,40 +1441,40 @@ func TestSweepNotifiesABreakingReleaseOfAnUnknownRunningVersion(t *testing.T) {
 	}
 }
 
-func asked(e *Engine) bool {
+func queued(e *Engine) bool {
 	select {
-	case <-e.refresh:
+	case <-e.started:
 		return true
 	default:
 		return false
 	}
 }
 
-func TestARecreatedContainerAsksForASweep(t *testing.T) {
+func TestARecreatedContainerIsCheckedAtOnce(t *testing.T) {
 	st := &fakeStore{rows: map[string]model.UpdateStatus{"known": {Container: model.Container{ID: "known", Name: "nginx"}}}}
 	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
-	if e.Started(model.Container{ID: "known", Name: "nginx"}); asked(e) {
-		t.Error("a restart of a container ShipLog knows asked for a sweep")
+	if e.Started(model.Container{ID: "known", Name: "nginx"}); queued(e) {
+		t.Error("a restart of a container ShipLog knows was queued for a check")
 	}
 	// An update recreates the container under its name with a new id.
-	if e.Started(model.Container{ID: "recreated", Name: "nginx"}); !asked(e) {
-		t.Error("a recreated container started without a sweep")
+	if e.Started(model.Container{ID: "recreated", Name: "nginx"}); !queued(e) {
+		t.Error("a recreated container was not queued for a check")
 	}
 }
 
-func TestANewTemplateContainerAsksForASweep(t *testing.T) {
+func TestANewTemplateContainerIsCheckedAtOnce(t *testing.T) {
 	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, &fakeStore{rows: map[string]model.UpdateStatus{}}, time.Hour)
-	if e.Started(model.Container{ID: "fresh", Name: "immich", Managed: true}); !asked(e) {
-		t.Error("a container installed from a template started without a sweep")
+	if e.Started(model.Container{ID: "fresh", Name: "immich", Managed: true}); !queued(e) {
+		t.Error("a container installed from a template was not queued for a check")
 	}
 }
 
-func TestAPassingContainerAsksForNoSweep(t *testing.T) {
+func TestAPassingContainerWaitsForTheSweep(t *testing.T) {
 	st := &fakeStore{rows: map[string]model.UpdateStatus{"known": {Container: model.Container{ID: "known", Name: "nginx"}}}}
 	e := New(fakeCollector{}, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
 	// A build or a one-off docker run starts under a fresh id and a made-up name.
-	if e.Started(model.Container{ID: "b1", Name: "fervent_robinson"}); asked(e) {
-		t.Error("a one-off container asked for a sweep")
+	if e.Started(model.Container{ID: "b1", Name: "fervent_robinson"}); queued(e) {
+		t.Error("a one-off container was queued for a check")
 	}
 }
 
@@ -1553,7 +1553,7 @@ func TestUncheckedFindsANewContainerOnce(t *testing.T) {
 	if len(e.unchecked(context.Background())) > 0 {
 		t.Fatal("every container has a row, yet a sweep was asked for")
 	}
-	col.add(model.Container{ID: "b"})
+	col.add(model.Container{ID: "b", Managed: true})
 	if len(e.unchecked(context.Background())) == 0 {
 		t.Fatal("a new container did not ask for a sweep")
 	}
@@ -1561,7 +1561,7 @@ func TestUncheckedFindsANewContainerOnce(t *testing.T) {
 	if len(e.unchecked(context.Background())) > 0 {
 		t.Fatal("the same unchecked container asked for a second sweep")
 	}
-	col.add(model.Container{ID: "c"})
+	col.add(model.Container{ID: "c", Managed: true})
 	if len(e.unchecked(context.Background())) == 0 {
 		t.Fatal("a second new container did not ask for a sweep")
 	}
@@ -1569,32 +1569,36 @@ func TestUncheckedFindsANewContainerOnce(t *testing.T) {
 
 func TestUncheckedReturnsOnlyTheContainersNotSeenBefore(t *testing.T) {
 	st := &fakeStore{rows: map[string]model.UpdateStatus{"a": {Container: model.Container{ID: "a"}}}}
-	col := &growingCollector{list: []model.Container{{ID: "a"}, {ID: "b"}, {ID: "c"}}}
+	col := &growingCollector{list: []model.Container{{ID: "a"}, {ID: "b", Managed: true}, {ID: "c", Managed: true}}}
 	e := New(col, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
 
 	if got, want := e.unchecked(context.Background()), map[string]struct{}{"b": {}, "c": {}}; !maps.Equal(got, want) {
 		t.Fatalf("unchecked() = %v, want %v", got, want)
 	}
-	col.add(model.Container{ID: "d"})
+	col.add(model.Container{ID: "d", Managed: true})
 	if got, want := e.unchecked(context.Background()), map[string]struct{}{"d": {}}; !maps.Equal(got, want) {
 		t.Fatalf("unchecked() = %v, want %v", got, want)
 	}
 }
 
 func TestUncheckedSkipsUnmanagedWhenTheyAreIgnored(t *testing.T) {
-	col := fakeCollector{list: []model.Container{{ID: "compose", Managed: false}}}
-	e := New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour).WithIgnoreUnmanaged(true)
+	// compose was recreated under a new ID, so ShipLog knows its name.
+	col := fakeCollector{list: []model.Container{{ID: "compose-new", Name: "compose", Managed: false}}}
+	known := func() *fakeStore {
+		return &fakeStore{rows: map[string]model.UpdateStatus{"compose-old": {Container: model.Container{ID: "compose-old", Name: "compose"}}}}
+	}
+	e := New(col, fakeResolver{}, &fakeChangelog{}, known(), time.Hour).WithIgnoreUnmanaged(true)
 	if len(e.unchecked(context.Background())) > 0 {
 		t.Fatal("an ignored unmanaged container asked for a sweep")
 	}
-	e = New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour)
+	e = New(col, fakeResolver{}, &fakeChangelog{}, known(), time.Hour)
 	if len(e.unchecked(context.Background())) == 0 {
 		t.Fatal("an unmanaged container that is not ignored did not ask for a sweep")
 	}
 }
 
 func TestUncheckedListsOnlyIDsWhenTheCollectorCan(t *testing.T) {
-	col := idOnlyCollector{t: t, list: []model.Container{{ID: "new"}}}
+	col := idOnlyCollector{t: t, list: []model.Container{{ID: "new", Managed: true}}}
 	e := New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour)
 	if len(e.unchecked(context.Background())) == 0 {
 		t.Fatal("a new container did not ask for a sweep")
@@ -1630,7 +1634,7 @@ func TestRunChecksANewContainerBeforeTheInterval(t *testing.T) {
 		t.Fatalf("container %s got no status before the interval", id)
 	}
 	waitForRow("a")
-	col.add(model.Container{ID: "b", Name: "b", Repo: "r", Tag: "latest", Digest: "sha256:1"})
+	col.add(model.Container{ID: "b", Name: "b", Repo: "r", Tag: "latest", Digest: "sha256:1", Managed: true})
 	waitForRow("b")
 }
 
@@ -1652,7 +1656,7 @@ func TestRunChecksOnlyTheNewContainer(t *testing.T) {
 			t.Fatalf("the first sweep stored no row for a: %v", err)
 		}
 
-		col.add(model.Container{ID: "b", Name: "b", Repo: "rb", Tag: "latest", Digest: "sha256:1"})
+		col.add(model.Container{ID: "b", Name: "b", Repo: "rb", Tag: "latest", Digest: "sha256:1", Managed: true})
 		time.Sleep(e.watch + time.Second)
 		synctest.Wait()
 		cancel()
@@ -1700,5 +1704,121 @@ func TestSweepOfNewContainersLeavesTheOtherRowsAlone(t *testing.T) {
 	}
 	if want := map[string]int{"rp|latest": 1}; !maps.Equal(res.calls, want) {
 		t.Errorf("resolver calls = %v, want %v", res.calls, want)
+	}
+}
+
+// lossyStore loses every row written for the container lose.
+type lossyStore struct {
+	*fakeStore
+	lose string
+}
+
+func (l lossyStore) Upsert(s model.UpdateStatus) error {
+	if s.Container.ID == l.lose {
+		return errors.New("disk full")
+	}
+	return l.fakeStore.Upsert(s)
+}
+
+// runEngine starts e.Run inside the synctest bubble and returns a func that
+// stops it and waits for it to return.
+func runEngine(t *testing.T, e *Engine) (stop func()) {
+	t.Helper()
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() {
+		e.Run(ctx)
+		close(done)
+	}()
+	synctest.Wait()
+	return func() {
+		cancel()
+		<-done
+	}
+}
+
+func (c *countingResolver) count(repo string) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.calls[repo+"|latest"]
+}
+
+func TestRunLeavesOneOffContainersForTheSweep(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		col := &growingCollector{list: []model.Container{{ID: "a", Name: "nginx", Repo: "ra", Tag: "latest", Digest: "sha256:1", Managed: true}}}
+		res := &countingResolver{res: resolveResult{tag: "latest", dig: "sha256:1"}}
+		st := &fakeStore{}
+		e := New(col, res, &fakeChangelog{}, st, time.Hour)
+		stop := runEngine(t, e)
+
+		// A build or a one-off docker run starts under a fresh ID and a made-up name.
+		oneOff := model.Container{ID: "b1", Name: "fervent_robinson", Repo: "rb", Tag: "latest", Digest: "sha256:1"}
+		col.add(oneOff)
+		e.Started(oneOff)
+		time.Sleep(2*e.watch + time.Second)
+		synctest.Wait()
+		stop()
+
+		if _, err := st.Get("b1"); err == nil {
+			t.Error("the one-off container was checked before the sweep")
+		}
+		if got := res.count("ra") + res.count("rb"); got != 1 {
+			t.Errorf("resolver calls = %v, want the first sweep alone", res.calls)
+		}
+	})
+}
+
+func TestRunChecksANewContainerOnce(t *testing.T) {
+	tests := []struct {
+		name      string
+		c         model.Container
+		lookFirst bool // the minute look runs before the event
+		event     bool // Started hears of it
+		lost      bool // its row cannot be stored
+	}{
+		{name: "template install heard as an event", c: model.Container{ID: "n", Name: "immich", Managed: true}, event: true},
+		{name: "recreated container heard as an event", c: model.Container{ID: "n", Name: "nginx"}, event: true},
+		{name: "missed event caught by the look", c: model.Container{ID: "n", Name: "immich", Managed: true}},
+		{name: "event then look with the row lost", c: model.Container{ID: "n", Name: "immich", Managed: true}, event: true, lost: true},
+		{name: "look then event with the row lost", c: model.Container{ID: "n", Name: "immich", Managed: true}, lookFirst: true, event: true, lost: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				col := &growingCollector{list: []model.Container{{ID: "a", Name: "nginx", Repo: "ra", Tag: "latest", Digest: "sha256:1", Managed: true}}}
+				res := &countingResolver{res: resolveResult{tag: "latest", dig: "sha256:1"}}
+				var st Storer = &fakeStore{}
+				if tt.lost {
+					st = lossyStore{fakeStore: &fakeStore{}, lose: tt.c.ID}
+				}
+				e := New(col, res, &fakeChangelog{}, st, time.Hour)
+				stop := runEngine(t, e)
+				defer stop()
+
+				c := tt.c
+				c.Repo, c.Tag, c.Digest = "rn", "latest", "sha256:1"
+				col.add(c)
+				if tt.lookFirst {
+					time.Sleep(e.watch + time.Second)
+					synctest.Wait()
+				}
+				if tt.event {
+					e.Started(c)
+					synctest.Wait()
+					if got := res.count("rn"); got != 1 {
+						t.Errorf("after the event %s was checked %d times, want 1", c.Name, got)
+					}
+				}
+				time.Sleep(2*e.watch + time.Second)
+				synctest.Wait()
+
+				if got := res.count("rn"); got != 1 {
+					t.Errorf("%s was checked %d times, want 1", c.Name, got)
+				}
+				if got := res.count("ra"); got != 1 {
+					t.Errorf("nginx was checked %d times, want only by the first sweep", got)
+				}
+			})
+		})
 	}
 }

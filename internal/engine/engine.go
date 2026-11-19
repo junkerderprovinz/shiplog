@@ -90,12 +90,16 @@ type Engine struct {
 	workers    int
 	refresh    chan struct{}
 	now        func() time.Time
-	// watch is how often Run looks for a container no sweep has checked yet,
-	// such as one created or recreated since the last sweep.
+	// watch is how often Run looks for a container no sweep has checked yet
+	// and whose start event it missed.
 	watch time.Duration
 	// asked holds the unchecked containers that were already checked on their
-	// own, so one whose row cannot be stored is not checked again on every look.
+	// own, so one whose row cannot be stored is not checked again on every look
+	// or event. Only Run touches it.
 	asked map[string]struct{}
+	// started carries the containers Started picked from the event stream to
+	// Run. A full queue drops one, and the next look picks it up.
+	started chan string
 
 	ignoreUnmanaged bool
 	// autoApplies reports whether the scheduled auto-update run will apply an
@@ -171,6 +175,8 @@ func New(c Collector, r Resolver, cl Changelogger, s Storer, interval time.Durat
 		refresh:  make(chan struct{}, 1),
 		now:      time.Now,
 		watch:    time.Minute,
+		asked:    map[string]struct{}{},
+		started:  make(chan string, 16),
 		projectPages: func() map[string]string {
 			return templates.ProjectPages(templates.Dir)
 		},
@@ -808,29 +814,50 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 	_ = e.notifier.Notify(ctx, st)
 }
 
-// Started hears that container c started. An update recreates a container
-// under its name with a new id, and a sweep then checks the new image at once
-// instead of on the next interval; so does a container installed from a
-// template. Builds and one-off runs start under made-up names all day and wait
-// for the interval.
+// Started hears that container c started and has Run check it on its own when
+// it has no row and is worth checking. It never waits for Run.
 func (e *Engine) Started(c model.Container) {
 	if _, err := e.store.Get(c.ID); err == nil {
 		return
 	}
-	if c.Managed {
-		e.Refresh()
-		return
-	}
-	rows, err := e.store.List()
-	if err != nil {
-		return
-	}
-	for _, r := range rows {
-		if r.Container.Name == c.Name {
-			e.Refresh()
+	var names map[string]struct{}
+	if !c.Managed {
+		rows, err := e.store.List()
+		if err != nil {
 			return
 		}
+		names = rowNames(rows)
 	}
+	if !e.worthChecking(c, names) {
+		return
+	}
+	select {
+	case e.started <- c.ID:
+	default:
+	}
+}
+
+// worthChecking reports whether c is checked before the next sweep: Unraid
+// manages it, or it runs under a name ShipLog knows, which is how an update
+// recreates it. Builds and one-off runs start under made-up names all day and
+// wait for the sweep.
+func (e *Engine) worthChecking(c model.Container, names map[string]struct{}) bool {
+	if c.Managed {
+		return true
+	}
+	if e.ignoreUnmanaged {
+		return false
+	}
+	_, ok := names[c.Name]
+	return ok
+}
+
+func rowNames(rows []model.UpdateStatus) map[string]struct{} {
+	names := make(map[string]struct{}, len(rows))
+	for _, r := range rows {
+		names[r.Container.Name] = struct{}{}
+	}
+	return names
 }
 
 // Refresh asks for an extra sweep without blocking; pending requests coalesce.
@@ -842,8 +869,9 @@ func (e *Engine) Refresh() {
 }
 
 // Run sweeps once immediately, then on the interval, plus whenever Refresh is
-// called. A container that shows up in between is checked on its own at the
-// next look. It returns when ctx is cancelled.
+// called. A new container that starts in between is checked on its own when
+// Started hears of it, or at the next look if its event went missing. It
+// returns when ctx is cancelled.
 func (e *Engine) Run(ctx context.Context) {
 	_ = e.Sweep(ctx)
 	t := time.NewTicker(e.interval)
@@ -858,6 +886,11 @@ func (e *Engine) Run(ctx context.Context) {
 			_ = e.Sweep(ctx)
 		case <-e.refresh:
 			_ = e.Sweep(ctx)
+		case id := <-e.started:
+			if _, ok := e.asked[id]; !ok {
+				e.asked[id] = struct{}{}
+				_ = e.sweep(ctx, map[string]struct{}{id: {}})
+			}
 		case <-watch.C:
 			if ids := e.unchecked(ctx); len(ids) > 0 {
 				_ = e.sweep(ctx, ids)
@@ -866,10 +899,11 @@ func (e *Engine) Run(ctx context.Context) {
 	}
 }
 
-// unchecked returns the IDs of the containers Docker lists that have no stored
-// row and were not returned before. Without it a container created or recreated
-// after a sweep has no status, and no chip in the Docker tab, until the next
-// interval. It only reads the container list and the store.
+// unchecked returns the IDs of the containers worth checking that Docker lists
+// without a stored row and that were not checked on their own before. Without
+// it a container created or recreated after a sweep whose event went missing has
+// no status, and no chip in the Docker tab, until the next interval. It only
+// reads the container list and the store.
 func (e *Engine) unchecked(ctx context.Context) map[string]struct{} {
 	var containers []model.Container
 	var err error
@@ -889,10 +923,11 @@ func (e *Engine) unchecked(ctx context.Context) map[string]struct{} {
 	for _, r := range rows {
 		known[r.Container.ID] = struct{}{}
 	}
+	names := rowNames(rows)
 	fresh := map[string]struct{}{}
 	asked := map[string]struct{}{}
 	for _, c := range containers {
-		if _, ok := known[c.ID]; ok || (e.ignoreUnmanaged && !c.Managed) {
+		if _, ok := known[c.ID]; ok || !e.worthChecking(c, names) {
 			continue
 		}
 		if _, ok := e.asked[c.ID]; !ok {
