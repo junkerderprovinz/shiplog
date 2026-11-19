@@ -87,25 +87,9 @@ type imageInfo struct {
 
 // List returns all containers, running and stopped, inspecting each image once.
 func (c *Client) List(ctx context.Context) ([]model.Container, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/containers/json?all=1", nil)
+	raw, err := c.containers(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("build request: %w", err)
-	}
-
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("query docker: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
-		return nil, fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
-	}
-
-	var raw []dockerContainer
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-		return nil, fmt.Errorf("decode containers: %w", err)
+		return nil, err
 	}
 
 	out := make([]model.Container, 0, len(raw))
@@ -148,6 +132,46 @@ func (c *Client) List(ctx context.Context) ([]model.Container, error) {
 		})
 	}
 	return out, nil
+}
+
+// ListIDs returns the ID of every container and whether Unraid manages it, from
+// one request and without inspecting images, for a cheap check for new ones.
+func (c *Client) ListIDs(ctx context.Context) ([]model.Container, error) {
+	raw, err := c.containers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]model.Container, 0, len(raw))
+	for _, dc := range raw {
+		out = append(out, model.Container{ID: dc.ID, Name: containerName(dc.Names), Managed: dc.Labels[managedLabel] != ""})
+	}
+	return out, nil
+}
+
+// containers reads /containers/json for every container, running or stopped.
+func (c *Client) containers(ctx context.Context) ([]dockerContainer, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/containers/json?all=1", nil)
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return nil, fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	var raw []dockerContainer
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return nil, fmt.Errorf("decode containers: %w", err)
+	}
+
+	return raw, nil
 }
 
 // Start starts the named container. Docker answers 304 for one that already

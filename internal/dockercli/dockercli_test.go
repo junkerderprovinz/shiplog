@@ -447,3 +447,39 @@ func TestReleaseUntagsTheImageAndAcceptsOneAlreadyGone(t *testing.T) {
 		t.Errorf("requests = %q, want %q first", got, want)
 	}
 }
+
+func TestListIDsReadsOnlyTheContainerList(t *testing.T) {
+	sock := filepath.Join(t.TempDir(), "d.sock")
+	ln, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Skipf("AF_UNIX unavailable on this host (net.Listen unix failed): %v", err)
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.43/containers/json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[{"Id":"abc","Names":["/plex"],"Image":"sha256:` + strings.Repeat("3", 64) + `","Labels":{"` + managedLabel + `":"dockerman"}},` +
+			`{"Id":"def","Names":["/compose"],"Image":"redis","Labels":{}}]`))
+	})
+	// The check runs every minute, so it must not inspect images or containers.
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("ListIDs requested %s", r.URL.Path)
+		http.NotFound(w, r)
+	})
+	srv := &http.Server{Handler: mux}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	got, err := New(sock).ListIDs(context.Background())
+	if err != nil {
+		t.Fatalf("ListIDs() error = %v", err)
+	}
+	want := []model.Container{{ID: "abc", Name: "plex", Managed: true}, {ID: "def", Name: "compose"}}
+	if len(got) != len(want) {
+		t.Fatalf("ListIDs() = %+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i].ID != want[i].ID || got[i].Name != want[i].Name || got[i].Managed != want[i].Managed {
+			t.Errorf("ListIDs()[%d] = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}
