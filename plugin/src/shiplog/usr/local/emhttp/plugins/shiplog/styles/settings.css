@@ -288,7 +288,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #sl-cfg :is(.sl-rbtn-mark, .sl-rbtn-art) svg { display: block; width: 100%; height: 100%; }
 #sl-cfg .sl-rbtn-art { position: absolute; inset: 0; }
 #sl-cfg .sl-rbtn-text { position: absolute; top: 0; bottom: 0; left: 53px; right: 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15; }
-#sl-cfg .sl-rbtn-name { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: var(--tt-text-body, 14px); font-weight: 700; }
+/* As on the channel tiles, the name's clip reaches past its line so the descenders stay whole. */
+#sl-cfg .sl-rbtn-name { max-width: 100%; overflow: hidden; white-space: nowrap; padding-block: .15em; margin-block: -.15em; font-size: var(--tt-text-body, 14px); font-weight: 700; }
 #sl-cfg .sl-paypal-mark { color: var(--sl-brand-paypal); }
 #sl-cfg .sl-bitcoin-mark { color: var(--sl-brand-bitcoin); }
 #sl-cfg .sl-github-mark { color: #fff; }

@@ -72,17 +72,26 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.6.0" {
-			t.Errorf("glimstone.json pins %s, want 4.6.0", target.Version)
+		if target.Version != "4.7.0" {
+			t.Errorf("glimstone.json pins %s, want 4.7.0", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.6.0';") {
-		t.Error("the Version card does not name GlimStone 4.6.0")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.7.0';") {
+		t.Error("the Version card does not name GlimStone 4.7.0")
 	}
 	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
 	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
 		t.Errorf("the GlimStone row does not open the newest release: %v", row)
+	}
+}
+
+// TestAReadmeButtonNameKeepsItsDescenders lets the name's clip reach a little
+// past its line, as on GlimStone's README button, so a p or y stays whole.
+func TestAReadmeButtonNameKeepsItsDescenders(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`#sl-cfg \.sl-rbtn-name \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;`).MatchString(css) {
+		t.Error("the clip of a README button's name cuts its descenders")
 	}
 }
 

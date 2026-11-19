@@ -281,7 +281,9 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-tile-text {
   position: absolute; inset-block: 0; inset-inline: 53px 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15;
 }
-.glim-nc-tile-name, .glim-nc-tile-sub { max-width: 100%; overflow: hidden; white-space: nowrap; }
+/* The clip that ends a long name would cut the descenders below a tight line box, so the box
+   reaches a little past the line and gives that room back outside. */
+.glim-nc-tile-name, .glim-nc-tile-sub { max-width: 100%; overflow: hidden; white-space: nowrap; padding-block: .15em; margin-block: -.15em; }
 .glim-nc-tile-name { font-size: 14px; font-weight: 700; }
 /* A second line, such as SMTP under mail, comes in under the pointer and on
    focus. At rest the name alone sits in the middle, half the line lower. */

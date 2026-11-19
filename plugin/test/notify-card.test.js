@@ -436,6 +436,11 @@ test('a lit tile takes its brand colour before the accent, and nothing draws a l
   }
 });
 
+test('a tile name keeps its descenders inside the clip that ends a long one', () => {
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  assert.match(css, /\.glim-nc-tile-name, \.glim-nc-tile-sub \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;/);
+});
+
 test("an open select of the page keeps TowerTorch's own plain rows", () => {
   // TowerTorch 1.5.2 lists the options as GlimStone's rows itself, and an
   // important rule in the card's layer would outrank its tint and its check.
