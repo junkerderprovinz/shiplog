@@ -3,10 +3,12 @@ package engine
 import (
 	"context"
 	"errors"
+	"maps"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/cafeed"
@@ -1509,5 +1511,194 @@ func TestAnAppliedUpdateClosesItsMessage(t *testing.T) {
 	}
 	if len(n.closed) != 1 || n.closed[0] != "app@sha256:a2" {
 		t.Errorf("closed = %v, want the applied update of app alone", n.closed)
+	}
+}
+
+// growingCollector lets a test add a container while Run is going.
+type growingCollector struct {
+	mu   sync.Mutex
+	list []model.Container
+}
+
+func (g *growingCollector) List(context.Context) ([]model.Container, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return append([]model.Container(nil), g.list...), nil
+}
+
+func (g *growingCollector) add(c model.Container) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.list = append(g.list, c)
+}
+
+// idOnlyCollector fails the test when the watch lists containers in full.
+type idOnlyCollector struct {
+	t    *testing.T
+	list []model.Container
+}
+
+func (c idOnlyCollector) List(context.Context) ([]model.Container, error) {
+	c.t.Error("the check for new containers inspected images instead of using ListIDs")
+	return c.list, nil
+}
+
+func (c idOnlyCollector) ListIDs(context.Context) ([]model.Container, error) { return c.list, nil }
+
+func TestUncheckedFindsANewContainerOnce(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{"a": {Container: model.Container{ID: "a"}}}}
+	col := &growingCollector{list: []model.Container{{ID: "a"}}}
+	e := New(col, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
+
+	if len(e.unchecked(context.Background())) > 0 {
+		t.Fatal("every container has a row, yet a sweep was asked for")
+	}
+	col.add(model.Container{ID: "b"})
+	if len(e.unchecked(context.Background())) == 0 {
+		t.Fatal("a new container did not ask for a sweep")
+	}
+	// The sweep could not store b; looking again must not start another one.
+	if len(e.unchecked(context.Background())) > 0 {
+		t.Fatal("the same unchecked container asked for a second sweep")
+	}
+	col.add(model.Container{ID: "c"})
+	if len(e.unchecked(context.Background())) == 0 {
+		t.Fatal("a second new container did not ask for a sweep")
+	}
+}
+
+func TestUncheckedReturnsOnlyTheContainersNotSeenBefore(t *testing.T) {
+	st := &fakeStore{rows: map[string]model.UpdateStatus{"a": {Container: model.Container{ID: "a"}}}}
+	col := &growingCollector{list: []model.Container{{ID: "a"}, {ID: "b"}, {ID: "c"}}}
+	e := New(col, fakeResolver{}, &fakeChangelog{}, st, time.Hour)
+
+	if got, want := e.unchecked(context.Background()), map[string]struct{}{"b": {}, "c": {}}; !maps.Equal(got, want) {
+		t.Fatalf("unchecked() = %v, want %v", got, want)
+	}
+	col.add(model.Container{ID: "d"})
+	if got, want := e.unchecked(context.Background()), map[string]struct{}{"d": {}}; !maps.Equal(got, want) {
+		t.Fatalf("unchecked() = %v, want %v", got, want)
+	}
+}
+
+func TestUncheckedSkipsUnmanagedWhenTheyAreIgnored(t *testing.T) {
+	col := fakeCollector{list: []model.Container{{ID: "compose", Managed: false}}}
+	e := New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour).WithIgnoreUnmanaged(true)
+	if len(e.unchecked(context.Background())) > 0 {
+		t.Fatal("an ignored unmanaged container asked for a sweep")
+	}
+	e = New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour)
+	if len(e.unchecked(context.Background())) == 0 {
+		t.Fatal("an unmanaged container that is not ignored did not ask for a sweep")
+	}
+}
+
+func TestUncheckedListsOnlyIDsWhenTheCollectorCan(t *testing.T) {
+	col := idOnlyCollector{t: t, list: []model.Container{{ID: "new"}}}
+	e := New(col, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour)
+	if len(e.unchecked(context.Background())) == 0 {
+		t.Fatal("a new container did not ask for a sweep")
+	}
+}
+
+func TestUncheckedStaysQuietWhenDockerCannotBeRead(t *testing.T) {
+	e := New(errCollector{}, fakeResolver{}, &fakeChangelog{}, &fakeStore{}, time.Hour)
+	if len(e.unchecked(context.Background())) > 0 {
+		t.Fatal("a failed container list asked for a sweep")
+	}
+}
+
+func TestRunChecksANewContainerBeforeTheInterval(t *testing.T) {
+	col := &growingCollector{list: []model.Container{{ID: "a", Name: "a", Repo: "r", Tag: "latest", Digest: "sha256:1"}}}
+	res := fakeResolver{byRepo: map[string]resolveResult{"r": {tag: "latest", dig: "sha256:1"}}}
+	st := &fakeStore{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+	e.watch = 10 * time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go e.Run(ctx)
+
+	waitForRow := func(id string) {
+		t.Helper()
+		deadline := time.Now().Add(2 * time.Second)
+		for time.Now().Before(deadline) {
+			if _, err := st.Get(id); err == nil {
+				return
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+		t.Fatalf("container %s got no status before the interval", id)
+	}
+	waitForRow("a")
+	col.add(model.Container{ID: "b", Name: "b", Repo: "r", Tag: "latest", Digest: "sha256:1"})
+	waitForRow("b")
+}
+
+func TestRunChecksOnlyTheNewContainer(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		col := &growingCollector{list: []model.Container{{ID: "a", Name: "a", Repo: "ra", Tag: "latest", Digest: "sha256:1"}}}
+		res := &countingResolver{res: resolveResult{tag: "latest", dig: "sha256:1"}}
+		st := &fakeStore{}
+		e := New(col, res, &fakeChangelog{}, st, time.Hour)
+		ctx, cancel := context.WithCancel(t.Context())
+		done := make(chan struct{})
+		go func() {
+			e.Run(ctx)
+			close(done)
+		}()
+		synctest.Wait()
+		before, err := st.Get("a")
+		if err != nil {
+			t.Fatalf("the first sweep stored no row for a: %v", err)
+		}
+
+		col.add(model.Container{ID: "b", Name: "b", Repo: "rb", Tag: "latest", Digest: "sha256:1"})
+		time.Sleep(e.watch + time.Second)
+		synctest.Wait()
+		cancel()
+		<-done
+
+		if _, err := st.Get("b"); err != nil {
+			t.Fatalf("the new container got no row: %v", err)
+		}
+		if after, _ := st.Get("a"); !after.CheckedAt.Equal(before.CheckedAt) {
+			t.Errorf("a was checked again at %v after its first check at %v", after.CheckedAt, before.CheckedAt)
+		}
+		res.mu.Lock()
+		defer res.mu.Unlock()
+		if want := map[string]int{"ra|latest": 1, "rb|latest": 1}; !maps.Equal(res.calls, want) {
+			t.Errorf("resolver calls = %v, want %v", res.calls, want)
+		}
+	})
+}
+
+func TestSweepOfNewContainersLeavesTheOtherRowsAlone(t *testing.T) {
+	kept := model.UpdateStatus{Container: model.Container{ID: "x", Name: "x"}, RiskReason: "from the last full sweep"}
+	st := &fakeStore{rows: map[string]model.UpdateStatus{
+		"x":        kept,
+		"plex-old": {Container: model.Container{ID: "plex-old", Name: "plex"}},
+	}}
+	col := fakeCollector{list: []model.Container{
+		{ID: "x", Name: "x", Repo: "rx", Tag: "latest", Digest: "sha256:1"},
+		{ID: "plex-new", Name: "plex", Repo: "rp", Tag: "latest", Digest: "sha256:1"},
+	}}
+	res := &countingResolver{res: resolveResult{tag: "latest", dig: "sha256:1"}}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour)
+
+	if err := e.sweep(context.Background(), map[string]struct{}{"plex-new": {}}); err != nil {
+		t.Fatalf("sweep() error = %v", err)
+	}
+	if got, _ := st.Get("x"); got.RiskReason != kept.RiskReason || !got.CheckedAt.Equal(kept.CheckedAt) {
+		t.Errorf("row x = %+v, want it untouched", got)
+	}
+	if _, err := st.Get("plex-new"); err != nil {
+		t.Errorf("the new container got no row: %v", err)
+	}
+	// Unraid recreated plex under a new ID, and its old row would show plex twice.
+	if _, err := st.Get("plex-old"); err == nil {
+		t.Error("the row of the replaced container is still there")
+	}
+	if want := map[string]int{"rp|latest": 1}; !maps.Equal(res.calls, want) {
+		t.Errorf("resolver calls = %v, want %v", res.calls, want)
 	}
 }
