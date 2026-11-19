@@ -30,40 +30,46 @@
 
 <CHANGES>
 Shows the changelog of your installed Docker containers, right in the Docker tab:
-what changed from your running image to the newest, with a risk badge. Optional
-AI summaries (Ollama or llama-swap), Matrix or Apprise alerts, and an auto-update
-that backs up first when your fortress has a backup app.
+what changed from your running image to the newest, with a risk badge and the
+known vulnerabilities. Optional AI summaries (Ollama or llama-swap), alerts on
+Unraid, Discord, Matrix and more, and an auto-update that backs up first when
+your fortress has a backup app.
 
-### 3.8.3
-Containers inside folders get their changelog chip back.
-
-🐛 **Fixed**
-- **The changelog chip shows on containers in folders.** A folder plugin rebuilds the rows of the containers it groups, and the rebuilt rows kept ShipLog's mark but lost the chip, so those containers stayed without one. ShipLog tags such a row again (thanks @repires, #124, #123).
-
-### 3.8.2
-A fresh install from Community Applications works again, and GlimStone 4.5.4 lights whatever you point at in a soft tint of your accent.
+### 3.9.0
+ShipLog names the known vulnerabilities in your running images, can hand its notifications to TollRoll, and checks a new container within a minute.
 
 ✨ **Added**
+- **Known vulnerabilities of running images.** ShipLog looks up the packages of each running image in the open vulnerability database at osv.dev. A chip next to the container on the Docker tab counts the known critical and high ones, and the changelog window lists them, says when and on which image they were checked and how many the newest image closes. Only package names and versions leave your server. The check is on by default and can be switched off under Settings > ShipLog > Updates > Known vulnerabilities.
+- **An update that closes a critical vulnerability moves its risk badge up a step.** The changelog window and the auto-update summary name what it closes.
+- **The status page and notifications name the known vulnerabilities** of a container.
+- **The window says what to do when no update closes them:** ask the project for a fixed image, or switch to another tag or image.
+- **A new channel card on the Notifications tab.** You add a channel in a window with the services' tiles from GlimStone's catalog: Unraid, Discord, Slack, ntfy, Gotify, Matrix, Apprise, email over SMTP and webhooks. Each channel has its own switch, a choice of what it sends and a test that works before you save. Every change saves at once and takes effect without a restart, and the channels you had come along as they are.
+- **Notifications through TollRoll.** When a TollRoll in your fortress takes over the notifications of its apps, ShipLog hands its messages to it, and the Notifications tab says so. Once a container runs the update a message offered, TollRoll hears that the message is done. If TollRoll stops taking them, ShipLog's own channels send again.
 - **Discord on the Help card.** The card offers GitHub and the ShipLog Discord server in place of the forum.
 
 🎨 **Design**
-- **GlimStone 4.5.4.** Buttons and tabs light in a soft tint of your accent when the pointer reaches them. With TowerTorch they take its hover colour, the same as TowerTorch's own rows and buttons.
+- **GlimStone 4.6.0.** Buttons, tabs and tiles light in a soft tint of your accent when the pointer reaches them, and quiet buttons keep their label readable on it. With TowerTorch they take its hover colour, the same as TowerTorch's own rows and buttons.
+- **Open dropdowns come from TowerTorch.** With TowerTorch, a list on the settings page opens as plain rows with a check on the chosen option, drawn the way TowerTorch draws its own.
 - **A focus ring you can see.** Keyboard focus is a solid ring in the accent's ink instead of a faint halo, 2px wide and 3px when your system asks for more contrast.
 - **Placeholders you can read.** The hint in an empty field reaches 4.5:1 on every background.
 - **Reactive buttons keep their width.** In TowerTorch's reactive mode the buttons in the coffee, PayPal and crypto windows and the GitHub and Update buttons in the changelog window are as wide as with their glyph and words, and the words open inside them instead of the button growing under the pointer.
 
+⚡ **Improved**
+- **Vulnerabilities count as your distribution rates them.** A distribution's own priority for a flaw comes before the raw CVSS score, and packages built from the kernel are left out, since a container runs the host's kernel.
+- **The reason for a risk badge in your language, in full.** The changelog window gives it in the language of your Unraid, on a line of its own under the version and the buttons, so a longer translation is never cut short.
+- **Unraid's leftover update entry, explained.** When Unraid still lists an update the container already runs, the changelog window says so in plain words and tells you to click Check for Updates at the bottom of the Docker tab.
+- **Screen readers announce the changelog window as a modal dialog** and leave the page behind it alone.
+
 🐛 **Fixed**
+- **A new or recreated container gets its changelog chip right away.** A container installed from a template, or one Unraid recreates under a new ID after an update, waited for the next sweep, six hours by default, before ShipLog checked it. ShipLog checks such a container as soon as it starts, and a look once a minute catches any start it missed. Only the new container is checked, and one started with `docker run` outside Unraid waits for the next sweep. Thanks to @repires (#131, #130).
+- **The changelog chip shows on containers in folders.** A folder plugin rebuilds the rows of the containers it groups, and the rebuilt rows kept ShipLog's mark but lost the chip, so those containers stayed without one. ShipLog tags such a row again (thanks @repires, #124, #123).
 - **A fresh install from Community Applications goes through again.** Its first step tidied old packages in a folder a new install does not have yet, and the failed lookup stopped the install. Thanks to @Revan335 (#117).
+- **golang.org/x/net 0.63.0.** It closes the 17 advisories a security scan found in ShipLog's engine, among them a denial of service in the HTML parser.
+- **The fortress kit is at 1.0.5.** An app holding the phrase could announce an address that sent ShipLog's direct call to another page of a host on your network, and the call now always goes where it belongs. Two apps that first meet while one of them restarts find each other again, and the home network service starts on a host with a single network interface.
 
 🌐 **Translations**
+- **The vulnerability texts, the channel card and the TollRoll note** are there in all 26 languages.
 - **The Help sentence names GitHub and Discord in all 26 languages**, and French readers are addressed with tu.
-
-### 3.8.1
-Security fixes in the network library and the fortress kit.
-
-🐛 **Fixed**
-- **golang.org/x/net 0.62.0.** It closes the 17 advisories a security scan found in ShipLog's engine, among them a denial of service in the HTML parser.
-- **The fortress kit is at 1.0.1.** An app holding the phrase could announce an address that sent ShipLog's direct call to another page of a host on your network. The call now always goes where it belongs.
 
 ### 3.8.0
 ShipLog moves into the fortress: a backup before every auto-update, and a way back when one goes sideways.
