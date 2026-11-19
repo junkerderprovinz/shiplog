@@ -37,6 +37,15 @@ func TestLoadSocket(t *testing.T) {
 	}
 }
 
+func TestTheVulnerabilityCheckIsOnUntilSwitchedOff(t *testing.T) {
+	for v, want := range map[string]bool{"": true, "true": true, "yes": true, "false": false, "no": false, "0": false} {
+		t.Setenv("VULN_CHECK", v)
+		if got := Load().VulnCheck; got != want {
+			t.Errorf("VULN_CHECK=%q: check %v, want %v", v, got, want)
+		}
+	}
+}
+
 func TestBadDurationFallsBack(t *testing.T) {
 	t.Setenv("POLL_INTERVAL", "not-a-duration")
 	if Load().PollInterval != 6*time.Hour {

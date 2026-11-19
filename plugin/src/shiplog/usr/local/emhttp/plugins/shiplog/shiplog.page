@@ -32,6 +32,7 @@ $unraidNotify = $NV['unraid'];
 $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';   // default on
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
+$vulnCheck = (!isset($cfg['VULN_CHECK']) || $cfg['VULN_CHECK'] !== 'false');
 /* Auto-update settings, all off by default. */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
 $auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';
@@ -229,6 +230,14 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
           <div class="sl-ct" id="sl-au-ct" role="group" aria-labelledby="sl-au-ct-lbl"></div>
           <input type="hidden" name="AUTOUPDATE_EXCLUDE_CONTAINERS" id="sl-au-skip" value="<?=$slE($auSkip)?>">
         </div>
+      </div>
+    </section>
+
+    <section class="sl-card" aria-labelledby="sl-h-vulns">
+      <h3 class="sl-h"><span id="sl-h-vulns"><?=$slE($L['s_vulns'])?></span><?=$slInfo($L['s_vulns_sub'])?></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-vuln-check-cb"><?=$slE($L['s_vuln_check'])?></label><?=$slInfo($L['s_vuln_check_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-vuln-check', 'VULN_CHECK', $vulnCheck)?></div>
       </div>
     </section>
 

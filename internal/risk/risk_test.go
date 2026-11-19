@@ -49,7 +49,7 @@ func TestClassify(t *testing.T) {
 		if k != c.wantKind || r != c.wantRisk {
 			t.Errorf("Classify(%q,%q)=%s/%s want %s/%s", c.cur, c.newest, k, r, c.wantKind, c.wantRisk)
 		}
-		if reason == "" {
+		if reason.String() == "" {
 			t.Errorf("Classify(%q,%q) empty reason", c.cur, c.newest)
 		}
 	}

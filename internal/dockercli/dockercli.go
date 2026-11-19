@@ -4,6 +4,7 @@
 package dockercli
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	pathpkg "path"
 	"regexp"
 	"strings"
 
@@ -169,6 +171,89 @@ func (c *Client) Start(ctx context.Context, name string) error {
 		return fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 	return nil
+}
+
+// maxFiles caps what Files reads, well above any package database.
+const maxFiles = 32 << 20
+
+// Files returns the regular files at or below path in the container, keyed by
+// their full path. A path that does not exist gives none.
+func (c *Client) Files(ctx context.Context, id, path string) (map[string][]byte, error) {
+	q := url.Values{"path": {path}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/containers/"+url.PathEscape(id)+"/archive?"+q.Encode(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusNotFound:
+		return map[string][]byte{}, nil
+	default:
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return nil, fmt.Errorf("docker returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	// The archive names its entries after the last element of path.
+	parent := pathpkg.Dir(path)
+	out := map[string][]byte{}
+	tr := tar.NewReader(io.LimitReader(resp.Body, maxFiles))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			return out, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read archive of %s: %w", path, err)
+		}
+		if hdr.Typeflag != tar.TypeReg {
+			continue
+		}
+		b, err := io.ReadAll(tr)
+		if err != nil {
+			return nil, fmt.Errorf("read archive of %s: %w", path, err)
+		}
+		out[pathpkg.Join(parent, hdr.Name)] = b
+	}
+}
+
+// Starts calls started with the id, name and template flag of every container
+// that starts, until ctx ends or Docker closes the stream, which it reports as
+// an error.
+func (c *Client) Starts(ctx context.Context, started func(model.Container)) error {
+	q := url.Values{"filters": {`{"event":["start"],"type":["container"]}`}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/events?"+q.Encode(), nil)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("query docker: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("docker returned %s", resp.Status)
+	}
+	dec := json.NewDecoder(resp.Body)
+	for {
+		var ev struct {
+			Actor struct {
+				ID         string            `json:"ID"`
+				Attributes map[string]string `json:"Attributes"`
+			} `json:"Actor"`
+		}
+		if err := dec.Decode(&ev); err != nil {
+			return fmt.Errorf("read docker events: %w", err)
+		}
+		if ev.Actor.ID != "" {
+			a := ev.Actor.Attributes
+			started(model.Container{ID: ev.Actor.ID, Name: a["name"], Managed: a[managedLabel] != ""})
+		}
+	}
 }
 
 // heldRepo is where Hold keeps an image. Unraid removes the old image after an

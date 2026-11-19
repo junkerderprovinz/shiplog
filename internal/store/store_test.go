@@ -246,6 +246,63 @@ func TestChangelogRoundTrip(t *testing.T) {
 	}
 }
 
+func TestVulnsRoundTrip(t *testing.T) {
+	s := newTestStore(t)
+	want := model.Vulns{
+		Scope: model.VulnScopeImage, Critical: 2, High: 5, NewestKnown: true, FixedCritical: 1,
+		Items: []model.VulnItem{{ID: "CVE-2024-5535", Package: "openssl", Severity: "critical", Fixed: true}},
+	}
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "a"}, Vulns: &want, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "b"}, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	a, err := s.Get("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Vulns == nil || a.Vulns.Critical != 2 || a.Vulns.FixedCritical != 1 || len(a.Vulns.Items) != 1 || !a.Vulns.Items[0].Fixed {
+		t.Errorf("vulns = %+v, want %+v", a.Vulns, want)
+	}
+	if b, _ := s.Get("b"); b.Vulns != nil {
+		t.Errorf("a row without a check reads back %+v", b.Vulns)
+	}
+}
+
+func TestTheStateAndARaisedRiskComeBack(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "a", State: "exited"}, VulnRaised: true, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Get("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Container.State != "exited" || !got.VulnRaised {
+		t.Errorf("state = %q, raised = %v; want exited and raised", got.Container.State, got.VulnRaised)
+	}
+}
+
+func TestTheReasonCodeComesBack(t *testing.T) {
+	s := newTestStore(t)
+	st := model.UpdateStatus{Container: model.Container{ID: "a"}, CheckedAt: time.Now()}
+	st.SetReason(model.Why(model.ReasonPatch, "1.2.3", "1.2.4"))
+	if err := s.Upsert(st); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Upsert(model.UpdateStatus{Container: model.Container{ID: "b"}, CheckedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	a, _ := s.Get("a")
+	if a.RiskCode.Code != model.ReasonPatch || len(a.RiskCode.Args) != 2 || a.RiskCode.Args[1] != "1.2.4" {
+		t.Errorf("code = %+v", a.RiskCode)
+	}
+	if b, _ := s.Get("b"); b.RiskCode.Code != "" {
+		t.Errorf("a row without a code reads back %+v", b.RiskCode)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	s := newTestStore(t)
 	_, err := s.Get("does-not-exist")

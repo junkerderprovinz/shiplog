@@ -57,6 +57,12 @@ type (
 	Notifier interface {
 		Notify(ctx context.Context, st model.UpdateStatus) error
 	}
+	// VulnChecker counts the known vulnerabilities of a container's running
+	// image and what the image behind newestDigest closes of them, as
+	// vulns.Checker does.
+	VulnChecker interface {
+		Check(ctx context.Context, c model.Container, newestDigest string) *model.Vulns
+	}
 	// caFeedLookuper lets tests fake a *cafeed.Feed.
 	caFeedLookuper interface {
 		Lookup(name, repo, templateURL string) (cafeed.Result, bool)
@@ -73,6 +79,7 @@ type Engine struct {
 	store      Storer
 	summarizer Summarizer
 	notifier   Notifier
+	vulns      VulnChecker
 	interval   time.Duration
 	workers    int
 	refresh    chan struct{}
@@ -113,6 +120,12 @@ func (e *Engine) WithCAFeed(dir string) *Engine {
 // WithSummarizer enables AI changelog summaries.
 func (e *Engine) WithSummarizer(s Summarizer) *Engine {
 	e.summarizer = s
+	return e
+}
+
+// WithVulns enables the check for known vulnerabilities.
+func (e *Engine) WithVulns(v VulnChecker) *Engine {
+	e.vulns = v
 	return e
 }
 
@@ -219,6 +232,7 @@ func (e *Engine) Sweep(ctx context.Context) error {
 	resolve := memoResolve(e.resolver)
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
+	var tally vulnTally
 	for _, c := range containers {
 		if e.ignoreUnmanaged && !c.Managed {
 			_ = e.store.Delete(c.ID)
@@ -230,11 +244,15 @@ func (e *Engine) Sweep(ctx context.Context) error {
 			defer wg.Done()
 			defer func() { <-sem }()
 			st := e.check(ctx, c, resolve, overrides, suppressed, projects, templateURLs, caFeed)
+			tally.add(st.Vulns)
 			// A row that fails to store is retried by the next sweep.
 			_ = e.store.Upsert(st)
 		}(c)
 	}
 	wg.Wait()
+	if e.vulns != nil {
+		log.Printf("shiplog: %s", tally.String())
+	}
 
 	// A container that was removed or recreated under a new ID would otherwise
 	// leave its old row behind for good.
@@ -250,6 +268,37 @@ func (e *Engine) Sweep(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// vulnTally counts how a sweep checked the images, so the log shows that
+// the check ran even when no count changed.
+type vulnTally struct {
+	mu                                 sync.Mutex
+	all, image, system, unread, failed int
+}
+
+func (t *vulnTally) add(v *model.Vulns) {
+	if v == nil {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.all++
+	switch {
+	case v.Scope == model.VulnScopeImage:
+		t.image++
+	case v.Scope == model.VulnScopeSystem:
+		t.system++
+	case v.Reason == model.VulnNoPackages:
+		t.unread++
+	default:
+		t.failed++
+	}
+}
+
+func (t *vulnTally) String() string {
+	return fmt.Sprintf("vulnerability check: %d containers, %d by the image's package list, %d by the system packages, %d without a package list, %d failed",
+		t.all, t.image, t.system, t.unread, t.failed)
 }
 
 type resolveFunc func(ctx context.Context, repo, tag, curDigest string) (newestTag, sameTagDigest, newestVerTag, newestVerDigest string, err error)
@@ -287,20 +336,20 @@ func memoResolve(r Resolver) resolveFunc {
 }
 
 // noUpstreamReason reports why c has no registry counterpart to check.
-func noUpstreamReason(c model.Container) (string, bool) {
+func noUpstreamReason(c model.Container) (model.Reason, bool) {
 	switch {
 	case c.PinnedDigest != "":
 		// Docker runs the pinned digest even when the ref also names a tag, so an
 		// update could not be applied until the pin changes.
-		return "pinned by digest, updates only when the pin changes", true
+		return model.Why(model.ReasonDigestPinned), true
 	case c.IsLocal:
 		// A locally built or loaded image may share its name with an unrelated
 		// registry repository.
-		return "no registry digest (built or loaded locally), not checked against a registry", true
+		return model.Why(model.ReasonLocal), true
 	case c.Repo == "":
-		return "referenced by image ID, no tag to compare", true
+		return model.Why(model.ReasonImageID), true
 	}
-	return "", false
+	return model.Reason{}, false
 }
 
 func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFunc, overrides map[string]string, suppressed map[string]bool, projects map[string]string, templateURLs map[string]string, caFeed caFeedLookuper) model.UpdateStatus {
@@ -318,7 +367,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	st := model.UpdateStatus{Container: c, CheckedAt: e.now()}
 
 	if reason, ok := noUpstreamReason(c); ok {
-		st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, reason
+		st.Kind, st.Risk = model.KindNone, model.RiskNone
+		st.SetReason(reason)
 		switch {
 		case isVersion(c.Tag):
 			st.RunningVersion = c.Tag
@@ -329,6 +379,9 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// version. Without an update there is no summary and no notification.
 		if cl, ok := e.changelog.Get(ctx, c, st.RunningVersion, st.RunningVersion); ok {
 			st.Changelog = cl
+		}
+		if e.vulns != nil {
+			st.Vulns = e.vulns.Check(ctx, c, "")
 		}
 		return st
 	}
@@ -342,7 +395,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	newestTag, newestDigest, newestVerTag, newestVerDigest, err := resolve(ctx, c.Repo, c.Tag, c.Digest)
 	if err != nil {
 		if errors.Is(err, resolver.ErrRepoNotFound) {
-			st.Kind, st.Risk, st.RiskReason = model.KindNone, model.RiskNone, "image removed from the registry"
+			st.Kind, st.Risk = model.KindNone, model.RiskNone
+			st.SetReason(model.Why(model.ReasonRemoved))
 			if !silenced {
 				st.Unmaintained, st.UnmaintainedReason = true, "Image no longer in the registry"
 			}
@@ -362,12 +416,21 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		if hasPrior && prior.Kind != "" && prior.Kind != model.KindUnknown {
 			prior.Container = c
 			prior.Error = ""
+			// The running image is still known, so its check need not wait
+			// for the registry.
+			if e.vulns != nil {
+				newest := ""
+				if prior.HasUpdate() {
+					newest = prior.NewestDigest
+				}
+				prior.Vulns = e.vulns.Check(ctx, c, newest)
+			}
 			return prior
 		}
 		st.Error = "could not resolve upstream: " + err.Error()
 		st.Kind = model.KindUnknown
 		st.Risk = model.RiskUnknown
-		st.RiskReason = "upstream lookup failed"
+		st.SetReason(model.Why(model.ReasonLookupFailed))
 		switch {
 		case hasPrior && prior.RunningVersion != "":
 			st.RunningVersion = prior.RunningVersion
@@ -383,9 +446,18 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	st.RunningVersion = decideRunningVersion(c, newestVerTag, newestVerDigest, prior, hasPrior)
 
 	v := classify(c, st.RunningVersion, newestTag, newestDigest, newestVerTag, newestVerDigest)
-	st.Kind, st.Risk, st.RiskReason, st.NewerVersion = v.kind, v.risk, v.reason, v.newer
+	st.Kind, st.Risk, st.NewerVersion = v.kind, v.risk, v.newer
+	st.SetReason(v.reason)
 	if v.newest != "" {
 		st.NewestTag = v.newest
+	}
+	if e.vulns != nil {
+		newest := ""
+		if st.HasUpdate() {
+			newest = st.NewestDigest
+		}
+		st.Vulns = e.vulns.Check(ctx, c, newest)
+		raiseForFixes(&st)
 	}
 
 	// Every container gets a changelog, the running version's notes when it is up
@@ -415,7 +487,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		// show. They only ever raise the verdict.
 		if st.HasUpdate() {
 			if reason, breaking := scanBreaking(cl, st.RunningVersion, v.to); breaking && model.RiskCritical.MoreSevere(st.Risk) {
-				st.Risk, st.RiskReason = model.RiskCritical, reason
+				st.Risk = model.RiskCritical
+				st.SetReason(reason)
 			}
 		}
 		if st.HasUpdate() {
@@ -471,9 +544,24 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 	return st
 }
 
+// raiseForFixes ranks an update one step higher when it is known to close a
+// critical vulnerability. Critical stays reserved for breaking notes, which ask
+// for a step before the pull.
+func raiseForFixes(st *model.UpdateStatus) {
+	if !st.HasUpdate() || !st.Vulns.ClosesCritical() {
+		return
+	}
+	switch st.Risk {
+	case model.RiskLow:
+		st.Risk, st.VulnRaised = model.RiskMedium, true
+	case model.RiskMedium:
+		st.Risk, st.VulnRaised = model.RiskHigh, true
+	}
+}
+
 // scanBreaking reads the release notes that are still ahead of the container.
 // Without a running version that is only the release classify vouched for.
-func scanBreaking(cl *model.Changelog, running, vouched string) (string, bool) {
+func scanBreaking(cl *model.Changelog, running, vouched string) (model.Reason, bool) {
 	if running == "" {
 		return risk.ScanRelease(cl, vouched)
 	}
@@ -595,7 +683,7 @@ func isVersion(tag string) bool { return versionLike.MatchString(tag) }
 type verdict struct {
 	kind   model.Kind
 	risk   model.RiskLevel
-	reason string
+	reason model.Reason
 	newer  string // advisory for a pinned tag; set only with KindNone
 	newest string // replaces the resolved newest tag when set
 	to     string // end of the changelog span; empty means the newest tag
@@ -637,12 +725,12 @@ func classify(c model.Container, running, newestTag, newestDigest, newestVerTag,
 		// The container is pinned to a version tag and a newer one exists, but a
 		// pull of the pinned tag cannot reach it.
 		if tagMoved(c, newestDigest) {
-			v.kind, v.risk, v.reason = model.KindDigest, model.RiskLow, "same tag, new image digest"
+			v.kind, v.risk, v.reason = model.KindDigest, model.RiskLow, model.Why(model.ReasonDigest)
 			v.newest, v.to = c.Tag, c.Tag
 			break
 		}
 		v.kind, v.risk = model.KindNone, model.RiskNone
-		v.reason = fmt.Sprintf("pinned to %s; newer version %s available, change the tag to update", c.Tag, newestTag)
+		v.reason = model.Why(model.ReasonPinnedNewer, c.Tag, newestTag)
 		v.newer = newestTag
 	}
 	return v
@@ -679,6 +767,31 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 		return
 	}
 	_ = e.notifier.Notify(ctx, st)
+}
+
+// Started hears that container c started. An update recreates a container
+// under its name with a new id, and a sweep then checks the new image at once
+// instead of on the next interval; so does a container installed from a
+// template. Builds and one-off runs start under made-up names all day and wait
+// for the interval.
+func (e *Engine) Started(c model.Container) {
+	if _, err := e.store.Get(c.ID); err == nil {
+		return
+	}
+	if c.Managed {
+		e.Refresh()
+		return
+	}
+	rows, err := e.store.List()
+	if err != nil {
+		return
+	}
+	for _, r := range rows {
+		if r.Container.Name == c.Name {
+			e.Refresh()
+			return
+		}
+	}
 }
 
 // Refresh asks for an extra sweep without blocking; pending requests coalesce.

@@ -14,32 +14,30 @@ import (
 // the same version, differing digests mean the image moved. Semver tags are ranked
 // by the first level that differs, and a newest version at or below the
 // current one counts as up to date. Other tags cannot be compared.
-func Classify(cur, newest, curDigest, newDigest string) (model.Kind, model.RiskLevel, string) {
+func Classify(cur, newest, curDigest, newDigest string) (model.Kind, model.RiskLevel, model.Reason) {
 	if model.SameVersion(cur, newest) {
 		if curDigest != "" && newDigest != "" && curDigest != newDigest {
-			return model.KindDigest, model.RiskLow, "same tag, new image digest"
+			return model.KindDigest, model.RiskLow, model.Why(model.ReasonDigest)
 		}
-		return model.KindNone, model.RiskNone, "up to date"
+		return model.KindNone, model.RiskNone, model.Why(model.ReasonCurrent)
 	}
 
 	curVer, curOK := parseSemver(cur)
 	newVer, newOK := parseSemver(newest)
 	if !curOK || !newOK {
-		return model.KindUnknown, model.RiskUnknown, "non-semver tags, cannot compare automatically"
+		return model.KindUnknown, model.RiskUnknown, model.Why(model.ReasonNonSemver)
 	}
 
 	switch cmp := newVer.compare(curVer); {
 	case cmp <= 0:
-		return model.KindNone, model.RiskNone, "up to date"
+		return model.KindNone, model.RiskNone, model.Why(model.ReasonCurrent)
 	case newVer.major != curVer.major:
-		reason := fmt.Sprintf("major version bump %d.x → %d.x (review breaking changes)", curVer.major, newVer.major)
-		return model.KindMajor, model.RiskHigh, reason
+		return model.KindMajor, model.RiskHigh, model.Why(model.ReasonMajor, strconv.Itoa(curVer.major), strconv.Itoa(newVer.major))
 	case newVer.minor != curVer.minor:
-		reason := fmt.Sprintf("minor version bump %d.%d → %d.%d (new features, review the changelog)", curVer.major, curVer.minor, newVer.major, newVer.minor)
-		return model.KindMinor, model.RiskMedium, reason
+		return model.KindMinor, model.RiskMedium, model.Why(model.ReasonMinor,
+			fmt.Sprintf("%d.%d", curVer.major, curVer.minor), fmt.Sprintf("%d.%d", newVer.major, newVer.minor))
 	default:
-		reason := fmt.Sprintf("patch version bump %s → %s (fixes only, low risk)", curVer.String(), newVer.String())
-		return model.KindPatch, model.RiskLow, reason
+		return model.KindPatch, model.RiskLow, model.Why(model.ReasonPatch, curVer.String(), newVer.String())
 	}
 }
 

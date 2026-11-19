@@ -42,6 +42,12 @@ html.tt-popups-on .sl-autoff{border:none;background:rgba(128,128,128,.18)}
    warning colour. */
 .sl-autoff.sl-guarded{color:#d08a1c;border-color:currentColor}
 html.tt-popups-on .sl-autoff.sl-guarded{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}
+/* Known vulnerabilities of the running image: amber for high ones, the risk
+   badge's high colour once a critical one is among them. */
+.sl-autoff.sl-vuln{color:#d08a1c;border-color:currentColor}
+.sl-autoff.sl-vuln.sl-vuln-crit{color:#d9534f}
+html.tt-popups-on .sl-autoff.sl-vuln{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}
+html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-crit{color:var(--tt-err-ink,#d9534f);background:color-mix(in srgb,var(--tt-err,#d9534f) 18%,transparent)}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
@@ -120,23 +126,17 @@ html[data-tt-motion="off"] .sl-backdrop{animation:none}
   --sl-line:rgba(90,90,90,.18); --sl-line2:rgba(90,90,90,.30); --sl-edge:#bcbcbc; --sl-link:#1a56db;
   --sl-card:var(--tt-surface-4,#f3f3f3);
   box-shadow:0 18px 50px rgba(0,0,0,.28)}
-/* The header row never wraps, so the buttons stay top right; only .sl-jump
-   shrinks. */
-.sl-bubble .sl-bh{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;
+/* The version, the pills and the buttons share the first line, and the
+   reason takes a line of its own below them, so it shows in full. */
+.sl-bubble .sl-bh{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;
   padding:12px 16px;border-bottom:1px solid var(--sl-line);
   position:sticky;top:0;background:var(--sl-bg);z-index:2}
 .sl-bubble .sl-ver{font-family:Consolas,monospace;font-size:17px;line-height:1.2;color:var(--sl-dim);flex-shrink:0}
 .sl-bubble .sl-ver b{color:var(--sl-txt);font-weight:700}
 .sl-bubble .sl-pill{flex-shrink:0}
-/* docker.js turns overflowing text into a marquee of two identical copies, so
-   translateX(-50%) loops seamlessly. Text that fits, or reduced motion, keeps
-   the plain ellipsis. */
-.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;flex:1 1 auto;min-width:40px;overflow:hidden;
-  white-space:nowrap;text-overflow:ellipsis;position:relative}
-.sl-bubble .sl-jump.sl-jump-marquee{text-overflow:clip}
-.sl-bubble .sl-jump-track{display:inline-flex;animation:sl-jump-scroll linear infinite}
-.sl-bubble .sl-jump-txt{padding-right:40px}
-@keyframes sl-jump-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.sl-bubble .sl-jump{color:var(--sl-dim2);font-size:12px;line-height:1.4;order:9;flex:1 0 100%;
+  white-space:normal;overflow-wrap:anywhere}
+.sl-bubble .sl-jump:empty{display:none}
 .sl-bubble .sl-bh-right{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
 .sl-bubble .sl-gh,.sl-bubble .sl-upd{display:inline-flex;align-items:center;gap:6px;
   background:transparent;color:#ff8c2f;border:1px solid #ff8c2f;border-radius:4px;
@@ -186,6 +186,18 @@ html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-u
 .sl-bubble li.sl-warn:before{content:none}
 .sl-bubble li.sl-warn .sl-g{position:absolute;left:1px;top:7px;display:inline-flex;line-height:0;color:#d6a243}
 .sl-bubble li.sl-warn .sl-g svg{width:12px;height:12px}
+.sl-bubble .sl-vulns ul{margin-top:6px}
+.sl-bubble details.sl-vulns > summary{cursor:pointer;list-style:none}
+.sl-bubble details.sl-vulns > summary::-webkit-details-marker{display:none}
+.sl-bubble details.sl-vulns > summary h4:after{content:" \25B8";color:var(--sl-dim2)}
+.sl-bubble details.sl-vulns[open] > summary h4:after{content:" \25BE"}
+.sl-bubble details.sl-vulns[open] > summary{margin-bottom:6px}
+.sl-bubble .sl-vuln-more{margin-top:4px;color:var(--sl-dim2)}
+.sl-bubble .sl-vuln-checked{margin-top:8px;font-size:12px;color:var(--sl-dim2)}
+/* Why the risk went up, on its own line so it never runs in the header. */
+.sl-bubble .sl-raised{padding:6px 16px;font-size:12px;color:var(--sl-dim2)}
+.sl-bubble .sl-vulns li.sl-vuln-crit:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d9534f}
+.sl-bubble .sl-vulns li.sl-vuln-high:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d6a243}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
   border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}
@@ -242,6 +254,9 @@ html.tt-popups-on .sl-bubble .sl-unmaint-note{
   margin:18px 16px 0;padding:24px 14px 12px;box-shadow:var(--tt-elev-1,0 1px 4px rgba(0,0,0,.35));
   position:relative;
 }
+/* A card without a badge keeps no room for one: its text sits in the middle,
+   and it stands as far from its neighbour as the switch bar does. */
+html.tt-popups-on .sl-bubble :is(.sl-sec,.sl-unmaint-note):not(:has(> h4, > summary > h4)){padding:12px 14px;margin-top:10px}
 html.tt-popups-on .sl-bubble .sl-unmaint-note h4{
   display:inline-flex;background:var(--tt-err,#d9433f);color:var(--tt-err-fg,#fff);
   border-radius:999px;padding:3px 12px;

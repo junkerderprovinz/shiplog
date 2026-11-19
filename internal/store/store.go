@@ -66,7 +66,11 @@ CREATE TABLE IF NOT EXISTS status (
 	unmaintained_reason TEXT,
 	ca_deprecated       INTEGER,
 	ca_deprecated_note  TEXT,
-	newer_version       TEXT
+	newer_version       TEXT,
+	vulns_json          TEXT,
+	state               TEXT,
+	vuln_raised         INTEGER,
+	risk_code           TEXT
 );
 CREATE TABLE IF NOT EXISTS history (
 	id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,6 +144,10 @@ func Open(path string) (*Store, error) {
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN ca_deprecated_note TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN newer_version TEXT`)
 	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN managed INTEGER`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN vulns_json TEXT`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN state TEXT`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN vuln_raised INTEGER`)
+	_, _ = db.Exec(`ALTER TABLE status ADD COLUMN risk_code TEXT`)
 	return &Store{db: db}, nil
 }
 
@@ -177,14 +185,31 @@ func (s *Store) Upsert(st model.UpdateStatus) error {
 		}
 		changelogJSON = string(b)
 	}
+	var codeJSON string
+	if st.RiskCode.Code != "" {
+		b, err := json.Marshal(st.RiskCode)
+		if err != nil {
+			return fmt.Errorf("store: marshal reason: %w", err)
+		}
+		codeJSON = string(b)
+	}
+	var vulnsJSON string
+	if st.Vulns != nil {
+		b, err := json.Marshal(st.Vulns)
+		if err != nil {
+			return fmt.Errorf("store: marshal vulns: %w", err)
+		}
+		vulnsJSON = string(b)
+	}
 
 	_, err = s.db.Exec(`
 INSERT INTO status (
 	container_id, name, repo, image, tag, digest, pinned_digest, is_local, managed, running_version,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error,
-	unmaintained, unmaintained_reason, ca_deprecated, ca_deprecated_note, newer_version
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	unmaintained, unmaintained_reason, ca_deprecated, ca_deprecated_note, newer_version, vulns_json,
+	state, vuln_raised, risk_code
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(container_id) DO UPDATE SET
 	name                = excluded.name,
 	repo                = excluded.repo,
@@ -207,11 +232,16 @@ ON CONFLICT(container_id) DO UPDATE SET
 	unmaintained_reason = excluded.unmaintained_reason,
 	ca_deprecated       = excluded.ca_deprecated,
 	ca_deprecated_note  = excluded.ca_deprecated_note,
-	newer_version       = excluded.newer_version`,
+	newer_version       = excluded.newer_version,
+	vulns_json          = excluded.vulns_json,
+	state               = excluded.state,
+	vuln_raised         = excluded.vuln_raised,
+	risk_code           = excluded.risk_code`,
 		st.Container.ID, st.Container.Name, st.Container.Repo, st.Container.Image, st.Container.Tag, st.Container.Digest, st.Container.PinnedDigest, st.Container.IsLocal, st.Container.Managed, st.RunningVersion,
 		st.NewestTag, st.NewestDigest, string(st.Kind), string(st.Risk), st.RiskReason,
 		changelogJSON, st.CheckedAt.Format(time.RFC3339), st.Error,
-		st.Unmaintained, st.UnmaintainedReason, st.CADeprecated, st.CADeprecatedNote, st.NewerVersion,
+		st.Unmaintained, st.UnmaintainedReason, st.CADeprecated, st.CADeprecatedNote, st.NewerVersion, vulnsJSON,
+		st.Container.State, st.VulnRaised, codeJSON,
 	)
 	if err != nil {
 		return fmt.Errorf("store: upsert status: %w", err)
@@ -236,7 +266,9 @@ SELECT container_id, name, repo, image, tag, digest,
 	newest_tag, newest_digest, kind, risk, risk_reason,
 	changelog_json, checked_at, error,
 	COALESCE(unmaintained, 0), COALESCE(unmaintained_reason, ''),
-	COALESCE(ca_deprecated, 0), COALESCE(ca_deprecated_note, ''), COALESCE(newer_version, '')
+	COALESCE(ca_deprecated, 0), COALESCE(ca_deprecated_note, ''), COALESCE(newer_version, ''),
+	COALESCE(vulns_json, ''), COALESCE(state, ''), COALESCE(vuln_raised, 0),
+	COALESCE(risk_code, '')
 FROM status`
 
 // List returns all status rows ordered by risk severity then name.
@@ -477,10 +509,12 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 	var (
 		st                         model.UpdateStatus
 		kind, risk                 string
-		changelogJSON              string
+		changelogJSON, vulnsJSON   string
+		codeJSON                   string
 		checkedAt                  string
 		isLocal, managed           int64
 		unmaintained, caDeprecated int64
+		vulnRaised                 int64
 	)
 	err := sc.Scan(
 		&st.Container.ID, &st.Container.Name, &st.Container.Repo, &st.Container.Image, &st.Container.Tag, &st.Container.Digest,
@@ -488,6 +522,7 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 		&st.NewestTag, &st.NewestDigest, &kind, &risk, &st.RiskReason,
 		&changelogJSON, &checkedAt, &st.Error,
 		&unmaintained, &st.UnmaintainedReason, &caDeprecated, &st.CADeprecatedNote, &st.NewerVersion,
+		&vulnsJSON, &st.Container.State, &vulnRaised, &codeJSON,
 	)
 	if err != nil {
 		return model.UpdateStatus{}, err
@@ -496,6 +531,7 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 	st.Container.Managed = managed != 0
 	st.Unmaintained = unmaintained != 0
 	st.CADeprecated = caDeprecated != 0
+	st.VulnRaised = vulnRaised != 0
 	st.Kind = model.Kind(kind)
 	st.Risk = model.RiskLevel(risk)
 	if checkedAt != "" {
@@ -507,6 +543,18 @@ func scanStatus(sc scanner) (model.UpdateStatus, error) {
 			return model.UpdateStatus{}, fmt.Errorf("store: unmarshal changelog: %w", err)
 		}
 		st.Changelog = &cl
+	}
+	if codeJSON != "" {
+		if err := json.Unmarshal([]byte(codeJSON), &st.RiskCode); err != nil {
+			return model.UpdateStatus{}, fmt.Errorf("store: unmarshal reason: %w", err)
+		}
+	}
+	if vulnsJSON != "" {
+		var v model.Vulns
+		if err := json.Unmarshal([]byte(vulnsJSON), &v); err != nil {
+			return model.UpdateStatus{}, fmt.Errorf("store: unmarshal vulns: %w", err)
+		}
+		st.Vulns = &v
 	}
 	return st, nil
 }

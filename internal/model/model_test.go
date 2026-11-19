@@ -100,3 +100,80 @@ func TestUpdateStatusTarget(t *testing.T) {
 		}
 	}
 }
+
+func TestAVulnerabilityNoteSaysWhatAnUpdateCloses(t *testing.T) {
+	cases := []struct {
+		name   string
+		v      *Vulns
+		update bool
+		want   string
+	}{
+		{"off", nil, true, ""},
+		{"nothing known", &Vulns{Scope: VulnScopeImage}, true, ""},
+		{"no update", &Vulns{Scope: VulnScopeImage, Critical: 2, High: 5}, false, "2 critical and 5 high known vulnerabilities"},
+		{"closes some", &Vulns{Scope: VulnScopeImage, Critical: 2, High: 5, NewestKnown: true, FixedCritical: 1, FixedHigh: 3}, true,
+			"2 critical and 5 high known vulnerabilities, the update closes 1 critical and 3 high"},
+		{"closes only high", &Vulns{Scope: VulnScopeImage, Critical: 2, High: 5, NewestKnown: true, FixedHigh: 3}, true,
+			"2 critical and 5 high known vulnerabilities, the update closes 3 high"},
+		{"closes none", &Vulns{Scope: VulnScopeImage, Critical: 1, NewestKnown: true}, true,
+			"1 critical known vulnerability, the update does not close it"},
+		{"closes all", &Vulns{Scope: VulnScopeImage, High: 2, NewestKnown: true, FixedHigh: 2}, true,
+			"2 high known vulnerabilities, the update closes all of them"},
+		{"newest unknown", &Vulns{Scope: VulnScopeImage, High: 10}, true,
+			"10 high known vulnerabilities, unknown what the update closes"},
+	}
+	for _, c := range cases {
+		if got := c.v.Note(c.update); got != c.want {
+			t.Errorf("%s: Note = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestTheStatusLineSaysWhyNothingWasChecked(t *testing.T) {
+	cases := map[string]struct {
+		st   UpdateStatus
+		want string
+	}{
+		"off":         {UpdateStatus{}, ""},
+		"clean":       {UpdateStatus{Vulns: &Vulns{Scope: VulnScopeImage}}, "no known critical or high vulnerabilities"},
+		"no packages": {UpdateStatus{Vulns: &Vulns{Reason: VulnNoPackages}}, "vulnerabilities unknown, no readable package list"},
+		"failed":      {UpdateStatus{Vulns: &Vulns{Reason: VulnLookupFailed}}, "vulnerability lookup failed, ShipLog tries again at the next check"},
+		"update": {UpdateStatus{Kind: KindPatch, Vulns: &Vulns{Scope: VulnScopeSystem, Critical: 1, NewestKnown: true, FixedCritical: 1}},
+			"1 critical known vulnerability, the update closes it (system packages only)"},
+	}
+	for name, c := range cases {
+		if got := c.st.VulnNote(); got != c.want {
+			t.Errorf("%s: VulnNote = %q, want %q", name, got, c.want)
+		}
+	}
+}
+
+func TestAReasonReadsAsBeforeInEnglish(t *testing.T) {
+	cases := []struct {
+		r    Reason
+		want string
+	}{
+		{Reason{Code: ReasonDigest}, "same tag, new image digest"},
+		{Reason{Code: ReasonCurrent}, "up to date"},
+		{Reason{Code: ReasonNonSemver}, "non-semver tags, cannot compare automatically"},
+		{Reason{Code: ReasonMajor, Args: []string{"1", "2"}}, "major version bump 1.x → 2.x (review breaking changes)"},
+		{Reason{Code: ReasonMinor, Args: []string{"1.2", "1.3"}}, "minor version bump 1.2 → 1.3 (new features, review the changelog)"},
+		{Reason{Code: ReasonPatch, Args: []string{"1.2.3", "1.2.4"}}, "patch version bump 1.2.3 → 1.2.4 (fixes only, low risk)"},
+		{Reason{Code: ReasonPinnedNewer, Args: []string{"1.2", "1.4"}}, "pinned to 1.2, newer version 1.4 available, change the tag to update"},
+		{Reason{Code: ReasonBreakingIn, Args: []string{"v2.0.0", "breaking change"}}, `breaking change flagged in v2.0.0 release notes ("breaking change"), review before updating`},
+		{Reason{Code: ReasonBreaking, Args: []string{"migration required"}}, `breaking change flagged in the release notes ("migration required"), review before updating`},
+		{Reason{Code: ReasonDigestPinned}, "pinned by digest, updates only when the pin changes"},
+		{Reason{Code: ReasonLocal}, "no registry digest (built or loaded locally), not checked against a registry"},
+		{Reason{Code: ReasonImageID}, "referenced by image ID, no tag to compare"},
+		{Reason{Code: ReasonRemoved}, "image removed from the registry"},
+		{Reason{Code: ReasonLookupFailed}, "upstream lookup failed"},
+	}
+	if len(cases) != len(ReasonCodes) {
+		t.Fatalf("%d cases for %d codes", len(cases), len(ReasonCodes))
+	}
+	for _, c := range cases {
+		if got := c.r.String(); got != c.want {
+			t.Errorf("%s = %q, want %q", c.r.Code, got, c.want)
+		}
+	}
+}

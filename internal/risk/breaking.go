@@ -1,7 +1,6 @@
 package risk
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
@@ -44,9 +43,9 @@ var breakingSignals = []string{
 // effect and does not count. With fromTag empty nothing shows that a release is
 // still ahead of the container, since a rolling tag's recent releases may all be
 // behind it. It returns a reason naming the signal and the release.
-func ScanBreaking(cl *model.Changelog, fromTag string) (string, bool) {
+func ScanBreaking(cl *model.Changelog, fromTag string) (model.Reason, bool) {
 	if cl == nil || fromTag == "" {
-		return "", false
+		return model.Reason{}, false
 	}
 	from, fromOK := parseSemver(fromTag)
 	for _, e := range cl.Entries {
@@ -67,15 +66,15 @@ func ScanBreaking(cl *model.Changelog, fromTag string) (string, bool) {
 			return breakingReason("", sig), true
 		}
 	}
-	return "", false
+	return model.Reason{}, false
 }
 
 // ScanRelease looks for a breaking signal in the notes of tag alone, for a
 // container whose running version is unknown: tag is the one release known to be
 // on offer, and every other entry may be behind what the container runs.
-func ScanRelease(cl *model.Changelog, tag string) (string, bool) {
+func ScanRelease(cl *model.Changelog, tag string) (model.Reason, bool) {
 	if cl == nil || tag == "" {
-		return "", false
+		return model.Reason{}, false
 	}
 	for _, e := range cl.Entries {
 		if !model.SameVersion(e.Tag, tag) {
@@ -86,7 +85,7 @@ func ScanRelease(cl *model.Changelog, tag string) (string, bool) {
 		}
 		break
 	}
-	return "", false
+	return model.Reason{}, false
 }
 
 // advancesVersion reports whether toTag is newer than fromTag, falling back to
@@ -115,10 +114,9 @@ func findSignal(body string) (string, bool) {
 	return "", false
 }
 
-func breakingReason(tag, signal string) string {
-	where := "the release notes"
+func breakingReason(tag, signal string) model.Reason {
 	if tag != "" {
-		where = tag + " release notes"
+		return model.Why(model.ReasonBreakingIn, tag, signal)
 	}
-	return fmt.Sprintf("breaking change flagged in %s (%q), review before updating", where, signal)
+	return model.Why(model.ReasonBreaking, signal)
 }

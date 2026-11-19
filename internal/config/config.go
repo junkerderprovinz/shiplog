@@ -26,6 +26,11 @@ type Config struct {
 	// from an Unraid template, such as Compose stacks or plain `docker run`.
 	IgnoreUnmanaged bool
 
+	// VulnCheck (VULN_CHECK, on unless "false") looks the packages of each
+	// running image up in an open vulnerability database. Only package names
+	// and versions leave the host.
+	VulnCheck bool
+
 	// Docker Hub credentials raise the anonymous rate limit for docker.io lookups.
 	DockerHubUser  string // DOCKERHUB_USERNAME
 	DockerHubToken string // DOCKERHUB_TOKEN (access token or password)
@@ -89,6 +94,7 @@ func Load() Config {
 		PollInterval:    dur("POLL_INTERVAL", 6*time.Hour),
 		GithubToken:     os.Getenv("GITHUB_TOKEN"),
 		IgnoreUnmanaged: truthy("IGNORE_UNMANAGED"),
+		VulnCheck:       !falsy("VULN_CHECK"),
 		DockerHubUser:   os.Getenv("DOCKERHUB_USERNAME"),
 		DockerHubToken:  os.Getenv("DOCKERHUB_TOKEN"),
 		OllamaURL:       os.Getenv("OLLAMA_URL"),
@@ -131,6 +137,15 @@ func oldNotify() map[string]string {
 func truthy(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
 	case "true", "yes", "1", "on":
+		return true
+	}
+	return false
+}
+
+// falsy reports whether a setting that is on by default was switched off.
+func falsy(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	case "false", "no", "0", "off":
 		return true
 	}
 	return false

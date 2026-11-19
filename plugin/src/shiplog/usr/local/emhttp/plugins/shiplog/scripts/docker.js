@@ -71,7 +71,7 @@
     updateAll: "Update all", updateAllHint: "triggers Unraid's own update for every container with a pending update",
     none: "No changelog text found for this image. Open the repo (top-right) for the release notes.",
     noSource: "This image names no source repository, so ShipLog has no release notes to show. If the project keeps them on GitHub or in a changelog file, set that under \"source\" in its row on ShipLog's status page.",
-    unraidStale: "Unraid still lists an update, but at ShipLog's last check (%d) this container already ran the newest image of its tag.",
+    unraidStale: "Unraid still shows an update here, but this container already runs the newest image of its tag (checked %d). Unraid's display is just out of date: click Check for Updates at the bottom of the Docker tab to clear it.",
     rateLimited: "GitHub's hourly rate limit was reached, so the release notes couldn't load. Add a GitHub token in ShipLog's settings (Sources) to raise it.",
     pinned: "pinned", localimg: "local image",
     autoLabel: "Auto-update this container",
@@ -95,6 +95,42 @@
     rolledNote: "The last auto-update failed (%s), so ShipLog put the container back on its old image. Your appdata is untouched.",
     rolledUnpin: "Its template now points at the old image. To update again, remove the @sha256 part from the repository.",
     guardHint: "Click to see why.",
+    vulnTitle: "Known vulnerabilities",
+    vulnBadgeHint: "Known critical and high vulnerabilities in this container's image. Click for details.",
+    vulnCrit_one: "%n critical",
+    vulnCrit_other: "%n critical",
+    vulnHigh_one: "%n high",
+    vulnHigh_other: "%n high",
+    vulnAnd: " and ",
+    vulnRunning: "Known vulnerabilities in the running image: %v.",
+    vulnInstalled: "Known vulnerabilities in the installed image: %v.",
+    vulnNone: "The running image has no known critical or high vulnerabilities.",
+    vulnNoneInstalled: "The installed image has no known critical or high vulnerabilities.",
+    vulnCloses: "The newest image closes %v of them.",
+    vulnClosesNone: "The newest image still has all of them.",
+    vulnNewestUnknown: "The newest image comes without a package list, so ShipLog can't tell what the update closes.",
+    vulnRaised: "Rated a step higher: the update closes %v.",
+    vulnSystem: "ShipLog could only check the system packages inside the container.",
+    vulnNoPackages: "ShipLog couldn't read a package list for this image, so it can't say which vulnerabilities it has.",
+    vulnFailed: "The vulnerability database couldn't be reached. ShipLog tries again at the next check.",
+    vulnFixed: "closed by the update",
+    vulnMore: "and %n more",
+    vulnChecked: "Checked %t, image %i.",
+    vulnNoUpdate: "No update fixes these yet, because they are in the image the publisher builds. You can ask the project for a fixed image, or switch to another tag or image.",
+    reason_digest: "same tag, new image digest",
+    reason_current: "up to date",
+    reason_non_semver: "non-semver tags, cannot compare automatically",
+    reason_major: "major version bump %1.x → %2.x (review breaking changes)",
+    reason_minor: "minor version bump %1 → %2 (new features, review the changelog)",
+    reason_patch: "patch version bump %1 → %2 (fixes only, low risk)",
+    reason_pinned_newer: "pinned to %1, newer version %2 available, change the tag to update",
+    reason_breaking_in: "breaking change flagged in %1 release notes (\"%2\"), review before updating",
+    reason_breaking: "breaking change flagged in the release notes (\"%1\"), review before updating",
+    reason_digest_pinned: "pinned by digest, updates only when the pin changes",
+    reason_local: "no registry digest (built or loaded locally), not checked against a registry",
+    reason_image_id: "referenced by image ID, no tag to compare",
+    reason_removed: "image removed from the registry",
+    reason_lookup_failed: "upstream lookup failed",
   };
   const I18N = (window.shiplogI18n && typeof window.shiplogI18n === "object") ? window.shiplogI18n : {};
   function T(k) { return I18N["d_" + k] || EN[k] || k; }
@@ -301,6 +337,98 @@
     a.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(a, st); });
     return a;
   }
+  // The check is off unless the engine sent a report. Counts that are not known
+  // say so instead of showing a zero, and a zero count is left out.
+  const PLURAL = (() => { try { return new Intl.PluralRules(PREFS.lang || "en"); } catch (e) { return null; } })();
+  function counted(kind, n) {
+    const cat = PLURAL ? PLURAL.select(n) : (n === 1 ? "one" : "other");
+    const s = I18N[`d_${kind}_${cat}`] || I18N[`d_${kind}_other`] || EN[`${kind}_${cat}`] || EN[`${kind}_other`];
+    return String(s).replace("%n", () => String(n));
+  }
+  function severities(critical, high) {
+    const parts = [];
+    if (critical) parts.push(counted("vulnCrit", critical));
+    if (high) parts.push(counted("vulnHigh", high));
+    return parts;
+  }
+  function fillList(s, parts) { return String(s).replace("%v", () => parts.join(T("vulnAnd"))); }
+  // The engine sends its reason as a code with values. An older row has only
+  // the English text, which stays as it is.
+  function riskReason(st) {
+    const r = st && st.risk_code;
+    const s = r && r.code ? (I18N["d_reason_" + r.code] || EN["reason_" + r.code]) : "";
+    if (!s) return (st && st.risk_reason) || "";
+    const args = Array.isArray(r.args) ? r.args : [];
+    return String(s).replace(/%([12])/g, (m, i) => (args[i - 1] != null ? String(args[i - 1]) : m));
+  }
+  function vulnCount(st) {
+    const v = st && st.vulns;
+    return v && !v.reason ? (v.critical || 0) + (v.high || 0) : 0;
+  }
+  function vulnFixes(st) {
+    const v = st && st.vulns;
+    return v && v.newest_known && isUpdate(st) ? (v.fixed_critical || 0) + (v.fixed_high || 0) : 0;
+  }
+  // What the update closes, or "" when nobody can tell or it is not an update.
+  function vulnClosesLine(st) {
+    const v = st.vulns;
+    if (!isUpdate(st) || !vulnCount(st)) return "";
+    if (!v.newest_known) return T("vulnNewestUnknown");
+    if (!vulnFixes(st)) return T("vulnClosesNone");
+    return fillList(T("vulnCloses"), severities(v.fixed_critical, v.fixed_high));
+  }
+  // A stopped container has no running image, only the one it would start.
+  function running(st) { return !st.container || st.container.state === "running"; }
+  function vulnRaisedHTML(st) {
+    const v = st.vulns;
+    if (!st.vuln_raised || !v || !isUpdate(st)) return "";
+    return `<div class="sl-raised">${esc(fillList(T("vulnRaised"), severities(v.fixed_critical, 0)))}</div>`;
+  }
+  // The section stays folded to its counts line, so the release notes below
+  // it stay in view. A click opens the details.
+  function vulnHTML(st) {
+    const v = st && st.vulns;
+    if (!v) return "";
+    const title = `<h4>${esc(T("vulnTitle"))}</h4>`;
+    if (v.reason) {
+      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(v.reason === "lookup_failed" ? "vulnFailed" : "vulnNoPackages"))}</div>${vulnChecked(st)}</div>`;
+    }
+    if (!vulnCount(st)) {
+      return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(running(st) ? "vulnNone" : "vulnNoneInstalled"))}</div>${vulnChecked(st)}</div>`;
+    }
+    const counts = fillList(T(running(st) ? "vulnRunning" : "vulnInstalled"), severities(v.critical, v.high));
+    const lines = [vulnClosesLine(st), !isUpdate(st) ? T("vulnNoUpdate") : "", v.scope === "system" ? T("vulnSystem") : ""].filter(Boolean);
+    const list = Array.isArray(v.items) ? v.items : [];
+    const items = list.map((it) =>
+      `<li class="sl-vuln-${it.severity === "critical" ? "crit" : "high"}"><code>${esc(it.id)}</code> · ${esc(it.package)}` +
+      (it.fixed && isUpdate(st) ? ` <span class="sl-ai">${esc(T("vulnFixed"))}</span>` : "") + "</li>").join("");
+    const more = vulnCount(st) - list.length;
+    return `<details class="sl-sec sl-vulns"><summary>${title}<span class="sl-vuln-sum">${esc(counts)}</span></summary>` +
+      lines.map((l) => `<div>${esc(l)}</div>`).join("") +
+      (items ? `<ul>${items}</ul>` : "") +
+      (more > 0 ? `<div class="sl-vuln-more">${esc(T("vulnMore").replace("%n", () => String(more)))}</div>` : "") +
+      vulnChecked(st) + "</details>";
+  }
+  // When the check ran and on which image, so a list from before an update
+  // reads as such.
+  function vulnChecked(st) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec((st && st.checked_at) || "");
+    const c = (st && st.container) || {};
+    const img = String(c.digest || c.image_id || "").replace(/^sha256:/, "").slice(0, 12);
+    if (!m || !img) return "";
+    const at = `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
+    return `<div class="sl-vuln-checked">${esc(T("vulnChecked").replace("%t", () => at).replace("%i", () => img))}</div>`;
+  }
+  function vulnBadge(st) {
+    const v = st.vulns;
+    const words = severities(v.critical, v.high).join(" · ");
+    const a = el("a", "sl-autoff sl-vuln" + (v.critical ? " sl-vuln-crit" : ""), `${WARN_ICON}<span>${esc(words)}</span>`);
+    a.href = "#";
+    a.title = ["ShipLog: " + T("vulnBadgeHint"), vulnClosesLine(st)].filter(Boolean).join(" ");
+    a.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(a, st); });
+    return a;
+  }
+
   function wireAuto(b, st) {
     const cb = b.querySelector(".sl-au-cb");
     if (!cb) return;
@@ -545,7 +673,7 @@
     };
     // An up-to-date container carries no version jump line, and neither does an
     // update only Unraid flags, since the engine's reason then reads "up to date".
-    let jump = upd && seUpd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : (st.risk_reason || "")) : "";
+    let jump = upd && seUpd ? (cl.skipped_count > 1 ? T("skips").replace("%n", cl.skipped_count) : riskReason(st)) : "";
     if (relDate) jump = (jump ? jump + " · " : "") + T("newest").replace("%d", relDate);
 
     let summary = "";
@@ -614,7 +742,7 @@
       ${!st.unmaintained && st.ca_deprecated ? `<div class="sl-unmaint-note sl-dep-note"><h4>${WARN_G}${esc(T("deprecated"))}</h4>${esc(st.ca_deprecated_note || T("deprecated"))}</div>` : ""}
       ${nv ? `<div class="sl-unmaint-note sl-newer-note"><h4>${esc(T("pinned"))}</h4><div>${esc(fillV(T("newerNote"), nv))}</div><div class="sl-newer-why">${esc(fillV(T("newerWhy"), cur))}</div></div>` : ""}
       ${unraidStale(st) ? `<div class="sl-unmaint-note sl-newer-note sl-stale-note">${esc(T("unraidStale").replace("%d", () => fmtStamp(st.checked_at)))}</div>` : ""}
-      ${guardHTML(st)}${autoHTML(st)}${summary}${raw}
+      ${vulnRaisedHTML(st)}${guardHTML(st)}${autoHTML(st)}${vulnHTML(st)}${summary}${raw}
       ${src ? `<div class="sl-bf"><span>${src}</span></div>` : ""}`;
   }
 
@@ -828,30 +956,6 @@
     const cap = setTimeout(release, 15 * 60 * 1000);
   }
 
-  // armJumpMarquee scrolls the jump line only when it overflows and motion is
-  // allowed, by the system and by TowerTorch's motion level. Two identical
-  // copies moved by translateX(-50%) loop seamlessly.
-  function armJumpMarquee(bubble) {
-    try {
-      const jumpEl = bubble.querySelector(".sl-jump");
-      if (!jumpEl) return;
-      const reduceMotion = (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
-        document.documentElement.getAttribute("data-tt-motion") === "off";
-      const full = jumpEl.textContent;
-      if (reduceMotion || !full || jumpEl.scrollWidth <= jumpEl.clientWidth) return;
-      const track = el("span", "sl-jump-track");
-      track.appendChild(el("span", "sl-jump-txt", esc(full)));
-      const clone = el("span", "sl-jump-txt", esc(full));
-      clone.setAttribute("aria-hidden", "true");
-      track.appendChild(clone);
-      jumpEl.textContent = "";
-      jumpEl.appendChild(track);
-      jumpEl.classList.add("sl-jump-marquee");
-      // Longer text scrolls longer, so the reading speed stays about the same.
-      track.style.animationDuration = Math.max(6, Math.min(24, full.length / 8)) + "s";
-    } catch (e) {}
-  }
-
   // Under TowerTorch's rainbow each button of the window lights up in a palette
   // position of its own, as GlimStone's takePageHue() does in an app.
   function tintButtons(b) {
@@ -905,6 +1009,9 @@
     bd.addEventListener("click", () => close());
     document.body.appendChild(bd);
     const b = el("div", "sl-bubble", bubbleHTML(st));
+    b.setAttribute("role", "dialog");
+    b.setAttribute("aria-modal", "true");
+    b.setAttribute("aria-label", `ShipLog: ${(st.container && st.container.name) || ""}`);
     if (isLightBg()) b.classList.add("sl-light");
     document.body.appendChild(b);
     b._backdrop = bd;
@@ -915,7 +1022,6 @@
       if (s && s.w) b.style.width = s.w + "px";
       if (s && s.h) b.style.height = s.h + "px";
     } catch (e) {}
-    armJumpMarquee(b); // needs the restored width
     tintButtons(b);
     holdBubble(b);
     // CSS centres the window, so `anchor` goes unused.
@@ -1037,6 +1143,7 @@
       row.appendChild(chip);
       if (auEnabled && auIsExcluded(st.container && st.container.name)) row.appendChild(autoBadge(st));
       if (guardOf(st)) row.appendChild(guardBadge(st));
+      if (vulnCount(st)) row.appendChild(vulnBadge(st));
       cell.appendChild(row);
       cell.setAttribute(MARK, "1");
       n++;
