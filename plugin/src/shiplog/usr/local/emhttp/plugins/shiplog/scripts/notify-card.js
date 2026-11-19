@@ -37,16 +37,34 @@
     save: "<svg viewBox=\"3 3 18 18\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z\" /></svg>"
   };
 
-  // The services' own names, which no language translates. Mail and
-  // webhooks are nobody's and go by the page's words.
-  var BRANDS = { unraid: 'Unraid', discord: 'Discord', slack: 'Slack', ntfy: 'ntfy', gotify: 'Gotify', matrix: 'Matrix', apprise: 'Apprise', healthchecks: 'Healthchecks.io' };
+  /* GlimStone's NOTIFY_PROVIDERS (@glimstone/core/notifyProviders) without
+   * the marks, which notify-marks.js carries. The services keep their own
+   * names in every language, and mail and webhooks go by the page's words. */
+  var SHOUTRRR = ['Bark', 'Google Chat', 'Home Assistant', 'IFTTT', 'Join', 'Lark', 'Mattermost', 'MQTT', 'Opsgenie', 'PagerDuty', 'Pushbullet',
+    'Pushover', 'Rocket.Chat', 'Signal', 'Teams', 'Telegram', 'Twilio', 'WeCom', 'XMPP', 'Zulip'];
+  var CATALOG = {
+    groups: ['service', 'standard'],
+    entries: [
+      { id: 'apprise', name: 'Apprise', group: 'service' },
+      { id: 'discord', name: 'Discord', group: 'service' },
+      { id: 'gotify', name: 'Gotify', group: 'service' },
+      { id: 'healthchecks', name: 'Healthchecks.io', group: 'service' },
+      { id: 'matrix', name: 'Matrix', group: 'service', terms: ['Element'] },
+      { id: 'ntfy', name: 'ntfy', group: 'service' },
+      { id: 'shoutrrr', name: 'Shoutrrr', group: 'service', terms: SHOUTRRR },
+      { id: 'slack', name: 'Slack', group: 'service' },
+      { id: 'unraid', name: 'Unraid', group: 'service' },
+      { id: 'smtp', name: 'Email', kind: 'SMTP', group: 'standard', glyph: 'IconMail', word: true },
+      { id: 'webhook', name: 'Webhook', group: 'standard', terms: ['HTTP'], glyph: 'IconLink', word: true }
+    ]
+  };
   var WORDS = { smtp: 'nc_smtp', webhook: 'nc_webhook' };
   var HINTS = {
     unraid: 'nc_unraid_hint', discord: 'nc_discord_hint', slack: 'nc_slack_hint', ntfy: 'nc_ntfy_hint', gotify: 'nc_gotify_hint',
     matrix: 'nc_matrix_hint', apprise: 'nc_apprise_hint', smtp: 'nc_smtp_hint', webhook: 'nc_webhook_hint', healthchecks: 'nc_hc_hint'
   };
-  // The open standards stand after the services, in a section of their own.
-  var STANDARDS = ['smtp', 'webhook'];
+  // The webhook takes anything, so it stands last.
+  var LAST = 'webhook';
   // A kind a page can have only once, since a second would say the same.
   var SINGLE = ['unraid'];
 
@@ -97,8 +115,15 @@
     healthchecks: [{ path: 'healthchecks.url', label: 'nc_address', ph: 'https://hc-ping.com/...' }]
   };
 
+  function entry(kind) {
+    for (var i = 0; i < CATALOG.entries.length; i++) if (CATALOG.entries[i].id === kind) return CATALOG.entries[i];
+    return null;
+  }
+
   function name(kind, t) {
-    return BRANDS[kind] || t[WORDS[kind]] || kind;
+    var e = entry(kind);
+    if (!e) return kind;
+    return e.word ? t[WORDS[kind]] || e.name : e.name;
   }
 
   function get(c, path) {
@@ -143,19 +168,54 @@
     });
   }
 
-  /* sections are the tiles of the kinds offered that the query leaves: the
-   * services, then mail and webhooks, each by the name shown in the reader's
-   * order. A kind a page can have once is off while it is there. */
+  /* GlimStone's catalogPicker: the tiles and groups of a picker for the ids
+   * an app offers, group by group in the catalog's order and alphabetical
+   * within one, and only the groups that keep a tile. An id the catalog does
+   * not know is left out. */
+  function catalogPicker(catalog, pick) {
+    var rank = function (g) { return catalog.groups.indexOf(g); };
+    var items = catalog.entries.filter(function (e) { return pick.ids.indexOf(e.id) >= 0; }).map(function (e) {
+      var item = Object.assign({ id: e.id, label: e.name, group: e.group }, pick.own ? pick.own(e) : undefined);
+      if (e.kind && item.sub === undefined) item.sub = e.kind;
+      // A translated name still finds the provider by the name its own documentation uses.
+      var terms = (item.label !== e.name ? [e.name] : []).concat(e.terms || [], item.terms || []);
+      if (terms.length) item.terms = terms;
+      if (item.mark == null) item.mark = e.mark != null ? e.mark : pick.glyph(e);
+      return item;
+    }).sort(function (a, b) {
+      return rank(a.group) - rank(b.group) || a.label.localeCompare(b.label, pick.lang, { sensitivity: 'base' });
+    });
+    var groups = catalog.groups.filter(function (g) {
+      return items.some(function (i) { return i.group === g; });
+    }).map(function (g) {
+      var title = pick.titles[g];
+      return typeof title === 'string' ? { id: g, title: title } : Object.assign({ id: g }, title);
+    });
+    return { items: items, groups: groups };
+  }
+
+  /* sections are the tiles of the kinds offered that the query leaves, as
+   * the catalog groups them: the services, then mail and webhooks, each by
+   * the name shown in the reader's order with the webhook last. The search
+   * reads the name, its second line, the kind and the catalog's words. A
+   * kind a page can have once is off while it is there. */
   function sections(kinds, channels, t, lang, query) {
     var have = {};
     (channels || []).forEach(function (c) { have[c.kind] = true; });
-    function tiles(standard) {
-      return kinds.filter(function (k) { return (STANDARDS.indexOf(k) >= 0) === standard && matches(query || '', [name(k, t), k]); })
-        .map(function (k) { return { kind: k, name: name(k, t), hint: t[HINTS[k]] || '', off: SINGLE.indexOf(k) >= 0 && !!have[k] }; })
-        .sort(function (a, b) { return a.name.localeCompare(b.name, lang, { sensitivity: 'base' }); });
-    }
-    return [{ id: 'services', title: t.nc_services, tiles: tiles(false) }, { id: 'standards', title: t.nc_standards, tiles: tiles(true) }]
-      .filter(function (s) { return s.tiles.length; });
+    var pick = catalogPicker(CATALOG, {
+      ids: kinds, titles: { service: t.nc_services, standard: t.nc_standards }, lang: lang,
+      glyph: function (e) { return e.id; },
+      own: function (e) { return { label: name(e.id, t), hint: t[HINTS[e.id]] || '' }; }
+    });
+    return pick.groups.map(function (g) {
+      var tiles = pick.items.filter(function (i) {
+        return i.group === g.id && matches(query || '', [i.label, i.sub || '', i.id].concat(i.terms || []));
+      }).sort(function (a, b) { return Number(a.id === LAST) - Number(b.id === LAST); });
+      return {
+        id: g.id, title: g.title,
+        tiles: tiles.map(function (i) { return { kind: i.id, name: i.label, sub: i.sub || '', hint: i.hint, off: SINGLE.indexOf(i.id) >= 0 && !!have[i.id] }; })
+      };
+    }).filter(function (s) { return s.tiles.length; });
   }
 
   /* Where a key moves the focus from tile from, given every tile's box in
@@ -518,7 +578,11 @@
         secs.forEach(function (s) {
           var ul = h('ul', { class: 'glim-nc-tiles' });
           s.tiles.forEach(function (tile) {
-            var b = h('button', { type: 'button', class: 'glim-nc-tile', 'data-kind': tile.kind }, [mark(tile.kind, 'glim-nc-tile-mark'), h('span', { class: 'glim-nc-tile-name', text: tile.name })]);
+            var words = h('span', { class: 'glim-nc-tile-text' }, [
+              h('span', { class: 'glim-nc-tile-name', text: tile.name }),
+              tile.sub ? h('span', { class: 'glim-nc-tile-sub', text: tile.sub }) : null
+            ]);
+            var b = h('button', { type: 'button', class: 'glim-nc-tile', 'data-kind': tile.kind, 'aria-label': tile.sub ? tile.name + ', ' + tile.sub : null }, [mark(tile.kind, 'glim-nc-tile-mark'), words]);
             b.disabled = tile.off;
             if (tile.kind === picked) b.setAttribute('aria-current', 'true');
             b.addEventListener('click', function () {
@@ -685,5 +749,5 @@
     return { list: function () { return list; }, draw: draw, pick: picker };
   }
 
-  return { MASK: MASK, FIELDS: FIELDS, newChannel: newChannel, sections: sections, matches: matches, pickKey: pickKey, shown: shown, taken: taken, name: name, get: get, set: set, mount: mount };
+  return { MASK: MASK, CATALOG: CATALOG, FIELDS: FIELDS, catalogPicker: catalogPicker, newChannel: newChannel, sections: sections, matches: matches, pickKey: pickKey, shown: shown, taken: taken, name: name, get: get, set: set, mount: mount };
 });

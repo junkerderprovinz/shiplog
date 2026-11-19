@@ -126,6 +126,7 @@ html.tt-popups-on .glim-nc {
   --nc-w-ground: var(--background-color, #1c1b1b);
   --nc-w-raised: color-mix(in srgb, currentColor 12%, transparent);
   --nc-w-raised-hover: color-mix(in srgb, currentColor 20%, transparent);
+  --nc-w-hover: var(--nc-w-raised-hover);
   --nc-w-head: var(--hover-button-background, #e22828);
   --nc-w-head-ink: var(--hover-button-text-color, #fff);
   --nc-w-dim: var(--alt-text-color, #8d8d8d);
@@ -165,6 +166,9 @@ html.tt-popups-on .glim-nc-wins {
   --nc-w-ground: #1a1a1a;
   --nc-w-raised: #2e2e2e;
   --nc-w-raised-hover: #383838;
+  /* GlimStone's --hover on the dark ramp, which the window keeps on every
+     theme. A field's focus keeps the grey step. */
+  --nc-w-hover: var(--tt-hover-dark, #383838);
   --nc-w-head: var(--tt-accent, #FCC419);
   --nc-w-head-ink: var(--tt-accent-text, #161616);
   --nc-w-dim: #8a8a8a;
@@ -183,6 +187,7 @@ html.tt-popups-on .glim-nc-wins {
 html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   --nc-w-ground: var(--tt-surface-window, #161616);
   --nc-w-raised: var(--tt-surface-3, #262626);
+  --nc-w-hover: var(--tt-hover, #383838);
 }
 .glim-nc-wins *, .glim-nc-wins *::before, .glim-nc-wins *::after { box-sizing: border-box; }
 
@@ -273,11 +278,22 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   font: inherit; letter-spacing: normal; text-transform: none; text-align: start; cursor: pointer;
 }
 .glim-nc-wins .glim-nc-tile-mark { position: absolute; top: 50%; inset-inline-start: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; justify-content: center; }
-.glim-nc-tile-name {
-  position: absolute; inset-block: 0; inset-inline: 53px 10px; display: flex; align-items: center;
-  overflow: hidden; white-space: nowrap; font-size: 14px; font-weight: 700; line-height: 1.15;
+.glim-nc-tile-text {
+  position: absolute; inset-block: 0; inset-inline: 53px 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15;
 }
-.glim-nc-tile-hinted .glim-nc-tile-name { inset-inline-end: 28px; }
+.glim-nc-tile-name, .glim-nc-tile-sub { max-width: 100%; overflow: hidden; white-space: nowrap; }
+.glim-nc-tile-name { font-size: 14px; font-weight: 700; }
+/* A second line, such as SMTP under mail, comes in under the pointer and on
+   focus. At rest the name alone sits in the middle, half the line lower. */
+.glim-nc-tile-name:not(:only-child) { translate: 0 7px; }
+.glim-nc-tile-sub { font-size: 12px; opacity: 0; translate: 0 4px; }
+.glim-nc-tilebox:is(:hover, :focus-within) .glim-nc-tile-name { translate: 0 0; }
+.glim-nc-tilebox:is(:hover, :focus-within) .glim-nc-tile-sub { opacity: .9; translate: 0 0; }
+@media (hover: none) {
+  .glim-nc-tile-name:not(:only-child) { translate: 0 0; }
+  .glim-nc-tile-sub { opacity: .9; translate: 0 0; }
+}
+.glim-nc-tile-hinted .glim-nc-tile-text { inset-inline-end: 28px; }
 /* Matrix's black mark would vanish on the tile, so at rest it wears the ink. */
 .glim-nc-wins button.glim-nc-tile[data-kind="matrix"] { --mark-ink: var(--nc-w-ink); }
 .glim-nc-tilebox:is(:hover, :focus-within):not(:has(button:disabled)) button.glim-nc-tile {
@@ -292,6 +308,7 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-tilebox .glim-nc-info { position: absolute; top: 50%; inset-inline-end: 10px; translate: 0 -50%; }
 @media (prefers-reduced-motion: no-preference) {
   html:not([data-tt-motion="off"]) .glim-nc-wins button.glim-nc-tile { transition: background-color var(--tt-motion-control-dur, 150ms), color var(--tt-motion-control-dur, 150ms); }
+  html:not([data-tt-motion="off"]) .glim-nc-wins :is(.glim-nc-tile-name, .glim-nc-tile-sub) { transition: opacity var(--tt-motion-control-dur, 150ms), translate var(--tt-motion-control-dur, 150ms); }
 }
 
 /* The picked channel's fields in the window, on the window's own grounds. */
@@ -312,7 +329,7 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   min-height: 28px; margin: 0; padding: 0 12px; border: none; border-radius: calc(var(--nc-w-r-ctl) - 2px); box-shadow: none;
   background: transparent; color: var(--nc-w-ink); font: inherit; font-size: 13px; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
-.glim-nc-wins button.glim-nc-seg-opt:hover { background: var(--nc-w-raised-hover); }
+.glim-nc-wins button.glim-nc-seg-opt:hover { background: var(--nc-w-hover); }
 .glim-nc-wins button.glim-nc-seg-opt[aria-checked="true"] { background: var(--nc-w-head); color: var(--nc-w-head-ink); }
 .glim-nc-wins button.glim-nc-seg-opt:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 1px; }
 
@@ -324,7 +341,7 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   border: none; border-radius: var(--nc-w-r-ctl); box-shadow: none; background: var(--nc-w-raised); color: var(--nc-w-ink);
   font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.2; letter-spacing: normal; text-transform: none; cursor: pointer;
 }
-.glim-nc-wins button.glim-nc-win-btn:is(:hover, :focus-visible):not(:disabled) { background: var(--nc-w-raised-hover); }
+.glim-nc-wins button.glim-nc-win-btn:is(:hover, :focus-visible):not(:disabled) { background: var(--nc-w-hover); }
 .glim-nc-wins button.glim-nc-win-btn.glim-nc-key { background: var(--nc-w-head); color: var(--nc-w-head-ink); }
 .glim-nc-wins button.glim-nc-win-btn.glim-nc-key:is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-head), #000 12%); }
 .glim-nc-wins button.glim-nc-win-btn:disabled { opacity: .5; cursor: default; }
@@ -335,7 +352,6 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-wins button.glim-nc-win-btn.glim-nc-tone-bad,
 .glim-nc-wins button.glim-nc-win-btn.glim-nc-tone-bad:is(:hover, :focus-visible):not(:disabled) { background: var(--nc-err); }
 .glim-nc-wins button.glim-nc-win-btn:focus-visible { outline: 2px solid var(--nc-w-focus); outline-offset: 2px; }
-html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key, .glim-nc-tone-ok, .glim-nc-tone-bad):is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--nc-w-raised), var(--nc-w-head) 22%); }
 html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key, .glim-nc-tone-ok, .glim-nc-tone-bad):is(:hover, :focus-visible):not(:disabled) .glim-nc-g { color: var(--nc-w-head); }
 
 /* On a phone the window is a sheet from the bottom edge with its foot

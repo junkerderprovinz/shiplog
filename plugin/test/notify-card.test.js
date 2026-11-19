@@ -99,6 +99,80 @@ test('a search narrows the tiles by name or kind, accents and hyphens aside', ()
   assert.equal(names('').length, KINDS.length);
 });
 
+// GlimStone's notification catalog at the release glimstone.json follows,
+// read from its source: one entry to a line, the Shoutrrr words in a list.
+async function glimstoneCatalog() {
+  const { version } = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'glimstone.json'), 'utf8')).targets.find((t) => t.name === 'plugin');
+  const url = `https://raw.githubusercontent.com/junkerderprovinz/glimstone/v${version}/packages/core/src/notifyProviders.ts`;
+  const res = await fetch(url);
+  assert.ok(res.ok, `${url} answered ${res.status}`);
+  const src = await res.text();
+  const words = (list) => [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  const named = { SHOUTRRR: words(/const SHOUTRRR = \[([^\]]*)\]/.exec(src)[1]) };
+  return [...src.matchAll(/^\s*\{ id: "([^"]+)".*\},?$/gm)].map(([line, id]) => {
+    const e = { id, name: /name: "([^"]+)"/.exec(line)[1], group: /group: "([^"]+)"/.exec(line)[1] };
+    const kind = /kind: "([^"]+)"/.exec(line), glyph = /glyph: "([^"]+)"/.exec(line), terms = /terms: (\[[^\]]*\]|\w+)/.exec(line);
+    if (kind) e.kind = kind[1];
+    if (terms) e.terms = terms[1].startsWith('[') ? words(terms[1]) : named[terms[1]];
+    if (glyph) e.glyph = glyph[1];
+    if (/word: true/.test(line)) e.word = true;
+    return e;
+  });
+}
+
+test("the card's catalog is GlimStone's, marks aside", async () => {
+  const want = await glimstoneCatalog();
+  assert.ok(want.length >= 10, 'the catalog was read');
+  assert.deepEqual(card.CATALOG.groups, ['service', 'standard']);
+  assert.deepEqual(card.CATALOG.entries, want);
+});
+
+test('every channel kind finds the entry it had before in the catalog', () => {
+  const before = {
+    unraid: ['Unraid', 'service'], discord: ['Discord', 'service'], slack: ['Slack', 'service'], ntfy: ['ntfy', 'service'],
+    gotify: ['Gotify', 'service'], matrix: ['Matrix', 'service'], apprise: ['Apprise', 'service'], healthchecks: ['Healthchecks.io', 'service'],
+    smtp: [en.nc_smtp, 'standard'], webhook: [en.nc_webhook, 'standard']
+  };
+  assert.deepEqual(Object.keys(card.FIELDS).sort(), Object.keys(before).sort());
+  const all = Object.keys(before);
+  const tiles = card.sections(all, [], en, 'en').flatMap((s) => s.tiles.map((x) => [x.kind, x.name, s.id]));
+  assert.deepEqual(tiles.map((x) => x[0]).sort(), all.slice().sort(), 'no kind is left out');
+  for (const [kind, name, group] of tiles) {
+    assert.deepEqual([name, group], before[kind], kind);
+    assert.equal(card.name(kind, en), name, kind);
+    assert.equal(card.CATALOG.entries.find((e) => e.id === kind).word === true, group === 'standard', kind);
+  }
+});
+
+test("the catalog's second line and search words reach the tiles", () => {
+  const tiles = card.sections(KINDS, [], en, 'en').flatMap((s) => s.tiles);
+  assert.equal(tiles.find((x) => x.kind === 'smtp').sub, 'SMTP');
+  assert.ok(tiles.filter((x) => x.kind !== 'smtp').every((x) => x.sub === ''), 'only mail has a second line');
+  const found = (q) => card.sections(KINDS, [], en, 'en', q).flatMap((s) => s.tiles.map((x) => x.kind));
+  assert.deepEqual(found('element'), ['matrix']);
+  assert.deepEqual(found('http'), ['webhook']);
+  assert.deepEqual(found('telegram'), [], 'Shoutrrr is no channel of the card');
+  const early = Object.assign({}, en, { nc_webhook: 'Aaa' });
+  assert.deepEqual(card.sections(KINDS, [], early, 'en')[1].tiles.map((x) => x.kind), ['smtp', 'webhook'], 'the webhook, which takes anything, stays last');
+});
+
+test("catalogPicker keeps GlimStone's order and leaves out what nobody offers", () => {
+  const catalog = { groups: ['a', 'b', 'c'], entries: [
+    { id: 'z', name: 'Zed', group: 'a' }, { id: 'y', name: 'Yak', group: 'a', terms: ['ox'] },
+    { id: 'w', name: 'Word', group: 'b', kind: 'thing', word: true }, { id: 'v', name: 'Vee', group: 'c' }
+  ] };
+  const { items, groups } = card.catalogPicker(catalog, {
+    ids: ['z', 'y', 'w', 'nope'], titles: { a: 'A', b: { title: 'B', hint: 'why' }, c: 'C' }, lang: 'en',
+    glyph: (e) => 'g:' + e.id, own: (e) => (e.word ? { label: 'Wort' } : undefined)
+  });
+  assert.deepEqual(groups, [{ id: 'a', title: 'A' }, { id: 'b', title: 'B', hint: 'why' }]);
+  assert.deepEqual(items, [
+    { id: 'y', label: 'Yak', group: 'a', terms: ['ox'], mark: 'g:y' },
+    { id: 'z', label: 'Zed', group: 'a', mark: 'g:z' },
+    { id: 'w', label: 'Wort', group: 'b', sub: 'thing', terms: ['Word'], mark: 'g:w' }
+  ]);
+});
+
 test('the arrows move across the grid, and up from the first row is the search', () => {
   // Three tiles to a row, two rows, the last one short.
   const boxes = [0, 1, 2, 3, 4].map((i) => ({ left: (i % 3) * 100, top: Math.floor(i / 3) * 50, width: 90, height: 40 }));
@@ -155,6 +229,17 @@ test('Add opens a window with the search and the tiles, which never stand on the
   const discord = p.tile('discord').parent;
   assert.match(discord.attrs.style, /--nc-tile:#5865f2/);
   assert.equal(p.tile('webhook').parent.attrs.style, undefined, 'a glyph of nobody lights in the accent');
+});
+
+test("mail's tile carries SMTP as its second line and in its name", async () => {
+  const p = mounted([]);
+  await settle();
+  p.open();
+  const mail = p.tile('smtp');
+  assert.deepEqual(mail.byClass('glim-nc-tile-sub').map((s) => s.text), ['SMTP']);
+  assert.equal(mail.attrs['aria-label'], en.nc_smtp + ', SMTP');
+  assert.equal(p.tile('discord').byClass('glim-nc-tile-sub').length, 0);
+  assert.equal(p.tile('discord').attrs['aria-label'], undefined);
 });
 
 test('a picked tile shows its fields in the window, and Save adds the channel at once', async () => {
@@ -327,6 +412,17 @@ test("the (i) is GlimStone's stroked glyph with its words for the one bubble", a
   assert.match(i.html, /<circle cx="8" cy="8" r="7" stroke="currentColor"/);
   const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
   assert.doesNotMatch(css, /glim-nc-info[^{]*::after/, 'no bubble of its own beside the shared one');
+});
+
+test("under the theme plugin a quiet button hovers to its accent-hued ground, and a field's focus stays grey", () => {
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const tt = /html\.tt-popups-on \.glim-nc-wins \{([^}]*)\}/.exec(css)[1];
+  assert.match(tt, /--nc-w-hover: var\(--tt-hover-dark, #383838\)/);
+  assert.match(tt, /--nc-w-raised-hover: #383838/);
+  assert.match(css, /button\.glim-nc-win-btn:is\(:hover, :focus-visible\):not\(:disabled\) \{ background: var\(--nc-w-hover\); \}/);
+  assert.match(css, /button\.glim-nc-seg-opt:hover \{ background: var\(--nc-w-hover\); \}/);
+  assert.match(css, /input\.glim-nc-search:focus \{ background: var\(--nc-w-raised-hover\); \}/);
+  assert.doesNotMatch(css, /var\(--nc-w-head\) 22%/, 'no tint mixed into the button');
 });
 
 test('a lit tile takes its brand colour before the accent, and nothing draws a line', () => {
