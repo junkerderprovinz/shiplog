@@ -182,3 +182,18 @@ func TestTheNotificationsTabSaysWhenTollRollSendsThem(t *testing.T) {
 		}
 	}
 }
+
+// TestTheChannelCardPassesItsNodeTests runs the card's own suite, which drives
+// the card and its window in a small document of its own.
+func TestTheChannelCardPassesItsNodeTests(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatal("node is not installed")
+		}
+		t.Skip("node is not installed")
+	}
+	if out, err := exec.Command(node, "--test", filepath.Join("test", "notify-card.test.js")).CombinedOutput(); err != nil {
+		t.Fatalf("node --test: %v\n%s", err, out)
+	}
+}

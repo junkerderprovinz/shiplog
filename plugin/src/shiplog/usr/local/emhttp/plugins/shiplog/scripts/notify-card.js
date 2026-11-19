@@ -481,10 +481,11 @@
      * the search at the top end and the tiles in their groups under it, which
      * alone scroll and keep the height they opened with while a query narrows
      * them. A picked tile's fields take the tiles' place, with Back and Save
-     * beside Cancel in the foot. Escape empties the search first, then closes;
-     * the focus goes back to Add. */
+     * beside Cancel in the foot, and Back marks the tile picked before and
+     * gives it the focus. Escape empties the search first, then closes; the
+     * focus goes back to Add. */
     function picker() {
-      var query = '', draft = null, busy = false, scroll = null, search = null;
+      var query = '', draft = null, busy = false, scroll = null, search = null, picked = null;
       var title = h('h2', { class: 'glim-nc-win-title', id: 'glim-nc-win-t' }, [h('span', { text: t.nc_add }), info(t.nc_add_hint)]);
       var body = h('div', { class: 'glim-nc-win-body' });
       var act = h('div', { class: 'glim-nc-win-act' });
@@ -519,7 +520,11 @@
           s.tiles.forEach(function (tile) {
             var b = h('button', { type: 'button', class: 'glim-nc-tile', 'data-kind': tile.kind }, [mark(tile.kind, 'glim-nc-tile-mark'), h('span', { class: 'glim-nc-tile-name', text: tile.name })]);
             b.disabled = tile.off;
-            b.addEventListener('click', function () { form(newChannel(tile.kind, list)); });
+            if (tile.kind === picked) b.setAttribute('aria-current', 'true');
+            b.addEventListener('click', function () {
+              picked = tile.kind;
+              form(newChannel(tile.kind, list));
+            });
             var li = h('li', { class: 'glim-nc-tilebox' + (tile.hint ? ' glim-nc-tile-hinted' : '') }, [b, info(tile.hint)]);
             var l = lit[tile.kind];
             if (l) li.setAttribute('style', '--nc-tile:' + l.tile + ';--nc-tile-ink:' + l.ink);
@@ -569,7 +574,7 @@
         grid();
         act.appendChild(winButton(t.nc_close, 'close', '', close));
         if (scroll.clientHeight) scroll.style.minHeight = scroll.clientHeight + 'px';
-        search.focus();
+        (scroll.querySelector('button.glim-nc-tile[aria-current="true"]') || search).focus();
       }
 
       // The form narrows the window to a form's width around the same middle,

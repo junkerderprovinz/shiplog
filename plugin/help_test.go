@@ -72,13 +72,13 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.5.4" {
-			t.Errorf("glimstone.json pins %s, want 4.5.4", target.Version)
+		if target.Version != "4.5.8" {
+			t.Errorf("glimstone.json pins %s, want 4.5.8", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.5.4';") {
-		t.Error("the Version card does not name GlimStone 4.5.4")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.5.8';") {
+		t.Error("the Version card does not name GlimStone 4.5.8")
 	}
 	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
 	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
