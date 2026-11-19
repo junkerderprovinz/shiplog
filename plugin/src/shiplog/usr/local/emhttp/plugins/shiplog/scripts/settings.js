@@ -271,8 +271,11 @@
       if (m === "glyph") b.setAttribute("data-sl-tip", b.querySelector(".sl-l").textContent);
       else b.removeAttribute("data-sl-tip");
     });
+    // The channel card's buttons wear sl-btn too, but carry labels of their own.
     root.querySelectorAll(".sl-btn").forEach(function (b) {
-      var text = b.querySelector(".sl-l").textContent.trim();
+      var l = b.querySelector(".sl-l");
+      if (!l) return;
+      var text = l.textContent.trim();
       var st = "sl-w-" + stage(labelWidth(text));
       ["sl-w-xs", "sl-w-sm", "sl-w-md", "sl-w-lg"].forEach(function (c) { b.classList.toggle(c, c === st); });
       b.style.setProperty("--sl-rchars", String(labelWidth(text)));

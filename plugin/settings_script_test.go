@@ -31,3 +31,22 @@ func TestNoVariableHidesAFunctionOfTheSettingsPage(t *testing.T) {
 		}
 	}
 }
+
+// TestLabelPassLeavesButtonsWithoutALabelAlone keeps the label pass running to
+// fit() when the channel card's buttons, which wear sl-btn but carry no .sl-l,
+// are on the page. A throw there leaves every button of the page unsized.
+func TestLabelPassLeavesButtonsWithoutALabelAlone(t *testing.T) {
+	src := read(t, "scripts/settings.js")
+	start := strings.Index(src, `root.querySelectorAll(".sl-btn").forEach(function (b) {`)
+	if start < 0 {
+		t.Fatal("settings.js has no label pass over .sl-btn, so this check reads the wrong file")
+	}
+	body := src[start:]
+	body = body[:strings.Index(body, "\n    });")]
+	if strings.Contains(body, `b.querySelector(".sl-l").textContent`) {
+		t.Fatal("the label pass reads .sl-l without checking it exists, so a button without one throws before fit()")
+	}
+	if !regexp.MustCompile(`if \(!\w+\) return;`).MatchString(body) {
+		t.Fatal("the label pass does not skip a button without .sl-l")
+	}
+}
