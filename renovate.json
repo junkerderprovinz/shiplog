@@ -1,37 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    "helpers:pinGitHubActionDigests",
-    ":semanticCommits",
-    ":dependencyDashboard",
-    ":enableVulnerabilityAlertsWithLabel(security)",
-    "docker:pinDigests"
+    "local>junkerderprovinz/junkerderprovinz//renovate/base",
+    "local>junkerderprovinz/junkerderprovinz//renovate/components"
   ],
-  "timezone": "Europe/Vienna",
-  "schedule": [
-    "before 6am on monday"
-  ],
-  "labels": [
-    "dependencies"
-  ],
-  "prHourlyLimit": 4,
-  "prConcurrentLimit": 6,
   "postUpdateOptions": [
     "gomodTidy"
   ],
   "packageRules": [
-    {
-      "description": "Go modules: grouped, manual review (tests gate behaviour)",
-      "matchManagers": [
-        "gomod"
-      ],
-      "groupName": "Go modules",
-      "commitMessagePrefix": "chore:",
-      "labels": [
-        "go"
-      ]
-    },
     {
       "description": "Docker base images (golang build stage, distroless runtime): manual review",
       "matchManagers": [
@@ -41,37 +17,6 @@
       "commitMessagePrefix": "build:",
       "labels": [
         "base-image"
-      ]
-    },
-    {
-      "description": "GitHub Actions: auto-merge minor/patch/digest",
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest"
-      ],
-      "automerge": true,
-      "automergeType": "branch",
-      "commitMessagePrefix": "ci:",
-      "labels": [
-        "github-actions"
-      ]
-    },
-    {
-      "description": "GitHub Actions major: manual PRs",
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "commitMessagePrefix": "ci:",
-      "labels": [
-        "github-actions",
-        "major-update"
       ]
     },
     {
@@ -85,8 +30,6 @@
         "digest"
       ],
       "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true,
       "commitMessagePrefix": "ci:",
       "labels": [
         "docker"
