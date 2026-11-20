@@ -18,9 +18,9 @@
 <br>
 
 <p align="center">
-⚓ <b>ShipLog</b> reads the changelog before you update, right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major) and the real <b>version jump</b> (e.g. 1.7 → 1.8).<br>
+⚓ <b>ShipLog</b> reads the changelog before you update, right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major), the real <b>version jump</b> (e.g. 1.7 → 1.8) and the <b>known vulnerabilities</b> of the running image, with the ones the update closes.<br>
 <br>
-<b>Read-only</b> until you switch on its auto-update, which hands the work to Unraid's own update and backs up first when your fortress has a backup app. Optional: AI changelog summaries from a local Ollama or llama-swap, and notifications on Unraid, Discord, Matrix and more.
+<b>Read-only</b> until you switch on its auto-update, which hands the work to Unraid's own update and backs up first when your fortress has a backup app. Optional: AI changelog summaries from a model server on your own network, and messages through Unraid's notifications, a chat or push service, mail or a webhook.
 </p>
 
 <br>
@@ -75,32 +75,48 @@ If it has earned a place on your server or computer, toss a coin to your knight:
 
 <p><a id="3-what-it-looks-like" href="#3-what-it-looks-like"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/sections/3-what-it-looks-like-dark.svg"><img src=".github/assets/sections/3-what-it-looks-like.svg" alt="3. What it looks like" width="100%"></picture></a></p>
 
-The containers in these pictures run public images at older versions in a test sandbox; the release notes are the real ones.
+The containers in these pictures run public images at older versions in a test sandbox. The release notes and the vulnerabilities are the real ones.
 
 <p align="center">
-  <img src=".github/assets/screenshots/shiplog-1.png" alt="The ShipLog changelog window for traefik: v3.2.0 to 3.7.13, a minor badge, and the release notes with the security advisories and bug fixes" width="100%">
+  <img src=".github/assets/screenshots/shiplog-1.png" alt="The ShipLog changelog window for a container going from v3.2.0 to 3.7.19: a minor badge, the known vulnerabilities and the release notes of each version" width="100%">
   <br><em>The changelog window opens from the chip ShipLog adds to every container in the Docker tab</em>
 </p>
 
 <p align="center">
-  <img src=".github/assets/screenshots/shiplog-2.png" alt="The ShipLog status page listing seven containers with their running and newest version, a risk badge and the changelog source" width="100%">
+  <img src=".github/assets/screenshots/shiplog-2.png" alt="Unraid's Docker tab with ShipLog's chips: a changelog chip with a coloured risk dot on every container, and a vulnerability count beside it" width="100%">
+  <br><em>Every container gets a chip, with the risk as a coloured dot and the known vulnerabilities beside it</em>
+</p>
+
+<p align="center">
+  <img src=".github/assets/screenshots/shiplog-3.png" alt="The known vulnerabilities in the changelog window: 16 critical and 44 high, each marked as closed by the update" width="100%">
+  <br><em>The window lists the known vulnerabilities and marks the ones the update closes</em>
+</p>
+
+<p align="center">
+  <img src=".github/assets/screenshots/shiplog-4.png" alt="The ShipLog status page listing seven containers with their tags, a risk badge, the known vulnerabilities and the changelog source" width="100%">
   <br><em>The engine's status page, the same data outside the Docker tab</em>
+</p>
+
+<p align="center">
+  <img src=".github/assets/screenshots/shiplog-5.png" alt="The window for a new notification channel, with a tile for each service and one each for mail and webhooks" width="100%">
+  <br><em>A new channel is picked from a tile and can send everything or only what went wrong</em>
 </p>
 
 <br>
 
 <p><a id="4-what-it-does" href="#4-what-it-does"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/sections/4-what-it-does-dark.svg"><img src=".github/assets/sections/4-what-it-does.svg" alt="4. What it does" width="100%"></picture></a></p>
 
-- **What changed, not just "update available".** A Changelog chip sits on every container in the Docker tab. Its window shows the release notes between your running tag and the newest, with the real version jump.
-- **A risk badge you can trust.** Patch is low, minor medium, major high. A release note in the span that flags a breaking change, such as a required migration, raises it to critical and sends an alert.
+- **What changed since your version.** A Changelog chip sits on every container in the Docker tab, inside folders too. Its window shows the release notes between your running tag and the newest, with the real version jump.
+- **A risk badge you can trust.** Patch is low, minor medium, major high. A release note in the span that flags a breaking change, such as a required migration, raises it to critical and sends an alert. An update that closes a critical vulnerability moves up a step.
+- **Known vulnerabilities.** A second chip counts the known critical and high vulnerabilities of the running image. The window lists them and marks the ones the newest image closes. When no update closes them, it suggests asking the project for a fixed image or switching to another tag or image. The status page and the notifications name them too. The package list comes from the image's registry or from inside the container, and only package names and versions go to an open vulnerability database at api.osv.dev. Your distribution's own rating of a flaw counts before the raw score, and kernel packages are left out, since a container runs on the host's kernel. The check is on by default and can be switched off under **Settings → ShipLog → Updates**.
 - **Only real updates.** The image behind the container's own tag decides whether there is an update, not the highest version tag in the registry, which is often an old date tag or another channel. A container pinned to a version gets a hint when a newer one exists, never an update it cannot pull.
+- **New containers within a minute.** A container you install from a template, or one Unraid recreates after an update, gets its chip within a minute and does not wait for the next scheduled check.
 - **Honest when it does not know.** If no changelog can be found, it says so and shows what it does know. Digest-pinned and locally built images are labelled as such instead of showing a bogus update.
-- **Fix a wrong changelog source.** Point any image at the right GitHub repository or at a changelog file such as `CHANGELOG.md`; the choice survives container recreation.
+- **Fix a wrong changelog source.** Point any image at the right GitHub repository or at a changelog file such as `CHANGELOG.md`. The choice survives container recreation.
 - **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one. Both Community Applications verdicts go only to apps that came from there, never to your own images and templates.
 - **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog skips a container that already runs the newest image and checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself touches Docker only to start a container an update lost and to hold the old image while an update runs.
 - **A backup first, and a way back.** In a fortress with a backup app on the same server, every auto-update waits for a backup of its container. If the new image fails its check or turns unhealthy, ShipLog puts the container back on the old image. Your appdata stays as it is, and the backup from before the update waits in BombVault.
-- **Known vulnerabilities.** ShipLog counts the known critical and high vulnerabilities of each running image and tells you how many of them the newest image closes. An update that closes a critical one moves up a step on the risk badge. The package list comes from the image's registry or from inside the container, and only package names and versions go to an open vulnerability database at api.osv.dev. When the newest image comes without a package list, the window says it cannot tell what the update closes. The check is on by default, and switching it off in the settings saves the little memory and traffic it uses.
-- **Optional extras, off by default.** Changelog summaries from a local Ollama or any OpenAI-compatible server such as llama-swap, and messages through Unraid's own notifications, chat and push services, mail or a webhook.
+- **Optional extras, off by default.** Changelog summaries from a model server on your own network, and messages on the channels you pick: Unraid's own notifications, a chat or push service, mail or a webhook.
 - **26 languages**, following Unraid's own setting.
 
 <br>
@@ -113,7 +129,7 @@ On Unraid, install ShipLog from [Community Applications](https://ca.unraid.net/a
 https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin/shiplog.plg
 ```
 
-The chips appear in the Docker tab after the first check. The settings are under **Settings → ShipLog**, where a GitHub token raises the rate limit for release notes and the auto-update is switched on.
+The chips appear in the Docker tab after the first check. The settings are under **Settings → ShipLog**, where a GitHub token raises the rate limit for release notes, the auto-update is switched on and the status page opens.
 
 Running your own images or templates? [docs/own-apps-checklist.md](docs/own-apps-checklist.md) lists what to set so that both Unraid's update column and ShipLog stay right.
 
@@ -130,13 +146,13 @@ The status page has no login, so keep port 8484 inside your network.
 
 ### Notifications
 
-ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications** you add a channel by picking its service from a tile: Unraid's own notifications, which reach every agent you set up there, Discord, Slack, ntfy, Gotify, Matrix, an [Apprise API](https://github.com/caronc/apprise-api) server, mail or a webhook. A service can be added more than once, each channel can send everything or only what went wrong, and its **Test** button tries it right away. Every change is saved as you make it, and a token or password you saved is never shown again.
+ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications**, **Add a channel** opens a window with a tile for each service: Unraid's own notifications, which reach every agent you set up there, the common chat and push services, a notification gateway, mail and webhooks. A service can be added more than once. Each channel has its own switch, sends everything or only what went wrong, and has a test that works before you save. Every change is saved as you make it and takes effect without a restart, and a token or password you saved is never shown again.
 
-Without Unraid, set `APPRISE_URL` on the container, or `MATRIX_HOMESERVER`, `MATRIX_TOKEN` and `MATRIX_ROOM` for Matrix.
+Without Unraid, the container takes `APPRISE_URL`, or `MATRIX_HOMESERVER`, `MATRIX_TOKEN` and `MATRIX_ROOM`.
 
 ### Fortress
 
-ShipLog can join the fortress your other apps share. Under **Settings → ShipLog → General**, the Fortress card takes your phrase, the twelve words. ShipLog keeps its own keys only, never the phrase.
+ShipLog can join the fortress your other apps share. Under **Settings → ShipLog → Fortress**, the card takes your phrase, the twelve words. ShipLog keeps its own keys only, never the phrase.
 
 Once it is in, the other apps of the fortress can see how ShipLog is doing: how many containers have an update, which ones look risky, and the auto-update log. A backup app on the same server backs up each container before ShipLog's auto-update touches it. If the backup fails, the update waits and ShipLog tells you why. A container that needs no backup gets **Update without a backup** in its changelog window. ShipLog waits 30 minutes at most for a backup. To change that, set `AUTOUPDATE_BACKUP_MINUTES` in `/boot/config/plugins/shiplog/shiplog.cfg`.
 
