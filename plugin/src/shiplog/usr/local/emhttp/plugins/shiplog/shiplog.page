@@ -87,11 +87,11 @@ $slSwitch = function ($id, $name, $on) {
 $slEye = function ($id) use ($G, $slE, $L) {
   return '<span class="sl-eye" role="button" tabindex="0" data-sl-eye="'.$id.'" aria-label="'.$slE($L['s_show']).'" aria-pressed="false">'.$G['Eye'].'</span>';
 };
-/* A version links to its release page. A build without a release behind it shows its name alone. */
+/* A version is plain text, linked quietly to its release notes, never a button. A build without a release behind it shows its name alone. */
 $slVerLink = function ($ver, $repo) use ($slE) {
   $v = preg_replace('/^v/', '', (string)$ver);
   if (!preg_match('/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/', $v)) return '<span class="sl-ver">'.$slE($v !== '' ? $v : '?').'</span>';
-  return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">'.$slE($v).'</a>';
+  return '<a class="sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">'.$slE($v).'</a>';
 };
 $M = include '/usr/local/emhttp/plugins/shiplog/include/marks.php';
 /* A button in the shape of the README's buttons, as on TowerTorch's Info tab. A give
@@ -381,7 +381,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><span>GlimStone</span></div>
-        <div class="sl-ctl"><a class="button sl-ver" href="https://github.com/junkerderprovinz/glimstone/releases/latest" target="_blank" rel="noopener noreferrer"><?=$slE($slGlimstoneVer)?></a></div>
+        <div class="sl-ctl"><a class="sl-ver" href="https://github.com/junkerderprovinz/glimstone/releases/latest" target="_blank" rel="noopener noreferrer"><?=$slE($slGlimstoneVer)?></a></div>
       </div>
     </section>
 

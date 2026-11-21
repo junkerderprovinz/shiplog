@@ -95,6 +95,28 @@ func TestAReadmeButtonNameKeepsItsDescenders(t *testing.T) {
 	}
 }
 
+// TestAVersionNeverLooksLikeAButton shows every version on the Info tab as
+// plain text, linked quietly to its release notes, as in every app of the house.
+func TestAVersionNeverLooksLikeAButton(t *testing.T) {
+	page := read(t, "shiplog.page")
+	if n := strings.Count(page, `class="sl-ver`); n < 3 {
+		t.Fatalf("found %d version displays, want the two rows and the plain fallback", n)
+	}
+	if regexp.MustCompile(`class="[^"]*button[^"]*sl-ver|class="[^"]*sl-ver[^"]*button`).MatchString(page) {
+		t.Error("a version wears Unraid's button class")
+	}
+	css := read(t, "styles/settings.css")
+	rule := regexp.MustCompile(`(?s)\.sl-cfg a\.sl-ver \{([^}]*)\}`).FindStringSubmatch(css)
+	if rule == nil {
+		t.Fatal("settings.css has no rule for a linked version")
+	}
+	for _, want := range []string{"background: none", "border: 0", "padding: 0", "color: inherit", "text-decoration: none"} {
+		if !strings.Contains(rule[1], want) {
+			t.Errorf("a linked version lacks %q, so it can look like a button", want)
+		}
+	}
+}
+
 // TestAButtonLabelKeepsTheTailsOfArabic gives a button's words the room below
 // the line that GlimStone's label has, so an Arabic label keeps its tails.
 func TestAButtonLabelKeepsTheTailsOfArabic(t *testing.T) {

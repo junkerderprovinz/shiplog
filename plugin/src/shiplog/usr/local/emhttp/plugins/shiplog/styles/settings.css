@@ -275,8 +275,11 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 /* The Info tab's cards, as on TowerTorch's: the versions, the ways to ask for
    help, and the maker's sentences over the give row. */
 .sl-prose { margin: 4px 0 8px; text-align: start; }
+/* A version is text in every app of the house, never a button: no ground, no
+   frame, no pill. A link to its release notes shows only under the pointer. */
 .sl-ver { font-variant-numeric: tabular-nums lining-nums; }
-.sl-cfg a.sl-ver { margin: 0; }
+.sl-cfg a.sl-ver { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; text-decoration: none; }
+.sl-cfg a.sl-ver:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 2px; }
 
 /* The give buttons, TowerTorch's README buttons unchanged: the mark and the name
    at rest, the brand's own colour and one sheen under the pointer. */
