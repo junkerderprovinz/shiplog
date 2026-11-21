@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// runPHP runs body after including include/notify.php as $N and decodes what
-// it echoes as JSON.
-func runPHP(t *testing.T, body string, out any) {
+// runPHP runs body after including include/<file> as $<name> and decodes
+// what it echoes as JSON.
+func runPHP(t *testing.T, name, file, body string, out any) {
 	t.Helper()
 	php, err := exec.LookPath("php")
 	if err != nil {
@@ -21,12 +21,12 @@ func runPHP(t *testing.T, body string, out any) {
 		}
 		t.Skip("php is not installed")
 	}
-	inc, err := filepath.Abs(filepath.Join(pluginDir, "include", "notify.php"))
+	inc, err := filepath.Abs(filepath.Join(pluginDir, "include", file))
 	if err != nil {
 		t.Fatal(err)
 	}
 	script := filepath.Join(t.TempDir(), "t.php")
-	src := "<?php\n$N = include " + phpString(inc) + ";\n" + body
+	src := "<?php\n$" + name + " = include " + phpString(inc) + ";\n" + body
 	if err := os.WriteFile(script, []byte(src), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestTheOldKeysGoOnceTheChannelsAreKept(t *testing.T) {
 		t.Fatal(err)
 	}
 	var none string
-	runPHP(t, `$N['tidy'](`+phpString(channels)+`, `+phpString(cfg)+`); echo json_encode(file_get_contents(`+phpString(cfg)+`));`, &none)
+	runPHP(t, "N", "notify.php", `$N['tidy'](`+phpString(channels)+`, `+phpString(cfg)+`); echo json_encode(file_get_contents(`+phpString(cfg)+`));`, &none)
 	if !strings.Contains(none, "MATRIX_TOKEN") {
 		t.Error("the old keys went before notify.json existed")
 	}
@@ -59,7 +59,7 @@ func TestTheOldKeysGoOnceTheChannelsAreKept(t *testing.T) {
 		t.Fatal(err)
 	}
 	var after string
-	runPHP(t, `$N['tidy'](`+phpString(channels)+`, `+phpString(cfg)+`); echo json_encode(file_get_contents(`+phpString(cfg)+`));`, &after)
+	runPHP(t, "N", "notify.php", `$N['tidy'](`+phpString(channels)+`, `+phpString(cfg)+`); echo json_encode(file_get_contents(`+phpString(cfg)+`));`, &after)
 	if strings.Contains(after, "MATRIX_TOKEN") || !strings.Contains(after, `ENABLE="true"`) {
 		t.Errorf("cfg after the move = %q", after)
 	}
@@ -129,7 +129,7 @@ func TestThePageTakesOnlyTheOldKeysOutOfTheCfg(t *testing.T) {
 		t.Fatal(err)
 	}
 	var got string
-	runPHP(t, `echo json_encode($N['strip'](`+phpString(string(cfg))+`, $N['keys']));`, &got)
+	runPHP(t, "N", "notify.php", `echo json_encode($N['strip'](`+phpString(string(cfg))+`, $N['keys']));`, &got)
 	for _, k := range []string{"MATRIX_HOMESERVER=", "MATRIX_TOKEN=", "MATRIX_ROOM=", "APPRISE_URL=", "UNRAID_NOTIFY="} {
 		if strings.Contains(got, k) {
 			t.Errorf("%s is still in the cfg", k)

@@ -57,10 +57,10 @@ func TestTheHelpCardOffersGitHubAndDiscord(t *testing.T) {
 	}
 }
 
-// TestTheVersionCardNamesTheGlimStoneItPorts keeps the pins and the card on one
-// GlimStone version, linked to the newest release, which stays when a patch
-// tag folds into the next minor.
-func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
+// TestTheComponentsCardNamesTheGlimStoneItPorts keeps the pins and the card
+// on one GlimStone version, linked to the newest release, which stays when a
+// patch tag folds into the next minor.
+func TestTheComponentsCardNamesTheGlimStoneItPorts(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "glimstone.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -72,17 +72,123 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.8.1" {
-			t.Errorf("glimstone.json pins %s, want 4.8.1", target.Version)
+		if target.Version != "4.8.2" {
+			t.Errorf("glimstone.json pins %s, want 4.8.2", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.8.1';") {
-		t.Error("the Version card does not name GlimStone 4.8.1")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.8.2';") {
+		t.Error("the Components card does not name GlimStone 4.8.2")
 	}
-	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
-	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
-		t.Errorf("the GlimStone row does not open the newest release: %v", row)
+	card := regexp.MustCompile(`(?s)aria-labelledby="sl-h-components">(.*?)</section>`).FindStringSubmatch(page)
+	if card == nil || !strings.Contains(card[1], `<span>GlimStone</span><?=$slInfo($L['s_cc_design'])?>`) ||
+		!strings.Contains(card[1], `$slNum($slGlimstoneVer, 'https://github.com/junkerderprovinz/glimstone')`) {
+		t.Errorf("the Components card has no GlimStone row with its (i) and number: %v", card)
+	}
+	if !strings.Contains(page, `$repo.'/releases/latest'`) {
+		t.Error("a version does not open its project's newest release")
+	}
+}
+
+// TestTheInfoTabHoldsVersionComponentsHelpAndAbout keeps the four cards of
+// every app in their order, and no other.
+func TestTheInfoTabHoldsVersionComponentsHelpAndAbout(t *testing.T) {
+	page := read(t, "shiplog.page")
+	pane := page[strings.Index(page, `id="sl-pane-info"`):]
+	pane = pane[:strings.Index(pane, "<script>")]
+	var cards []string
+	for _, m := range regexp.MustCompile(`<section class="sl-card" aria-labelledby="sl-h-(\w+)">`).FindAllStringSubmatch(pane, -1) {
+		cards = append(cards, m[1])
+	}
+	if got := strings.Join(cards, " "); got != "version components help about" {
+		t.Errorf("the Info tab holds %q", got)
+	}
+	en := map[string]string{}
+	if err := json.Unmarshal([]byte(read(t, "lang/en.json")), &en); err != nil {
+		t.Fatal(err)
+	}
+	if en["s_about"] != "About" {
+		t.Errorf("the About card is called %q, want About alone", en["s_about"])
+	}
+}
+
+// TestTheVersionCardSpeaksEveryLanguage gives each card's words, from
+// GlimStone, to every language with the blanks the page fills.
+func TestTheVersionCardSpeaksEveryLanguage(t *testing.T) {
+	blanks := map[string]string{"s_vc_hint": "{app}", "s_vc_checked": "{when}", "s_vc_available": "{version}", "s_vc_unreleased": "{version}", "s_cc_hint": "{app}"}
+	keys := []string{"s_vc_title", "s_vc_hint", "s_vc_whats_new", "s_vc_check", "s_vc_checking", "s_vc_current", "s_vc_checked",
+		"s_vc_available", "s_vc_failed", "s_vc_plugins", "s_vc_unreleased", "s_cc_title", "s_cc_hint", "s_cc_design"}
+	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
+	if err != nil || len(files) < 26 {
+		t.Fatalf("lang files = %d, %v", len(files), err)
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		texts := map[string]any{}
+		if err := json.Unmarshal(raw, &texts); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, k := range keys {
+			s, _ := texts[k].(string)
+			if s == "" || (blanks[k] != "" && !strings.Contains(s, blanks[k])) {
+				t.Errorf("%s: %s = %q", filepath.Base(f), k, s)
+			}
+		}
+	}
+}
+
+// TestTheUpdateStateIsWhatThePluginsTabShows reads the plg that Unraid's
+// check fetched against the installed one and compares them as Unraid does,
+// so the Info tab never offers an update the Plugins tab would not.
+func TestTheUpdateStateIsWhatThePluginsTabShows(t *testing.T) {
+	dir := t.TempDir()
+	plg := func(name, version string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte("<!DOCTYPE PLUGIN [\n  <!ENTITY version   \""+version+"\">\n]>\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	installed := plg("installed.plg", "3.9.3")
+	state := func(fetched string) map[string]any {
+		out := map[string]any{}
+		runPHP(t, "U", "update.php", `echo json_encode($U(`+phpString(installed)+`, `+phpString(fetched)+`));`, &out)
+		return out
+	}
+	if s := state(filepath.Join(dir, "missing.plg")); s["kind"] != "unchecked" {
+		t.Errorf("before the first check the state is %v", s)
+	}
+	if s := state(plg("newer.plg", "3.9.4")); s["kind"] != "available" || s["version"] != "3.9.4" {
+		t.Errorf("a newer plg gives %v", s)
+	}
+	if s := state(plg("same.plg", "3.9.3")); s["kind"] != "current" || s["checkedAt"] == nil {
+		t.Errorf("the same plg gives %v", s)
+	}
+	if s := state(plg("ten.plg", "3.10.0")); s["kind"] != "current" {
+		t.Errorf("3.10.0 over 3.9.3 gives %v, and Unraid's strcmp offers no update there", s)
+	}
+}
+
+// TestTheCheckIsTheOnePluginsTabRuns runs Unraid's own check for ShipLog alone,
+// on a POST only, and leads an update to the Plugins tab.
+func TestTheCheckIsTheOnePluginsTabRuns(t *testing.T) {
+	src := read(t, "server/update-check.php")
+	if !strings.Contains(src, "exec('/usr/local/sbin/plugin check shiplog.plg 2>&1', $out, $rc);") {
+		t.Error("update-check.php does not run plugin check for shiplog.plg")
+	}
+	if !strings.Contains(src, "if ($_SERVER['REQUEST_METHOD'] !== 'POST') {") {
+		t.Error("update-check.php runs on a GET, which Unraid does not check for its CSRF token")
+	}
+	page := read(t, "shiplog.page")
+	if !regexp.MustCompile(`<a class="button sl-btn tt-fm-primary" id="sl-plugins" href="/Plugins" hidden>`).MatchString(page) {
+		t.Error("the update action does not lead to the Plugins tab")
+	}
+	js := read(t, "scripts/settings.js")
+	if !strings.Contains(js, `fetch("/plugins/shiplog/server/update-check.php", { method: "POST"`) {
+		t.Error("Check for updates does not post to update-check.php")
 	}
 }
 
@@ -96,11 +202,15 @@ func TestAReadmeButtonNameKeepsItsDescenders(t *testing.T) {
 }
 
 // TestAVersionNeverLooksLikeAButton shows every version on the Info tab as
-// plain text, linked quietly to its release notes, as in every app of the house.
+// plain text in the text colour, which takes the accent's ink under the
+// pointer alone, as in every app of the house.
 func TestAVersionNeverLooksLikeAButton(t *testing.T) {
 	page := read(t, "shiplog.page")
-	if n := strings.Count(page, `class="sl-ver`); n < 3 {
-		t.Fatalf("found %d version displays, want the two rows and the plain fallback", n)
+	if n := strings.Count(page, `class="sl-ver`); n != 2 {
+		t.Fatalf("found %d version displays, want the link and the plain build in $slNum", n)
+	}
+	if strings.Count(page, "<?=$slNum(") != 2 {
+		t.Error("the app and GlimStone do not both show their number through $slNum")
 	}
 	if regexp.MustCompile(`class="[^"]*button[^"]*sl-ver|class="[^"]*sl-ver[^"]*button`).MatchString(page) {
 		t.Error("a version wears Unraid's button class")
@@ -115,8 +225,15 @@ func TestAVersionNeverLooksLikeAButton(t *testing.T) {
 			t.Errorf("a linked version lacks %q, so it can look like a button", want)
 		}
 	}
-	if !strings.Contains(css, "#sl-cfg a.sl-ver { color: inherit !important; }") {
-		t.Error("the theme plugin's accent colours a linked version like a control")
+	if !strings.Contains(css, "#sl-cfg a.sl-ver { color: inherit !important; text-decoration: none !important; }") {
+		t.Error("the theme plugin's accent colours or underlines a linked version like a control")
+	}
+	hover := regexp.MustCompile(`(?s)@media \(hover: hover\) \{\s*#sl-cfg a\.sl-ver:hover \{ color: var\(--sl-focus\) !important; \}`)
+	if !hover.MatchString(css) || !strings.Contains(css, "#sl-cfg a.sl-ver:focus-visible { color: var(--sl-focus) !important; }") {
+		t.Error("a linked version does not take the accent's ink under the pointer and on focus")
+	}
+	if strings.Contains(css, "a.sl-ver:is(:hover") || regexp.MustCompile(`a\.sl-ver[^{]*\{[^}]*text-decoration: underline`).MatchString(css) {
+		t.Error("a linked version is underlined")
 	}
 }
 

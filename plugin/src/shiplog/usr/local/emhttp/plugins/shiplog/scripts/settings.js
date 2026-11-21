@@ -202,6 +202,7 @@
       if (p) p.hidden = !on;
     });
     put("shiplog.settings.tab", name);
+    if (name === "info") infoOpened();
     hideTip();
     if (focus) tab.focus();
     fit();
@@ -1043,6 +1044,59 @@
       copiedTimer = setTimeout(function () { copied(false); }, 1500);
     }, function () { shake(copyBtn); });
   });
+
+  /* The Version card. Where ShipLog's updates stand comes from Unraid's plugin
+     manager, and Check for updates runs the check its Plugins tab runs. Until
+     Unraid has checked once since boot, opening Info runs that check. */
+  var upd = byId("sl-update"), updCheck = byId("sl-check");
+  var updState = JSON.parse(upd.getAttribute("data-sl-state") || "{}");
+  function ago(at) {
+    var f = new Intl.RelativeTimeFormat(window.SL_LANG, { numeric: "auto" });
+    var v = Math.round(at - Date.now() / 1000);
+    var steps = [["second", 60], ["minute", 60], ["hour", 24], ["day", Infinity]];
+    for (var i = 0; i < steps.length; i++) {
+      if (Math.abs(v) < steps[i][1]) return f.format(steps[i][0] === "second" ? 0 : v, steps[i][0]);
+      v = Math.round(v / steps[i][1]);
+    }
+  }
+  // While an update waits, What's new opens that version's notes.
+  function notesFor(v) {
+    var repo = "https://github.com/junkerderprovinz/shiplog/releases";
+    return /^\d+(\.\d+)+$/.test(v) ? repo + "/tag/v" + v : repo;
+  }
+  function showUpdate(s) {
+    updState = s;
+    var line = T.s_vc_checking, tone = "neutral", note = "";
+    if (s.kind === "current") {
+      line = T.s_vc_current; tone = "ok";
+      if (s.checkedAt) note = T.s_vc_checked.replace("{when}", ago(s.checkedAt));
+    } else if (s.kind === "available") {
+      line = T.s_vc_available.replace("{version}", s.version); tone = "warn";
+    } else if (s.kind === "failed") {
+      line = T.s_vc_failed; tone = "fail"; note = s.reason || "";
+    }
+    byId("sl-vstate").setAttribute("data-tone", tone);
+    byId("sl-vline").textContent = line;
+    byId("sl-vnote").textContent = note;
+    var busy = s.kind === "checking" || s.kind === "unchecked";
+    updCheck.hidden = s.kind === "available";
+    updCheck.disabled = busy;
+    if (busy) updCheck.setAttribute("aria-busy", "true"); else updCheck.removeAttribute("aria-busy");
+    byId("sl-plugins").hidden = s.kind !== "available";
+    byId("sl-whatsnew").href = notesFor(s.kind === "available" ? s.version : upd.getAttribute("data-sl-version"));
+    labels();
+  }
+  function checkUpdate() {
+    showUpdate({ kind: "checking" });
+    var body = new URLSearchParams({ csrf_token: window.csrf_token || "" });
+    fetch("/plugins/shiplog/server/update-check.php", { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(showUpdate, function (e) { showUpdate({ kind: "failed", reason: String(e) }); });
+  }
+  function infoOpened() { if (updState.kind === "unchecked") checkUpdate(); }
+  updCheck.addEventListener("click", checkUpdate);
+  showUpdate(updState);
+  if (!byId("sl-pane-info").hidden) infoOpened();
 
   auShown();
   engines();

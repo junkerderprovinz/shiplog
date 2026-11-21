@@ -21,7 +21,7 @@ func TestACheckRefusesATokenInItsURL(t *testing.T) {
 			OK      bool   `json:"ok"`
 			Message string `json:"message"`
 		}
-		runPHP(t, `$_SERVER['REQUEST_METHOD'] = 'GET'; $_GET = ['user' => 'someone', 'token' => 'ghp_leaked']; include `+phpString(path)+`;`, &got)
+		runPHP(t, "N", "notify.php", `$_SERVER['REQUEST_METHOD'] = 'GET'; $_GET = ['user' => 'someone', 'token' => 'ghp_leaked']; include `+phpString(path)+`;`, &got)
 		if got.OK || strings.Contains(got.Message, "ghp_leaked") {
 			t.Errorf("%s took a token from its URL: %+v", check, got)
 		}

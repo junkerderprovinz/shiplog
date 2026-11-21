@@ -276,12 +276,38 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
    help, and the maker's sentences over the give row. */
 .sl-prose { margin: 4px 0 8px; text-align: start; }
 /* A version is text in every app of the house, never a button: no ground, no
-   frame, no pill. A link to its release notes shows only under the pointer. */
-.sl-ver { font-variant-numeric: tabular-nums lining-nums; }
+   frame, no underline. One that opens its release takes the accent's ink under
+   the pointer and on keyboard focus, and only then. */
+.sl-ver { flex: none; font-variant-numeric: tabular-nums lining-nums; }
 .sl-cfg a.sl-ver { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; text-decoration: none; }
-.sl-cfg a.sl-ver:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 2px; }
 /* The theme plugin colours every link in its accent, which would make the number read as a control. */
-#sl-cfg a.sl-ver { color: inherit !important; }
+#sl-cfg a.sl-ver { color: inherit !important; text-decoration: none !important; }
+#sl-cfg a.sl-ver:focus-visible { color: var(--sl-focus) !important; }
+@media (hover: hover) {
+  #sl-cfg a.sl-ver:hover { color: var(--sl-focus) !important; }
+}
+
+/* The Version card: the app and its number, then one last row with where the
+   updates stand at its start and the buttons at its end. On a narrow card the
+   buttons drop under the words. */
+.sl-vhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: var(--tt-text-body, 14px); }
+.sl-vapp { min-width: 0; font-weight: 600; }
+.sl-vfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 44px; padding: 6px 0; }
+.sl-vstate { display: flex; flex: 1 1 8rem; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; min-width: 0; margin: 0; color: var(--sl-dim); text-align: start; }
+.sl-vstate[data-tone="ok"] .sl-vline { color: var(--sl-ok); }
+.sl-vstate[data-tone="warn"] .sl-vline { color: var(--sl-warn); }
+.sl-vstate[data-tone="fail"] .sl-vline { color: var(--sl-err); }
+.sl-vnote:empty { display: none; }
+.sl-vact { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-inline-start: auto; }
+/* The dot before "What's new": green while something is unseen, grey once nothing is. */
+.sl-vdot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--sl-dim); }
+.sl-vdot[data-unseen] { background: var(--sl-ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sl-ok) 25%, transparent); }
+.sl-cfg .sl-btn[aria-busy="true"] { cursor: progress; }
+
+/* The Components card: a name with its (i) at the start, its number at the end. */
+.sl-vrows { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.sl-vrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 6px 0; }
+.sl-vname { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 
 /* The give buttons, TowerTorch's README buttons unchanged: the mark and the name
    at rest, the brand's own colour and one sheen under the pointer. */
