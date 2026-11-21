@@ -31,9 +31,28 @@
 <CHANGES>
 Shows the changelog of your installed Docker containers, right in the Docker tab:
 what changed from your running image to the newest, with a risk badge and the
-known vulnerabilities. Optional AI summaries (Ollama or llama-swap), alerts on
+known vulnerabilities. Optional AI summaries (Ollama, llama-swap or OpenRouter), alerts on
 Unraid, Discord, Matrix and more, and an auto-update that backs up first when
 your fortress has a backup app.
+
+### 3.9.3
+AI summaries can run through OpenRouter on a server without a model of its own, and the settings follow GlimStone 4.8.1.
+
+✨ **Added**
+- **OpenRouter for AI summaries.** Under Settings &gt; ShipLog &gt; Sources, the AI summaries card asks for a provider: Local, which is Ollama or llama-swap as before, or OpenRouter with a model from its public list and an API key. A note next to the choice says what leaves your server with OpenRouter: the changelog text, the image name and the running and new version. Local stays the default, and nothing goes to OpenRouter while it is chosen. Thanks to @repires for the idea.
+- **Two checks that answer apart.** One asks OpenRouter whether it takes the key and lists the model, without generating anything. The other runs one small real summary. Each says what went wrong: a key it refuses, no credit left, a model it does not offer right now, rate limiting or no connection.
+- **The key stays on your server.** ShipLog keeps it in a file on the flash drive that only root can read, the page shows its last four characters and nothing more, and the key goes to openrouter.ai alone, never into a URL, a log line or an error. Uninstalling ShipLog deletes the key, while the other settings stay as before.
+
+🎨 **Design**
+- **Notification channels as connection rows.** Each channel is one row as in the other apps of the house: the service's logo on its tile, the name, what it sends and to which server, then Send a test, Edit and Remove. Edit opens the channel in a window, where it can also be switched off, and a channel that is off says so on its row.
+- **Versions are plain text.** The versions on the Info tab no longer look like buttons. Each one is text, and the link to its release notes shows only under the pointer.
+- **GlimStone 4.8.1.** The channel window keeps its buttons in one row and puts a long test result on a line of its own above them. Button labels keep the tails of Arabic letters, and a logo drawn to the edge of its tile keeps its soft edge.
+
+🐛 **Fixed**
+- **Your GitHub and Docker Hub tokens stay private.** The checks on the settings page sent them as part of a URL, which ends up in the web server's access log. They now travel in the body of a request, and the settings file that holds them is readable by root alone. Installing or updating ShipLog corrects a file that was readable by everyone.
+
+🌐 **Translations**
+- **The new texts in all 26 languages,** and the (i) of the AI card names OpenRouter next to the local models.
 
 ### 3.9.2
 Names in the channel window and on the buttons in Info keep their descenders.

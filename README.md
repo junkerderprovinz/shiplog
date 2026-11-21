@@ -20,7 +20,7 @@
 <p align="center">
 ⚓ <b>ShipLog</b> reads the changelog before you update, right inside Unraid's native <b>Docker tab</b>. Next to each container it shows <b>what actually changes</b> between your running image and the newest: the release notes, a deterministic <b>risk badge</b> (patch / minor / major), the real <b>version jump</b> (e.g. 1.7 → 1.8) and the <b>known vulnerabilities</b> of the running image, with the ones the update closes.<br>
 <br>
-<b>Read-only</b> until you switch on its auto-update, which hands the work to Unraid's own update and backs up first when your fortress has a backup app. Optional: AI changelog summaries from a model server on your own network, and messages through Unraid's notifications, a chat or push service, mail or a webhook.
+<b>Read-only</b> until you switch on its auto-update, which hands the work to Unraid's own update and backs up first when your fortress has a backup app. Optional: AI changelog summaries from a model server on your own network or through OpenRouter, and messages through Unraid's notifications, a chat or push service, mail or a webhook.
 </p>
 
 <br>
@@ -116,7 +116,7 @@ The containers in these pictures run public images at older versions in a test s
 - **Warns about dead ends.** An app pulled from Community Applications, an image gone from its registry or an archived source repository replaces the chip with a red badge. An app Community Applications only hides from its default search gets an amber one. Both Community Applications verdicts go only to apps that came from there, never to your own images and templates.
 - **Updates through Unraid.** An Update all button and an optional scheduled auto-update, limited to the level you choose, hand the work to Unraid's own update. ShipLog skips a container that already runs the newest image and checks afterwards that the new image really runs. Containers you update by hand can be left out of the auto-update one by one, in the settings or from the switch in their changelog window. The engine itself touches Docker only to start a container an update lost and to hold the old image while an update runs.
 - **A backup first, and a way back.** In a fortress with a backup app on the same server, every auto-update waits for a backup of its container. If the new image fails its check or turns unhealthy, ShipLog puts the container back on the old image. Your appdata stays as it is, and the backup from before the update waits in BombVault.
-- **Optional extras, off by default.** Changelog summaries from a model server on your own network, and messages on the channels you pick: Unraid's own notifications, a chat or push service, mail or a webhook.
+- **Optional extras, off by default.** Changelog summaries from a model server on your own network or through OpenRouter, and messages on the channels you pick: Unraid's own notifications, a chat or push service, mail or a webhook.
 - **26 languages**, following Unraid's own setting.
 
 <br>
