@@ -320,6 +320,30 @@ func TestOnlyTheFixableVulnerabilitiesColourTheChip(t *testing.T) {
 	}
 }
 
+// TestLinkChipsAreNotUnderlined keeps Unraid's underline on a hovered or
+// focused link, whose a:hover outranks a single class, off ShipLog's chips and
+// buttons.
+func TestLinkChipsAreNotUnderlined(t *testing.T) {
+	css := regexp.MustCompile(`/\*[\s\S]*?\*/`).ReplaceAllString(read(t, filepath.Join("styles", "docker.css")), "")
+	var sel string
+	for _, m := range regexp.MustCompile(`([^{}]+)\{([^{}]*)\}`).FindAllStringSubmatch(css, -1) {
+		if strings.Contains(m[2], "text-decoration:none") && strings.Contains(m[1], ":hover") && strings.Contains(m[1], ":focus-visible") {
+			sel = m[1]
+		}
+	}
+	if sel == "" {
+		t.Fatal("docker.css has no rule that keeps a hovered or focused link plain")
+	}
+	for _, cls := range []string{".sl-chip", ".sl-autoff", ".sl-updall", ".sl-bubble .sl-gh", ".sl-bubble .sl-upd", ".sl-bubble .sl-relx"} {
+		if !strings.Contains(sel, cls) {
+			t.Errorf("%s still takes Unraid's underline on hover", cls)
+		}
+	}
+	if !strings.HasPrefix(strings.TrimSpace(sel), ":is(") {
+		t.Errorf("the rule %q is not lifted above Unraid's a:hover", sel)
+	}
+}
+
 // TestTheVulnerabilityListStaysFolded keeps the window's list of
 // vulnerabilities behind its counts line, so the release notes stay in view,
 // and says how many the list leaves out.

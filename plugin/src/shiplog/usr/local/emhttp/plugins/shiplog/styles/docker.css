@@ -55,6 +55,9 @@ html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-crit{color:var(--tt-err-ink,#d9534f
 .sl-autoff.sl-vuln.sl-vuln-quiet .sl-vuln-nofix{opacity:1}
 html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-quiet{color:#8a8a8a;background:rgba(128,128,128,.18)}
 
+/* Unraid underlines a hovered link with a:hover, which outranks one class. */
+:is(.sl-chip,.sl-autoff,.sl-updall,.sl-bubble .sl-gh,.sl-bubble .sl-upd,.sl-bubble .sl-relx):is(:hover,:focus,:focus-visible){text-decoration:none}
+
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
 .sl-pill .sl-dot{width:7px;height:7px;border-radius:50%}
