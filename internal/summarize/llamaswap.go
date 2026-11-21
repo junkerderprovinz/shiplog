@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -17,9 +18,11 @@ import (
 // LlamaSwap summarises changelogs against llama-swap or any other server that
 // speaks the OpenAI API (/v1/models and /v1/chat/completions).
 type LlamaSwap struct {
-	url    string
-	model  string
-	client *http.Client
+	provider string
+	keyFile  string
+	url      string
+	model    string
+	client   *http.Client
 }
 
 // NewLlamaSwap returns nil when url or model is empty, which turns it off.
@@ -29,10 +32,37 @@ func NewLlamaSwap(url, model string) *LlamaSwap {
 		return nil
 	}
 	return &LlamaSwap{
-		url:    strings.TrimRight(url, "/"),
-		model:  model,
-		client: &http.Client{Timeout: 90 * time.Second},
+		provider: "llama-swap",
+		url:      strings.TrimRight(url, "/"),
+		model:    model,
+		client:   &http.Client{Timeout: 90 * time.Second},
 	}
+}
+
+// NewOpenRouter uses a fixed HTTPS origin for requests carrying the key.
+func NewOpenRouter(model, keyFile string) *LlamaSwap {
+	l := NewLlamaSwap("https://openrouter.ai/api", model)
+	if l != nil {
+		l.provider = "OpenRouter"
+		l.keyFile = keyFile
+		l.client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	}
+	return l
+}
+
+func (l *LlamaSwap) do(req *http.Request) (*http.Response, error) {
+	if l.provider == "OpenRouter" {
+		key, err := os.ReadFile(l.keyFile)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read openrouter.key in the ShipLog data directory")
+		}
+		token := strings.TrimSpace(string(key))
+		if !strings.HasPrefix(token, "sk-or-") || strings.ContainsAny(token, " \r\n\t") {
+			return nil, fmt.Errorf("openrouter.key must contain one OpenRouter API key")
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	return l.client.Do(req)
 }
 
 // Ping checks that the server answers and lists the model, so startup can log
@@ -41,17 +71,31 @@ func (l *LlamaSwap) Ping(ctx context.Context) error {
 	if l == nil {
 		return fmt.Errorf("llama-swap not configured")
 	}
+	if l.provider == "OpenRouter" {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.url+"/v1/key", nil)
+		if err != nil {
+			return err
+		}
+		resp, err := l.do(req)
+		if err != nil {
+			return err
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("OpenRouter key check returned HTTP %d", resp.StatusCode)
+		}
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.url+"/v1/models", nil)
 	if err != nil {
 		return err
 	}
-	resp, err := l.client.Do(req)
+	resp, err := l.do(req)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("llama-swap /v1/models status %d", resp.StatusCode)
+		return fmt.Errorf("%s /v1/models status %d", l.provider, resp.StatusCode)
 	}
 	var body struct {
 		Data []struct {
@@ -66,7 +110,7 @@ func (l *LlamaSwap) Ping(ctx context.Context) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("model %q not found on the llama-swap server", l.model)
+	return fmt.Errorf("model %q not found on %s", l.model, l.provider)
 }
 
 // Summarize asks the server to condense raw into bullets, breaking changes and
@@ -88,15 +132,19 @@ func (l *LlamaSwap) Summarize(ctx context.Context, c model.Container, fromTag, t
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := l.client.Do(req)
+	resp, err := l.do(req)
 	if err != nil {
-		log.Printf("shiplog: llama-swap %s: request failed: %v", c.Name, err)
+		log.Printf("shiplog: %s %s: request failed: %v", l.provider, c.Name, err)
 		return nil, false
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 256<<10))
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("shiplog: llama-swap %s: HTTP %d: %s", c.Name, resp.StatusCode, snippet(string(body)))
+		if l.keyFile == "" {
+			log.Printf("shiplog: llama-swap %s: HTTP %d: %s", c.Name, resp.StatusCode, snippet(string(body)))
+		} else {
+			log.Printf("shiplog: OpenRouter %s: HTTP %d", c.Name, resp.StatusCode)
+		}
 		return nil, false
 	}
 	var completion struct {
@@ -107,21 +155,25 @@ func (l *LlamaSwap) Summarize(ctx context.Context, c model.Container, fromTag, t
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(body, &completion); err != nil {
-		log.Printf("shiplog: llama-swap %s: cannot decode /v1/chat/completions response: %v", c.Name, err)
+		log.Printf("shiplog: %s %s: cannot decode /v1/chat/completions response: %v", l.provider, c.Name, err)
 		return nil, false
 	}
 	if len(completion.Choices) == 0 {
-		log.Printf("shiplog: llama-swap %s: response has no choices", c.Name)
+		log.Printf("shiplog: %s %s: response has no choices", l.provider, c.Name)
 		return nil, false
 	}
 	answer := strings.TrimSpace(completion.Choices[0].Message.Content)
 	if answer == "" {
-		log.Printf("shiplog: llama-swap %s: empty model response (the model produced nothing)", c.Name)
+		log.Printf("shiplog: %s %s: empty model response (the model produced nothing)", l.provider, c.Name)
 		return nil, false
 	}
 	sum, err := parseSummary(answer, l.model)
 	if err != nil {
-		log.Printf("shiplog: llama-swap %s: %v; got: %s", c.Name, err, snippet(answer))
+		if l.keyFile == "" {
+			log.Printf("shiplog: llama-swap %s: %v; got: %s", c.Name, err, snippet(answer))
+		} else {
+			log.Printf("shiplog: OpenRouter %s: %v", c.Name, err)
+		}
 		return nil, false
 	}
 	return sum, true

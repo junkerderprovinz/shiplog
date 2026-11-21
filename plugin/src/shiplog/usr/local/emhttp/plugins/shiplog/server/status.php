@@ -22,7 +22,7 @@
 $sock   = '/var/run/shiplog.sock';
 $self   = '/plugins/shiplog/server/status.php';
 $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides',
-           'unmaintained-suppressions' => '/api/unmaintained-suppressions', 'guards' => '/api/guards',
+           'unmaintained-suppressions' => '/api/unmaintained-suppressions', 'guards' => '/api/guards', 'openrouter-check' => '/api/openrouter-check',
            'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
            'fortress' => '/api/fortress', 'fortress-member' => '/api/fortress/members/',
            'notify-hub' => '/api/notify-hub', 'notify' => '/api/notify'];

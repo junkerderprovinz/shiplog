@@ -401,6 +401,7 @@
     dockerhub: function () { return "dockerhub-check.php?user=" + encodeURIComponent(val("DOCKERHUB_USERNAME")) + "&token=" + encodeURIComponent(val("DOCKERHUB_TOKEN")); },
     ollama: function () { return "ollama-check.php?url=" + encodeURIComponent(val("OLLAMA_URL")) + "&model=" + encodeURIComponent(val("OLLAMA_MODEL")); },
     "ollama-detect": function () { return "ollama-detect.php?url=" + encodeURIComponent(val("OLLAMA_URL")); },
+    openrouter: function () { return "status.php?path=openrouter-check"; },
     llamaswap: function () { return "llamaswap-check.php?url=" + encodeURIComponent(val("LLAMASWAP_URL")) + "&model=" + encodeURIComponent(val("LLAMASWAP_MODEL")); }
   };
   root.querySelectorAll("[data-sl-check]").forEach(function (btn) {
@@ -415,7 +416,7 @@
       fetch("/plugins/shiplog/server/" + CHECKS[kind]())
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          verdict(btn, out, !!d.ok, d.message);
+          verdict(btn, out, !!d.ok, d.message || d.error);
           if (kind === "ollama-detect" && d.ok && d.url) {
             setVal("OLLAMA_URL", d.url);
             if (!val("OLLAMA_MODEL") && d.models && d.models.length) setVal("OLLAMA_MODEL", d.models[0]);

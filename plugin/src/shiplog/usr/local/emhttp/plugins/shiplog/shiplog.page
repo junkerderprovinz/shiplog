@@ -317,6 +317,15 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
         </div>
         <div class="sl-res" id="sl-llamaswap-result" role="status"></div>
       </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-OPENROUTER_MODEL"><?=$slE($L['s_openrouter_model'])?></label></div>
+        <div class="sl-ctl">
+          <input type="text" class="sl-f" id="sl-OPENROUTER_MODEL" name="OPENROUTER_MODEL" value="<?=$slE($cfg['OPENROUTER_MODEL'] ?? '')?>" placeholder="openrouter/free" dir="ltr" aria-describedby="sl-openrouter-hint">
+          <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="openrouter" data-sl-out="sl-openrouter-result"><?=$slBtn('Check', $L['s_check'])?></button></span>
+        </div>
+        <p id="sl-openrouter-hint"><?=$slE($L['s_openrouter_hint'])?></p>
+        <div class="sl-res" id="sl-openrouter-result" role="status"></div>
+      </div>
     </section>
   </div>
 
