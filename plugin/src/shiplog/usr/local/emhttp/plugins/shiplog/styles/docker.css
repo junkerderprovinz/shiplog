@@ -48,6 +48,12 @@ html.tt-popups-on .sl-autoff.sl-guarded{color:var(--tt-warn-ink,#d08a1c);backgro
 .sl-autoff.sl-vuln.sl-vuln-crit{color:#d9534f}
 html.tt-popups-on .sl-autoff.sl-vuln{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}
 html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-crit{color:var(--tt-err-ink,#d9534f);background:color-mix(in srgb,var(--tt-err,#d9534f) 18%,transparent)}
+/* Only the ones with a fix available colour the chip. Those without a fix stay
+   dimmed beside them, and a chip with nothing but those is neutral grey. */
+.sl-autoff.sl-vuln .sl-vuln-nofix{opacity:.6}
+.sl-autoff.sl-vuln.sl-vuln-quiet{color:#8a8a8a;border-color:rgba(128,128,128,.4)}
+.sl-autoff.sl-vuln.sl-vuln-quiet .sl-vuln-nofix{opacity:1}
+html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-quiet{color:#8a8a8a;background:rgba(128,128,128,.18)}
 
 .sl-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
   font:600 11px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.3px;border:1px solid}
@@ -198,6 +204,7 @@ html.tt-popups-on[data-tt-labels-buttons="reactive"] .sl-bubble :is(.sl-gh,.sl-u
 .sl-bubble .sl-raised{padding:6px 16px;font-size:12px;color:var(--sl-dim2)}
 .sl-bubble .sl-vulns li.sl-vuln-crit:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d9534f}
 .sl-bubble .sl-vulns li.sl-vuln-high:before{content:"";top:10px;left:4px;width:7px;height:7px;border-radius:50%;background:#d6a243}
+.sl-bubble .sl-vulns li.sl-nofix{color:var(--sl-dim)}
 .sl-bubble .sl-raw{font-family:Consolas,monospace;font-size:12px;color:var(--sl-dim);background:var(--sl-bg2);
   border:1px solid var(--sl-line);border-radius:8px;padding:10px 12px;white-space:pre-wrap;
   overflow-wrap:anywhere;word-break:break-word}

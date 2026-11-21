@@ -111,6 +111,7 @@ func TestEveryLanguageCountsKnownVulnerabilities(t *testing.T) {
 		"vulnCloses": {"%v"}, "vulnClosesNone": nil, "vulnNewestUnknown": nil, "vulnRaised": {"%v"},
 		"vulnSystem": nil, "vulnNoPackages": nil, "vulnFailed": nil, "vulnFixed": nil, "vulnMore": {"%n"},
 		"vulnChecked": {"%t", "%i"}, "vulnNoUpdate": nil, "unraidStale": {"%d"},
+		"vulnWithFix": {"%v"}, "vulnNoFix": {"%v"}, "vulnBoth": {"%f", "%u"}, "vulnNoFixCount": {"%n"}, "vulnNoFixTag": nil,
 	}
 	js := read(t, filepath.Join("scripts", "docker.js"))
 	page := read(t, "shiplog.page")
@@ -286,6 +287,35 @@ func TestTheWindowIsAModalDialog(t *testing.T) {
 	for _, want := range []string{`b.setAttribute("role", "dialog")`, `b.setAttribute("aria-modal", "true")`} {
 		if !strings.Contains(js, want) {
 			t.Errorf("docker.js lacks %s", want)
+		}
+	}
+}
+
+// TestOnlyTheFixableVulnerabilitiesColourTheChip keeps the chip's colour on
+// the ones with a fix available, the ones without dimmed beside them, and a
+// chip with nothing to fix neutral, all from TowerTorch's state tokens.
+func TestOnlyTheFixableVulnerabilitiesColourTheChip(t *testing.T) {
+	js := read(t, filepath.Join("scripts", "docker.js"))
+	for _, want := range []string{
+		`(v.critical || 0) - (v.no_fix_critical || 0)`,
+		`(fc ? " sl-vuln-crit" : fh ? "" : " sl-vuln-quiet")`,
+		`<span class="sl-vuln-nofix">`,
+		`T("vulnNoFixTag")`,
+	} {
+		if !strings.Contains(js, want) {
+			t.Errorf("docker.js lacks %s", want)
+		}
+	}
+	css := read(t, filepath.Join("styles", "docker.css"))
+	for _, want := range []string{
+		`.sl-autoff.sl-vuln .sl-vuln-nofix{opacity:.6}`,
+		`html.tt-popups-on .sl-autoff.sl-vuln{color:var(--tt-warn-ink,#d08a1c);background:color-mix(in srgb,var(--tt-warn,#d08a1c) 18%,transparent)}`,
+		`html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-crit{color:var(--tt-err-ink,#d9534f);background:color-mix(in srgb,var(--tt-err,#d9534f) 18%,transparent)}`,
+		`.sl-autoff.sl-vuln.sl-vuln-quiet{`,
+		`html.tt-popups-on .sl-autoff.sl-vuln.sl-vuln-quiet{`,
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("docker.css lacks %s", want)
 		}
 	}
 }
