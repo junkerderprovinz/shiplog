@@ -35,10 +35,11 @@ type Config struct {
 	DockerHubUser  string // DOCKERHUB_USERNAME
 	DockerHubToken string // DOCKERHUB_TOKEN (access token or password)
 
-	OllamaURL      string // OLLAMA_URL
-	OllamaModel    string // OLLAMA_MODEL
-	LlamaSwapURL   string // LLAMASWAP_URL, used instead of Ollama when set
-	LlamaSwapModel string // LLAMASWAP_MODEL
+	OllamaURL       string // OLLAMA_URL
+	OllamaModel     string // OLLAMA_MODEL
+	LlamaSwapURL    string // LLAMASWAP_URL, used instead of Ollama when set
+	LlamaSwapModel  string // LLAMASWAP_MODEL
+	OpenRouterModel string // OPENROUTER_MODEL
 
 	// NotifyFile (NOTIFY_FILE) holds the notification channels. Without it,
 	// as in the container, OldNotify sets them up on every start.
@@ -101,6 +102,7 @@ func Load() Config {
 		OllamaModel:     os.Getenv("OLLAMA_MODEL"),
 		LlamaSwapURL:    os.Getenv("LLAMASWAP_URL"),
 		LlamaSwapModel:  os.Getenv("LLAMASWAP_MODEL"),
+		OpenRouterModel: strings.TrimSpace(os.Getenv("OPENROUTER_MODEL")),
 		NotifyFile:      os.Getenv("NOTIFY_FILE"),
 		FortressDir:     os.Getenv("FORTRESS_DIR"),
 		RunsFile:        os.Getenv("RUNS_FILE"),

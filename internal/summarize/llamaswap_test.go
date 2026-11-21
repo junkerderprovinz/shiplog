@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
@@ -87,5 +89,54 @@ func TestLlamaSwapPing_FindsModel(t *testing.T) {
 	}
 	if err := NewLlamaSwap(srv.URL, "missing").Ping(context.Background()); err == nil {
 		t.Error("expected an error when the model is absent")
+	}
+}
+
+func TestOpenRouterCheckAndSummary(t *testing.T) {
+	keyFile := filepath.Join(t.TempDir(), "openrouter.key")
+	router := NewOpenRouter("openrouter/free", keyFile)
+	var calls []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.URL.Path)
+		if r.Header.Get("Authorization") != "Bearer sk-or-test" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch r.URL.Path {
+		case "/v1/key":
+			w.WriteHeader(http.StatusOK)
+		case "/v1/models":
+			_, _ = w.Write([]byte(`{"data":[{"id":"openrouter/free"}]}`))
+		case "/v1/chat/completions":
+			_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"risk\":\"low\"}"}}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	router.url = srv.URL
+	ctx := context.Background()
+	if err := router.Ping(ctx); err == nil || len(calls) != 0 {
+		t.Fatal("missing key should fail locally")
+	}
+	if err := os.WriteFile(keyFile, []byte("sk-or-rejected"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := router.Ping(ctx); err == nil || len(calls) != 1 || calls[0] != "/v1/key" {
+		t.Fatal("rejected key must fail before model listing")
+	}
+	calls = nil
+	if err := os.WriteFile(keyFile, []byte("sk-or-test\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := router.Ping(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 2 || calls[0] != "/v1/key" || calls[1] != "/v1/models" {
+		t.Fatalf("unexpected check calls %v", calls)
+	}
+	sum, ok := router.Summarize(ctx, model.Container{Repo: "example/image"}, "1", "2", "Release notes")
+	if !ok || sum.Risk != "low" {
+		t.Fatal("expected a parsed summary")
 	}
 }

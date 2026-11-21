@@ -81,13 +81,15 @@ type API struct {
 	verify func(ctx context.Context, source string) (exists, checked bool)
 	// verifyFile names what is wrong with a changelog file URL, or returns ""
 	// when the file reads fine or the check was inconclusive.
-	verifyFile func(ctx context.Context, url string) (problem string)
-	fortress   status.Source
-	guards     GuardLister
-	backup     func() bool
-	door       Door
-	hub        func(context.Context) bool
-	channels   Channels
+	verifyFile      func(ctx context.Context, url string) (problem string)
+	fortress        status.Source
+	guards          GuardLister
+	backup          func() bool
+	door            Door
+	hub             func(context.Context) bool
+	channels        Channels
+	openRouterModel string
+	openRouterPing  func(context.Context) error
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -99,6 +101,27 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 	}
 	a.verifyFile = verifyChangelogFile
 	return a
+}
+
+// WithOpenRouterCheck lets the settings page verify the saved model and key.
+func (a *API) WithOpenRouterCheck(model string, ping func(context.Context) error) {
+	a.openRouterModel, a.openRouterPing = model, ping
+}
+
+func (a *API) checkOpenRouter(w http.ResponseWriter, r *http.Request) {
+	ok := false
+	message := "Save an OpenRouter model first."
+	if a.openRouterPing != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		if err := a.openRouterPing(ctx); err != nil {
+			message = err.Error()
+		} else {
+			ok = true
+			message = "Key accepted and model listed: " + a.openRouterModel + "."
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": ok, "message": message})
 }
 
 // WithUpdateCheck enables /api/applied, which reads the containers from docker
@@ -182,6 +205,7 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("GET /api/unmaintained-suppressions", a.listSuppressions)
 	mux.HandleFunc("PUT /api/unmaintained-suppression", a.setSuppression)
 	mux.HandleFunc("DELETE /api/unmaintained-suppression", a.deleteSuppression)
+	mux.HandleFunc("GET /api/openrouter-check", a.checkOpenRouter)
 	mux.HandleFunc("GET /api/guards", a.listGuards)
 	mux.HandleFunc("GET /api/notify-hub", a.notifyHub)
 	if a.channels != nil {

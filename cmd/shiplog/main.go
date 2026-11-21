@@ -81,7 +81,11 @@ func main() {
 	}
 
 	// Optional integrations are pinged once, so the log says whether they work.
-	if ls := summarize.NewLlamaSwap(cfg.LlamaSwapURL, cfg.LlamaSwapModel); ls != nil {
+	router := summarize.NewOpenRouter(cfg.OpenRouterModel, filepath.Join(cfg.DataDir, "openrouter.key"))
+	if router != nil {
+		eng.WithSummarizer(router)
+		logSummarizerPing("OpenRouter", "https://openrouter.ai", cfg.OpenRouterModel, router.Ping)
+	} else if ls := summarize.NewLlamaSwap(cfg.LlamaSwapURL, cfg.LlamaSwapModel); ls != nil {
 		eng.WithSummarizer(ls)
 		logSummarizerPing("llama-swap", cfg.LlamaSwapURL, cfg.LlamaSwapModel, ls.Ping)
 	} else if o := summarize.New(cfg.OllamaURL, cfg.OllamaModel); o != nil {
@@ -173,6 +177,9 @@ func main() {
 		WithUpdateCheck(docker, msg).
 		WithFortress(report).
 		WithGuards(db, func() bool { return backups != nil && backups.Available() })
+	if router != nil {
+		a.WithOpenRouterCheck(cfg.OpenRouterModel, router.Ping)
+	}
 	if notifier != nil && cfg.NotifyFile != "" {
 		a.WithChannels(notifier)
 	}
