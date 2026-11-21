@@ -589,9 +589,11 @@ pkg=$(ls /var/log/packages/ 2>/dev/null | grep -E "^&slug;(-[^-]+-[^-]+-[^-]+)?$
 if [ -n "$pkg" ]; then removepkg "$pkg" 2>/dev/null; fi
 rm -rf &emhttp;
 rm -f &plgPath;/*.txz &plgPath;/*.txz.md5 /var/run/&slug;.pid /var/run/&slug;.sock
+# The OpenRouter key goes with the plugin. A key left behind is one nobody remembers to revoke.
+rm -f &plgPath;/openrouter.key
 # The appdata with the version history stays: a read-only advisor should not
 # delete a folder the user can see, and a reinstall resumes with the history.
-echo "ShipLog removed. Settings (flash .cfg) and the version history at"
+echo "ShipLog removed, and with it the OpenRouter key. Settings (flash .cfg) and the version history at"
 echo "/mnt/user/appdata/&slug; were kept; delete that folder manually if you"
 echo "don't plan to reinstall."
 exit 0

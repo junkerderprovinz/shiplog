@@ -73,3 +73,22 @@ func TestTheSettingsFileIsForRootAlone(t *testing.T) {
 		t.Error("an install or upgrade leaves an existing cfg readable by everyone")
 	}
 }
+
+// TestUninstallTakesTheOpenRouterKey deletes the key with the plugin and
+// keeps the other settings, as before.
+func TestUninstallTakesTheOpenRouterKey(t *testing.T) {
+	raw, err := os.ReadFile("shiplog.plg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	remove := regexp.MustCompile(`(?s)<FILE Run="/bin/bash" Method="remove">(.*?)</FILE>`).FindStringSubmatch(string(raw))
+	if remove == nil {
+		t.Fatal("shiplog.plg has no remove script")
+	}
+	if !strings.Contains(remove[1], "rm -f &plgPath;/openrouter.key") {
+		t.Error("uninstall leaves the OpenRouter key on the flash")
+	}
+	if regexp.MustCompile(`rm [^\n]*(\.cfg|notify\.json|&plgPath;/?\s|&plgPath;/\*\s)`).MatchString(remove[1]) {
+		t.Error("uninstall removes more of the settings than the key")
+	}
+}
