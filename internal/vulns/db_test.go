@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -265,5 +267,76 @@ func TestAFailedLookupIsAnError(t *testing.T) {
 	defer srv.Close()
 	if _, err := NewDB(srv.URL, t.TempDir()).Find(context.Background(), []Package{{"Debian:12", "openssl", "3"}}); err == nil {
 		t.Error("a failed lookup must not read as no vulnerabilities")
+	}
+}
+
+// affected adds an affected entry for name in eco whose range ends in events.
+func affected(r osvRecord, eco, name string, events ...map[string]string) osvRecord {
+	r.Affected = append(r.Affected, osvAffected{
+		Package: osvPackage{Ecosystem: eco, Name: name},
+		Ranges:  []osvRange{{Type: "ECOSYSTEM", Events: append([]map[string]string{{"introduced": "0"}}, events...)}},
+	})
+	return r
+}
+
+func TestFindTellsAFlawWithAFixFromOneWithout(t *testing.T) {
+	fixed := affected(rec("DEBIAN-CVE-1", "m", critVector, "CVE-1"), "Debian:13", "curl", map[string]string{"fixed": "8.14.1-2+deb13u8"})
+	open := affected(rec("DEBIAN-CVE-2", "m", critVector, "CVE-2"), "Debian:13", "curl")
+	open = affected(open, "Debian:12", "curl", map[string]string{"fixed": "7.88.1-10+deb12u9"})
+	last := affected(rec("GHSA-last", "m", highVector, "CVE-3"), "PyPI", "PyYAML", map[string]string{"last_affected": "5.3"})
+	py := affected(rec("GHSA-py", "m", highVector, "CVE-4"), "PyPI", "Typing_Extensions", map[string]string{"fixed": "4.1"})
+	f := &fakeDB{
+		affects: map[string][]string{"curl": {"DEBIAN-CVE-1", "DEBIAN-CVE-2"}, "pyyaml": {"GHSA-last"}, "typing-extensions": {"GHSA-py"}},
+		records: map[string]osvRecord{"DEBIAN-CVE-1": fixed, "DEBIAN-CVE-2": open, "GHSA-last": last, "GHSA-py": py},
+	}
+	got, err := NewDB(f.server(t).URL, t.TempDir()).Find(context.Background(), []Package{
+		{"Debian:13", "curl", "8.14.1-2+deb13u7"},
+		{"PyPI", "pyyaml", "5.3"},
+		{"PyPI", "typing-extensions", "4.0"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{"CVE-1": true, "CVE-2": false, "CVE-3": false, "CVE-4": true}
+	for id, fixable := range want {
+		if got[id].Fixable != fixable {
+			t.Errorf("%s: fixable = %v, want %v", id, got[id].Fixable, fixable)
+		}
+	}
+}
+
+func TestAFlawStaysOpenWhileOnePackageHasNoFix(t *testing.T) {
+	r := affected(rec("CVE-1", "m", critVector), "Debian:13", "openssl", map[string]string{"fixed": "3.5.1"})
+	r = affected(r, "Go", "golang.org/x/crypto")
+	f := &fakeDB{
+		affects: map[string][]string{"openssl": {"CVE-1"}, "golang.org/x/crypto": {"CVE-1"}},
+		records: map[string]osvRecord{"CVE-1": r},
+	}
+	got, err := NewDB(f.server(t).URL, t.TempDir()).Find(context.Background(), []Package{
+		{"Debian:13", "openssl", "3.5.0"},
+		{"Go", "golang.org/x/crypto", "0.1.0"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["CVE-1"].Fixable {
+		t.Error("a flaw with no fix for one of its packages reads as fixable")
+	}
+}
+
+func TestACacheWithoutFixesIsReadAgain(t *testing.T) {
+	r := affected(rec("DEBIAN-CVE-1", "m1", critVector, "CVE-1"), "Debian:13", "curl", map[string]string{"fixed": "8.14.1-2+deb13u8"})
+	f := &fakeDB{affects: map[string][]string{"curl": {"DEBIAN-CVE-1"}}, records: map[string]osvRecord{"DEBIAN-CVE-1": r}}
+	dir := t.TempDir()
+	old := `{"DEBIAN-CVE-1":{"m":"m1","k":"CVE-1","s":4}}`
+	if err := os.WriteFile(filepath.Join(dir, "records-2.json"), []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := NewDB(f.server(t).URL, dir).Find(context.Background(), []Package{{"Debian:13", "curl", "8.14.1-2+deb13u7"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := f.fetches.Load(); n != 1 || !got["CVE-1"].Fixable {
+		t.Errorf("fetched %d times, fixable = %v, want the record read again with its fix", n, got["CVE-1"].Fixable)
 	}
 }

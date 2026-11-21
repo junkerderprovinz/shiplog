@@ -121,6 +121,14 @@ func TestAVulnerabilityNoteSaysWhatAnUpdateCloses(t *testing.T) {
 			"2 high known vulnerabilities, the update closes all of them"},
 		{"newest unknown", &Vulns{Scope: VulnScopeImage, High: 10}, true,
 			"10 high known vulnerabilities, unknown what the update closes"},
+		{"some without a fix", &Vulns{Scope: VulnScopeImage, Critical: 7, High: 74, NoFixCritical: 5, NoFixHigh: 73, NewestKnown: true, FixedCritical: 1}, true,
+			"2 critical and 1 high known vulnerabilities with a fix available, the update closes 1 critical, plus 5 critical and 73 high with no fix yet"},
+		{"closes all with a fix", &Vulns{Scope: VulnScopeImage, High: 3, NoFixHigh: 1, NewestKnown: true, FixedHigh: 2}, true,
+			"2 high known vulnerabilities with a fix available, the update closes all of them, plus 1 high with no fix yet"},
+		{"none with a fix", &Vulns{Scope: VulnScopeImage, Critical: 5, High: 73, NoFixCritical: 5, NoFixHigh: 73, NewestKnown: true}, true,
+			"5 critical and 73 high known vulnerabilities, none with a fix yet"},
+		{"no update, some without a fix", &Vulns{Scope: VulnScopeImage, Critical: 2, NoFixCritical: 1}, false,
+			"1 critical known vulnerability with a fix available, plus 1 critical with no fix yet"},
 	}
 	for _, c := range cases {
 		if got := c.v.Note(c.update); got != c.want {
@@ -140,6 +148,8 @@ func TestTheStatusLineSaysWhyNothingWasChecked(t *testing.T) {
 		"failed":      {UpdateStatus{Vulns: &Vulns{Reason: VulnLookupFailed}}, "vulnerability lookup failed, ShipLog tries again at the next check"},
 		"update": {UpdateStatus{Kind: KindPatch, Vulns: &Vulns{Scope: VulnScopeSystem, Critical: 1, NewestKnown: true, FixedCritical: 1}},
 			"1 critical known vulnerability, the update closes it (system packages only)"},
+		"no fix": {UpdateStatus{Vulns: &Vulns{Scope: VulnScopeSystem, High: 4, NoFixHigh: 4}},
+			"4 high known vulnerabilities, none with a fix yet (system packages only)"},
 	}
 	for name, c := range cases {
 		if got := c.st.VulnNote(); got != c.want {

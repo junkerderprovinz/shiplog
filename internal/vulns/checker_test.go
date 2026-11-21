@@ -58,7 +58,8 @@ func spdx(purls ...string) string {
 }
 
 // vulnDB knows two critical flaws in openssl 3.0.11 and one high one in
-// glibc 2.36-9, of which openssl 3.0.15 fixes one critical.
+// glibc 2.36-9, of which openssl 3.0.15 fixes one critical. Debian has no fix
+// for the other critical one yet.
 func vulnDB(t *testing.T) *DB {
 	f := &fakeDB{
 		affects: map[string][]string{
@@ -67,9 +68,9 @@ func vulnDB(t *testing.T) *DB {
 			"glibc 2.36-9":   {"DEBIAN-CVE-3"},
 		},
 		records: map[string]osvRecord{
-			"DEBIAN-CVE-1": rec("DEBIAN-CVE-1", "m", critVector, "CVE-1"),
-			"DEBIAN-CVE-2": rec("DEBIAN-CVE-2", "m", critVector, "CVE-2"),
-			"DEBIAN-CVE-3": rec("DEBIAN-CVE-3", "m", highVector, "CVE-3"),
+			"DEBIAN-CVE-1": affected(rec("DEBIAN-CVE-1", "m", critVector, "CVE-1"), "Debian:12", "openssl", map[string]string{"fixed": "3.0.15"}),
+			"DEBIAN-CVE-2": affected(rec("DEBIAN-CVE-2", "m", critVector, "CVE-2"), "Debian:12", "openssl"),
+			"DEBIAN-CVE-3": affected(rec("DEBIAN-CVE-3", "m", highVector, "CVE-3"), "Debian:12", "glibc", map[string]string{"fixed": "2.36-9+deb12u1"}),
 			"DEBIAN-CVE-4": rec("DEBIAN-CVE-4", "m", lowVector, "CVE-4"),
 		},
 	}
@@ -101,8 +102,28 @@ func TestTheRunningImageCountsItsCriticalAndHighFlaws(t *testing.T) {
 	if v.Scope != model.VulnScopeImage || v.Critical != 2 || v.High != 1 || v.NewestKnown {
 		t.Fatalf("Check = %+v, want 2 critical and 1 high from the image's own list", v)
 	}
-	if len(v.Items) != 3 || v.Items[0].Severity != "critical" || v.Items[2].ID != "CVE-3" || v.Items[2].Package != "glibc" {
-		t.Errorf("items = %+v", v.Items)
+	if v.NoFixCritical != 1 || v.NoFixHigh != 0 {
+		t.Errorf("without a fix: %d critical and %d high, want 1 critical", v.NoFixCritical, v.NoFixHigh)
+	}
+	var order []string
+	for _, it := range v.Items {
+		order = append(order, fmt.Sprintf("%s %s %s %v", it.ID, it.Package, it.Severity, it.NoFix))
+	}
+	want := []string{"CVE-1 openssl critical false", "CVE-3 glibc high false", "CVE-2 openssl critical true"}
+	if strings.Join(order, ", ") != strings.Join(want, ", ") {
+		t.Errorf("items = %q, want the ones with a fix first: %q", order, want)
+	}
+}
+
+func TestAFlawTheUpdateClosesHasAFix(t *testing.T) {
+	f := &fakeDB{
+		affects: map[string][]string{"openssl 3.0.11": {"DEBIAN-CVE-1"}},
+		records: map[string]osvRecord{"DEBIAN-CVE-1": affected(rec("DEBIAN-CVE-1", "m", critVector, "CVE-1"), "Debian:12", "openssl")},
+	}
+	k := New(t.TempDir(), NewDB(f.server(t).URL, t.TempDir()), registryWithBoth(), &fakeContainers{})
+	v := k.Check(context.Background(), model.Container{ID: "c1", Repo: "docker.io/library/app", Digest: oldSBOM}, newSBOM)
+	if v.NoFixCritical != 0 || len(v.Items) != 1 || v.Items[0].NoFix || !v.ClosesCritical() {
+		t.Errorf("Check = %+v, want the update to count as the fix", v)
 	}
 }
 

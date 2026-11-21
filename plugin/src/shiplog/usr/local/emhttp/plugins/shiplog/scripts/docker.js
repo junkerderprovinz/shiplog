@@ -117,6 +117,11 @@
     vulnMore: "and %n more",
     vulnChecked: "Checked %t, image %i.",
     vulnNoUpdate: "No update fixes these yet, because they are in the image the publisher builds. You can ask the project for a fixed image, or switch to another tag or image.",
+    vulnWithFix: "%v with a fix available",
+    vulnNoFix: "%v with no fix yet",
+    vulnBoth: "%f with a fix available, %u with no fix yet",
+    vulnNoFixCount: "%n no fix yet",
+    vulnNoFixTag: "no fix yet",
     reason_digest: "same tag, new image digest",
     reason_current: "up to date",
     reason_non_semver: "non-semver tags, cannot compare automatically",
@@ -365,6 +370,20 @@
     const v = st && st.vulns;
     return v && !v.reason ? (v.critical || 0) + (v.high || 0) : 0;
   }
+  // The ones without a fix yet are part of critical and high. Only the rest,
+  // which an update or a rebuild can close, colours the chip.
+  function vulnSplit(v) {
+    return {
+      fc: (v.critical || 0) - (v.no_fix_critical || 0), fh: (v.high || 0) - (v.no_fix_high || 0),
+      nc: v.no_fix_critical || 0, nh: v.no_fix_high || 0,
+    };
+  }
+  function vulnSplitText(v) {
+    const { fc, fh, nc, nh } = vulnSplit(v);
+    const fix = severities(fc, fh).join(T("vulnAnd")), open = severities(nc, nh).join(T("vulnAnd"));
+    if (fix && open) return T("vulnBoth").replace("%f", () => fix).replace("%u", () => open);
+    return fix ? fillList(T("vulnWithFix"), [fix]) : fillList(T("vulnNoFix"), [open]);
+  }
   function vulnFixes(st) {
     const v = st && st.vulns;
     return v && v.newest_known && isUpdate(st) ? (v.fixed_critical || 0) + (v.fixed_high || 0) : 0;
@@ -396,12 +415,13 @@
     if (!vulnCount(st)) {
       return `<div class="sl-sec sl-vulns">${title}<div>${esc(T(running(st) ? "vulnNone" : "vulnNoneInstalled"))}</div>${vulnChecked(st)}</div>`;
     }
-    const counts = fillList(T(running(st) ? "vulnRunning" : "vulnInstalled"), severities(v.critical, v.high));
+    const counts = fillList(T(running(st) ? "vulnRunning" : "vulnInstalled"), [vulnSplitText(v)]);
     const lines = [vulnClosesLine(st), !isUpdate(st) ? T("vulnNoUpdate") : "", v.scope === "system" ? T("vulnSystem") : ""].filter(Boolean);
     const list = Array.isArray(v.items) ? v.items : [];
     const items = list.map((it) =>
-      `<li class="sl-vuln-${it.severity === "critical" ? "crit" : "high"}"><code>${esc(it.id)}</code> · ${esc(it.package)}` +
-      (it.fixed && isUpdate(st) ? ` <span class="sl-ai">${esc(T("vulnFixed"))}</span>` : "") + "</li>").join("");
+      `<li class="sl-vuln-${it.severity === "critical" ? "crit" : "high"}${it.no_fix ? " sl-nofix" : ""}"><code>${esc(it.id)}</code> · ${esc(it.package)}` +
+      (it.fixed && isUpdate(st) ? ` <span class="sl-ai">${esc(T("vulnFixed"))}</span>` : "") +
+      (it.no_fix ? ` <span class="sl-ai">${esc(T("vulnNoFixTag"))}</span>` : "") + "</li>").join("");
     const more = vulnCount(st) - list.length;
     return `<details class="sl-sec sl-vulns"><summary>${title}<span class="sl-vuln-sum">${esc(counts)}</span></summary>` +
       lines.map((l) => `<div>${esc(l)}</div>`).join("") +
@@ -421,10 +441,14 @@
   }
   function vulnBadge(st) {
     const v = st.vulns;
-    const words = severities(v.critical, v.high).join(" · ");
-    const a = el("a", "sl-autoff sl-vuln" + (v.critical ? " sl-vuln-crit" : ""), `${WARN_ICON}<span>${esc(words)}</span>`);
+    const { fc, fh, nc, nh } = vulnSplit(v);
+    const fix = severities(fc, fh).join(" · ");
+    const open = nc + nh ? (fix ? "· " : "") + T("vulnNoFixCount").replace("%n", () => String(nc + nh)) : "";
+    const words = (fix ? `<span>${esc(fix)}</span>` : "") + (open ? `<span class="sl-vuln-nofix">${esc(open)}</span>` : "");
+    const a = el("a", "sl-autoff sl-vuln" + (fc ? " sl-vuln-crit" : fh ? "" : " sl-vuln-quiet"), WARN_ICON + words);
     a.href = "#";
-    a.title = ["ShipLog: " + T("vulnBadgeHint"), vulnClosesLine(st)].filter(Boolean).join(" ");
+    const counts = fillList(T(running(st) ? "vulnRunning" : "vulnInstalled"), [vulnSplitText(v)]);
+    a.title = ["ShipLog: " + T("vulnBadgeHint"), counts, vulnClosesLine(st)].filter(Boolean).join(" ");
     a.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); openFor(a, st); });
     return a;
   }

@@ -27,12 +27,14 @@ const (
 
 // recordsFile changes its name whenever a summary means something new, so an
 // older cache is read again from the database.
-const recordsFile = "records-2.json"
+const recordsFile = "records-3.json"
 
-// Finding is one known vulnerability of a package list.
+// Finding is one known vulnerability of a package list. Fixable says a fixed
+// version exists for every package it was found in.
 type Finding struct {
 	Severity Severity
 	Package  string
+	Fixable  bool
 }
 
 // summary is what the check keeps of a record. Records can be large, so the
@@ -43,6 +45,7 @@ type summary struct {
 	Severity  Severity            `json:"s"`
 	Minor     []string            `json:"u,omitempty"`
 	Release   map[string]Severity `json:"r,omitempty"`
+	Fixes     []string            `json:"f,omitempty"`
 	Withdrawn bool                `json:"w,omitempty"`
 }
 
@@ -94,6 +97,9 @@ func (d *DB) Find(ctx context.Context, pkgs []Package) (map[string]Finding, erro
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	out := map[string]Finding{}
+	// A package has a fix when any of its records knows one, while a flaw
+	// stays open as long as one of its packages has none.
+	fixable := map[string]map[string]bool{}
 	for _, h := range hits {
 		s := d.known[h.id]
 		if s.Withdrawn || slices.Contains(s.Minor, h.pkg.Ecosystem) {
@@ -106,6 +112,19 @@ func (d *DB) Find(ctx context.Context, pkgs []Package) (map[string]Finding, erro
 		if have, ok := out[s.Key]; !ok || sev > have.Severity {
 			out[s.Key] = Finding{Severity: sev, Package: h.pkg.Name}
 		}
+		pkg := fixKey(h.pkg.Ecosystem, h.pkg.Name)
+		if fixable[s.Key] == nil {
+			fixable[s.Key] = map[string]bool{}
+		}
+		fixable[s.Key][pkg] = fixable[s.Key][pkg] || slices.Contains(s.Fixes, pkg)
+	}
+	for key, pkgs := range fixable {
+		f := out[key]
+		f.Fixable = true
+		for _, ok := range pkgs {
+			f.Fixable = f.Fixable && ok
+		}
+		out[key] = f
 	}
 	return out, nil
 }
@@ -197,7 +216,7 @@ func (d *DB) fetchChanged(ctx context.Context, hits []hit) error {
 					continue
 				}
 				d.mu.Lock()
-				d.known[id] = summary{Modified: want[id], Key: r.key(), Severity: r.severity(), Minor: r.minor(), Release: r.releaseSeverity(), Withdrawn: r.Withdrawn != ""}
+				d.known[id] = summary{Modified: want[id], Key: r.key(), Severity: r.severity(), Minor: r.minor(), Release: r.releaseSeverity(), Fixes: r.fixes(), Withdrawn: r.Withdrawn != ""}
 				d.mu.Unlock()
 			}
 		}()
