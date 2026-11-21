@@ -309,12 +309,17 @@ type Vulns struct {
 	Reason   string `json:"reason,omitempty"`
 	Critical int    `json:"critical"`
 	High     int    `json:"high"`
+	// NoFixCritical and NoFixHigh count the part of Critical and High that no
+	// fixed version exists for yet. The rest has a fix available.
+	NoFixCritical int `json:"no_fix_critical,omitempty"`
+	NoFixHigh     int `json:"no_fix_high,omitempty"`
 	// NewestKnown says the newest image's package list was read, so the
 	// Fixed counts hold. Without it nobody can tell what an update closes.
 	NewestKnown   bool `json:"newest_known,omitempty"`
 	FixedCritical int  `json:"fixed_critical,omitempty"`
 	FixedHigh     int  `json:"fixed_high,omitempty"`
-	// Items lists the critical and high ones, critical first.
+	// Items lists the critical and high ones, those with a fix available
+	// first and within them critical first.
 	Items []VulnItem `json:"items,omitempty"`
 }
 
@@ -324,6 +329,7 @@ type VulnItem struct {
 	Package  string `json:"package"`
 	Severity string `json:"severity"` // "critical" or "high"
 	Fixed    bool   `json:"fixed,omitempty"`
+	NoFix    bool   `json:"no_fix,omitempty"`
 }
 
 const (
@@ -337,18 +343,28 @@ const (
 )
 
 // ClosesCritical reports whether the newest image is known to close a
-// critical vulnerability of the running one.
+// critical vulnerability of the running one. Whatever it closes has a fix, so
+// one without a fix never raises a risk.
 func (v *Vulns) ClosesCritical() bool { return v != nil && v.NewestKnown && v.FixedCritical > 0 }
 
 // Note sums the report up for a notification, or gives "" when no critical
-// or high vulnerability is known. With update set it also says what the
-// update closes, or that nobody can tell.
+// or high vulnerability is known. It leads with the ones a fix is available
+// for, and with update set it also says what the update closes of them, or
+// that nobody can tell.
 func (v *Vulns) Note(update bool) string {
 	if v == nil || v.Reason != "" || v.Critical+v.High == 0 {
 		return ""
 	}
-	total, fixed := v.Critical+v.High, v.FixedCritical+v.FixedHigh
-	note := counted(v.Critical, v.High)
+	fc, fh := v.Critical-v.NoFixCritical, v.High-v.NoFixHigh
+	if fc+fh == 0 {
+		return counted(v.Critical, v.High) + ", none with a fix yet"
+	}
+	total, fixed := fc+fh, v.FixedCritical+v.FixedHigh
+	note := counted(fc, fh)
+	noFix := v.NoFixCritical+v.NoFixHigh > 0
+	if noFix {
+		note += " with a fix available"
+	}
 	switch {
 	case !update:
 	case !v.NewestKnown:
@@ -363,6 +379,9 @@ func (v *Vulns) Note(update bool) string {
 		note += ", the update closes all of them"
 	default:
 		note += ", the update closes " + severities(v.FixedCritical, v.FixedHigh)
+	}
+	if noFix {
+		note += ", plus " + severities(v.NoFixCritical, v.NoFixHigh) + " with no fix yet"
 	}
 	return note
 }

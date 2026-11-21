@@ -2,6 +2,7 @@ package vulns
 
 import (
 	"math"
+	"regexp"
 	"strings"
 )
 
@@ -67,7 +68,13 @@ type osvSeverity struct {
 
 type osvAffected struct {
 	Package           osvPackage     `json:"package"`
+	Ranges            []osvRange     `json:"ranges"`
 	EcosystemSpecific map[string]any `json:"ecosystem_specific"`
+}
+
+type osvRange struct {
+	Type   string              `json:"type"`
+	Events []map[string]string `json:"events"`
 }
 
 type osvPackage struct {
@@ -143,6 +150,46 @@ func (r osvRecord) minor() []string {
 		}
 	}
 	return out
+}
+
+// fixes lists the packages a fixed version exists for, as fixKey spells them.
+// A range that ends only in last_affected has none.
+func (r osvRecord) fixes() []string {
+	var out []string
+	for _, a := range r.Affected {
+		if a.fixed() {
+			out = append(out, fixKey(a.Package.Ecosystem, a.Package.Name))
+		}
+	}
+	return out
+}
+
+func (a osvAffected) fixed() bool {
+	for _, rg := range a.Ranges {
+		switch rg.Type {
+		case "ECOSYSTEM", "SEMVER", "GIT":
+		default:
+			continue
+		}
+		for _, e := range rg.Events {
+			if e["fixed"] != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+var pypiSeparators = regexp.MustCompile(`[-_.]+`)
+
+// fixKey names a package the same way for a query and a record, which may
+// spell it in another case, and for PyPI with other separators.
+func fixKey(ecosystem, name string) string {
+	name = strings.ToLower(name)
+	if ecosystem == "PyPI" {
+		name = pypiSeparators.ReplaceAllString(name, "-")
+	}
+	return ecosystem + " " + name
 }
 
 // cvssWeights holds the CVSS 3.x base metric values. PR has a second set for

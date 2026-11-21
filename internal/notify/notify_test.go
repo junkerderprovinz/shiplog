@@ -180,6 +180,17 @@ func TestAnUpdateNamesTheVulnerabilitiesItCloses(t *testing.T) {
 	}
 }
 
+func TestAnUpdateKeepsTheVulnerabilitiesWithoutAFixApart(t *testing.T) {
+	st := model.UpdateStatus{
+		Container: model.Container{Name: "bombvault", Tag: "1.4"}, NewestTag: "1.5", Kind: model.KindMinor, Risk: model.RiskMedium,
+		Vulns: &model.Vulns{Scope: model.VulnScopeImage, Critical: 10, High: 71, NoFixCritical: 9, NoFixHigh: 63, NewestKnown: true},
+	}
+	want := "1.4 → 1.5 (risk: MEDIUM) · 1 critical and 8 high known vulnerabilities with a fix available, the update closes none of them, plus 9 critical and 63 high with no fix yet"
+	if got := argValue(unraidArgs(t, st), "-d"); got != want {
+		t.Errorf("description = %q, want %q", got, want)
+	}
+}
+
 func TestTheRiskSetsUnraidsImportance(t *testing.T) {
 	for risk, want := range map[model.RiskLevel]string{
 		model.RiskLow: "normal", model.RiskMedium: "normal", model.RiskHigh: "warning", model.RiskCritical: "alert",

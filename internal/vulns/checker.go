@@ -37,8 +37,8 @@ const (
 	maxItems = 20
 )
 
-// Checker counts the known vulnerabilities of a container's running image and
-// what its newest image closes of them.
+// Checker counts the known vulnerabilities of a container's running image,
+// which of them have a fix available and what its newest image closes of them.
 type Checker struct {
 	db   *DB
 	reg  Registry
@@ -98,21 +98,33 @@ func (k *Checker) Check(ctx context.Context, c model.Container, newestDigest str
 		}
 		_, still := newest[id]
 		fixed := v.NewestKnown && !still
+		// The update is a fix of its own, even where the database knows none,
+		// as when the newest image drops the package.
+		noFix := !f.Fixable && !fixed
 		if f.Severity == Critical {
 			v.Critical++
 			if fixed {
 				v.FixedCritical++
+			}
+			if noFix {
+				v.NoFixCritical++
 			}
 		} else {
 			v.High++
 			if fixed {
 				v.FixedHigh++
 			}
+			if noFix {
+				v.NoFixHigh++
+			}
 		}
-		v.Items = append(v.Items, model.VulnItem{ID: id, Package: f.Package, Severity: f.Severity.String(), Fixed: fixed})
+		v.Items = append(v.Items, model.VulnItem{ID: id, Package: f.Package, Severity: f.Severity.String(), Fixed: fixed, NoFix: noFix})
 	}
 	sort.Slice(v.Items, func(i, j int) bool {
 		a, b := v.Items[i], v.Items[j]
+		if a.NoFix != b.NoFix {
+			return b.NoFix
+		}
 		if a.Severity != b.Severity {
 			return a.Severity == "critical"
 		}
