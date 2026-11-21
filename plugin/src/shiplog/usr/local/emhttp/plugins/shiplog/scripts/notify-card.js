@@ -636,7 +636,7 @@
         body.appendChild(h('span', { class: 'glim-nc-search-box' }, [lens, search, clear]));
         body.appendChild(scroll);
         grid();
-        act.appendChild(winButton(t.nc_close, 'close', '', close));
+        act.appendChild(h('div', { class: 'glim-nc-win-actions' }, [winButton(t.nc_close, 'close', '', close)]));
         if (scroll.clientHeight) scroll.style.minHeight = scroll.clientHeight + 'px';
         (scroll.querySelector('button.glim-nc-tile[aria-current="true"]') || search).focus();
       }
@@ -692,10 +692,9 @@
           });
         });
         act.appendChild(test.result);
-        act.appendChild(winButton(t.nc_cancel, 'close', '', close));
-        act.appendChild(winButton(t.nc_back, 'back', '', tiles));
-        act.appendChild(test.button);
-        act.appendChild(keep);
+        act.appendChild(h('div', { class: 'glim-nc-win-actions' }, [
+          winButton(t.nc_cancel, 'close', '', close), winButton(t.nc_back, 'back', '', tiles), test.button, keep
+        ]));
         var first = body.querySelector('input, textarea');
         if (first) first.focus();
       }

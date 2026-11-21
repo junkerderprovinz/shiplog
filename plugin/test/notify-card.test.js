@@ -485,6 +485,32 @@ test("the window's test shows its outcome on its button and at the foot's start,
   assert.ok(p.win(), 'the form stays open');
 });
 
+test("the window's buttons wrap as one group, and the start line takes a line of its own before one of them drops", async () => {
+  const p = mounted([]);
+  await settle();
+  p.open();
+  p.tile('ntfy').click();
+  const act = p.win().byClass('glim-nc-win-act')[0];
+  const [start, group] = act.children;
+  assert.ok(start.className.includes('glim-nc-win-start'));
+  assert.ok(group.className.includes('glim-nc-win-actions'));
+  assert.deepEqual(group.children.map((b) => b.textContent), [en.nc_cancel, en.nc_back, en.nc_test, en.nc_save]);
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  assert.match(css, /\.glim-nc-win-actions \{ display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: inherit; \}/);
+  assert.match(css, /\.glim-nc-win-act \.glim-nc-win-start \{ flex: 1 1 auto; overflow-wrap: anywhere;/);
+  assert.doesNotMatch(css, /glim-nc-win-start \{[^}]*min-width/);
+});
+
+test("a button's words keep the tails of Arabic inside their clip", () => {
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  assert.match(css, /\.glim-nc-l \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;/);
+});
+
+test('a mark that reaches its box keeps its soft edge on a tile', () => {
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  assert.match(css, /\.glim-nc-wins \.glim-nc-tile-mark svg \{ overflow: visible; \}/);
+});
+
 test('the search clears with its own button', async () => {
   const p = mounted([]);
   await settle();

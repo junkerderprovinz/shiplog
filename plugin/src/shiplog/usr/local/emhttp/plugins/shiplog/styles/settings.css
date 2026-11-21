@@ -194,7 +194,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .sl-cfg .sl-btn:disabled:hover { color: var(--button-text-color); background: var(--button-background); background-size: var(--button-background-size); }
 .sl-g { display: inline-flex; flex: none; line-height: 0; }
 .sl-g svg { width: 1.15em; height: 1.15em; display: block; }
-.sl-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+/* Arabic hangs its tails and dots below the line, so the clip reaches past it and gives the room back. */
+.sl-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; padding-block: .15em; margin-block: -.15em; }
 .sl-cfg .sl-btn.sl-ok { color: var(--sl-ok); }
 .sl-cfg .sl-btn.sl-err { color: var(--sl-err); }
 
@@ -286,6 +287,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 var(--tt-focus-ring-width, 2px) var(--sl-focus) !important; }
 #sl-cfg .sl-rbtn-mark { position: absolute; top: 50%; left: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; }
 #sl-cfg :is(.sl-rbtn-mark, .sl-rbtn-art) svg { display: block; width: 100%; height: 100%; }
+/* The tile's middle rarely falls on a whole pixel, and the SVG's own clip would shave a shape drawn to the box. */
+#sl-cfg .sl-rbtn-mark svg { overflow: visible; }
 #sl-cfg .sl-rbtn-art { position: absolute; inset: 0; }
 #sl-cfg .sl-rbtn-text { position: absolute; top: 0; bottom: 0; left: 53px; right: 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15; }
 /* As on the channel tiles, the name's clip reaches past its line so the descenders stay whole. */

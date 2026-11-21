@@ -84,7 +84,8 @@ html.tt-popups-on .glim-nc {
 /* A button's glyph before its words, at the words' size. */
 .glim-nc-g { display: inline-flex; flex: none; line-height: 0; }
 .glim-nc-g svg { width: 14px; height: 14px; display: block; }
-.glim-nc-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Arabic hangs its tails and dots below the line, so the clip reaches past it and gives the room back. */
+.glim-nc-l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-block: .15em; margin-block: -.15em; }
 
 /* GlimStone's (i): a bare stroked glyph in the muted ink, whose opacity
    carries hover and focus. Keyboard focus also draws the ring, the one line
@@ -226,8 +227,11 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
 .glim-nc-win-body { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 4px; }
 .glim-nc-win-body.glim-nc-win-pick { overflow: hidden; }
 .glim-nc-win-act { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
-/* The verdict of a test at the start of the foot gives way first and wraps. */
-.glim-nc-win-act .glim-nc-win-start { flex: 1 1 0; min-width: min(64px, 100%); overflow-wrap: anywhere; font-size: 12px; }
+/* The buttons wrap as one group, so a verdict too long to stand beside all of them takes a
+   line of its own above them, and none of them drops below the others for it. */
+.glim-nc-win-act .glim-nc-win-start { flex: 1 1 auto; overflow-wrap: anywhere; font-size: 12px; }
+.glim-nc-win-act .glim-nc-win-start:empty { display: none; }
+.glim-nc-win-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: inherit; }
 .glim-nc-win-act .glim-nc-win-start:not(.glim-nc-ok, .glim-nc-bad) { color: var(--nc-w-dim); }
 
 /* The search, open at the top end from the start, with its glyph and a grey
@@ -278,6 +282,8 @@ html.tt-popups-on[data-oled]:is(.Theme--black, .Theme--gray) .glim-nc-wins {
   font: inherit; letter-spacing: normal; text-transform: none; text-align: start; cursor: pointer;
 }
 .glim-nc-wins .glim-nc-tile-mark { position: absolute; top: 50%; inset-inline-start: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; justify-content: center; }
+/* The tile's middle rarely falls on a whole pixel, and the SVG's own clip would shave a shape drawn to the box. */
+.glim-nc-wins .glim-nc-tile-mark svg { overflow: visible; }
 .glim-nc-tile-text {
   position: absolute; inset-block: 0; inset-inline: 53px 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15;
 }

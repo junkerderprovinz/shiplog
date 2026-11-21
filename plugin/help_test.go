@@ -72,13 +72,13 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.7.0" {
-			t.Errorf("glimstone.json pins %s, want 4.7.0", target.Version)
+		if target.Version != "4.8.1" {
+			t.Errorf("glimstone.json pins %s, want 4.8.1", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.7.0';") {
-		t.Error("the Version card does not name GlimStone 4.7.0")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.8.1';") {
+		t.Error("the Version card does not name GlimStone 4.8.1")
 	}
 	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
 	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
@@ -92,6 +92,24 @@ func TestAReadmeButtonNameKeepsItsDescenders(t *testing.T) {
 	css := read(t, "styles/settings.css")
 	if !regexp.MustCompile(`#sl-cfg \.sl-rbtn-name \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;`).MatchString(css) {
 		t.Error("the clip of a README button's name cuts its descenders")
+	}
+}
+
+// TestAButtonLabelKeepsTheTailsOfArabic gives a button's words the room below
+// the line that GlimStone's label has, so an Arabic label keeps its tails.
+func TestAButtonLabelKeepsTheTailsOfArabic(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`\.sl-l \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;`).MatchString(css) {
+		t.Error("the clip of a button's label cuts what hangs below the line")
+	}
+}
+
+// TestAReadmeButtonMarkKeepsItsSoftEdge lets a mark that reaches its box draw
+// past the SVG's own clip, as GlimStone's README button does.
+func TestAReadmeButtonMarkKeepsItsSoftEdge(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`#sl-cfg \.sl-rbtn-mark svg \{ overflow: visible; \}`).MatchString(css) {
+		t.Error("the SVG of a README button's mark shaves the edge of a shape drawn to its box")
 	}
 }
 
