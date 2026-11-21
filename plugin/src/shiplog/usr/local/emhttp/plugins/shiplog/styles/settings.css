@@ -241,7 +241,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   color: var(--sl-warn); font-size: 13px; line-height: 1.45;
 }
 .sl-warn .sl-g { padding-top: 2px; }
-/* A note that informs: the hub's, and what leaves the server with OpenRouter. */
+/* The hub's message, and what leaves the server with OpenRouter. */
 :is(.sl-hubnote, .sl-notice) {
   display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 6px; padding: 9px 12px;
   border-radius: var(--sl-r-ctl); background: color-mix(in srgb, var(--sl-dim) 14%, transparent);
