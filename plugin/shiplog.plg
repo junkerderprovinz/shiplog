@@ -3,7 +3,7 @@
   <!ENTITY name      "shiplog">
   <!ENTITY slug      "shiplog">
   <!ENTITY author    "Junker der Provinz">
-  <!ENTITY version   "3.9.2">
+  <!ENTITY version   "3.9.3">
   <!ENTITY launch    "Settings/shiplog">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/junkerderprovinz/shiplog/main/plugin">
   <!ENTITY pluginURL "&gitURL;/&slug;.plg">
@@ -573,7 +573,7 @@ find &plgPath; -maxdepth 1 -name '&slug;-*.txz' ! -name '&txz;' -delete 2>/dev/n
 -->
 <FILE Name="&plgPath;/&txz;" Run="/sbin/upgradepkg --install-new --reinstall">
   <URL>&pkgURL;/&txz;</URL>
-  <SHA256>8efc409e7fabb83fc7e70ba203f39947a56f500bfda3c1fc539980f43c58b7f3</SHA256>
+  <SHA256>cbedc7ab2a823b3de7163b11049167472c13100fdc095da923ed963319537e1e</SHA256>
 </FILE>
 
 <!-- Post-install: (re)start the engine daemon immediately, no reboot needed. -->
