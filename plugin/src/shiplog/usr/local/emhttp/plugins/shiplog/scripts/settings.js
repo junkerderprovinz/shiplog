@@ -398,12 +398,20 @@
     e.dispatchEvent(new Event("change", { bubbles: true }));
   }
   var CHECKS = {
-    github: function () { return "github-check.php?token=" + encodeURIComponent(val("GITHUB_TOKEN")); },
-    dockerhub: function () { return "dockerhub-check.php?user=" + encodeURIComponent(val("DOCKERHUB_USERNAME")) + "&token=" + encodeURIComponent(val("DOCKERHUB_TOKEN")); },
+    github: function () { return { post: { token: val("GITHUB_TOKEN") }, url: "github-check.php" }; },
+    dockerhub: function () { return { post: { user: val("DOCKERHUB_USERNAME"), token: val("DOCKERHUB_TOKEN") }, url: "dockerhub-check.php" }; },
     ollama: function () { return "ollama-check.php?url=" + encodeURIComponent(val("OLLAMA_URL")) + "&model=" + encodeURIComponent(val("OLLAMA_MODEL")); },
     "ollama-detect": function () { return "ollama-detect.php?url=" + encodeURIComponent(val("OLLAMA_URL")); },
     llamaswap: function () { return "llamaswap-check.php?url=" + encodeURIComponent(val("LLAMASWAP_URL")) + "&model=" + encodeURIComponent(val("LLAMASWAP_MODEL")); }
   };
+  // A check that carries a token posts it, so it never stands in a URL that
+  // nginx logs.
+  function checkRequest(c) {
+    if (typeof c === "string") return ["/plugins/shiplog/server/" + c];
+    var body = new URLSearchParams(c.post);
+    body.set("csrf_token", window.csrf_token || "");
+    return ["/plugins/shiplog/server/" + c.url, { method: "POST", body: body, credentials: "same-origin" }];
+  }
   root.querySelectorAll("[data-sl-check]").forEach(function (btn) {
     var kind = btn.getAttribute("data-sl-check"), out = byId(btn.getAttribute("data-sl-out"));
     var glyph = btn.querySelector(".sl-g") ? btn.querySelector(".sl-g").innerHTML : "";
@@ -413,7 +421,7 @@
       btn.setAttribute("aria-busy", "true");
       out.className = "sl-res run";
       out.textContent = (kind === "ollama-detect" ? T.s_autodetect : T.s_check) + " …";
-      fetch("/plugins/shiplog/server/" + CHECKS[kind]())
+      fetch.apply(window, checkRequest(CHECKS[kind]()))
         .then(function (r) { return r.json(); })
         .then(function (d) {
           verdict(btn, out, !!d.ok, d.message);

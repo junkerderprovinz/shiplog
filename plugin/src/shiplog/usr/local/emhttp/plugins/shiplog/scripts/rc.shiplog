@@ -58,6 +58,8 @@ AUTOUPDATE_WITHOUT_BACKUP=""
 FORTRESS_DIR="/boot/config/plugins/${NAME}/fortress"
 # The update runs other apps of the fortress asked for, kept across restarts.
 RUNS_FILE="/boot/config/plugins/${NAME}/runs.json"
+# The cfg holds the GitHub and Docker Hub tokens, and update.php creates it 0644.
+[ -f "$CFG" ] && chmod 600 "$CFG"
 [ -f "$CFG" ] && . "$CFG"
 
 is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }

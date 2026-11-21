@@ -9,6 +9,8 @@ Icon="shiplog.png"
    once, so it declares no functions; a "Cannot redeclare" error would leave a
    blank page. */
 $cfg    = parse_plugin_cfg("shiplog");
+/* The cfg holds tokens, and a first save through update.php creates it 0644. */
+@chmod('/boot/config/plugins/shiplog/shiplog.cfg', 0600);
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
 $ddir   = !empty($cfg['DATA_DIR'])      ? $cfg['DATA_DIR']      : '/mnt/user/appdata/shiplog';
 $poll   = !empty($cfg['POLL_INTERVAL']) ? $cfg['POLL_INTERVAL'] : '6h';

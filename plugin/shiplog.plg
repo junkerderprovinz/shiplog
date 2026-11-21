@@ -561,6 +561,8 @@ find &plgPath; -maxdepth 1 -name '&slug;-*.txz' ! -name '&txz;' -delete 2>/dev/n
 <FILE Run="/bin/bash">
 <INLINE>
 chmod +x &emhttp;/bin/shiplog &emhttp;/scripts/rc.shiplog &emhttp;/event/* 2>/dev/null
+# The cfg holds tokens, and update.php creates it readable by everyone.
+if [ -f &plgPath;/&slug;.cfg ]; then chmod 600 &plgPath;/&slug;.cfg; fi
 &emhttp;/scripts/rc.shiplog restart
 echo ""
 cat &emhttp;/banner.txt 2>/dev/null
