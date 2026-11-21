@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "โมเดลตอบแล้ว แต่ ShipLog อ่านคำตอบเป็นสรุปไม่ได้ ลองโมเดลอื่น",
   "s_or_err_failed": "OpenRouter จัดการคำขอไม่ได้ รายละเอียดอยู่ใน /var/log/shiplog.log",
   "s_or_err_bad_key": "ดูไม่เหมือนคีย์",
-  "s_or_err_save_failed": "บันทึกคีย์ไม่ได้"
+  "s_or_err_save_failed": "บันทึกคีย์ไม่ได้",
+  "nc_edit": "แก้ไข",
+  "nc_edit_title": "แก้ไขช่องทาง",
+  "nc_on_state": "เปิด",
+  "nc_off": "ปิด"
 }

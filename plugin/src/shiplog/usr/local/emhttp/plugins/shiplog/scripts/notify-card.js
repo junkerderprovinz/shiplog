@@ -1,8 +1,10 @@
 /* The notification channels of a plugin's settings page, for a page without
- * a framework. Every channel is a sub-card of its own with its switch, what it
- * sends, its few fields and a test. A channel is added in a picker window, as
- * GlimStone's PickerWindow draws one: the services as tiles with their marks
- * under a search, and once one is picked its fields in the same window.
+ * a framework. Every channel is a row as GlimStone's ConnectionRow draws one:
+ * its mark lit on a tile, its name, what it sends and where, then Test, Edit
+ * and Remove. A channel is added in a picker window, as GlimStone's
+ * PickerWindow draws one: the services as tiles with their marks under a
+ * search, and once one is picked its fields in the same window. Edit opens
+ * those fields for a channel that is there.
  * The channels keep to the kit's notify format, so the same file serves every plugin
  * that keeps its channels that way.
  *
@@ -10,10 +12,9 @@
  * channels, saves the whole list (it answers with the list as saved, secrets
  * masked) and tests one channel. opts carries the strings (t, the nc_ keys),
  * the language, the kinds the plugin offers, the marks (notify-marks.js), the
- * host's classes for fields, buttons and switches, and saved(ok, text) for
- * the page's saved line. Every change on the page is saved at once, text a
- * moment after the last key, and a new channel when its window is saved. A
- * secret the service keeps is never shown: its field stays empty and says
+ * host's class for buttons, and saved(ok, text) for the page's saved line.
+ * A removal is saved at once, a new or edited channel when its window is
+ * saved. A secret the service keeps is never shown: its field stays empty and says
  * so, and an empty field keeps it. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -34,6 +35,8 @@
     close: "<svg viewBox=\"0 0 14 14\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M11.957 13.716 L12.056 13.789 L12.272 13.905 L12.506 13.976 L12.75 14 L12.994 13.976 L13.228 13.905 L13.444 13.789 L13.543 13.716 L13.716 13.543 L13.789 13.444 L13.905 13.228 L13.976 12.994 L14 12.75 L13.976 12.506 L13.905 12.272 L13.852 12.161 L13.789 12.056 L13.634 11.866 L8.768 7 L13.716 2.043 L13.789 1.944 L13.905 1.728 L13.976 1.494 L14 1.25 L13.976 1.006 L13.905 0.772 L13.789 0.556 L13.716 0.457 L13.543 0.284 L13.339 0.148 L13.113 0.054 L12.873 0.006 L12.627 0.006 L12.387 0.054 L12.272 0.095 L12.056 0.211 L11.866 0.366 L7 5.232 L2.043 0.284 L1.839 0.148 L1.613 0.054 L1.494 0.024 L1.25 0 L1.127 0.006 L0.887 0.054 L0.661 0.148 L0.457 0.284 L0.284 0.457 L0.211 0.556 L0.095 0.772 L0.024 1.006 L0 1.25 L0.024 1.494 L0.095 1.728 L0.211 1.944 L0.366 2.134 L5.232 7 L0.284 11.957 L0.211 12.056 L0.095 12.272 L0.024 12.506 L0 12.75 L0.024 12.994 L0.095 13.228 L0.211 13.444 L0.284 13.543 L0.457 13.716 L0.661 13.852 L0.772 13.905 L1.006 13.976 L1.25 14 L1.494 13.976 L1.728 13.905 L1.944 13.789 L2.134 13.634 L7 8.768Z\" /></svg>",
     back: "<svg viewBox=\"4.25 3.6 12.8 12.8\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M6.6 10 13 3.6l1.7 1.7L10 10l4.7 4.7-1.7 1.7L6.6 10Z\" /></svg>",
     search: "<svg viewBox=\"-0.001 0 13.988 13.988\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M2 6a4 4 0 1 1 8 0 4 4 0 0 1 -8 0Zm4 -6a6 6 0 1 0 3.476 10.89l2.817 2.817a1 1 0 0 0 1.414 -1.414l-2.816 -2.816A6 6 0 0 0 6 0Z\" clip-rule=\"evenodd\"/></svg>",
+    edit: "<svg viewBox=\"-0.002 -0.001 14.001 14.001\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M10.715 -0.000976562c-0.1998 0 -0.3976 0.039922962 -0.5818 0.117424562 -0.18301 0.07702 -0.34892 0.18961 -0.48808 0.331228L1.40732 8.64549c-0.06116 0.06086 -0.10553 0.13651 -0.12879 0.21959L0.0185299 13.3651c-0.0487051 0.1739 0.0001992 0.3606 0.1279281 0.4884 0.12773 0.1277 0.314422 0.1766 0.488369 0.1279l4.500003 -1.26c0.08308 -0.0233 0.15873 -0.0677 0.21959 -0.1288l8.19768 -8.2377 0.0014 -0.00135c0.1399 -0.13917 0.251 -0.30459 0.3269 -0.48679 0.0762 -0.18278 0.1154 -0.37884 0.1154 -0.57686 0 -0.19802 -0.0392 -0.39408 -0.1154 -0.57687 -0.0759 -0.1822 -0.187 -0.34763 -0.3269 -0.48679l-0.0014 -0.00134L11.7859 0.448721c-0.1393 -0.14211 -0.3056 -0.255064 -0.4891 -0.332273 -0.1842 -0.0775016 -0.382 -0.117424562 -0.5818 -0.117424562Z\"/></svg>",
+    check: "<svg viewBox=\"0.3 0.549 13.399 13.399\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M4.381 12.219 L4.574 12.378 L4.793 12.497 L5.032 12.572 L5.155 12.592 L5.405 12.596 L5.651 12.552 L5.884 12.461 L6.096 12.328 L6.278 12.157 L13.457 3.957 L13.584 3.736 L13.666 3.495 L13.699 3.242 L13.683 2.988 L13.656 2.863 L13.566 2.625 L13.431 2.408 L13.257 2.222 L13.05 2.074 L12.936 2.016 L12.695 1.934 L12.442 1.901 L12.188 1.917 L11.942 1.983 L11.713 2.096 L11.511 2.251 L5.238 9.399 L2.519 6.681 L2.425 6.595 L2.213 6.454 L1.977 6.356 L1.854 6.325 L1.6 6.3 L1.346 6.325 L1.223 6.356 L0.987 6.454 L0.775 6.595 L0.595 6.775 L0.454 6.987 L0.399 7.103 L0.325 7.346 L0.3 7.6 L0.306 7.727 L0.356 7.977 L0.399 8.097 L0.519 8.322 L0.681 8.519Z\"/></svg>",
     save: "<svg viewBox=\"3 3 18 18\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z\" /></svg>"
   };
 
@@ -248,6 +251,7 @@
     if (f.type === 'headers') return Object.keys(v || {}).sort().map(function (k) { return k + ': ' + v[k]; }).join('\n');
     if (f.type === 'number') return v == null || v === '' ? (f.dflt == null ? '' : String(f.dflt)) : String(v);
     if (f.type === 'choice') return v || f.dflt;
+    if (f.type === 'onoff') return v === false ? 'off' : 'on';
     return v == null ? '' : String(v);
   }
 
@@ -258,6 +262,7 @@
     if (f.type === 'secret') return s.trim() === '' && before === MASK ? MASK : s.trim();
     if (f.type === 'words') return s.split(/\s+/).filter(Boolean);
     if (f.type === 'number') { var n = parseInt(s, 10); return isNaN(n) ? undefined : n; }
+    if (f.type === 'onoff') return s === 'on';
     if (f.type === 'headers') {
       var out = {};
       s.split('\n').forEach(function (l) {
@@ -269,10 +274,13 @@
     return f.type === 'lines' ? s : s.trim();
   }
 
-  // The fields a channel shows, its name and what it sends first.
+  var ONOFF = [['on', 'nc_on_state'], ['off', 'nc_off']];
+
+  // The fields a channel shows, its name, whether it is used and what it sends first.
   function fieldsOf(c, t) {
     return [
       { path: 'name', label: 'nc_name', hint: 'nc_name_hint', ph: name(c.kind, t) },
+      { path: 'enabled', label: 'nc_use', type: 'onoff', options: ONOFF },
       { path: 'on', label: 'nc_on', type: 'choice', options: [['always', 'nc_on_always'], ['failure', 'nc_on_failure']], dflt: 'always' }
     ].concat((FIELDS[c.kind] || []).filter(function (f) {
       return !(f.unless && String(get(c, f.unless[0]) || '').toUpperCase() === f.unless[1]);
@@ -281,6 +289,15 @@
 
   function fail(t, code) {
     return t['nc_fail_' + code] || t.nc_test_failed;
+  }
+
+  // Where a channel sends to, as its row says it: the server's name alone,
+  // since the rest of an address can hold a secret.
+  function where(c) {
+    if (c.kind === 'smtp') return String(get(c, 'smtp.host') || '');
+    var url = get(c, c.kind + '.url') || get(c, c.kind + '.homeserver');
+    if (!url) return '';
+    try { return new URL(url).hostname; } catch (e) { return ''; }
   }
 
   /* GlimStone's one floating bubble for an (i): a body child placed from the
@@ -338,8 +355,8 @@
     var doc = el.ownerDocument || document;
     var t = opts.t || {}, lang = opts.lang || 'en', kinds = opts.kinds || Object.keys(FIELDS);
     var marks = (opts.marks && opts.marks.marks) || {}, lit = (opts.marks && opts.marks.tiles) || {};
-    var cls = Object.assign({ input: '', button: '', switch: '' }, opts.classes);
-    var list = [], typing = 0, problems = {}, addBtn = null;
+    var cls = Object.assign({ button: '' }, opts.classes);
+    var list = [], problems = {}, addBtn = null, edits = {};
     wireBubble(doc);
 
     function h(tag, attrs, kids) {
@@ -389,9 +406,7 @@
       return null;
     }
 
-    function save(now) {
-      clearTimeout(typing);
-      if (!now) { typing = setTimeout(function () { save(true); }, 700); return; }
+    function save() {
       var sent = JSON.parse(JSON.stringify(list));
       adapter.save(sent).then(function (saved) {
         problems = {};
@@ -407,28 +422,26 @@
       });
     }
 
-    /* One field of the channel that of() returns. changed(done, redraw) hears
-     * every edit: done once the edit is over, redraw when other fields may
-     * come or go with it. On the page a choice is a select, as the page's
-     * others are; in the window it is a row of segments, since the window
-     * draws its own controls. */
-    function field(of, f, changed, inWindow) {
+    /* One field of the channel that of() returns, as the window draws it: a
+     * choice is a row of segments. changed(redraw) hears every edit, redraw
+     * when other fields may come or go with it. */
+    function field(of, f, changed) {
       var c = of();
-      var id = 'glim-nc-' + (inWindow ? 'new' : c.id) + '-' + f.path.replace(/\./g, '-');
+      var id = 'glim-nc-win-' + f.path.replace(/\./g, '-');
       var v = get(c, f.path), input;
-      var fieldCls = inWindow ? 'glim-nc-in glim-nc-win-in' : (cls.input + ' glim-nc-in').trim();
-      function take(text, done) {
+      var segs = f.type === 'choice' || f.type === 'onoff';
+      function take(text) {
         var ch = of();
         if (!ch) return;
         set(ch, f.path, taken(f, text, get(ch, f.path)));
-        changed(done, f.type === 'choice');
+        changed(segs);
       }
-      if (f.type === 'choice' && inWindow) {
+      if (segs) {
         input = h('span', { id: id, class: 'glim-nc-seg', role: 'radiogroup' });
         f.options.forEach(function (o) {
           var on = o[0] === shown(f, v);
           var s = h('button', { type: 'button', role: 'radio', class: 'glim-nc-seg-opt', 'aria-checked': String(on), tabindex: on ? '0' : '-1', 'data-value': o[0], text: t[o[1]] || o[1] });
-          s.addEventListener('click', function () { take(o[0], true); });
+          s.addEventListener('click', function () { take(o[0]); });
           input.appendChild(s);
         });
         input.addEventListener('keydown', function (e) {
@@ -436,103 +449,96 @@
           var step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
           if (!step) return;
           e.preventDefault();
-          take(f.options[(i + step + f.options.length) % f.options.length][0], true);
+          take(f.options[(i + step + f.options.length) % f.options.length][0]);
         });
-      } else if (f.type === 'choice') {
-        input = h('select', { id: id, class: fieldCls + ' glim-nc-select' });
-        f.options.forEach(function (o) { input.appendChild(h('option', { value: o[0], text: t[o[1]] || o[1] })); });
-        input.value = shown(f, v);
-        input.addEventListener('change', function () { take(input.value, true); });
       } else {
         var lines = f.type === 'lines' || f.type === 'headers';
         input = lines
-          ? h('textarea', { id: id, class: fieldCls + ' glim-nc-lines', rows: '3', spellcheck: 'false', placeholder: f.ph })
+          ? h('textarea', { id: id, class: 'glim-nc-in glim-nc-win-in glim-nc-lines', rows: '3', spellcheck: 'false', placeholder: f.ph })
           : h('input', {
-            id: id, class: fieldCls, spellcheck: 'false',
+            id: id, class: 'glim-nc-in glim-nc-win-in', spellcheck: 'false',
             type: f.type === 'secret' ? 'password' : f.type === 'number' ? 'number' : 'text',
             autocomplete: f.type === 'secret' ? 'new-password' : 'off',
             placeholder: f.type === 'secret' && v === MASK ? t.nc_saved : f.ph, min: f.min, max: f.max
           });
         input.value = shown(f, v);
-        input.addEventListener('input', function () { take(input.value, false); });
-        input.addEventListener('change', function () { take(input.value, true); });
+        input.addEventListener('input', function () { take(input.value); });
       }
-      var lbl = f.type === 'choice' && inWindow
+      var lbl = segs
         ? h('span', { class: 'glim-nc-name', id: id + '-l', text: t[f.label] || f.label })
         : h('label', { class: 'glim-nc-name', for: id, text: t[f.label] || f.label });
-      if (f.type === 'choice' && inWindow) input.setAttribute('aria-labelledby', id + '-l');
+      if (segs) input.setAttribute('aria-labelledby', id + '-l');
       return h('div', { class: 'glim-nc-row' }, [h('span', { class: 'glim-nc-lbl' }, [lbl, info(t[f.hint])]), h('div', { class: 'glim-nc-ctl' }, [input])]);
     }
 
     /* The test of a channel, its button and the line that says how it went.
-     * In the window's foot the button also shows it, as GlimStone's window
+     * The button shows it too, as GlimStone's connection test and window
      * actions do: busy while it runs, then in the colour of the outcome with
-     * the outcome as its title, its words as they were. */
-    function tester(of, make, toned) {
-      var res = h('span', { class: 'glim-nc-res', role: 'status' });
-      var b = (make || button)(t.nc_test, 'test', '', function () {
+     * the outcome as its title, its words as they were. In the window's foot
+     * the line stands at the foot's start. */
+    function tester(of, make, inFoot) {
+      var foot = inFoot ? ' glim-nc-win-start' : '';
+      var res = h('span', { class: 'glim-nc-res' + foot, role: 'status' });
+      var b = make(t.nc_test, 'test', '', function () {
         var ch = of();
         if (!ch) return;
         function done(ok, text) {
-          res.className = 'glim-nc-res ' + (ok ? 'glim-nc-ok' : 'glim-nc-bad') + (toned ? ' glim-nc-win-start' : '');
+          res.className = 'glim-nc-res ' + (ok ? 'glim-nc-ok' : 'glim-nc-bad') + foot;
           res.textContent = text;
-          if (!toned) return;
           b.removeAttribute('aria-busy');
           b.disabled = false;
           b.classList.add(ok ? 'glim-nc-tone-ok' : 'glim-nc-tone-bad');
           b.setAttribute('title', text);
         }
-        res.className = 'glim-nc-res glim-nc-run' + (toned ? ' glim-nc-win-start' : '');
+        res.className = 'glim-nc-res glim-nc-run' + foot;
         res.textContent = t.nc_testing;
-        if (toned) {
-          b.classList.remove('glim-nc-tone-ok', 'glim-nc-tone-bad');
-          b.removeAttribute('title');
-          b.setAttribute('aria-busy', 'true');
-          b.disabled = true;
-        }
+        b.classList.remove('glim-nc-tone-ok', 'glim-nc-tone-bad');
+        b.removeAttribute('title');
+        b.setAttribute('aria-busy', 'true');
+        b.disabled = true;
         adapter.test(JSON.parse(JSON.stringify(ch))).then(function (r) {
           done(r.ok, r.ok ? t.nc_test_ok : t.nc_test_failed + ': ' + fail(t, r.code));
         }, function () {
           done(false, t.nc_test_failed);
         });
       });
-      if (toned) res.className = 'glim-nc-res glim-nc-win-start';
       return { button: b, result: res };
     }
 
+    /* A channel as GlimStone's ConnectionRow: the tile lit in the service's
+     * colours, the name with a badge when it is off, one line on what it
+     * sends and where, and Test, Edit and Remove at the end. */
     function channel(c) {
       var title = (c.name || '').trim() || name(c.kind, t);
       var of = function () { return byId(c.id); };
-      var sw = h('input', { type: 'checkbox', role: 'switch', class: (cls.switch + ' glim-nc-switch').trim(), 'aria-label': t.nc_use + ', ' + title });
-      sw.checked = !!c.enabled;
-      sw.addEventListener('change', function () {
-        var ch = of();
-        if (!ch) return;
-        ch.enabled = sw.checked;
-        draw();
-        save(true);
-      });
-      var card = h('section', { class: 'glim-nc-ch', 'data-kind': c.kind }, [
-        h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: title }), info(t[HINTS[c.kind]]), h('span', { class: 'glim-nc-gap' }), sw])
+      var tile = h('span', { class: 'glim-nc-conn-tile', 'aria-hidden': 'true' }, [mark(c.kind, 'glim-nc-conn-mark')]);
+      var l = lit[c.kind];
+      if (l) tile.setAttribute('style', '--nc-tile:' + l.tile + ';--nc-tile-ink:' + l.ink);
+      var head = h('div', { class: 'glim-nc-conn-head' }, [
+        h('span', { class: 'glim-nc-conn-title' }, [h('span', { class: 'glim-nc-conn-name', text: title }), info(t[HINTS[c.kind]])]),
+        c.enabled ? null : h('span', { class: 'glim-nc-badges' }, [h('span', { class: 'glim-nc-badge', text: t.nc_off })])
       ]);
-      if (problems[c.id]) card.appendChild(h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }));
-      if (c.enabled) {
-        fieldsOf(c, t).forEach(function (f) {
-          card.appendChild(field(of, f, function (done, redraw) {
-            if (redraw) draw();
-            save(done || redraw);
-          }));
-        });
-      }
-      var test = tester(of);
+      var host = where(c);
+      var test = tester(of, function (text, glyph, extra, onclick) { return button(text, 'check', extra, onclick); });
       test.button.disabled = !c.enabled;
+      var about = h('div', { class: 'glim-nc-conn-about' }, [
+        h('p', { class: 'glim-nc-conn-status', text: (c.on === 'failure' ? t.nc_on_failure : t.nc_on_always) + (host ? ' · ' + host : '') }),
+        problems[c.id] ? h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }) : null,
+        test.result
+      ]);
+      var edit = button(t.nc_edit, 'edit', '', function () { picker(of()); });
+      edit.setAttribute('aria-haspopup', 'dialog');
+      edits[c.id] = edit;
       var remove = button(t.nc_remove, 'remove', '', function () {
         list = list.filter(function (o) { return o.id !== c.id; });
         draw();
-        save(true);
+        save();
       });
-      card.appendChild(h('div', { class: 'glim-nc-tools' }, [test.result, test.button, remove]));
-      return card;
+      [[test.button, 'test'], [edit, 'edit'], [remove, 'remove']].forEach(function (p) { p[0].setAttribute('data-connection', p[1]); });
+      return h('div', { class: 'glim-nc-conn', role: 'group', 'aria-label': title, 'data-kind': c.kind }, [
+        tile,
+        h('div', { class: 'glim-nc-conn-main' }, [head, h('div', { class: 'glim-nc-conn-foot' }, [about, h('span', { class: 'glim-nc-conn-actions' }, [test.button, edit, remove])])])
+      ]);
     }
 
     var FOCUSABLE = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -543,10 +549,14 @@
      * them. A picked tile's fields take the tiles' place, with Back and Save
      * beside Cancel in the foot, and Back marks the tile picked before and
      * gives it the focus. Escape empties the search first, then closes; the
-     * focus goes back to Add. */
-    function picker() {
+     * focus goes back to Add. With a channel the window opens on a copy of
+     * its fields, Save puts it back in its place and the focus returns to
+     * its Edit. */
+    function picker(editing) {
       var query = '', draft = null, busy = false, scroll = null, search = null, picked = null;
-      var title = h('h2', { class: 'glim-nc-win-title', id: 'glim-nc-win-t' }, [h('span', { text: t.nc_add }), info(t.nc_add_hint)]);
+      var title = h('h2', { class: 'glim-nc-win-title', id: 'glim-nc-win-t' }, editing
+        ? [h('span', { text: t.nc_edit_title })]
+        : [h('span', { text: t.nc_add }), info(t.nc_add_hint)]);
       var body = h('div', { class: 'glim-nc-win-body' });
       var act = h('div', { class: 'glim-nc-win-act' });
       var box = h('div', { class: 'glim-nc-win', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' }, [title, body, act]);
@@ -558,7 +568,8 @@
         if (!wins.parentNode) return;
         wins.parentNode.removeChild(wins);
         doc.removeEventListener('keydown', onKey, true);
-        (addBtn && addBtn.isConnected ? addBtn : el).focus();
+        var back = editing ? edits[editing.id] : addBtn;
+        (back && back.isConnected ? back : el).focus();
       }
 
       function winButton(text, glyph, extra, onclick) {
@@ -655,7 +666,7 @@
           body.appendChild(h('div', { class: 'glim-nc-ch-hd' }, [mark(c.kind), h('span', { class: 'glim-nc-title', text: name(c.kind, t) }), info(t[HINTS[c.kind]])]));
           var rows = h('div', { class: 'glim-nc-form' });
           fieldsOf(draft, t).forEach(function (f) {
-            rows.appendChild(field(of, f, function (done, redraw) {
+            rows.appendChild(field(of, f, function (redraw) {
               if (!redraw) return;
               // A segment's group keeps the focus, on the segment chosen.
               var on = doc.activeElement, at = on && (on.id || (on.parentNode && on.parentNode.id));
@@ -663,7 +674,7 @@
               var back = at ? doc.getElementById(at) : null;
               if (back && back.getAttribute('role') === 'radiogroup') back = back.querySelector('[aria-checked="true"]');
               if (back) back.focus();
-            }, true));
+            }));
           });
           body.appendChild(rows);
           body.appendChild(err);
@@ -675,8 +686,10 @@
           busy = true;
           keep.disabled = true;
           err.textContent = '';
-          clearTimeout(typing);
-          var sent = JSON.parse(JSON.stringify(list.concat([draft])));
+          var at = editing ? list.map(function (o) { return o.id; }).indexOf(draft.id) : list.length;
+          var next = list.slice();
+          next[at] = draft;
+          var sent = JSON.parse(JSON.stringify(next));
           adapter.save(sent).then(function (saved) {
             busy = false;
             problems = {};
@@ -687,13 +700,13 @@
           }, function (e) {
             busy = false;
             keep.disabled = false;
-            var mine = ((e && e.problems) || []).filter(function (p) { return p.index === sent.length - 1; })[0];
+            var mine = ((e && e.problems) || []).filter(function (p) { return p.index === at; })[0];
             err.textContent = t.nc_not_saved + ': ' + fail(t, mine ? mine.code : (e && e.code) || 'engine');
           });
         });
         act.appendChild(test.result);
         act.appendChild(h('div', { class: 'glim-nc-win-actions' }, [
-          winButton(t.nc_cancel, 'close', '', close), winButton(t.nc_back, 'back', '', tiles), test.button, keep
+          winButton(t.nc_cancel, 'close', '', close), editing ? null : winButton(t.nc_back, 'back', '', tiles), test.button, keep
         ]));
         var first = body.querySelector('input, textarea');
         if (first) first.focus();
@@ -724,7 +737,8 @@
       // A press beside the window would throw away what was typed into a form.
       scrim.addEventListener('click', function () { if (!busy && !draft) close(); });
       doc.addEventListener('keydown', onKey, true);
-      tiles();
+      if (editing) form(JSON.parse(JSON.stringify(editing)));
+      else tiles();
       return { close: close, box: box };
     }
 
@@ -732,6 +746,7 @@
       el.textContent = '';
       var root = h('div', { class: 'glim-nc' });
       if (!list.length) root.appendChild(h('p', { class: 'glim-nc-sub', text: t.nc_empty }));
+      edits = {};
       list.forEach(function (c) { root.appendChild(channel(c)); });
       addBtn = button(t.nc_add, 'add', 'glim-nc-add', function () { picker(); });
       addBtn.setAttribute('aria-haspopup', 'dialog');

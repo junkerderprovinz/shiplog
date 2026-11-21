@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "모델이 응답했지만 ShipLog가 그 응답을 요약으로 읽을 수 없습니다. 다른 모델을 시도하세요.",
   "s_or_err_failed": "OpenRouter가 요청을 처리하지 못했습니다. 자세한 내용은 /var/log/shiplog.log에 있습니다.",
   "s_or_err_bad_key": "키처럼 보이지 않습니다",
-  "s_or_err_save_failed": "키를 저장하지 못했습니다"
+  "s_or_err_save_failed": "키를 저장하지 못했습니다",
+  "nc_edit": "편집",
+  "nc_edit_title": "채널 편집",
+  "nc_on_state": "켜짐",
+  "nc_off": "꺼짐"
 }

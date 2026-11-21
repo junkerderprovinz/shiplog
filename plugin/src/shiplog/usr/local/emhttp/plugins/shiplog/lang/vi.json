@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Mô hình đã trả lời, nhưng ShipLog không đọc được câu trả lời như một bản tóm tắt. Hãy thử mô hình khác.",
   "s_or_err_failed": "OpenRouter không xử lý được yêu cầu. Chi tiết nằm trong /var/log/shiplog.log.",
   "s_or_err_bad_key": "Trông không giống một khóa",
-  "s_or_err_save_failed": "Không lưu được khóa"
+  "s_or_err_save_failed": "Không lưu được khóa",
+  "nc_edit": "Sửa",
+  "nc_edit_title": "Sửa kênh",
+  "nc_on_state": "Bật",
+  "nc_off": "Tắt"
 }

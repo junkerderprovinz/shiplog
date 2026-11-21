@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Modellen svarte, men ShipLog kan ikke lese svaret som et sammendrag. Prøv en annen modell.",
   "s_or_err_failed": "OpenRouter kunne ikke håndtere forespørselen. Detaljene står i /var/log/shiplog.log.",
   "s_or_err_bad_key": "Det ligner ikke en nøkkel",
-  "s_or_err_save_failed": "Nøkkelen kunne ikke lagres"
+  "s_or_err_save_failed": "Nøkkelen kunne ikke lagres",
+  "nc_edit": "Rediger",
+  "nc_edit_title": "Rediger kanalen",
+  "nc_on_state": "På",
+  "nc_off": "Av"
 }

@@ -318,5 +318,9 @@
   "s_or_err_bad_answer": "Model odpowiedział, ale ShipLog nie potrafi odczytać odpowiedzi jako podsumowania. Wypróbuj inny model.",
   "s_or_err_failed": "OpenRouter nie obsłużył zapytania. Szczegóły są w /var/log/shiplog.log.",
   "s_or_err_bad_key": "To nie wygląda na klucz",
-  "s_or_err_save_failed": "Nie udało się zapisać klucza"
+  "s_or_err_save_failed": "Nie udało się zapisać klucza",
+  "nc_edit": "Edytuj",
+  "nc_edit_title": "Edytuj kanał",
+  "nc_on_state": "Włączony",
+  "nc_off": "Wyłączony"
 }

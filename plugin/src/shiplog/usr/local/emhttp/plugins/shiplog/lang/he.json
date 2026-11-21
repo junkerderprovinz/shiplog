@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "המודל ענה, אבל ShipLog לא מצליח לקרוא את התשובה כסיכום. נסה מודל אחר.",
   "s_or_err_failed": "OpenRouter לא הצליח לטפל בבקשה. הפרטים נמצאים ב־/var/log/shiplog.log.",
   "s_or_err_bad_key": "זה לא נראה כמו מפתח",
-  "s_or_err_save_failed": "לא ניתן היה לשמור את המפתח"
+  "s_or_err_save_failed": "לא ניתן היה לשמור את המפתח",
+  "nc_edit": "עריכה",
+  "nc_edit_title": "עריכת הערוץ",
+  "nc_on_state": "פועל",
+  "nc_off": "כבוי"
 }

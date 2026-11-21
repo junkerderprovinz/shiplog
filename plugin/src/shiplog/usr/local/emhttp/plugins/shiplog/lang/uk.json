@@ -318,5 +318,9 @@
   "s_or_err_bad_answer": "Модель відповіла, але ShipLog не може прочитати відповідь як підсумок. Спробуйте іншу модель.",
   "s_or_err_failed": "OpenRouter не зміг обробити запит. Подробиці в /var/log/shiplog.log.",
   "s_or_err_bad_key": "Це не схоже на ключ",
-  "s_or_err_save_failed": "Не вдалося зберегти ключ"
+  "s_or_err_save_failed": "Не вдалося зберегти ключ",
+  "nc_edit": "Змінити",
+  "nc_edit_title": "Змінити канал",
+  "nc_on_state": "Увімкнено",
+  "nc_off": "Вимкнено"
 }

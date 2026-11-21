@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "模型已回答，但 ShipLog 无法将回答读取为摘要。请换一个模型。",
   "s_or_err_failed": "OpenRouter 无法处理该请求。详情见 /var/log/shiplog.log。",
   "s_or_err_bad_key": "这看起来不像密钥",
-  "s_or_err_save_failed": "无法保存密钥"
+  "s_or_err_save_failed": "无法保存密钥",
+  "nc_edit": "编辑",
+  "nc_edit_title": "编辑渠道",
+  "nc_on_state": "开启",
+  "nc_off": "关闭"
 }

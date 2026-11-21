@@ -316,5 +316,9 @@
   "s_or_err_bad_answer": "Modelul a răspuns, dar ShipLog nu poate citi răspunsul ca rezumat. Încearcă alt model.",
   "s_or_err_failed": "OpenRouter nu a putut trata cererea. Detaliile sunt în /var/log/shiplog.log.",
   "s_or_err_bad_key": "Nu pare a fi o cheie",
-  "s_or_err_save_failed": "Cheia nu a putut fi salvată"
+  "s_or_err_save_failed": "Cheia nu a putut fi salvată",
+  "nc_edit": "Editează",
+  "nc_edit_title": "Editează canalul",
+  "nc_on_state": "Pornit",
+  "nc_off": "Oprit"
 }

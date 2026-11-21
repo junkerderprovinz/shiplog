@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "A modell válaszolt, de a ShipLog nem tudja összefoglalóként olvasni a választ. Próbálj másik modellt.",
   "s_or_err_failed": "Az OpenRouter nem tudta kezelni a kérést. A részletek itt vannak: /var/log/shiplog.log.",
   "s_or_err_bad_key": "Ez nem tűnik kulcsnak",
-  "s_or_err_save_failed": "A kulcsot nem sikerült menteni"
+  "s_or_err_save_failed": "A kulcsot nem sikerült menteni",
+  "nc_edit": "Szerkesztés",
+  "nc_edit_title": "Csatorna szerkesztése",
+  "nc_on_state": "Be",
+  "nc_off": "Ki"
 }

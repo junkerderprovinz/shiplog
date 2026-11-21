@@ -316,5 +316,9 @@
   "s_or_err_bad_answer": "Model odpověděl, ale ShipLog odpověď nedokáže přečíst jako shrnutí. Zkus jiný model.",
   "s_or_err_failed": "OpenRouter požadavek nezvládl. Podrobnosti jsou v /var/log/shiplog.log.",
   "s_or_err_bad_key": "Tohle nevypadá jako klíč",
-  "s_or_err_save_failed": "Klíč se nepodařilo uložit"
+  "s_or_err_save_failed": "Klíč se nepodařilo uložit",
+  "nc_edit": "Upravit",
+  "nc_edit_title": "Upravit kanál",
+  "nc_on_state": "Zapnuto",
+  "nc_off": "Vypnuto"
 }

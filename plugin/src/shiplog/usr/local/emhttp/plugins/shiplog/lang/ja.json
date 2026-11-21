@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "モデルは応答しましたが、ShipLog はその応答を要約として読み取れません。別のモデルをお試しください。",
   "s_or_err_failed": "OpenRouter はリクエストを処理できませんでした。詳細は /var/log/shiplog.log にあります。",
   "s_or_err_bad_key": "キーの形式ではないようです",
-  "s_or_err_save_failed": "キーを保存できませんでした"
+  "s_or_err_save_failed": "キーを保存できませんでした",
+  "nc_edit": "編集",
+  "nc_edit_title": "チャンネルを編集",
+  "nc_on_state": "オン",
+  "nc_off": "オフ"
 }

@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "The model answered, but ShipLog cannot read the answer as a summary. Try another model.",
   "s_or_err_failed": "OpenRouter could not handle the request. The details are in /var/log/shiplog.log.",
   "s_or_err_bad_key": "That does not look like a key",
-  "s_or_err_save_failed": "The key could not be saved"
+  "s_or_err_save_failed": "The key could not be saved",
+  "nc_edit": "Edit",
+  "nc_edit_title": "Edit the channel",
+  "nc_on_state": "On",
+  "nc_off": "Off"
 }

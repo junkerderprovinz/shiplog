@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Malli vastasi, mutta ShipLog ei pysty lukemaan vastausta tiivistelmänä. Kokeile toista mallia.",
   "s_or_err_failed": "OpenRouter ei pystynyt käsittelemään pyyntöä. Tiedot ovat tiedostossa /var/log/shiplog.log.",
   "s_or_err_bad_key": "Tämä ei näytä avaimelta",
-  "s_or_err_save_failed": "Avainta ei voitu tallentaa"
+  "s_or_err_save_failed": "Avainta ei voitu tallentaa",
+  "nc_edit": "Muokkaa",
+  "nc_edit_title": "Muokkaa kanavaa",
+  "nc_on_state": "Päällä",
+  "nc_off": "Pois"
 }

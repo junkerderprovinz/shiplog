@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Model yanıt verdi ama ShipLog yanıtı özet olarak okuyamıyor. Başka bir model dene.",
   "s_or_err_failed": "OpenRouter isteği işleyemedi. Ayrıntılar /var/log/shiplog.log içinde.",
   "s_or_err_bad_key": "Bu bir anahtara benzemiyor",
-  "s_or_err_save_failed": "Anahtar kaydedilemedi"
+  "s_or_err_save_failed": "Anahtar kaydedilemedi",
+  "nc_edit": "Düzenle",
+  "nc_edit_title": "Kanalı düzenle",
+  "nc_on_state": "Açık",
+  "nc_off": "Kapalı"
 }

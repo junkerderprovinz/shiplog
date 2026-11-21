@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Het model heeft geantwoord, maar ShipLog kan het antwoord niet als samenvatting lezen. Probeer een ander model.",
   "s_or_err_failed": "OpenRouter kon de aanvraag niet afhandelen. De details staan in /var/log/shiplog.log.",
   "s_or_err_bad_key": "Dat lijkt niet op een sleutel",
-  "s_or_err_save_failed": "De sleutel kon niet worden opgeslagen"
+  "s_or_err_save_failed": "De sleutel kon niet worden opgeslagen",
+  "nc_edit": "Bewerken",
+  "nc_edit_title": "Kanaal bewerken",
+  "nc_on_state": "Aan",
+  "nc_off": "Uit"
 }

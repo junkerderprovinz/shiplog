@@ -73,7 +73,7 @@ function mounted(channels, answers = {}) {
     save: (list) => { saves.push(list); return answers.save ? answers.save(list) : Promise.resolve(JSON.parse(JSON.stringify(list))); },
     test: (c) => { tests.push(c); return Promise.resolve(answers.test || { ok: true }); }
   };
-  const view = card.mount(el, adapter, { t: en, lang: 'en', kinds: KINDS, marks, classes: { input: 'sl-f', button: 'sl-btn', switch: 'sl-sw' }, saved: (ok, text) => saved.push([ok, text]) });
+  const view = card.mount(el, adapter, { t: en, lang: 'en', kinds: KINDS, marks, classes: { button: 'sl-btn' }, saved: (ok, text) => saved.push([ok, text]) });
   const win = () => doc.body.byClass('glim-nc-win')[0] || null;
   const foot = (label) => win().byClass('glim-nc-win-btn').find((b) => b.textContent === label);
   const tile = (kind) => win().byClass('glim-nc-tile').find((b) => b.attrs['data-kind'] === kind);
@@ -261,7 +261,7 @@ test('a picked tile shows its fields in the window, and Save adds the channel at
   assert.equal(p.saves.length, 1);
   assert.deepEqual(p.saves[0].map((c) => [c.kind, c.discord.url]), [['discord', 'https://discord.com/api/webhooks/1/x']]);
   assert.equal(p.win(), null, 'the window closes');
-  assert.equal(p.el.byClass('glim-nc-ch').length, 1);
+  assert.equal(p.el.byClass('glim-nc-conn').length, 1);
   assert.equal(p.doc.activeElement, p.el.byClass('glim-nc-add')[0], 'the focus is back on Add');
 });
 
@@ -348,55 +348,121 @@ test('a channel the service refuses keeps the window open and says why', async (
   assert.deepEqual(p.view.list().map((c) => c.id), ['unraid'], 'the page keeps its list');
 });
 
-test('a channel switched off keeps its settings, hides its fields and saves', async () => {
-  const p = mounted([{ id: 'matrix', kind: 'matrix', enabled: true, on: 'failure', matrix: { homeserver: 'https://m.example', room: '!r:m', token: card.MASK } }]);
+test("every channel is a row of GlimStone's connections: its lit tile, its name, what it sends, then Test, Edit and Remove", async () => {
+  const p = mounted([
+    { id: 'ntfy', kind: 'ntfy', name: 'Phone', enabled: true, on: 'failure', ntfy: { url: 'https://ntfy.sh/secret-topic', token: card.MASK } },
+    { id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }
+  ]);
   await settle();
-  let ch = p.el.byClass('glim-nc-ch')[0];
-  const token = ch.byClass('glim-nc-in').find((i) => i.attrs.type === 'password');
-  assert.equal(token.value, '');
-  assert.equal(token.attrs.placeholder, en.nc_saved);
-  ch.byClass('glim-nc-switch')[0].checked = false;
-  ch.byClass('glim-nc-switch')[0].fire('change');
-  await settle();
-  assert.deepEqual(p.saves[0][0].matrix, { homeserver: 'https://m.example', room: '!r:m', token: card.MASK });
-  assert.equal(p.saves[0][0].enabled, false);
-  ch = p.el.byClass('glim-nc-ch')[0];
-  assert.equal(ch.byClass('glim-nc-in').length, 0);
+  const rows = p.el.byClass('glim-nc-conn');
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].attrs.role, 'group');
+  assert.equal(rows[0].attrs['aria-label'], 'Phone');
+  assert.equal(rows[0].byClass('glim-nc-conn-name')[0].text, 'Phone');
+  assert.equal(rows[0].byClass('glim-nc-conn-status')[0].text, en.nc_on_failure + ' · ntfy.sh', 'the host alone, never the path that may hold a secret');
+  assert.equal(rows[1].byClass('glim-nc-conn-status')[0].text, en.nc_on_always);
+  assert.deepEqual(rows[0].byClass('glim-nc-btn').map((b) => b.textContent), [en.nc_test, en.nc_edit, en.nc_remove]);
+  assert.deepEqual(rows[0].byClass('glim-nc-btn').map((b) => b.attrs['data-connection']), ['test', 'edit', 'remove']);
+  for (const b of p.el.byClass('glim-nc-btn')) assert.match(b.children[0].html, /^<svg viewBox=/, b.textContent);
+  assert.equal(p.el.byClass('glim-nc-in').length, 0, 'the fields wait in the window');
+  const tile = rows[0].byClass('glim-nc-conn-tile')[0];
+  assert.match(tile.attrs.style || '', /--nc-tile:/);
+  assert.equal(tile.attrs['aria-hidden'], 'true');
+  assert.equal(p.el.byClass('glim-nc-badge').length, 0, 'a channel that is on needs no badge');
 });
 
-test('a field the service refuses is said on its channel, and a test says how it went', async () => {
+test('a channel switched off says so on its row, and its test waits', async () => {
+  const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: false, on: 'always' }]);
+  await settle();
+  const row = p.el.byClass('glim-nc-conn')[0];
+  assert.deepEqual(row.byClass('glim-nc-badge').map((b) => b.text), [en.nc_off]);
+  assert.equal(row.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test).disabled, true);
+});
+
+test('Edit opens the channel in the window, and Save puts it back in its place', async () => {
+  const p = mounted([
+    { id: 'unraid', kind: 'unraid', enabled: true, on: 'always' },
+    { id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: 'https://hooks.slack.com/services/a' } }
+  ]);
+  await settle();
+  p.el.byClass('glim-nc-conn')[1].byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit).click();
+  assert.ok(p.win());
+  assert.equal(p.win().byClass('glim-nc-win-title')[0].children[0].text, en.nc_edit_title);
+  assert.deepEqual(p.win().byClass('glim-nc-win-btn').map((b) => b.textContent), [en.nc_cancel, en.nc_test, en.nc_save]);
+  const name = p.win().byClass('glim-nc-in').find((i) => i.id.endsWith('-name'));
+  name.value = 'Team';
+  name.fire('input');
+  assert.equal(p.view.list()[1].name, undefined, 'the page keeps its channel until Save');
+  p.foot(en.nc_save).click();
+  await settle();
+  assert.deepEqual(p.saves[0].map((c) => [c.id, c.name]), [['unraid', undefined], ['slack', 'Team']]);
+  assert.equal(p.win(), null);
+  assert.equal(p.el.byClass('glim-nc-conn-name')[1].text, 'Team');
+  const edit = p.el.byClass('glim-nc-conn')[1].byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit);
+  assert.equal(p.doc.activeElement, edit, 'the focus goes back to Edit');
+});
+
+test('Cancel in the edit window leaves the channel as it was', async () => {
+  const p = mounted([{ id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: 'https://hooks.slack.com/services/a' } }]);
+  await settle();
+  p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit).click();
+  const url = p.win().byClass('glim-nc-in').find((i) => i.attrs.placeholder === 'https://hooks.slack.com/services/...');
+  url.value = 'https://elsewhere';
+  url.fire('input');
+  p.foot(en.nc_cancel).click();
+  await settle();
+  assert.equal(p.saves.length, 0);
+  assert.equal(p.view.list()[0].slack.url, 'https://hooks.slack.com/services/a');
+});
+
+test('a channel is switched off in its window and keeps its settings and its secret', async () => {
+  const p = mounted([{ id: 'matrix', kind: 'matrix', enabled: true, on: 'failure', matrix: { homeserver: 'https://m.example', room: '!r:m', token: card.MASK } }]);
+  await settle();
+  p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit).click();
+  const token = p.win().byClass('glim-nc-in').find((i) => i.attrs.type === 'password');
+  assert.equal(token.value, '');
+  assert.equal(token.attrs.placeholder, en.nc_saved);
+  p.win().byClass('glim-nc-seg-opt').find((b) => b.text === en.nc_off).click();
+  p.foot(en.nc_save).click();
+  await settle();
+  assert.equal(p.saves[0][0].enabled, false);
+  assert.deepEqual(p.saves[0][0].matrix, { homeserver: 'https://m.example', room: '!r:m', token: card.MASK });
+});
+
+test('a field the service refuses keeps the edit window open and says why', async () => {
   const bad = () => Promise.reject({ code: 'invalid', problems: [{ index: 0, field: 'url', code: 'invalid' }] });
-  const p = mounted([{ id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: '' } }], { save: bad, test: { ok: false, code: 'not_found' } });
+  const p = mounted([{ id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: '' } }], { save: bad });
   await settle();
-  const url = p.el.byClass('glim-nc-in').find((i) => i.attrs.placeholder === 'https://hooks.slack.com/services/...');
-  url.value = 'nope';
-  url.fire('change');
+  p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit).click();
+  p.foot(en.nc_save).click();
   await settle();
-  assert.equal(p.el.byClass('glim-nc-err')[0].textContent, en.nc_fail_invalid);
-  assert.deepEqual(p.saved[p.saved.length - 1], [false, en.nc_not_saved + ': ' + en.nc_fail_invalid]);
-  p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test).click();
+  assert.ok(p.win());
+  assert.equal(p.win().byClass('glim-nc-err')[0].textContent, en.nc_not_saved + ': ' + en.nc_fail_invalid);
+});
+
+test("a row's test reports on its button and under the name", async () => {
+  const p = mounted([{ id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: 'https://hooks.slack.com/services/a' } }], { test: { ok: false, code: 'not_found' } });
   await settle();
-  assert.equal(p.tests[0].slack.url, 'nope');
+  const test = p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test);
+  test.click();
+  await settle();
+  assert.equal(p.tests[0].slack.url, 'https://hooks.slack.com/services/a');
   assert.equal(p.el.byClass('glim-nc-res')[0].textContent, en.nc_test_failed + ': ' + en.nc_fail_not_found);
+  assert.ok(test.className.includes('glim-nc-tone-bad'));
+  assert.equal(test.attrs.title, en.nc_test_failed + ': ' + en.nc_fail_not_found);
 });
 
 test('a channel is removed with its button', async () => {
   const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }, { id: 'ntfy', kind: 'ntfy', enabled: true, on: 'always', ntfy: { url: 'https://ntfy.sh/x' } }]);
   await settle();
-  p.el.byClass('glim-nc-ch')[0].byClass('glim-nc-btn').find((b) => b.textContent === en.nc_remove).click();
+  p.el.byClass('glim-nc-conn')[0].byClass('glim-nc-btn').find((b) => b.textContent === en.nc_remove).click();
   await settle();
   assert.deepEqual(p.saves[0].map((c) => c.id), ['ntfy']);
 });
 
-test('every button wears its glyph before its words, and a switch stands at the end of its row', async () => {
-  const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }]);
+test('the window buttons wear their glyphs before their words', async () => {
+  const p = mounted([]);
   await settle();
-  const page = p.el.byClass('glim-nc-btn');
-  assert.deepEqual(page.map((b) => b.textContent), [en.nc_test, en.nc_remove, en.nc_add]);
-  for (const b of page) assert.match(b.children[0].html, /^<svg viewBox=/, b.textContent);
-  const hd = p.el.byClass('glim-nc-ch-hd')[0].children;
-  assert.equal(hd[hd.length - 1].className, 'sl-sw glim-nc-switch');
-  assert.equal(hd[hd.length - 2].className, 'glim-nc-gap', 'a gap pushes the switch to the end');
   p.open();
   p.tile('slack').click();
   for (const b of p.win().byClass('glim-nc-win-btn')) assert.match(b.children[0].html, /^<svg viewBox=/, b.textContent);
@@ -448,12 +514,20 @@ test("an open select of the page keeps TowerTorch's own plain rows", () => {
   assert.doesNotMatch(css, /\.tt-tsel-(opt|panel)/);
 });
 
-test('a mark at rest keeps its colours, Matrix aside, and a row keeps its controls at its end', () => {
+test('a mark at rest keeps its colours, Matrix aside, and a field keeps its control at its end', () => {
   const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
   assert.doesNotMatch(css, /\.glim-nc-wins button\.glim-nc-tile \{\s*--mark-ink/);
   assert.match(css, /\.glim-nc-wins button\.glim-nc-tile\[data-kind="matrix"\] \{ --mark-ink: var\(--nc-w-ink\); \}/);
   assert.match(css, /\.glim-nc-ctl \{ display: flex; justify-content: flex-end;/);
-  assert.match(css, /\.glim-nc-tools \{[^}]*justify-content: flex-end/);
+});
+
+test("a connection row follows GlimStone 4.8.1: the tile the row's height, buttons a surface off the well, the badge a size below them", () => {
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  assert.match(css, /\.glim-nc-conn \{[^}]*display: flex;[^}]*overflow: hidden;[^}]*background: var\(--nc-sub\)/);
+  assert.match(css, /\.glim-nc-conn-tile \{[^}]*width: 5\.5rem;[^}]*background-color: var\(--nc-tile, var\(--nc-accent\)\)/);
+  assert.match(css, /html\.tt-popups-on \.glim-nc \.glim-nc-conn-actions \.glim-nc-btn:not\(:hover\):not\(:focus-visible\) \{ background: var\(--nc-btn\) !important; \}/);
+  assert.match(css, /\.glim-nc-badge \{[^}]*height: 1\.5rem;/);
+  assert.match(css, /\.glim-nc-conn-foot \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end/);
 });
 
 test('every string the card asks for is in every language', () => {

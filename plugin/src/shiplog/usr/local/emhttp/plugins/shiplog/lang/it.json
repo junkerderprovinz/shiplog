@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Il modello ha risposto, ma ShipLog non riesce a leggere la risposta come riassunto. Prova un altro modello.",
   "s_or_err_failed": "OpenRouter non è riuscito a gestire la richiesta. I dettagli sono in /var/log/shiplog.log.",
   "s_or_err_bad_key": "Non sembra una chiave",
-  "s_or_err_save_failed": "Non è stato possibile salvare la chiave"
+  "s_or_err_save_failed": "Non è stato possibile salvare la chiave",
+  "nc_edit": "Modifica",
+  "nc_edit_title": "Modifica il canale",
+  "nc_on_state": "Attivo",
+  "nc_off": "Disattivo"
 }

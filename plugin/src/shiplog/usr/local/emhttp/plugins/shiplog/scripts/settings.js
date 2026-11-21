@@ -632,7 +632,7 @@
   }, {
     t: T, lang: window.SL_LANG, marks: window.GlimNotifyMarks,
     kinds: ["unraid", "discord", "slack", "ntfy", "gotify", "matrix", "apprise", "smtp", "webhook"],
-    classes: { input: "sl-f", button: "sl-btn", switch: "sl-sw" },
+    classes: { button: "sl-btn" },
     // A saved change reads like every other save on the page.
     saved: function (ok, text) {
       if (!ok) { note("err", text); return; }

@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "أجاب النموذج، لكن ShipLog لا يستطيع قراءة الإجابة كملخص. جرّب نموذجًا آخر.",
   "s_or_err_failed": "تعذّر على OpenRouter معالجة الطلب. التفاصيل في /var/log/shiplog.log.",
   "s_or_err_bad_key": "هذا لا يبدو مفتاحًا",
-  "s_or_err_save_failed": "تعذّر حفظ المفتاح"
+  "s_or_err_save_failed": "تعذّر حفظ المفتاح",
+  "nc_edit": "تعديل",
+  "nc_edit_title": "تعديل القناة",
+  "nc_on_state": "مفعّل",
+  "nc_off": "متوقف"
 }

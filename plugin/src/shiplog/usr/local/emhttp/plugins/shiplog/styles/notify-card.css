@@ -1,10 +1,10 @@
 /* The notification channels card for a page without a framework
  * (notify-card.js), as the fortress card does it: Unraid's colours and
  * buttons on their own, the theme plugin's tokens under html.tt-popups-on.
- * The host passes its own field, button and switch classes, so the card
- * takes the page's controls and only lays them out. Nothing carries a line:
- * a channel is a filled sub-card, a field a filled ground one step above it,
- * as in GlimStone. */
+ * The host passes its own button class, so the card takes the page's
+ * buttons and only lays them out. Nothing carries a line:
+ * a channel is a filled row as GlimStone's ConnectionRow, a field in the
+ * window a filled ground one step above it. */
 
 .glim-nc {
   --nc-sub: color-mix(in srgb, currentColor 5%, transparent);
@@ -17,6 +17,8 @@
   --nc-err: #e05252;
   --nc-r-card: 4px;
   --nc-r-ctl: 4px;
+  --nc-accent: var(--hover-button-background, #e22828);
+  --nc-accent-ink: var(--hover-button-text-color, #fff);
   /* The marks drawn in black or navy are lifted on the dark grounds. */
   --brand-discord-0: #6a76f3;
   --brand-ntfy-0: #38907e;
@@ -49,15 +51,54 @@ html.tt-popups-on .glim-nc {
   --nc-err: var(--tt-err-ink, #ff8389);
   --nc-r-card: var(--tt-radius-card, 20px);
   --nc-r-ctl: var(--tt-radius-control, 12px);
+  --nc-accent: var(--tt-accent, #FCC419);
+  --nc-accent-ink: var(--tt-accent-text, #161616);
 }
 .glim-nc *, .glim-nc *::before, .glim-nc *::after { box-sizing: border-box; }
 .glim-nc .glim-nc-sub { margin: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
 
-/* A channel: its mark, name, (i) and switch on top, its rows under them. */
-.glim-nc-ch { padding: 8px 14px 10px; border-radius: calc(var(--nc-r-card) * .7); background: var(--nc-sub); }
+/* A channel as GlimStone's ConnectionRow: a flat group on the well's surface
+   with the service's mark lit on a tile the row's whole height, in the
+   service's colours or the accent for a glyph of nobody's. The tile is about
+   as wide as the row at rest is high, so it stands square there and grows
+   taller with a row that wraps. */
+.glim-nc-conn { display: flex; min-width: 0; overflow: hidden; border-radius: calc(var(--nc-r-card) * .7); background: var(--nc-sub); container: glim-nc-conn / inline-size; }
+.glim-nc-conn-tile {
+  display: grid; flex: none; place-items: center; width: 5.5rem;
+  background-color: var(--nc-tile, var(--nc-accent)); color: var(--nc-tile-ink, var(--nc-accent-ink));
+  --mark-ink: var(--nc-tile-ink, var(--nc-accent-ink)); --mark-cut: var(--nc-tile, var(--nc-accent));
+}
+.glim-nc .glim-nc-conn-mark { width: 2.5rem; height: 2.5rem; }
+.glim-nc-conn-main { display: flex; flex: 1 1 0; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 16px; }
+/* The name keeps its line and the badge moves under it before it ends in an
+   ellipsis, and the buttons do the same under what the channel sends. */
+.glim-nc-conn-head, .glim-nc-conn-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; min-width: 0; }
+.glim-nc-conn-head { gap: 4px 12px; }
+.glim-nc-conn-foot { gap: 8px 16px; }
+.glim-nc-conn-title { display: inline-flex; flex: 1 1 12rem; align-items: center; gap: 6px; min-width: 0; }
+.glim-nc-conn-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.glim-nc-badges, .glim-nc-conn-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+/* A badge stays a size below the buttons, so it reads as a state and not as
+   one more thing to press, halfway between the well and the buttons' surface. */
+.glim-nc-badge {
+  display: inline-flex; align-items: center; height: 1.5rem; padding: 0 .625rem; border-radius: 9999px;
+  background: color-mix(in srgb, var(--nc-sub), var(--nc-btn)); color: var(--nc-dim); font-size: 12px; font-weight: 500;
+}
+.glim-nc-conn-about { display: flex; flex: 1 1 12rem; flex-direction: column; gap: 2px; min-width: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
+.glim-nc .glim-nc-conn-status { margin: 0; overflow-wrap: anywhere; }
+.glim-nc-conn-about .glim-nc-res:empty { display: none; }
+@container glim-nc-conn (max-width: 30rem) {
+  .glim-nc-conn-tile { width: 4.5rem; }
+  .glim-nc .glim-nc-conn-mark { width: 2rem; height: 2rem; }
+  .glim-nc-conn-main { padding-inline: 12px; }
+}
+@media (forced-colors: active) {
+  .glim-nc-conn-tile { --mark-ink: CanvasText; --mark-cut: Canvas; }
+}
+
+/* The window's form opens with the mark and the service's name. */
 .glim-nc-ch-hd { display: flex; align-items: center; gap: 8px; min-height: 36px; }
 .glim-nc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.glim-nc-ch-hd .glim-nc-switch { flex: none; }
 .glim-nc-err { margin: 2px 0 4px; color: var(--nc-err); font-size: 13px; text-align: start; }
 .glim-nc-err:empty { display: none; }
 
@@ -66,11 +107,8 @@ html.tt-popups-on .glim-nc {
 .glim-nc-lbl .glim-nc-name { margin: 0; font-size: 14px; font-weight: 400; }
 .glim-nc-ctl { display: flex; justify-content: flex-end; flex: 0 1 380px; min-width: 0; max-width: 100%; margin-inline-start: auto; }
 .glim-nc .glim-nc-in { width: 100%; border: none; }
-.glim-nc .glim-nc-select { width: auto; font-family: inherit; }
 .glim-nc .glim-nc-lines { min-height: 4.5em; resize: vertical; }
 
-.glim-nc-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; padding-top: 6px; }
-.glim-nc-gap { flex: 1 1 auto; }
 .glim-nc-res { font-size: 13px; }
 .glim-nc-run { color: var(--nc-dim); }
 .glim-nc-ok { color: var(--nc-ok); }
@@ -378,20 +416,18 @@ html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key, .glim-n
 }
 
 /* The theme plugin's sheets reach every button, field and switch on a page
-   with !important, its buttons a ground the sub-card already wears and its
-   fields a line or the sub-card's own ground. An important declaration in a
-   cascade layer outranks every unlayered one, so what the card keeps sits
-   here: no line anywhere, and fields and buttons one step above the sub-card.
-   The ground of a resting button only, since the theme plugin lights it under
-   the pointer and draws its glyph as a background image. */
+   with !important, its buttons a ground the row already wears. An important
+   declaration in a cascade layer outranks every unlayered one, so what the
+   card keeps sits here: no line anywhere, and a row's buttons a surface off
+   the well, as GlimStone 4.8.1 sets them. The ground of a resting button
+   only, since the theme plugin lights it under the pointer and draws its
+   glyph as a background image. A test that ran wears its outcome. */
 @layer glim-notify-card {
-  .glim-nc .glim-nc-ch :is(input.glim-nc-in, textarea.glim-nc-in, select.glim-nc-in, .tt-tsel:not(.tt-open) > .tt-tsel-trigger:not(:hover)) {
-    border: none !important; box-shadow: none !important; background-color: var(--nc-field) !important;
-  }
-  .glim-nc .glim-nc-ch :is(input.glim-nc-in, textarea.glim-nc-in, .tt-tsel:not(.tt-open) > .tt-tsel-trigger:not(:hover)):focus { background-color: var(--nc-field-focus) !important; }
-  .glim-nc input.glim-nc-switch { margin: 0 !important; }
   .glim-nc button.glim-nc-btn { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: none !important; }
-  html.tt-popups-on .glim-nc .glim-nc-ch button.glim-nc-btn:not(:hover):not(:focus-visible) { background-color: var(--nc-btn) !important; }
+  html.tt-popups-on .glim-nc .glim-nc-conn-actions .glim-nc-btn:not(:hover):not(:focus-visible) { background: var(--nc-btn) !important; }
+  .glim-nc .glim-nc-conn-actions button.glim-nc-btn:is(.glim-nc-tone-ok, .glim-nc-tone-bad) { color: #161616 !important; }
+  .glim-nc .glim-nc-conn-actions button.glim-nc-btn.glim-nc-tone-ok { background: var(--nc-ok) !important; }
+  .glim-nc .glim-nc-conn-actions button.glim-nc-btn.glim-nc-tone-bad { background: var(--nc-err) !important; }
   .glim-nc-wins button.glim-nc-tile { border: none !important; }
   .glim-nc-wins button.glim-nc-search-clear {
     width: 22px !important; min-width: 0 !important; height: 22px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;

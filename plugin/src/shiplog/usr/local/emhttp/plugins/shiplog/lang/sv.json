@@ -314,5 +314,9 @@
   "s_or_err_bad_answer": "Modellen svarade, men ShipLog kan inte läsa svaret som en sammanfattning. Prova en annan modell.",
   "s_or_err_failed": "OpenRouter kunde inte hantera förfrågan. Detaljerna finns i /var/log/shiplog.log.",
   "s_or_err_bad_key": "Det ser inte ut som en nyckel",
-  "s_or_err_save_failed": "Nyckeln gick inte att spara"
+  "s_or_err_save_failed": "Nyckeln gick inte att spara",
+  "nc_edit": "Redigera",
+  "nc_edit_title": "Redigera kanalen",
+  "nc_on_state": "På",
+  "nc_off": "Av"
 }
