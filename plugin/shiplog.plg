@@ -35,6 +35,28 @@ known vulnerabilities. Optional AI summaries (Ollama, llama-swap or OpenRouter),
 Unraid, Discord, Matrix and more, and an auto-update that backs up first when
 your fortress has a backup app.
 
+### 3.9.4
+The Info tab shows where ShipLog's updates stand, and the vulnerability chip tells the flaws with a fix from those that have none yet.
+
+✨ **Added**
+- **A Version card on the Info tab.** It shows ShipLog with its number and where its updates stand, as Unraid's Plugins tab sees them. Check for updates runs the same check as the Plugins tab, and once a new version is out, What's new opens its notes and a button takes you to the Plugins tab. The first time you open Info after a reboot, the card runs the check by itself.
+- **A Components card.** GlimStone, the design system ShipLog is drawn with, has its row there, and the (i) beside its name says what it is.
+
+⚡ **Improved**
+- **Vulnerabilities with a fix stand apart from those without one.** The chip on the Docker tab counts the critical and high ones a fixed version exists for and adds the rest dimmed beside them, as in "· 3 no fix yet". Only the first kind colours the chip, so a chip with nothing but unfixed ones stays a quiet grey.
+- **Both numbers wherever vulnerabilities show.** The changelog window lists the ones with a fix first and tags the others "no fix yet", and the status page and the notifications give both counts. A flaw the update closes counts as one with a fix, even where the database knows no fixed version, as when the newest image drops the package.
+- **One slower check after the update.** ShipLog reads the vulnerability records from osv.dev once more to learn which of them have a fix, so the first check takes a little longer.
+
+🎨 **Design**
+- **Version numbers open the newest release.** Each number on the Info tab is plain text without an underline, takes the accent's ink under the pointer and opens its project's newest release. A build that is not a release says so and links nowhere.
+- **The newest GlimStone.** The Info tab has the four cards of the other apps of the house, in their order: Version, Components, Help and About.
+
+🐛 **Fixed**
+- **No underline on the Docker tab chips.** Unraid underlined the changelog and vulnerability chips, the Update all button and the buttons in the changelog window under the pointer. They keep their look.
+
+🌐 **Translations**
+- **The Version and Components cards and the new vulnerability texts in all 26 languages.**
+
 ### 3.9.3
 AI summaries can run through OpenRouter on a server without a model of its own, and the settings follow GlimStone 4.8.1.
 
