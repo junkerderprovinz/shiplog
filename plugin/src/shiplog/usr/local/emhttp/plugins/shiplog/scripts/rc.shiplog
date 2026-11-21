@@ -28,6 +28,11 @@ OLLAMA_URL=""
 OLLAMA_MODEL=""
 LLAMASWAP_URL=""
 LLAMASWAP_MODEL=""
+# "openrouter" sends the summaries to OpenRouter, anything else keeps them local.
+AI_PROVIDER="local"
+OPENROUTER_MODEL=""
+# The settings page writes the key here through the engine and never reads it.
+OPENROUTER_KEY_FILE="/boot/config/plugins/${NAME}/openrouter.key"
 # The notification channels. The engine builds the file from the MATRIX_*,
 # APPRISE_URL and UNRAID_NOTIFY settings below when it is missing.
 NOTIFY_FILE="/boot/config/plugins/${NAME}/notify.json"
@@ -76,7 +81,7 @@ start() {
   mkdir -p "$DATA_DIR"
   export SOCKET DATA_DIR DOCKER_SOCKET DOCKER_CONFIG POLL_INTERVAL GITHUB_TOKEN IGNORE_UNMANAGED VULN_CHECK \
          DOCKERHUB_USERNAME DOCKERHUB_TOKEN \
-         OLLAMA_URL OLLAMA_MODEL LLAMASWAP_URL LLAMASWAP_MODEL \
+         OLLAMA_URL OLLAMA_MODEL LLAMASWAP_URL LLAMASWAP_MODEL          AI_PROVIDER OPENROUTER_MODEL OPENROUTER_KEY_FILE \
          NOTIFY_FILE MATRIX_HOMESERVER MATRIX_TOKEN MATRIX_ROOM APPRISE_URL UNRAID_NOTIFY \
          AUTOUPDATE_ENABLED AUTOUPDATE_LEVEL AUTOUPDATE_DIGEST AUTOUPDATE_DRYRUN \
          AUTOUPDATE_SCHED_MODE AUTOUPDATE_SCHED_TIME AUTOUPDATE_SCHED_EVERY \
