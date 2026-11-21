@@ -88,6 +88,7 @@ type API struct {
 	door       Door
 	hub        func(context.Context) bool
 	channels   Channels
+	openRouter *openRouterRoutes
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -188,6 +189,9 @@ func (a *API) Handler() http.Handler {
 		mux.HandleFunc("GET /api/notify", a.listChannels)
 		mux.HandleFunc("PUT /api/notify", a.replaceChannels)
 		mux.HandleFunc("POST /api/notify/test", a.testChannel)
+	}
+	if a.openRouter != nil {
+		a.openRouter.routes(mux)
 	}
 	if a.fortress != nil {
 		h := status.Handler(a.fortress, fromSocket)

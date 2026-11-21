@@ -85,3 +85,21 @@ func TestLoadKeepsTheOldNotificationSettingsForTheMove(t *testing.T) {
 		t.Errorf("OldNotify = %v", c.OldNotify)
 	}
 }
+
+func TestTheSummariesStayLocalUnlessOpenRouterIsChosen(t *testing.T) {
+	for v, want := range map[string]string{"": "local", "local": "local", "bogus": "local", "openrouter": "openrouter", " OpenRouter ": "openrouter"} {
+		t.Setenv("AI_PROVIDER", v)
+		if got := Load().AIProvider; got != want {
+			t.Errorf("AI_PROVIDER=%q: provider %q, want %q", v, got, want)
+		}
+	}
+}
+
+func TestLoadFindsTheOpenRouterModelAndKeyFile(t *testing.T) {
+	t.Setenv("OPENROUTER_MODEL", "z-ai/glm-4.6")
+	t.Setenv("OPENROUTER_KEY_FILE", "/boot/config/plugins/shiplog/openrouter.key")
+	c := Load()
+	if c.OpenRouterModel != "z-ai/glm-4.6" || c.OpenRouterKeyFile != "/boot/config/plugins/shiplog/openrouter.key" {
+		t.Errorf("OpenRouter settings = %q %q", c.OpenRouterModel, c.OpenRouterKeyFile)
+	}
+}

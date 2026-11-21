@@ -14,9 +14,13 @@
  *   GET  status.php?path=fortress                       -> ShipLog's place in a fortress
  *   GET  status.php?path=fortress-member&member=<member id>[&lang=de]
  *                                                       -> another member's status and log
+ *   GET  status.php?path=openrouter|openrouter-models   -> whether a key is saved, the model list
  *   POST status.php  path=refresh|override|unmaintained-suppression|fortress/join|fortress/leave|notify|notify/test,
  *                    method=POST|PUT|DELETE, data=<JSON body>
  *   POST status.php  path=fortress/member, method=DELETE, id=<member id>
+ *   POST status.php  path=openrouter/key (PUT, DELETE)|openrouter/check|openrouter/try (POST)
+ *
+ * The OpenRouter key comes in the body of a POST alone, and no answer carries it.
  */
 
 $sock   = '/var/run/shiplog.sock';
@@ -25,11 +29,13 @@ $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides'
            'unmaintained-suppressions' => '/api/unmaintained-suppressions', 'guards' => '/api/guards',
            'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
            'fortress' => '/api/fortress', 'fortress-member' => '/api/fortress/members/',
-           'notify-hub' => '/api/notify-hub', 'notify' => '/api/notify'];
+           'notify-hub' => '/api/notify-hub', 'notify' => '/api/notify',
+           'openrouter' => '/api/openrouter', 'openrouter-models' => '/api/openrouter/models'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
            'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST'],
            'fortress/leave' => ['POST'], 'fortress/member' => ['DELETE'],
-           'notify' => ['PUT'], 'notify/test' => ['POST']];
+           'notify' => ['PUT'], 'notify/test' => ['POST'],
+           'openrouter/key' => ['PUT', 'DELETE'], 'openrouter/check' => ['POST'], 'openrouter/try' => ['POST']];
 
 $deny = function ($code) {
     http_response_code($code);
@@ -120,8 +126,9 @@ curl_setopt_array($ch, [
     CURLOPT_HTTPHEADER       => $headers,
     CURLOPT_RETURNTRANSFER   => true,
     CURLOPT_CONNECTTIMEOUT   => 3,
-    // Saving a source checks it against GitHub, which can take a few seconds.
-    CURLOPT_TIMEOUT          => 20,
+    // Saving a source checks it against GitHub, which can take a few seconds,
+    // and a trial summary waits for the model.
+    CURLOPT_TIMEOUT          => $path === 'openrouter/try' ? 75 : 20,
 ]);
 if ($body !== null) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);

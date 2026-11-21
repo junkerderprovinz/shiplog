@@ -9,6 +9,8 @@ Icon="shiplog.png"
    once, so it declares no functions; a "Cannot redeclare" error would leave a
    blank page. */
 $cfg    = parse_plugin_cfg("shiplog");
+/* The cfg holds tokens, and a first save through update.php creates it 0644. */
+@chmod('/boot/config/plugins/shiplog/shiplog.cfg', 0600);
 $enable = isset($cfg['ENABLE']) ? $cfg['ENABLE'] : 'true';
 $ddir   = !empty($cfg['DATA_DIR'])      ? $cfg['DATA_DIR']      : '/mnt/user/appdata/shiplog';
 $poll   = !empty($cfg['POLL_INTERVAL']) ? $cfg['POLL_INTERVAL'] : '6h';
@@ -19,6 +21,10 @@ $ourl   = isset($cfg['OLLAMA_URL'])        ? $cfg['OLLAMA_URL']        : '';
 $omodel = isset($cfg['OLLAMA_MODEL'])      ? $cfg['OLLAMA_MODEL']      : '';
 $lsurl  = isset($cfg['LLAMASWAP_URL'])     ? $cfg['LLAMASWAP_URL']     : '';
 $lsmodel= isset($cfg['LLAMASWAP_MODEL'])   ? $cfg['LLAMASWAP_MODEL']   : '';
+/* Only "openrouter" sends anything to OpenRouter. The key is not in the cfg:
+   the engine keeps it, and the page only learns whether one is saved. */
+$aiProvider = (isset($cfg['AI_PROVIDER']) && $cfg['AI_PROVIDER'] === 'openrouter') ? 'openrouter' : 'local';
+$ormodel    = isset($cfg['OPENROUTER_MODEL'])  ? $cfg['OPENROUTER_MODEL']  : '';
 /* The engine keeps the notification channels in notify.json. Once that file
    is there, the old keys in shiplog.cfg it was built from have done their job. */
 $N = include '/usr/local/emhttp/plugins/shiplog/include/notify.php';
@@ -51,7 +57,7 @@ if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
 
 $slVer = '';
 if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
-$slGlimstoneVer = '4.7.0';
+$slGlimstoneVer = '4.8.1';
 
 $G = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
 $slE = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
@@ -81,11 +87,11 @@ $slSwitch = function ($id, $name, $on) {
 $slEye = function ($id) use ($G, $slE, $L) {
   return '<span class="sl-eye" role="button" tabindex="0" data-sl-eye="'.$id.'" aria-label="'.$slE($L['s_show']).'" aria-pressed="false">'.$G['Eye'].'</span>';
 };
-/* A version links to its release page. A build without a release behind it shows its name alone. */
+/* A version is plain text, linked quietly to its release notes, never a button. A build without a release behind it shows its name alone. */
 $slVerLink = function ($ver, $repo) use ($slE) {
   $v = preg_replace('/^v/', '', (string)$ver);
   if (!preg_match('/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/', $v)) return '<span class="sl-ver">'.$slE($v !== '' ? $v : '?').'</span>';
-  return '<a class="button sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">'.$slE($v).'</a>';
+  return '<a class="sl-ver" href="'.$slE($repo.'/releases/tag/v'.$v).'" target="_blank" rel="noopener noreferrer">'.$slE($v).'</a>';
 };
 $M = include '/usr/local/emhttp/plugins/shiplog/include/marks.php';
 /* A button in the shape of the README's buttons, as on TowerTorch's Info tab. A give
@@ -291,13 +297,48 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
     <section class="sl-card" aria-labelledby="sl-h-ai">
       <h3 class="sl-h"><span id="sl-h-ai"><?=$slE($L['s_ai'])?></span><?=$slInfo($L['s_ai_sub'])?></h3>
       <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-ai-provider"><?=$slE($L['s_ai_provider'])?></label></div>
+        <div class="sl-ctl">
+          <select class="sl-sel" id="sl-ai-provider" name="AI_PROVIDER" aria-describedby="sl-or-notice">
+            <option value="local" <?=$aiProvider==='local'?'selected':''?>><?=$slE($L['s_ai_local'])?></option>
+            <option value="openrouter" <?=$aiProvider==='openrouter'?'selected':''?>>OpenRouter</option>
+          </select>
+        </div>
+      </div>
+      <p class="sl-notice" id="sl-or-notice" role="note"><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_or_notice'])?></span></p>
+      <div class="sl-row" data-sl-ai="openrouter"<?=$aiProvider==='openrouter'?'':' hidden'?>>
+        <div class="sl-lbl"><label for="sl-OPENROUTER_MODEL"><?=$slE($L['s_or_model'])?></label><?=$slInfo($L['s_or_model_hint'])?></div>
+        <div class="sl-ctl">
+          <input type="text" class="sl-f" id="sl-OPENROUTER_MODEL" name="OPENROUTER_MODEL" value="<?=$slE($ormodel)?>" list="sl-or-models" autocomplete="off" spellcheck="false" dir="ltr">
+          <datalist id="sl-or-models"></datalist>
+        </div>
+      </div>
+      <div class="sl-row" data-sl-ai="openrouter"<?=$aiProvider==='openrouter'?'':' hidden'?>>
+        <div class="sl-lbl"><label for="sl-or-key"><?=$slE($L['s_or_key'])?></label><?=$slInfo($L['s_or_key_hint'])?></div>
+        <div class="sl-ctl">
+          <span class="sl-field"><input type="password" class="sl-f" id="sl-or-key" autocomplete="new-password" spellcheck="false" dir="ltr" placeholder="<?=$slE($L['s_or_key_ph'])?>"><?=$slEye('sl-or-key')?></span>
+          <span class="sl-act"><button type="button" class="sl-btn" id="sl-or-remove" hidden><?=$slBtn('Close', $L['s_or_key_remove'])?></button></span>
+        </div>
+        <div class="sl-res" id="sl-or-key-result" role="status"></div>
+      </div>
+      <div class="sl-row" data-sl-ai="openrouter"<?=$aiProvider==='openrouter'?'':' hidden'?>>
+        <div class="sl-lbl"><span id="sl-or-check-lbl"><?=$slE($L['s_or_check_lbl'])?></span><?=$slInfo($L['s_or_check_hint'])?></div>
+        <div class="sl-ctl"><span class="sl-act"><button type="button" class="sl-btn" data-sl-or="check" data-sl-out="sl-or-check-result" aria-describedby="sl-or-check-lbl"><?=$slBtn('Check', $L['s_check'])?></button></span></div>
+        <div class="sl-res" id="sl-or-check-result" role="status"></div>
+      </div>
+      <div class="sl-row" data-sl-ai="openrouter"<?=$aiProvider==='openrouter'?'':' hidden'?>>
+        <div class="sl-lbl"><span id="sl-or-try-lbl"><?=$slE($L['s_or_try_lbl'])?></span><?=$slInfo($L['s_or_try_hint'])?></div>
+        <div class="sl-ctl"><span class="sl-act"><button type="button" class="sl-btn" data-sl-or="try" data-sl-out="sl-or-try-result" aria-describedby="sl-or-try-lbl"><?=$slBtn('SendTest', $L['s_or_try'])?></button></span></div>
+        <div class="sl-res" id="sl-or-try-result" role="status"></div>
+      </div>
+      <div class="sl-row" data-sl-ai="local"<?=$aiProvider==='local'?'':' hidden'?>>
         <div class="sl-lbl"><label for="sl-OLLAMA_URL"><?=$slE($L['s_ollama_url'])?></label><?=$slInfo($L['s_ollama_url_hint'])?></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-OLLAMA_URL" name="OLLAMA_URL" value="<?=$slE($ourl)?>" placeholder="http://127.0.0.1:11434" dir="ltr">
           <span class="sl-act"><button type="button" class="sl-btn" data-sl-check="ollama-detect" data-sl-out="sl-ollama-result"><?=$slBtn('CompressAuto', $L['s_autodetect'])?></button></span>
         </div>
       </div>
-      <div class="sl-row">
+      <div class="sl-row" data-sl-ai="local"<?=$aiProvider==='local'?'':' hidden'?>>
         <div class="sl-lbl"><label for="sl-OLLAMA_MODEL"><?=$slE($L['s_ollama_model'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-OLLAMA_MODEL" name="OLLAMA_MODEL" value="<?=$slE($omodel)?>" placeholder="llama3.1" dir="ltr">
@@ -305,11 +346,11 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
         </div>
         <div class="sl-res" id="sl-ollama-result" role="status"></div>
       </div>
-      <div class="sl-row">
+      <div class="sl-row" data-sl-ai="local"<?=$aiProvider==='local'?'':' hidden'?>>
         <div class="sl-lbl"><label for="sl-LLAMASWAP_URL"><?=$slE($L['s_llamaswap_url'])?></label><?=$slInfo($L['s_llamaswap_url_hint'])?></div>
         <div class="sl-ctl"><input type="text" class="sl-f" id="sl-LLAMASWAP_URL" name="LLAMASWAP_URL" value="<?=$slE($lsurl)?>" placeholder="http://127.0.0.1:9292" dir="ltr"></div>
       </div>
-      <div class="sl-row">
+      <div class="sl-row" data-sl-ai="local"<?=$aiProvider==='local'?'':' hidden'?>>
         <div class="sl-lbl"><label for="sl-LLAMASWAP_MODEL"><?=$slE($L['s_llamaswap_model'])?></label></div>
         <div class="sl-ctl">
           <input type="text" class="sl-f" id="sl-LLAMASWAP_MODEL" name="LLAMASWAP_MODEL" value="<?=$slE($lsmodel)?>" placeholder="gemma4-e4b" dir="ltr">
@@ -340,7 +381,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><span>GlimStone</span></div>
-        <div class="sl-ctl"><a class="button sl-ver" href="https://github.com/junkerderprovinz/glimstone/releases/latest" target="_blank" rel="noopener noreferrer"><?=$slE($slGlimstoneVer)?></a></div>
+        <div class="sl-ctl"><a class="sl-ver" href="https://github.com/junkerderprovinz/glimstone/releases/latest" target="_blank" rel="noopener noreferrer"><?=$slE($slGlimstoneVer)?></a></div>
       </div>
     </section>
 

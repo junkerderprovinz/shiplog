@@ -40,6 +40,14 @@ type Config struct {
 	LlamaSwapURL   string // LLAMASWAP_URL, used instead of Ollama when set
 	LlamaSwapModel string // LLAMASWAP_MODEL
 
+	// AIProvider (AI_PROVIDER) is "openrouter" when the summaries go to
+	// OpenRouter, and "local" otherwise, which uses Ollama or llama-swap.
+	AIProvider      string
+	OpenRouterModel string // OPENROUTER_MODEL
+	// OpenRouterKeyFile (OPENROUTER_KEY_FILE) holds the OpenRouter key, which
+	// stays out of the environment every child process inherits.
+	OpenRouterKeyFile string
+
 	// NotifyFile (NOTIFY_FILE) holds the notification channels. Without it,
 	// as in the container, OldNotify sets them up on every start.
 	NotifyFile string
@@ -86,25 +94,28 @@ type AutoUpdateConfig struct {
 // Load reads the environment, applying the documented defaults.
 func Load() Config {
 	c := Config{
-		DockerSocket:    env("DOCKER_SOCKET", "/var/run/docker.sock"),
-		DockerConfigDir: dockerConfigDir(),
-		Port:            env("PORT", "8484"),
-		Socket:          os.Getenv("SOCKET"),
-		DataDir:         env("DATA_DIR", "/config"),
-		PollInterval:    dur("POLL_INTERVAL", 6*time.Hour),
-		GithubToken:     os.Getenv("GITHUB_TOKEN"),
-		IgnoreUnmanaged: truthy("IGNORE_UNMANAGED"),
-		VulnCheck:       !falsy("VULN_CHECK"),
-		DockerHubUser:   os.Getenv("DOCKERHUB_USERNAME"),
-		DockerHubToken:  os.Getenv("DOCKERHUB_TOKEN"),
-		OllamaURL:       os.Getenv("OLLAMA_URL"),
-		OllamaModel:     os.Getenv("OLLAMA_MODEL"),
-		LlamaSwapURL:    os.Getenv("LLAMASWAP_URL"),
-		LlamaSwapModel:  os.Getenv("LLAMASWAP_MODEL"),
-		NotifyFile:      os.Getenv("NOTIFY_FILE"),
-		FortressDir:     os.Getenv("FORTRESS_DIR"),
-		RunsFile:        os.Getenv("RUNS_FILE"),
-		OldNotify:       oldNotify(),
+		DockerSocket:      env("DOCKER_SOCKET", "/var/run/docker.sock"),
+		DockerConfigDir:   dockerConfigDir(),
+		Port:              env("PORT", "8484"),
+		Socket:            os.Getenv("SOCKET"),
+		DataDir:           env("DATA_DIR", "/config"),
+		PollInterval:      dur("POLL_INTERVAL", 6*time.Hour),
+		GithubToken:       os.Getenv("GITHUB_TOKEN"),
+		IgnoreUnmanaged:   truthy("IGNORE_UNMANAGED"),
+		VulnCheck:         !falsy("VULN_CHECK"),
+		DockerHubUser:     os.Getenv("DOCKERHUB_USERNAME"),
+		DockerHubToken:    os.Getenv("DOCKERHUB_TOKEN"),
+		OllamaURL:         os.Getenv("OLLAMA_URL"),
+		OllamaModel:       os.Getenv("OLLAMA_MODEL"),
+		LlamaSwapURL:      os.Getenv("LLAMASWAP_URL"),
+		LlamaSwapModel:    os.Getenv("LLAMASWAP_MODEL"),
+		AIProvider:        provider(os.Getenv("AI_PROVIDER")),
+		OpenRouterModel:   os.Getenv("OPENROUTER_MODEL"),
+		OpenRouterKeyFile: os.Getenv("OPENROUTER_KEY_FILE"),
+		NotifyFile:        os.Getenv("NOTIFY_FILE"),
+		FortressDir:       os.Getenv("FORTRESS_DIR"),
+		RunsFile:          os.Getenv("RUNS_FILE"),
+		OldNotify:         oldNotify(),
 		AutoUpdate: AutoUpdateConfig{
 			Enabled:           truthy("AUTOUPDATE_ENABLED"),
 			Level:             levelOrOff(os.Getenv("AUTOUPDATE_LEVEL")),
@@ -149,6 +160,13 @@ func falsy(key string) bool {
 		return true
 	}
 	return false
+}
+
+func provider(s string) string {
+	if strings.EqualFold(strings.TrimSpace(s), "openrouter") {
+		return "openrouter"
+	}
+	return "local"
 }
 
 func levelOrOff(s string) string {

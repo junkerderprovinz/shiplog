@@ -194,7 +194,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .sl-cfg .sl-btn:disabled:hover { color: var(--button-text-color); background: var(--button-background); background-size: var(--button-background-size); }
 .sl-g { display: inline-flex; flex: none; line-height: 0; }
 .sl-g svg { width: 1.15em; height: 1.15em; display: block; }
-.sl-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+/* Arabic hangs its tails and dots below the line, so the clip reaches past it and gives the room back. */
+.sl-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; padding-block: .15em; margin-block: -.15em; }
 .sl-cfg .sl-btn.sl-ok { color: var(--sl-ok); }
 .sl-cfg .sl-btn.sl-err { color: var(--sl-err); }
 
@@ -240,13 +241,14 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   color: var(--sl-warn); font-size: 13px; line-height: 1.45;
 }
 .sl-warn .sl-g { padding-top: 2px; }
-.sl-hubnote {
+/* The hub's message, and what leaves the server with OpenRouter. */
+:is(.sl-hubnote, .sl-notice) {
   display: flex; align-items: flex-start; gap: 8px; margin: 4px 0 6px; padding: 9px 12px;
   border-radius: var(--sl-r-ctl); background: color-mix(in srgb, var(--sl-dim) 14%, transparent);
-  color: var(--sl-dim); font-size: 13px; line-height: 1.45;
+  color: var(--sl-dim); font-size: 13px; line-height: 1.45; text-align: start;
 }
 .sl-hubnote[hidden] { display: none; }
-.sl-hubnote .sl-g { padding-top: 2px; }
+:is(.sl-hubnote, .sl-notice) .sl-g { padding-top: 2px; }
 
 /* The auto-update container list: a switch per container, in a well. */
 .sl-ct {
@@ -273,8 +275,13 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 /* The Info tab's cards, as on TowerTorch's: the versions, the ways to ask for
    help, and the maker's sentences over the give row. */
 .sl-prose { margin: 4px 0 8px; text-align: start; }
+/* A version is text in every app of the house, never a button: no ground, no
+   frame, no pill. A link to its release notes shows only under the pointer. */
 .sl-ver { font-variant-numeric: tabular-nums lining-nums; }
-.sl-cfg a.sl-ver { margin: 0; }
+.sl-cfg a.sl-ver { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; text-decoration: none; }
+.sl-cfg a.sl-ver:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 2px; }
+/* The theme plugin colours every link in its accent, which would make the number read as a control. */
+#sl-cfg a.sl-ver { color: inherit !important; }
 
 /* The give buttons, TowerTorch's README buttons unchanged: the mark and the name
    at rest, the brand's own colour and one sheen under the pointer. */
@@ -286,6 +293,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 #sl-cfg .sl-rbtn:focus-visible { outline: none !important; filter: none !important; box-shadow: inset 0 0 0 var(--tt-focus-ring-width, 2px) var(--sl-focus) !important; }
 #sl-cfg .sl-rbtn-mark { position: absolute; top: 50%; left: 14px; width: 32px; height: 25px; translate: 0 -50%; display: flex; }
 #sl-cfg :is(.sl-rbtn-mark, .sl-rbtn-art) svg { display: block; width: 100%; height: 100%; }
+/* The tile's middle rarely falls on a whole pixel, and the SVG's own clip would shave a shape drawn to the box. */
+#sl-cfg .sl-rbtn-mark svg { overflow: visible; }
 #sl-cfg .sl-rbtn-art { position: absolute; inset: 0; }
 #sl-cfg .sl-rbtn-text { position: absolute; top: 0; bottom: 0; left: 53px; right: 10px; display: flex; flex-direction: column; justify-content: center; line-height: 1.15; }
 /* As on the channel tiles, the name's clip reaches past its line so the descenders stay whole. */

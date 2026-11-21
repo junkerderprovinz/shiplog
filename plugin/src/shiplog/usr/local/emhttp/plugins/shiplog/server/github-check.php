@@ -6,7 +6,15 @@
 
 header('Content-Type: application/json');
 
-$token = isset($_GET['token']) ? trim($_GET['token']) : '';
+// A token in the URL would land in nginx's access log, so it comes in the body
+// of a POST, which Unraid also checks for its CSRF token.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['ok' => false, 'message' => 'Send the token in a POST.']);
+    exit;
+}
+
+$token = isset($_POST['token']) ? trim($_POST['token']) : '';
 
 $headers = ['User-Agent: ShipLog', 'Accept: application/vnd.github+json'];
 if ($token !== '') {

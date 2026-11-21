@@ -163,6 +163,7 @@
         el.value = was;
         el.setAttribute("data-sl-saved", was);
         if (el.id === "sl-au-mode") auMode();
+        if (el.id === "sl-ai-provider") aiShown();
       }, el));
     } else if (el.hasAttribute("data-sl-mirror")) {
       save(job([byId(el.getAttribute("data-sl-mirror")).name], function () {
@@ -397,12 +398,20 @@
     e.dispatchEvent(new Event("change", { bubbles: true }));
   }
   var CHECKS = {
-    github: function () { return "github-check.php?token=" + encodeURIComponent(val("GITHUB_TOKEN")); },
-    dockerhub: function () { return "dockerhub-check.php?user=" + encodeURIComponent(val("DOCKERHUB_USERNAME")) + "&token=" + encodeURIComponent(val("DOCKERHUB_TOKEN")); },
+    github: function () { return { post: { token: val("GITHUB_TOKEN") }, url: "github-check.php" }; },
+    dockerhub: function () { return { post: { user: val("DOCKERHUB_USERNAME"), token: val("DOCKERHUB_TOKEN") }, url: "dockerhub-check.php" }; },
     ollama: function () { return "ollama-check.php?url=" + encodeURIComponent(val("OLLAMA_URL")) + "&model=" + encodeURIComponent(val("OLLAMA_MODEL")); },
     "ollama-detect": function () { return "ollama-detect.php?url=" + encodeURIComponent(val("OLLAMA_URL")); },
     llamaswap: function () { return "llamaswap-check.php?url=" + encodeURIComponent(val("LLAMASWAP_URL")) + "&model=" + encodeURIComponent(val("LLAMASWAP_MODEL")); }
   };
+  // A check that carries a token posts it, so it never stands in a URL that
+  // nginx logs.
+  function checkRequest(c) {
+    if (typeof c === "string") return ["/plugins/shiplog/server/" + c];
+    var body = new URLSearchParams(c.post);
+    body.set("csrf_token", window.csrf_token || "");
+    return ["/plugins/shiplog/server/" + c.url, { method: "POST", body: body, credentials: "same-origin" }];
+  }
   root.querySelectorAll("[data-sl-check]").forEach(function (btn) {
     var kind = btn.getAttribute("data-sl-check"), out = byId(btn.getAttribute("data-sl-out"));
     var glyph = btn.querySelector(".sl-g") ? btn.querySelector(".sl-g").innerHTML : "";
@@ -412,7 +421,7 @@
       btn.setAttribute("aria-busy", "true");
       out.className = "sl-res run";
       out.textContent = (kind === "ollama-detect" ? T.s_autodetect : T.s_check) + " …";
-      fetch("/plugins/shiplog/server/" + CHECKS[kind]())
+      fetch.apply(window, checkRequest(CHECKS[kind]()))
         .then(function (r) { return r.json(); })
         .then(function (d) {
           verdict(btn, out, !!d.ok, d.message);
@@ -424,6 +433,130 @@
         .catch(function (e) { verdict(btn, out, false, String(e)); });
     });
   });
+
+  /* AI summaries. While Local is chosen the OpenRouter rows are hidden and
+     the page asks OpenRouter nothing. The engine keeps the key: the page sends
+     it once and learns no more of it than its last four characters. */
+  var provider = byId("sl-ai-provider");
+  var orKey = byId("sl-or-key"), orRemove = byId("sl-or-remove"), orKeyOut = byId("sl-or-key-result");
+  var orLoaded = false, orSaving = null;
+  function plain(s) { return String(s || "").replace(/^[✓✗]\s*/, ""); }
+  function savedNow() {
+    note("ok", T.s_saved + " · " + new Date().toLocaleTimeString(window.SL_LANG, { hour: "2-digit", minute: "2-digit" }));
+  }
+  function aiShown() {
+    var p = provider.value;
+    root.querySelectorAll("[data-sl-ai]").forEach(function (r) { r.hidden = r.getAttribute("data-sl-ai") !== p; });
+    if (p === "openrouter") orLoad();
+    labels();
+  }
+  provider.addEventListener("change", aiShown);
+  function orState(d) {
+    var saved = !!(d && d.key_saved);
+    orKey.value = "";
+    orKey.placeholder = saved ? (d.key_hint ? T.s_or_key_saved.replace("%s", d.key_hint) : T.s_saved) : T.s_or_key_ph;
+    orRemove.hidden = !saved;
+    labels();
+  }
+  // A saved choice restarts the engine, so a call that lands in the gap is
+  // tried again for a few seconds.
+  function orEngine(path, method, data, tries) {
+    tries = tries || 0;
+    return engine(path, method, data).then(function (d) {
+      if (!d || d.error !== "engine unreachable" || tries >= 6) return d;
+      return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return orEngine(path, method, data, tries + 1); });
+    });
+  }
+  function orGet(path, tries) {
+    tries = tries || 0;
+    return fetch("/plugins/shiplog/server/status.php?path=" + path, { headers: { Accept: "application/json" } }).then(function (r) {
+      if (r.ok) return r.json();
+      if (r.status !== 503 || tries >= 6) throw new Error();
+      return new Promise(function (res) { setTimeout(res, 1500); }).then(function () { return orGet(path, tries + 1); });
+    });
+  }
+  function orFailed(out, text) {
+    out.className = "sl-res err";
+    out.textContent = text;
+  }
+  function orLoad() {
+    if (orLoaded) return;
+    orLoaded = true;
+    orGet("openrouter")
+      .then(orState)
+      .catch(function () { orLoaded = false; orFailed(orKeyOut, plain(T.s_unreachable)); });
+    orGet("openrouter-models")
+      .then(function (d) {
+        var list = byId("sl-or-models");
+        ((d && d.models) || []).forEach(function (m) {
+          var o = document.createElement("option");
+          o.value = m.id;
+          if (m.name) o.label = m.name;
+          list.appendChild(o);
+        });
+      })
+      .catch(function () {});
+  }
+  // Resolves true once a typed key is kept, or when there is none to keep.
+  function orSaveKey() {
+    var v = orKey.value.trim();
+    if (!v) return Promise.resolve(true);
+    if (orSaving) return orSaving;
+    note("run", T.s_saving);
+    orKeyOut.textContent = "";
+    orSaving = orEngine("openrouter/key", "PUT", { key: v })
+      .then(function (d) {
+        if (d.error) throw new Error(T["s_or_err_" + d.error] || T.s_or_err_save_failed);
+        orState(d);
+        savedNow();
+        return true;
+      })
+      .catch(function (e) {
+        var text = e.message || plain(T.s_unreachable);
+        orFailed(orKeyOut, text);
+        note("err", T.s_save_failed.replace("%s", function () { return text; }));
+        return false;
+      })
+      .then(function (ok) { orSaving = null; return ok; });
+    return orSaving;
+  }
+  orKey.addEventListener("change", orSaveKey);
+  orKey.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); orSaveKey(); } });
+  orRemove.addEventListener("click", function () {
+    orEngine("openrouter/key", "DELETE", {})
+      .then(function (d) {
+        if (d.error) throw new Error(T.s_or_err_save_failed);
+        orState(d);
+        savedNow();
+      })
+      .catch(function (e) { orFailed(orKeyOut, e.message || plain(T.s_unreachable)); fail(orRemove); });
+  });
+  // Each check reports on its own button and line, so a key that works and a
+  // model that does not answer read apart.
+  root.querySelectorAll("[data-sl-or]").forEach(function (btn) {
+    var kind = btn.getAttribute("data-sl-or"), out = byId(btn.getAttribute("data-sl-out"));
+    var glyph = btn.querySelector(".sl-g").innerHTML;
+    btn.addEventListener("click", function () {
+      if (btn.getAttribute("aria-busy") === "true") return;
+      btn.classList.remove("sl-ok", "sl-err");
+      btn.querySelector(".sl-g").innerHTML = glyph;
+      btn.setAttribute("aria-busy", "true");
+      out.className = "sl-res run";
+      out.textContent = btn.querySelector(".sl-l").textContent + " …";
+      orSaveKey()
+        .then(function (kept) {
+          if (!kept) return { ok: false, error: "no_key" };
+          return orEngine("openrouter/" + kind, "POST", { model: val("OPENROUTER_MODEL").trim() });
+        })
+        .then(function (d) {
+          if (d.ok) { verdict(btn, out, true, T["s_or_" + kind + "_ok"]); return; }
+          var text = d.error === "engine unreachable" ? plain(T.s_unreachable) : T["s_or_err_" + d.error] || T.s_or_err_failed;
+          verdict(btn, out, false, text);
+        })
+        .catch(function () { verdict(btn, out, false, plain(T.s_unreachable)); });
+    });
+  });
+  if (provider.value === "openrouter") orLoad();
 
   function infoIcon(text) {
     var i = document.createElement("span");
@@ -499,7 +632,7 @@
   }, {
     t: T, lang: window.SL_LANG, marks: window.GlimNotifyMarks,
     kinds: ["unraid", "discord", "slack", "ntfy", "gotify", "matrix", "apprise", "smtp", "webhook"],
-    classes: { input: "sl-f", button: "sl-btn", switch: "sl-sw" },
+    classes: { button: "sl-btn" },
     // A saved change reads like every other save on the page.
     saved: function (ok, text) {
       if (!ok) { note("err", text); return; }

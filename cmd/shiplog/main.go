@@ -81,12 +81,12 @@ func main() {
 	}
 
 	// Optional integrations are pinged once, so the log says whether they work.
-	if ls := summarize.NewLlamaSwap(cfg.LlamaSwapURL, cfg.LlamaSwapModel); ls != nil {
-		eng.WithSummarizer(ls)
-		logSummarizerPing("llama-swap", cfg.LlamaSwapURL, cfg.LlamaSwapModel, ls.Ping)
-	} else if o := summarize.New(cfg.OllamaURL, cfg.OllamaModel); o != nil {
-		eng.WithSummarizer(o)
-		logSummarizerPing("Ollama", cfg.OllamaURL, cfg.OllamaModel, o.Ping)
+	switch ai := pickSummarizer(cfg); {
+	case ai.s != nil:
+		eng.WithSummarizer(ai.s)
+		logSummarizerPing(ai.name, ai.where, ai.model, ai.ping)
+	case ai.name != "":
+		log.Printf("shiplog: %s is chosen for AI summaries, but no model is set; summaries are off", ai.name)
 	}
 
 	notifier := loadNotifier(cfg)
@@ -185,6 +185,10 @@ func main() {
 	}
 	if door != nil && cfg.Socket != "" {
 		a.WithDoor(door)
+	}
+	// The key is written through the socket only, which the settings page reaches.
+	if cfg.Socket != "" && cfg.OpenRouterKeyFile != "" {
+		a.WithOpenRouter(openRouterSettings(summarize.KeyFile{Path: cfg.OpenRouterKeyFile}))
 	}
 	srv := a.Server()
 

@@ -1,5 +1,5 @@
 // Package summarize turns a raw changelog into a short AI summary, through
-// Ollama or through an OpenAI-compatible server such as llama-swap.
+// Ollama, an OpenAI-compatible server such as llama-swap, or OpenRouter.
 package summarize
 
 import (

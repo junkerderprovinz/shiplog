@@ -72,13 +72,13 @@ func TestTheVersionCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.7.0" {
-			t.Errorf("glimstone.json pins %s, want 4.7.0", target.Version)
+		if target.Version != "4.8.1" {
+			t.Errorf("glimstone.json pins %s, want 4.8.1", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.7.0';") {
-		t.Error("the Version card does not name GlimStone 4.7.0")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.8.1';") {
+		t.Error("the Version card does not name GlimStone 4.8.1")
 	}
 	row := regexp.MustCompile(`(?s)<span>GlimStone</span></div>\s*<div class="sl-ctl">(.*?)</div>`).FindStringSubmatch(page)
 	if row == nil || !strings.Contains(row[1], `href="https://github.com/junkerderprovinz/glimstone/releases/latest"`) || !strings.Contains(row[1], `$slE($slGlimstoneVer)`) {
@@ -92,6 +92,49 @@ func TestAReadmeButtonNameKeepsItsDescenders(t *testing.T) {
 	css := read(t, "styles/settings.css")
 	if !regexp.MustCompile(`#sl-cfg \.sl-rbtn-name \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;`).MatchString(css) {
 		t.Error("the clip of a README button's name cuts its descenders")
+	}
+}
+
+// TestAVersionNeverLooksLikeAButton shows every version on the Info tab as
+// plain text, linked quietly to its release notes, as in every app of the house.
+func TestAVersionNeverLooksLikeAButton(t *testing.T) {
+	page := read(t, "shiplog.page")
+	if n := strings.Count(page, `class="sl-ver`); n < 3 {
+		t.Fatalf("found %d version displays, want the two rows and the plain fallback", n)
+	}
+	if regexp.MustCompile(`class="[^"]*button[^"]*sl-ver|class="[^"]*sl-ver[^"]*button`).MatchString(page) {
+		t.Error("a version wears Unraid's button class")
+	}
+	css := read(t, "styles/settings.css")
+	rule := regexp.MustCompile(`(?s)\.sl-cfg a\.sl-ver \{([^}]*)\}`).FindStringSubmatch(css)
+	if rule == nil {
+		t.Fatal("settings.css has no rule for a linked version")
+	}
+	for _, want := range []string{"background: none", "border: 0", "padding: 0", "color: inherit", "text-decoration: none"} {
+		if !strings.Contains(rule[1], want) {
+			t.Errorf("a linked version lacks %q, so it can look like a button", want)
+		}
+	}
+	if !strings.Contains(css, "#sl-cfg a.sl-ver { color: inherit !important; }") {
+		t.Error("the theme plugin's accent colours a linked version like a control")
+	}
+}
+
+// TestAButtonLabelKeepsTheTailsOfArabic gives a button's words the room below
+// the line that GlimStone's label has, so an Arabic label keeps its tails.
+func TestAButtonLabelKeepsTheTailsOfArabic(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`\.sl-l \{[^}]*overflow: hidden;[^}]*padding-block: \.15em; margin-block: -\.15em;`).MatchString(css) {
+		t.Error("the clip of a button's label cuts what hangs below the line")
+	}
+}
+
+// TestAReadmeButtonMarkKeepsItsSoftEdge lets a mark that reaches its box draw
+// past the SVG's own clip, as GlimStone's README button does.
+func TestAReadmeButtonMarkKeepsItsSoftEdge(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`#sl-cfg \.sl-rbtn-mark svg \{ overflow: visible; \}`).MatchString(css) {
+		t.Error("the SVG of a README button's mark shaves the edge of a shape drawn to its box")
 	}
 }
 
