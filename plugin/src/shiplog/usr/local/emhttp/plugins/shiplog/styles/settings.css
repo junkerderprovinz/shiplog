@@ -280,6 +280,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .sl-ver { font-variant-numeric: tabular-nums lining-nums; }
 .sl-cfg a.sl-ver { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; text-decoration: none; }
 .sl-cfg a.sl-ver:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 2px; }
+/* The theme plugin colours every link in its accent, which would make the number read as a control. */
+#sl-cfg a.sl-ver { color: inherit !important; }
 
 /* The give buttons, TowerTorch's README buttons unchanged: the mark and the name
    at rest, the brand's own colour and one sheen under the pointer. */

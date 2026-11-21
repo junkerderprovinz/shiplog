@@ -115,6 +115,9 @@ func TestAVersionNeverLooksLikeAButton(t *testing.T) {
 			t.Errorf("a linked version lacks %q, so it can look like a button", want)
 		}
 	}
+	if !strings.Contains(css, "#sl-cfg a.sl-ver { color: inherit !important; }") {
+		t.Error("the theme plugin's accent colours a linked version like a control")
+	}
 }
 
 // TestAButtonLabelKeepsTheTailsOfArabic gives a button's words the room below
