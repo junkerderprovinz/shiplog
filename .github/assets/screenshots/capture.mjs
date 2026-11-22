@@ -7,11 +7,16 @@
 // Unraid server only lends its Docker tab and settings page: each sandbox container has an alpine
 // stand-in there, named sl-shot-<name> and run with --network none, and every answer of ShipLog's
 // proxy is swapped for the sandbox engine's. The server is only read. Every request other than a
-// GET or a GraphQL query is dropped, and the rows of the server's own containers are taken out
+// GET is dropped after the login, and the rows of the server's own containers are taken out
 // before a picture.
 //
-// Unraid prints its text in the server's language, so its display language has to be English
-// while the pictures are taken.
+// With SHOT_FIXTURE=<file>, the Docker tab and the changelog window show the made-up containers of
+// that file instead, and only the status page needs the sandbox. Their rows take the form Unraid
+// sends its list in, so the server needs no stand-ins either.
+//
+// ShipLog's own text is always English. Unraid prints its text in the server's language, so its
+// display language has to be English while the pictures are taken, or SHOT_TEXT names a JSON file
+// that maps each of its words on the page to the English one.
 //
 // SHOT_DENY takes comma-separated words, such as the server's name, that must not show on a page.
 // Hits are printed and the picture is still taken, so it can be checked.
@@ -19,9 +24,11 @@
 // Deps (global): playwright-core with its Chromium installed.
 // Run: UNRAID_URL=https://<server> UNRAID_PW=<root password> SANDBOX_URL=http://<engine>:8484 \
 //      node .github/assets/screenshots/capture.mjs [shot...]
+//  or: UNRAID_URL=... UNRAID_PW=... SHOT_FIXTURE=.github/assets/screenshots/fixture.json \
+//      node .github/assets/screenshots/capture.mjs docker changelog
 
 import { execSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,8 +41,14 @@ const out = join(here, "captures");
 const BASE = (process.env.UNRAID_URL || "").replace(/\/+$/, "");
 const SANDBOX = (process.env.SANDBOX_URL || "").replace(/\/+$/, "");
 const PASSWORD = process.env.UNRAID_PW;
-if (!BASE || !PASSWORD || !SANDBOX) throw new Error("set UNRAID_URL, UNRAID_PW and SANDBOX_URL");
+const FIXTURE = process.env.SHOT_FIXTURE ? JSON.parse(readFileSync(process.env.SHOT_FIXTURE, "utf8")) : null;
+const TEXT = process.env.SHOT_TEXT ? JSON.parse(readFileSync(process.env.SHOT_TEXT, "utf8")) : {};
 const CHOSEN = process.argv.slice(2);
+if (!BASE || !PASSWORD) throw new Error("set UNRAID_URL and UNRAID_PW");
+if (!SANDBOX && (!FIXTURE || !CHOSEN.length || CHOSEN.includes("status"))) throw new Error("set SANDBOX_URL, or SHOT_FIXTURE without the status shot");
+
+const LANG = join(here, "../../../plugin/src/shiplog/usr/local/emhttp/plugins/shiplog/lang/en.json");
+const I18N = Object.fromEntries(Object.entries(JSON.parse(readFileSync(LANG, "utf8"))).filter(([k]) => k.startsWith("d_")));
 
 const PREFIX = "sl-shot-";
 const VIEW = { width: 1440, height: 820 };
@@ -58,11 +71,32 @@ async function sandbox(url) {
   const path = q.get("path");
   if (path === "notify") return { channels: CHANNELS };
   if (path === "notify-hub") return { hub: false };
+  if (FIXTURE) return path === "guards" ? FIXTURE.guards : FIXTURE.status;
   const res = await fetch(`${SANDBOX}${path === "guards" ? "/api/guards" : "/api/containers"}`);
   const data = await res.json();
   if (path) return data;
   for (const st of data) st.container.name = PREFIX + st.container.name;
   return data;
+}
+
+// The fixture's containers as Unraid's DockerContainers.php sends them: the rows, the script that
+// fills its docker[] array and the busy flag, split by NUL.
+function dockerList() {
+  const rows = [], pushes = [];
+  const empty = "<td style='white-space:nowrap'><span class='docker_readmore'></span></td>";
+  FIXTURE.status.forEach(({ container: { name } }, i) => {
+    const id = `5e1f00c0ffe${i}`;
+    rows.push(`<tr class='sortable'><td class='ct-name' style='width:220px;padding:8px'><i class='fa fa-arrows-v mover orange-text'></i>` +
+      `<span class='outer'><span id='${id}' class='hand'><img src='${FIXTURE.icons[name]}' class='img'></span>` +
+      `<span class='inner'><span class='appname '>${name}</span><br><i id='load-${id}' class='fa fa-play started green-text'></i>` +
+      `<span class='state'>started</span></span></span></td>` +
+      `<td class='updatecolumn'><div><span><i class='fa fa-docker fa-fw'></i> 3rd Party</span></div></td>` +
+      `<td style='white-space:nowrap'><span class='docker_readmore'>none</span></td>${empty.repeat(4)}<td class='advanced'></td>` +
+      `<td><i class='fa fa-docker fa-fw'></i> 3rd Party</td>` +
+      `<td><div style='white-space:nowrap'>Uptime: 12 minutes<div style='margin-top:4px'>Created: 12 minutes ago</div></div></td></tr>`);
+    pushes.push(`docker.push({name:'${name}',id:'${id}',state:1,pause:0,update:3});`);
+  });
+  return [rows.join(""), pushes.join(""), "0"].join("\0");
 }
 
 async function login(page) {
@@ -77,7 +111,7 @@ async function login(page) {
 
 // Runs in the page: keeps the stand-ins' rows in the order given and drops the prefix from
 // everything a reader sees.
-function curate({ prefix, order }) {
+function curate({ prefix, order, text }) {
   const list = document.querySelector("#docker_list");
   if (list) {
     const nameOf = (tr) => (tr.querySelector("td.ct-name .appname")?.textContent || "").trim().replace(prefix, "");
@@ -89,8 +123,11 @@ function curate({ prefix, order }) {
   for (let n = walker.currentNode; n; n = walker.nextNode()) {
     if (n.nodeType === Node.TEXT_NODE) {
       if (n.nodeValue.includes(prefix)) n.nodeValue = n.nodeValue.split(prefix).join("");
+      const t = n.nodeValue.trim();
+      if (text[t]) n.nodeValue = n.nodeValue.replace(t, text[t]);
       continue;
     }
+    if (n.matches("input[type=button]") && text[n.value]) n.value = text[n.value];
     for (const at of ["title", "aria-label", "data-tip", "alt"]) {
       const v = n.getAttribute(at);
       if (v && v.includes(prefix)) n.setAttribute(at, v.split(prefix).join(""));
@@ -119,6 +156,7 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
 try {
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: VIEW, deviceScaleFactor: 2, locale: "en-US", colorScheme: "dark" });
+  await ctx.addInitScript((i18n) => Object.defineProperty(window, "shiplogI18n", { get: () => i18n, set() {} }), I18N);
   const page = await ctx.newPage();
   await page.route(/./, (r) => (r.request().method() === "GET" || /\/login/.test(r.request().url()) ? r.continue() : r.abort()));
   await login(page);
@@ -128,15 +166,15 @@ try {
     const url = req.url();
     // Another skin of the Docker tab belongs in its own README.
     if (/\/plugins\/towertorch\//.test(url)) return route.abort();
-    if (req.method() !== "GET" && !/\/graphql/.test(url)) return route.abort();
-    if (req.method() !== "GET" && /mutation/i.test(req.postData() || "")) return route.abort();
+    if (req.method() !== "GET") return route.abort();
     if (PROXY.test(url)) return route.fulfill({ contentType: "application/json", body: JSON.stringify(await sandbox(url)) });
+    if (FIXTURE && /\/DockerContainers\.php(\?|$)/.test(url)) return route.fulfill({ contentType: "text/html", body: dockerList() });
     return route.continue();
   });
 
   const shot = async (name, target) => {
     await page.addStyleTag({ content: still });
-    await page.evaluate(curate, { prefix: PREFIX, order: ORDER });
+    await page.evaluate(curate, { prefix: PREFIX, order: ORDER, text: TEXT });
     await page.waitForTimeout(300);
     for (const h of await page.evaluate(leaks, DENY)) console.log(`  ${name}: ${h}`);
     await target.screenshot({ path: join(out, `${name}.png`) });
@@ -153,7 +191,7 @@ try {
       for (let i = 0; i <= last; i++) { clearTimeout(i); clearInterval(i); }
     });
     await page.mouse.move(VIEW.width / 2, 2);
-    await page.evaluate(curate, { prefix: PREFIX, order: ORDER });
+    await page.evaluate(curate, { prefix: PREFIX, order: ORDER, text: TEXT });
     await page.waitForTimeout(1000);
     if (!CHOSEN.length || CHOSEN.includes("docker")) {
       // The stand-ins have no ports, addresses or volumes, so those columns would only stand empty.
