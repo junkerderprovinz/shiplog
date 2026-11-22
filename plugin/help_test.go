@@ -3,6 +3,7 @@ package plugin
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -115,9 +116,10 @@ func TestTheInfoTabHoldsVersionComponentsHelpAndAbout(t *testing.T) {
 // TestTheVersionCardSpeaksEveryLanguage gives each card's words, from
 // GlimStone, to every language with the blanks the page fills.
 func TestTheVersionCardSpeaksEveryLanguage(t *testing.T) {
-	blanks := map[string]string{"s_vc_hint": "{app}", "s_vc_checked": "{when}", "s_vc_available": "{version}", "s_vc_unreleased": "{version}", "s_cc_hint": "{app}"}
+	blanks := map[string]string{"s_vc_hint": "{app}", "s_vc_checked": "{when}", "s_vc_available": "{version}", "s_vc_unreleased": "{version}", "s_cc_hint": "{app}", "s_notes_title": "{version}"}
 	keys := []string{"s_vc_title", "s_vc_hint", "s_vc_whats_new", "s_vc_check", "s_vc_checking", "s_vc_current", "s_vc_checked",
-		"s_vc_available", "s_vc_failed", "s_vc_plugins", "s_vc_unreleased", "s_cc_title", "s_cc_hint", "s_cc_design"}
+		"s_vc_available", "s_vc_failed", "s_vc_plugins", "s_vc_unreleased", "s_cc_title", "s_cc_hint", "s_cc_design",
+		"s_notes_title", "s_notes_loading", "s_notes_none", "s_notes_failed", "s_notes_github"}
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
 	if err != nil || len(files) < 26 {
 		t.Fatalf("lang files = %d, %v", len(files), err)
@@ -189,6 +191,118 @@ func TestTheCheckIsTheOnePluginsTabRuns(t *testing.T) {
 	js := read(t, "scripts/settings.js")
 	if !strings.Contains(js, `fetch("/plugins/shiplog/server/update-check.php", { method: "POST"`) {
 		t.Error("Check for updates does not post to update-check.php")
+	}
+}
+
+// TestWhatsNewReadsTheNotesOfThePlg takes the running version's block from
+// the installed plg's CHANGES, or the new version's from the plg the check
+// fetched, with the category lines as the headings of the release page.
+func TestWhatsNewReadsTheNotesOfThePlg(t *testing.T) {
+	dir := t.TempDir()
+	plg := func(name, version, changes string) string {
+		p := filepath.Join(dir, name)
+		src := "<?xml version='1.0' standalone='yes'?>\n<!DOCTYPE PLUGIN [\n  <!ENTITY name      \"shiplog\">\n  <!ENTITY version   \"" + version + "\">\n]>\n" +
+			"<PLUGIN name=\"&name;\">\n<CHANGES>\nWhat ShipLog does.\n\n" + changes + "</CHANGES>\n</PLUGIN>\n"
+		if err := os.WriteFile(p, []byte(src), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	changes := "### 3.9.4\nThe newer one.\n\n🐛 **Fixed**\n- **A fix.** Under Settings &gt; ShipLog.\n\n" +
+		"### 3.9.3\nThe running one.\n\n✨ **Added**\n- **A feature.** With &amp; and `code`.\n- **Bold alone.**\n\n### 3.9.2\nAn older one.\n"
+	notes := func(installed, fetched string) map[string]string {
+		out := map[string]string{}
+		runPHP(t, "N", "notes.php", `echo json_encode($N(`+phpString(installed)+`, `+phpString(fetched)+`));`, &out)
+		return out
+	}
+	missing := filepath.Join(dir, "missing.plg")
+	running := notes(plg("installed.plg", "3.9.3", changes), missing)
+	want := "The running one.\n\n## ✨ Added\n- **A feature.** With & and `code`.\n- **Bold alone.**"
+	if running["version"] != "3.9.3" || running["notes"] != want {
+		t.Errorf("the running release reads %q: %q, want %q", running["version"], running["notes"], want)
+	}
+	newer := notes(plg("installed.plg", "3.9.3", changes), plg("fetched.plg", "3.9.4", changes))
+	if newer["version"] != "3.9.4" || !strings.HasPrefix(newer["notes"], "The newer one.\n\n## 🐛 Fixed\n- **A fix.** Under Settings > ShipLog.") || strings.Contains(newer["notes"], "running") {
+		t.Errorf("while 3.9.4 waits the window reads %q: %q", newer["version"], newer["notes"])
+	}
+	if b := notes(plg("build.plg", "3.9.3.fix.c8dbae6", changes), missing); b["version"] != "3.9.4" || !strings.HasPrefix(b["notes"], "The newer one.") {
+		t.Errorf("a build that is not a release reads %q: %q, want the newest block", b["version"], b["notes"])
+	}
+	if b := notes(plg("bare.plg", "3.9.5", changes), missing); b["version"] != "3.9.5" || b["notes"] != "" {
+		t.Errorf("a release without a block reads %q: %q, want no notes", b["version"], b["notes"])
+	}
+}
+
+// TestWhatsNewOpensAWindowOfThePlugin keeps the release notes in a window of
+// the plugin, never a tab on GitHub: the link to the release page opens its
+// foot and Close ends it, and the notes come from ShipLog's own server.
+func TestWhatsNewOpensAWindowOfThePlugin(t *testing.T) {
+	page := read(t, "shiplog.page")
+	if !strings.Contains(page, `<button type="button" class="sl-btn" id="sl-whatsnew" aria-haspopup="dialog"><span class="sl-vdot" aria-hidden="true"></span>`) {
+		t.Error("What's new is not a button with the dot that opens a window")
+	}
+	win := regexp.MustCompile(`(?s)<div class="sl-win sl-win-notes" id="sl-win-notes" role="dialog" aria-modal="true" aria-labelledby="sl-win-notes-t" tabindex="-1" hidden>(.*?)\n</div>`).FindStringSubmatch(page)
+	if win == nil {
+		t.Fatal("shiplog.page has no window for the release notes")
+	}
+	foot := regexp.MustCompile(`<div class="sl-win-act">(.*)</div>`).FindStringSubmatch(win[1])
+	if foot == nil || !regexp.MustCompile(`^<button type="button" class="sl-win-btn sl-win-link" id="sl-notes-github">.*s_notes_github.*</button><button type="button" class="sl-win-btn" data-sl-close>.*s_close.*</button>$`).MatchString(foot[1]) {
+		t.Errorf("the notes window's foot is not the link to the release page, then Close: %v", foot)
+	}
+	if !strings.Contains(win[1], `<div class="sl-notes" id="sl-notes" tabindex="0"></div>`) {
+		t.Error("long notes scroll, and the keyboard has no way into them")
+	}
+	notesAt, pageAt := strings.Index(page, "<script src=\"<?autov('/plugins/shiplog/scripts/release-notes.js')?>\">"), strings.Index(page, "<script src=\"<?autov('/plugins/shiplog/scripts/settings.js')?>\">")
+	if notesAt < 0 || notesAt > pageAt {
+		t.Error("the notes are drawn by a script that loads after the page's")
+	}
+	js := read(t, "scripts/settings.js")
+	if !strings.Contains(js, `fetch("/plugins/shiplog/server/release-notes.php", { credentials: "same-origin" })`) {
+		t.Error("What's new does not ask ShipLog's server for the notes")
+	}
+	if strings.Contains(js, "api.github.com") || strings.Contains(js, `sl-whatsnew").href`) {
+		t.Error("What's new still leads the browser to GitHub")
+	}
+	if !strings.Contains(js, `news.addEventListener("click", function () { showWin("notes", news); });`) {
+		t.Error("What's new does not open the notes window")
+	}
+	src := read(t, "server/release-notes.php")
+	if !strings.Contains(src, "$notes = include '/usr/local/emhttp/plugins/shiplog/include/notes.php';") || strings.Contains(src, "curl") {
+		t.Error("release-notes.php does not answer from the plg on the server")
+	}
+	css := read(t, "styles/settings.css")
+	if !strings.Contains(css, ".sl-win.sl-win-notes { width: min(760px, calc(100vw - 32px)); }") {
+		t.Error("the notes window is not wide enough to read")
+	}
+	if !strings.Contains(css, ".sl-win-notes .sl-win-act { justify-content: space-between; }") {
+		t.Error("the link to the release page leans on a margin TowerTorch overrides")
+	}
+}
+
+// TestTheDotBeforeWhatsNewStaysGrey has nothing to mark: ShipLog marks no
+// changes, so nothing is ever unseen.
+func TestTheDotBeforeWhatsNewStaysGrey(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !strings.Contains(css, `/* The dot before "What's new", grey while nothing is unseen. */`+"\n.sl-vdot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--sl-dim); }") {
+		t.Error("the dot before What's new is not grey")
+	}
+	if strings.Contains(css, "data-unseen") {
+		t.Error("settings.css keeps a rule for an unseen change ShipLog never marks")
+	}
+}
+
+// TestTheReleaseNotesPassTheirNodeTests runs the suite that draws notes into a
+// small document of its own.
+func TestTheReleaseNotesPassTheirNodeTests(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatal("node is not installed")
+		}
+		t.Skip("node is not installed")
+	}
+	if out, err := exec.Command(node, "--test", filepath.Join("test", "release-notes.test.js")).CombinedOutput(); err != nil {
+		t.Fatalf("node --test: %v\n%s", err, out)
 	}
 }
 

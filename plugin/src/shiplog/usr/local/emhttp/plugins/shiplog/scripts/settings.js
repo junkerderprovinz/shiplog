@@ -9,7 +9,7 @@
   "use strict";
   var root = document.getElementById("sl-cfg");
   var form = root.querySelector("form");
-  // The give windows sit in <body>, clear of any stacking context on the page.
+  // The windows sit in <body>, clear of any stacking context on the page.
   var wins = document.getElementById("sl-wins");
   document.body.appendChild(wins);
   var html = document.documentElement;
@@ -748,9 +748,9 @@
     auRender();
   })();
 
-  /* The give windows, as FireSquire opens them: Buy Me a Coffee's widget,
-     PayPal's buttons under the house's own controls, and an address and a QR
-     code per network. Escape, the scrim and Close shut a window, the focus
+  /* The windows, as FireSquire opens them: What's new, Buy Me a Coffee's
+     widget, PayPal's buttons under the house's own controls, and an address and
+     a QR code per network. Escape, the scrim and Close shut a window, the focus
      stays inside while it is open and goes back to the button that opened it. */
   var scrim = wins.querySelector(".sl-scrim");
   var shown = null, opener = null;
@@ -765,7 +765,7 @@
     shown = w;
     scrim.hidden = false;
     w.hidden = false;
-    var into = GIVE[name].open(w);
+    var into = WINDOWS[name].open(w);
     paint();
     (into || w).focus();
   }
@@ -775,7 +775,7 @@
     shown = null;
     w.hidden = true;
     scrim.hidden = true;
-    GIVE[w.id.replace("sl-win-", "")].close(w);
+    WINDOWS[w.id.replace("sl-win-", "")].close(w);
     if (opener && document.contains(opener)) opener.focus();
   }
   document.addEventListener("keydown", function (e) {
@@ -809,7 +809,7 @@
     node.classList.add("sl-shake");
   }
 
-  var GIVE = {
+  var WINDOWS = {
     coffee: {
       open: function (w) {
         var box = w.querySelector(".sl-frame"), f = document.createElement("iframe");
@@ -1059,11 +1059,6 @@
       v = Math.round(v / steps[i][1]);
     }
   }
-  // While an update waits, What's new opens that version's notes.
-  function notesFor(v) {
-    var repo = "https://github.com/junkerderprovinz/shiplog/releases";
-    return /^\d+(\.\d+)+$/.test(v) ? repo + "/tag/v" + v : repo;
-  }
   function showUpdate(s) {
     updState = s;
     var line = T.s_vc_checking, tone = "neutral", note = "";
@@ -1083,7 +1078,6 @@
     updCheck.disabled = busy;
     if (busy) updCheck.setAttribute("aria-busy", "true"); else updCheck.removeAttribute("aria-busy");
     byId("sl-plugins").hidden = s.kind !== "available";
-    byId("sl-whatsnew").href = notesFor(s.kind === "available" ? s.version : upd.getAttribute("data-sl-version"));
     labels();
   }
   function checkUpdate() {
@@ -1095,6 +1089,45 @@
   }
   function infoOpened() { if (updState.kind === "unchecked") checkUpdate(); }
   updCheck.addEventListener("click", checkUpdate);
+
+  /* What's new opens the notes of the running version, or of the new one
+     while an update waits, as the plg on the server carries them. */
+  var news = byId("sl-whatsnew"), notes = byId("sl-notes"), notesTitle = byId("sl-win-notes-t");
+  var RELEASES = "https://github.com/junkerderprovinz/shiplog/releases", notesPage = RELEASES, notesAsked = 0;
+  function isRelease(v) { return /^\d+(\.\d+)+$/.test(v || ""); }
+  function notesFor(v) {
+    notesTitle.textContent = isRelease(v) ? T.s_notes_title.replace("{version}", v) : T.s_vc_whats_new;
+    notesPage = isRelease(v) ? RELEASES + "/tag/v" + v : RELEASES;
+  }
+  function say(text) {
+    notes.textContent = "";
+    var p = document.createElement("p");
+    p.className = "sl-win-text";
+    p.textContent = text;
+    notes.appendChild(p);
+  }
+  WINDOWS.notes = {
+    open: function () {
+      // An answer to a window closed meanwhile has nowhere to go.
+      var asked = ++notesAsked;
+      notesFor(updState.kind === "available" ? updState.version : upd.getAttribute("data-sl-version"));
+      say(T.s_notes_loading);
+      fetch("/plugins/shiplog/server/release-notes.php", { credentials: "same-origin" })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (n) {
+          if (asked !== notesAsked) return;
+          if (isRelease(n.version)) notesFor(n.version);
+          if (!String(n.notes || "").trim()) return say(T.s_notes_none);
+          notes.textContent = "";
+          window.ShipLogNotes.render(n.notes, notes);
+        })
+        .catch(function () { if (asked === notesAsked) say(T.s_notes_failed); });
+      return notes;
+    },
+    close: function () { notesAsked++; }
+  };
+  news.addEventListener("click", function () { showWin("notes", news); });
+  byId("sl-notes-github").addEventListener("click", function () { window.open(notesPage, "_blank", "noopener"); });
   showUpdate(updState);
   if (!byId("sl-pane-info").hidden) infoOpened();
 
