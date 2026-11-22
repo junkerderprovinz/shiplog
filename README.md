@@ -75,7 +75,7 @@ If it has earned a place on your server or computer, toss a coin to your knight:
 
 <p><a id="3-what-it-looks-like" href="#3-what-it-looks-like"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/sections/3-what-it-looks-like-dark.svg"><img src=".github/assets/sections/3-what-it-looks-like.svg" alt="3. What it looks like" width="100%"></picture></a></p>
 
-The containers in these pictures run public images at older versions in a test sandbox. The release notes and the vulnerabilities are the real ones.
+In the Docker tab and the changelog window, the containers, release notes and vulnerabilities are made up. The status page shows public images at older versions running in a test sandbox.
 
 <p align="center">
   <img src=".github/assets/screenshots/shiplog-1.png" alt="The ShipLog changelog window for a container going from v3.2.0 to 3.7.19: a minor badge, the known vulnerabilities and the release notes of each version" width="100%">
@@ -83,13 +83,13 @@ The containers in these pictures run public images at older versions in a test s
 </p>
 
 <p align="center">
-  <img src=".github/assets/screenshots/shiplog-2.png" alt="Unraid's Docker tab with ShipLog's chips: a changelog chip with a coloured risk dot on every container, and a vulnerability count beside it" width="100%">
+  <img src=".github/assets/screenshots/shiplog-2.png" alt="Unraid's Docker tab with ShipLog's chips: a changelog chip with a coloured risk dot on every container, and beside it a count of the known vulnerabilities, with the ones that have no fix yet dimmed" width="100%">
   <br><em>Every container gets a chip, with the risk as a coloured dot and the known vulnerabilities beside it</em>
 </p>
 
 <p align="center">
-  <img src=".github/assets/screenshots/shiplog-3.png" alt="The known vulnerabilities in the changelog window: 16 critical and 44 high, each marked as closed by the update" width="100%">
-  <br><em>The window lists the known vulnerabilities and marks the ones the update closes</em>
+  <img src=".github/assets/screenshots/shiplog-3.png" alt="The known vulnerabilities in the changelog window: 4 critical and 8 high marked as closed by the update, then 1 critical and 3 high with no fix yet" width="100%">
+  <br><em>The window lists the known vulnerabilities with the fixable ones first and marks those the update closes</em>
 </p>
 
 <p align="center">
