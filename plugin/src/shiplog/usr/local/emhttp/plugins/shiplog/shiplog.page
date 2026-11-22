@@ -387,7 +387,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
       <div class="sl-vfoot" id="sl-update" data-sl-state="<?=$slE(json_encode($slUpdate))?>" data-sl-version="<?=$slE($slVer)?>">
         <p class="sl-vstate" id="sl-vstate" role="status"><span class="sl-vline" id="sl-vline"></span><span class="sl-vnote" id="sl-vnote"></span></p>
         <div class="sl-vact">
-          <a class="button sl-btn" id="sl-whatsnew" href="https://github.com/junkerderprovinz/shiplog/releases" target="_blank" rel="noopener noreferrer"><span class="sl-vdot" aria-hidden="true"></span><?=$slBtn('WhatsNew', $L['s_vc_whats_new'])?></a>
+          <button type="button" class="sl-btn" id="sl-whatsnew" aria-haspopup="dialog"><span class="sl-vdot" aria-hidden="true"></span><?=$slBtn('WhatsNew', $L['s_vc_whats_new'])?></button>
           <button type="button" class="sl-btn" id="sl-check"><?=$slBtn('Sync', $L['s_vc_check'])?></button>
           <a class="button sl-btn tt-fm-primary" id="sl-plugins" href="/Plugins" hidden><?=$slBtn('Sync', $L['s_vc_plugins'])?></a>
         </div>
@@ -447,10 +447,11 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
 </div>
 
 <?php
-/* The give windows. The script moves them into <body> and mounts the coffee frame
-   and PayPal's buttons only while their window is open, so nothing from either
-   provider loads before somebody asks for it. A QR path carries no quiet zone, so
-   the four modules the standard asks for are added around it here. */
+/* The windows: What's new, whose notes the script asks the server for once it
+   opens, and the give windows. The script moves them into <body> and mounts the
+   coffee frame and PayPal's buttons only while their window is open, so nothing
+   from either provider loads before somebody asks for it. A QR path carries no
+   quiet zone, so the four modules the standard asks for are added around it here. */
 $slQr = '';
 foreach ($GV['qr'] as $addr => $qr) {
   $n = $qr[0] + 8;
@@ -483,6 +484,11 @@ $slGroup = function ($label, $control) use ($slE) {
 ?>
 <div class="sl-wins" id="sl-wins" data-sl-labels="textGlyph">
 <div class="sl-scrim" hidden></div>
+<div class="sl-win sl-win-notes" id="sl-win-notes" role="dialog" aria-modal="true" aria-labelledby="sl-win-notes-t" tabindex="-1" hidden>
+  <h2 class="sl-win-title" id="sl-win-notes-t"><?=$slE($L['s_vc_whats_new'])?></h2>
+  <div class="sl-win-body"><div class="sl-notes" id="sl-notes" tabindex="0"></div></div>
+  <div class="sl-win-act"><button type="button" class="sl-win-btn sl-win-link" id="sl-notes-github"><?=$slBtn('ExternalLink', $L['s_notes_github'])?></button><button type="button" class="sl-win-btn" data-sl-close><?=$slBtn('Close', $L['s_close'])?></button></div>
+</div>
 <?=$slWin('coffee', 'Buy Me a Coffee', $L['s_give_coffee_intro'],
   '<div class="sl-frame" data-src="https://buymeacoffee.com/widget/page/junkerderprovinz?description=&amp;color=%23FFDD00"></div>')?>
 <?=$slWin('paypal', 'PayPal', $L['s_give_paypal_intro'],
@@ -505,6 +511,7 @@ var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 </script>
 <script src="<?autov('/plugins/shiplog/scripts/notify-marks.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/notify-card.js')?>"></script>
+<script src="<?autov('/plugins/shiplog/scripts/release-notes.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/fortress-card.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/fortress.js')?>"></script>

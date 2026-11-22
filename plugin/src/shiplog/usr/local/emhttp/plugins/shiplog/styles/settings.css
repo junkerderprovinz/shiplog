@@ -299,9 +299,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .sl-vstate[data-tone="fail"] .sl-vline { color: var(--sl-err); }
 .sl-vnote:empty { display: none; }
 .sl-vact { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-inline-start: auto; }
-/* The dot before "What's new": green while something is unseen, grey once nothing is. */
+/* The dot before "What's new", grey while nothing is unseen. */
 .sl-vdot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--sl-dim); }
-.sl-vdot[data-unseen] { background: var(--sl-ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sl-ok) 25%, transparent); }
 .sl-cfg .sl-btn[aria-busy="true"] { cursor: progress; }
 
 /* The Components card: a name with its (i) at the start, its number at the end. */
@@ -449,6 +448,8 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
    runs to about 1200px, and every pixel here is scrolling a donor is spared. */
 .sl-win.sl-win-coffee { width: min(512px, calc(100vw - 32px)); height: calc(100vh - 112px); }
 .sl-win.sl-win-paypal { width: min(460px, calc(100vw - 32px)); }
+/* The release notes window is wide and sets its body as reading text. */
+.sl-win.sl-win-notes { width: min(760px, calc(100vw - 32px)); }
 .sl-win .sl-win-title {
   position: absolute; top: 0; inset-inline-start: 24px; transform: translateY(-50%);
   display: inline-flex; align-items: center; max-width: calc(100% - 48px); min-height: 22px; margin: 0; padding: 0 12px;
@@ -464,6 +465,23 @@ html.tt-popups-on .sl-win { color: #e6e6e6; }
 .sl-win .sl-win-sub { color: var(--sl-w-dim); }
 .sl-win-act { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px 0; }
 .sl-win-act > button { margin: 0; }
+/* The link to the release page opens the foot and Close ends it. They stand
+   apart without a margin, since TowerTorch sets the margins of every button
+   with !important. */
+.sl-win-notes .sl-win-act { justify-content: space-between; }
+.sl-win-notes .sl-notes { overflow-wrap: anywhere; line-height: 1.55; }
+.sl-win-notes .sl-notes:focus { outline: none; }
+.sl-win-notes .sl-notes:focus-visible { outline: var(--tt-focus-ring-width, 2px) solid var(--sl-w-focus); outline-offset: 2px; }
+.sl-win-notes .sl-notes > :first-child { margin-top: 0; }
+.sl-win-notes .sl-notes-h { margin: 18px 0 6px; font-size: 16px; font-weight: 700; }
+.sl-win-notes .sl-notes :is(p, li) { text-align: start; }
+.sl-win-notes .sl-notes p { margin: 0 0 10px; }
+.sl-win-notes .sl-notes :is(ul, ol) { margin: 0 0 10px; padding-inline-start: 20px; }
+.sl-win-notes .sl-notes li { margin: 5px 0; }
+.sl-win-notes .sl-notes code { padding: 1px 5px; border-radius: calc(var(--sl-w-r-ctl) / 2); background: var(--sl-w-chip); font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; }
+.sl-win-notes .sl-notes pre { margin: 0 0 10px; padding: 10px 12px; overflow-x: auto; border-radius: var(--sl-w-r-ctl); background: var(--sl-w-chip); }
+.sl-win-notes .sl-notes pre code { padding: 0; background: none; }
+.sl-win-notes .sl-notes a { color: var(--sl-w-focus); }
 /* A window's buttons wear their glyph like the page's and follow the same label mode. */
 #sl-wins .sl-win-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 #sl-wins[data-sl-labels="text"] .sl-win-btn .sl-g { display: none; }
