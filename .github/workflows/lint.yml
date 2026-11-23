@@ -71,6 +71,7 @@ jobs:
           root=$(mktemp -d)
           tar -C "$root" -xf plugin/out/shiplog-0.0.0-ci-x86_64-1.txz
           sock="$root/shiplog.sock"
+          mkdir -p "$root/data"
           SOCKET="$sock" DATA_DIR="$root/data" "$root/usr/local/emhttp/plugins/shiplog/bin/shiplog" > "$root/log" 2>&1 &
           for i in $(seq 1 30); do
             if grep -q "SHIPLOG IS READY" "$root/log" && curl -fsS -o /dev/null --unix-socket "$sock" http://shiplog/; then
