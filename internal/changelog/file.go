@@ -2,7 +2,9 @@ package changelog
 
 import (
 	"context"
+	"errors"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"regexp"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/junkerderprovinz/shiplog/internal/model"
+	"github.com/junkerderprovinz/shiplog/internal/publicnet"
 )
 
 // maxFileSize caps how much of a changelog file is read. The newest entries sit
@@ -26,8 +29,9 @@ type File struct {
 	httpClient *http.Client
 	ttl        time.Duration
 
-	mu    sync.Mutex
-	cache map[string]*fileCache
+	mu      sync.Mutex
+	cache   map[string]*fileCache
+	refused map[string]bool
 }
 
 type fileCache struct {
@@ -39,9 +43,10 @@ type fileCache struct {
 // NewFile returns a File provider.
 func NewFile() *File {
 	return &File{
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: publicnet.Client(30 * time.Second),
 		ttl:        10 * time.Minute,
 		cache:      make(map[string]*fileCache),
+		refused:    make(map[string]bool),
 	}
 }
 
@@ -124,6 +129,14 @@ func (f *File) fetch(ctx context.Context, url string) (string, bool) {
 		}
 	}
 	resp, err := f.httpClient.Do(req)
+	if errors.Is(err, publicnet.ErrPrivate) {
+		// A stored source that leads inside stays unread and says so once.
+		if !f.refused[url] {
+			f.refused[url] = true
+			log.Printf("shiplog: changelog file %s leads into the local network, so ShipLog does not read it; pick another source on the status page", url)
+		}
+		return "", false
+	}
 	if err != nil {
 		return stale()
 	}

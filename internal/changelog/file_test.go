@@ -2,8 +2,10 @@ package changelog
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -63,7 +65,7 @@ func TestFile_RollingTag_ShowsNewestSection(t *testing.T) {
 	srv := serveFile(t, "text/plain; charset=utf-8", historyTxt)
 	c := model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}
 
-	cl, ok := NewFile().Get(context.Background(), c, "latest", "latest")
+	cl, ok := localFile().Get(context.Background(), c, "latest", "latest")
 	if !ok {
 		t.Fatal("expected a handled changelog")
 	}
@@ -92,7 +94,7 @@ func TestFile_VersionSpan_ListsSectionsBetween(t *testing.T) {
 	srv := serveFile(t, "text/markdown", keepAChangelog)
 	c := model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}
 
-	cl, ok := NewFile().Get(context.Background(), c, "1.1.0", "v1.3.0")
+	cl, ok := localFile().Get(context.Background(), c, "1.1.0", "v1.3.0")
 	if !ok {
 		t.Fatal("expected a handled changelog")
 	}
@@ -112,7 +114,7 @@ func TestFile_VersionSpan_ListsSectionsBetween(t *testing.T) {
 
 func TestFile_UnreleasedIsNeverTheNewestSection(t *testing.T) {
 	srv := serveFile(t, "text/plain", keepAChangelog)
-	cl, ok := NewFile().Get(context.Background(), model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}, "latest", "latest")
+	cl, ok := localFile().Get(context.Background(), model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}, "latest", "latest")
 	if !ok || len(cl.Entries) != 1 || !strings.HasPrefix(cl.Entries[0].Tag, "1.3.0") {
 		t.Fatalf("got %+v, want the 1.3.0 section", cl)
 	}
@@ -134,7 +136,7 @@ func TestFile_NoVersionHeadings_ShowsFirstLines(t *testing.T) {
 	}
 	srv := serveFile(t, "text/plain", "\n\n"+b.String())
 
-	cl, ok := NewFile().Get(context.Background(), model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}, "latest", "latest")
+	cl, ok := localFile().Get(context.Background(), model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}, "latest", "latest")
 	if !ok || cl.Entries != nil {
 		t.Fatalf("got (%+v, %v)", cl, ok)
 	}
@@ -146,14 +148,14 @@ func TestFile_NoVersionHeadings_ShowsFirstLines(t *testing.T) {
 func TestFile_WebPageOrMissing_NotHandled(t *testing.T) {
 	page := serveFile(t, "text/html; charset=utf-8", "<html>Version 1.0</html>")
 	for _, u := range []string{page.URL + "/CHANGELOG", page.URL + "/missing"} {
-		if cl, ok := NewFile().Get(context.Background(), model.Container{ChangelogFile: u}, "latest", "latest"); ok {
+		if cl, ok := localFile().Get(context.Background(), model.Container{ChangelogFile: u}, "latest", "latest"); ok {
 			t.Errorf("%s: got %+v, want unhandled", u, cl)
 		}
 	}
 }
 
 func TestFile_NoFileSet_NotHandled(t *testing.T) {
-	if _, ok := NewFile().Get(context.Background(), model.Container{Source: "https://github.com/o/r"}, "1.0.0", "1.1.0"); ok {
+	if _, ok := localFile().Get(context.Background(), model.Container{Source: "https://github.com/o/r"}, "1.0.0", "1.1.0"); ok {
 		t.Fatal("a container without a changelog file must fall through")
 	}
 }
@@ -172,7 +174,7 @@ func TestFile_RevalidatesWithETag(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	f := NewFile()
+	f := localFile()
 	c := model.Container{ChangelogFile: srv.URL + "/History.txt"}
 	f.Get(context.Background(), c, "latest", "latest")
 	f.Get(context.Background(), c, "latest", "latest")
@@ -183,5 +185,30 @@ func TestFile_RevalidatesWithETag(t *testing.T) {
 	cl, ok := f.Get(context.Background(), c, "latest", "latest")
 	if !ok || revalidated != 1 || cl.Entries[0].Tag != "Version 2026.4" {
 		t.Fatalf("hits %d, revalidated %d, ok %v", hits, revalidated, ok)
+	}
+}
+
+// localFile reads files from test servers on this machine, which NewFile refuses.
+func localFile() *File {
+	f := NewFile()
+	f.httpClient = &http.Client{Timeout: 5 * time.Second}
+	return f
+}
+
+func TestAFileInsideTheLocalNetworkIsNeverRead(t *testing.T) {
+	srv := serveFile(t, "text/plain", historyTxt)
+	var logged strings.Builder
+	log.SetOutput(&logged)
+	defer log.SetOutput(os.Stderr)
+
+	f := NewFile()
+	c := model.Container{ChangelogFile: srv.URL + "/CHANGELOG"}
+	for range 2 {
+		if cl, ok := f.Get(context.Background(), c, "latest", "latest"); ok {
+			t.Fatalf("a stored source on 127.0.0.1 was read: %+v", cl)
+		}
+	}
+	if n := strings.Count(logged.String(), "local network"); n != 1 {
+		t.Errorf("the refusal is logged %d times, want once: %q", n, logged.String())
 	}
 }

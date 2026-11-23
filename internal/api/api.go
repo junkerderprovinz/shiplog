@@ -18,6 +18,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/changelog"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/notify"
+	"github.com/junkerderprovinz/shiplog/internal/publicnet"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 )
@@ -98,7 +99,9 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 	a.verify = func(ctx context.Context, source string) (bool, bool) {
 		return verifyGitHubRepo(ctx, ghToken, source)
 	}
-	a.verifyFile = verifyChangelogFile
+	a.verifyFile = func(ctx context.Context, url string) string {
+		return verifyChangelogFile(ctx, publicnet.Client(10*time.Second), url)
+	}
 	return a
 }
 
@@ -110,15 +113,18 @@ func (a *API) WithUpdateCheck(docker ContainerLister, msg Messenger) *API {
 }
 
 // verifyChangelogFile fetches the file once. A server error, a rate limit or a
-// network failure does not block a save.
-func verifyChangelogFile(ctx context.Context, url string) string {
+// network failure does not block a save, an address inside does.
+func verifyChangelogFile(ctx context.Context, client *http.Client, url string) string {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return ""
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
+	if errors.Is(err, publicnet.ErrPrivate) {
+		return publicnet.ErrPrivate.Error()
+	}
 	if err != nil {
 		return ""
 	}
@@ -312,8 +318,12 @@ func (a *API) setOverride(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "source must be a GitHub repo (owner/repo) or the URL of a changelog file", http.StatusBadRequest)
 		return
 	}
-	// A clear 404 catches a typo at save time.
 	if file {
+		if err := publicnet.Check(source); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// A clear 404 catches a typo at save time.
 		if a.verifyFile != nil {
 			if problem := a.verifyFile(r.Context(), source); problem != "" {
 				http.Error(w, problem, http.StatusBadRequest)

@@ -393,10 +393,36 @@ func TestVerifyChangelogFile(t *testing.T) {
 		"/page":        "web page",
 		"/gone":        "not found",
 	} {
-		got := verifyChangelogFile(context.Background(), srv.URL+path)
+		got := verifyChangelogFile(context.Background(), srv.Client(), srv.URL+path)
 		if (want == "") != (got == "") || !strings.Contains(got, want) {
 			t.Errorf("%s: got %q, want %q", path, got, want)
 		}
+	}
+}
+
+func TestTheFileCheckNeverReachesTheLocalNetwork(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("Version 1.0")) }))
+	defer srv.Close()
+	a := New(nil, nil, nil, "")
+	if got := a.verifyFile(context.Background(), srv.URL+"/History.txt"); !strings.Contains(got, "local network") {
+		t.Errorf("a file on 127.0.0.1 gives %q, want a refusal", got)
+	}
+}
+
+func TestAnOverrideIntoTheLocalNetworkIsRefused(t *testing.T) {
+	ovr := &fakeOverrides{}
+	a := New(fakeSource{}, ovr, &fakeRefresher{}, "")
+	a.verifyFile = func(context.Context, string) string { return "" }
+	h := a.Handler()
+	for _, src := range []string{"http://127.0.0.1:8484/api/containers", "http://169.254.169.254/latest/meta-data/x", "http://192.168.20.11/CHANGES.md", "http://[::1]/CHANGES.md"} {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest("PUT", "/api/override", strings.NewReader(`{"repo":"a/b","source":"`+src+`"}`)))
+		if rr.Code != 400 || !strings.Contains(rr.Body.String(), "local network") {
+			t.Errorf("%s: got %d (%s)", src, rr.Code, rr.Body.String())
+		}
+	}
+	if _, ok := ovr.m["a/b"]; ok {
+		t.Error("an address inside was stored")
 	}
 }
 
