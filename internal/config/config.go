@@ -65,14 +65,6 @@ type Config struct {
 	// RunsFile (RUNS_FILE, else runs.json in DataDir) keeps the update runs
 	// other apps asked for, so they get their answer after a restart.
 	RunsFile string
-
-	// The sign-in of the container, which answers on Port. AppKey
-	// (SHIPLOG_APP_KEY) seals it instead of a key file in DataDir, BaseURL
-	// (BASE_URL) is where people reach ShipLog, and TrustProxy (TRUST_PROXY)
-	// names the proxies whose X-Forwarded-For counts.
-	AppKey     string
-	BaseURL    string
-	TrustProxy string
 }
 
 // AutoUpdateConfig configures scheduled auto-updates (all AUTOUPDATE_* env vars).
@@ -122,9 +114,6 @@ func Load() Config {
 		OpenRouterKeyFile: os.Getenv("OPENROUTER_KEY_FILE"),
 		NotifyFile:        os.Getenv("NOTIFY_FILE"),
 		FortressDir:       os.Getenv("FORTRESS_DIR"),
-		AppKey:            strings.TrimSpace(os.Getenv("SHIPLOG_APP_KEY")),
-		BaseURL:           strings.TrimSpace(os.Getenv("BASE_URL")),
-		TrustProxy:        strings.TrimSpace(os.Getenv("TRUST_PROXY")),
 		RunsFile:          os.Getenv("RUNS_FILE"),
 		OldNotify:         oldNotify(),
 		AutoUpdate: AutoUpdateConfig{

@@ -2,22 +2,12 @@
 # ShipLog engine, a read-only update advisor for Docker hosts.
 # https://github.com/junkerderprovinz/shiplog, AGPL-3.0-only
 #
-# The account page, which signs in to the container and holds its sign-in
-# settings. The engine embeds it from internal/webui/dist.
-FROM node:24-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS page
-WORKDIR /ui
-COPY ui/package.json ui/package-lock.json ./
-RUN npm ci --no-audit --no-fund
-COPY ui ./
-RUN npm run build
-
 # The build image has to satisfy the go directive in go.mod.
 FROM golang:1.27-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=page /ui/dist ./internal/webui/dist
 ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags="-s -w" -o /out/shiplog ./cmd/shiplog

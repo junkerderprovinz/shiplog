@@ -503,17 +503,3 @@ func TestPinnedAdvisoryIsNotCountedAsUpdate(t *testing.T) {
 		t.Errorf("newer_version is omitted when empty: %s", rr.Body.String())
 	}
 }
-
-func TestTheStatusPageLeadsToTheSignInOnlyWhereThereIsOne(t *testing.T) {
-	for _, on := range []bool{false, true} {
-		a := New(fakeSource{}, &fakeOverrides{}, &fakeRefresher{}, "")
-		if on {
-			a.WithSignIn()
-		}
-		rr := httptest.NewRecorder()
-		a.Handler().ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
-		if got := strings.Contains(rr.Body.String(), `href="/account/"`); got != on {
-			t.Errorf("with the sign-in %v the page links to it: %v", on, got)
-		}
-	}
-}

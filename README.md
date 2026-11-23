@@ -142,7 +142,7 @@ docker run -d --name shiplog -p 8484:8484 \
   junkerderprovinz/shiplog:latest
 ```
 
-The status page is open until you set a password. Open **sign-in** at the top of the status page to set one, along with two-factor authentication, passkeys, API tokens or a sign-in service such as Pocket ID. From then on only the sign-in page answers without signing in. If you forget the password, **Forgot password?** writes a code to the container log. The sign-in is kept in `/config`. To seal it with a key of your own, set `SHIPLOG_APP_KEY` to 64 hexadecimal characters (`openssl rand -hex 32`). Passkeys and sign-in services need `BASE_URL`, the address you open ShipLog at, and behind a reverse proxy `TRUST_PROXY` names the proxy's address.
+The status page has no login, so keep port 8484 inside your network.
 
 ### Notifications
 

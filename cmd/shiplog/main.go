@@ -190,15 +190,7 @@ func main() {
 	if cfg.Socket != "" && cfg.OpenRouterKeyFile != "" {
 		a.WithOpenRouter(openRouterSettings(summarize.KeyFile{Path: cfg.OpenRouterKeyFile}))
 	}
-	if cfg.Socket == "" {
-		a.WithSignIn()
-	}
 	srv := a.Server()
-	guarded, closeSignIn, err := front(cfg, srv.Handler)
-	if err != nil {
-		log.Fatalf("shiplog: sign-in: %v", err)
-	}
-	srv.Handler = guarded
 
 	ln, addr, err := listen(cfg)
 	if err != nil {
@@ -216,7 +208,6 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
-	_ = closeSignIn()
 }
 
 // followStarts hands the engine every container that starts, so a container
