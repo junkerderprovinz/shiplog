@@ -8,10 +8,11 @@
  * Both themes embed logo.svg, whose silver ring reads on either background. Text becomes
  * SVG paths, so the SVG renders the same everywhere without the fonts.
  *
- * Deps (global): opentype.js, @resvg/resvg-js. Fonts are fetched to the OS temp dir.
+ * Deps (global): opentype.js, @resvg/resvg-js. The name is set in Bree Serif Light and the
+ * claim in Bree Light, read as TTF from HOUSE_FONTS (default %LOCALAPPDATA%\halleluja-fonts).
  * Run: node .github/assets/gen-banner.mjs
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
@@ -37,22 +38,10 @@ const THEMES = [
   { suffix: "-dark", bg: "#0d1117", name: "#e6edf3", claim: "#9aa4ad", logo: "logo.svg" },
 ];
 
-const fontPath = join(tmpdir(), "ShipLog-BreeSerif-Regular.ttf");
-if (!existsSync(fontPath)) {
-  const url = "https://github.com/google/fonts/raw/main/ofl/breeserif/BreeSerif-Regular.ttf";
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`font fetch ${res.status}`);
-  writeFileSync(fontPath, Buffer.from(await res.arrayBuffer()));
-}
-const font = opentype.parse(readFileSync(fontPath));
-
-const claimFontPath = join(tmpdir(), "ShipLog-Lato-Regular.ttf");
-if (!existsSync(claimFontPath)) {
-  const r = await fetch("https://github.com/google/fonts/raw/main/ofl/lato/Lato-Regular.ttf");
-  if (!r.ok) throw new Error(`claim font fetch ${r.status}`);
-  writeFileSync(claimFontPath, Buffer.from(await r.arrayBuffer()));
-}
-const claimFont = opentype.parse(readFileSync(claimFontPath));
+// The house typeface is licensed, so it is read from a local folder and never committed.
+const fonts = process.env.HOUSE_FONTS ?? join(process.env.LOCALAPPDATA ?? tmpdir(), "halleluja-fonts");
+const font = opentype.parse(readFileSync(join(fonts, "bree-serif-light.ttf")).buffer);
+const claimFont = opentype.parse(readFileSync(join(fonts, "bree-light.ttf")).buffer);
 
 const startX = 165;
 const LX = startX, LY = (H - LH) / 2;
