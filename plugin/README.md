@@ -6,7 +6,7 @@ injects a discreet changelog control and bubble into Unraid's **native Docker ta
 
 | Part | What it is | How it runs |
 |------|------------|-------------|
-| **Engine** | The read-only Go binary: reads the Docker socket, resolves running→newest, computes the risk, fetches the changelog, serves a small REST API and status page. | Started by the plugin as a host daemon (`scripts/rc.shiplog`). Same binary as the container image; the container is still buildable for non-Unraid hosts. |
+| **Engine** | The read-only Go binary: reads the Docker socket, resolves running→newest, computes the risk, fetches the changelog, serves a small REST API and status page. | Started by the plugin as a host daemon (`scripts/rc.shiplog`). |
 | **Injection** | A `*.Docker.page` that emhttp renders into the Docker tab and that loads `scripts/docker.js` and `styles/docker.css`. | In the browser, on the Docker tab. |
 | **Proxy** | `server/status.php`, the same-origin bridge from the browser to the engine's unix socket (`/var/run/shiplog.sock`). The engine has no login of its own and opens no port, so every call goes through Unraid's login, and every write needs Unraid's CSRF token. | On the Unraid webserver. |
 

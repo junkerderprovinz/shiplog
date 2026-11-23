@@ -1,8 +1,0 @@
-.git
-.github
-docs
-*.md
-LICENSE
-.golangci.yml
-.dockerignore
-**/*_test.go

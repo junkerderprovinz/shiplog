@@ -16,17 +16,12 @@ test:
 fmt:
     gofmt -w .
 
-# Format check, vet, race tests, lint and Dockerfile lint before a push
+# Format check, vet, race tests and lint before a push
 check:
     gofmt -l . | (! grep .) || (echo "gofmt: run 'just fmt'"; exit 1)
     go vet ./...
     go test -race ./...
     golangci-lint run --timeout 5m
-    hadolint Dockerfile
-
-# Build the engine Docker image locally
-image:
-    docker build -t shiplog:dev .
 
 # Build the Unraid plugin package (.txz), e.g. `just pkg 2.6.0`
 pkg version="":

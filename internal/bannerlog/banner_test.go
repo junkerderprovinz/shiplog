@@ -8,13 +8,13 @@ import (
 
 func TestReadyContainsSentinel(t *testing.T) {
 	var b bytes.Buffer
-	Ready(&b, "http://0.0.0.0:8484")
+	Ready(&b, "unix:/var/run/shiplog.sock")
 	out := b.String()
-	// The CI smoke gate greps docker logs for exactly this phrase.
+	// The plugin smoke test in lint.yml waits for exactly this phrase.
 	if !strings.Contains(out, "SHIPLOG IS READY") {
 		t.Fatalf("Ready output missing the readiness sentinel:\n%s", out)
 	}
-	if !strings.Contains(out, "listening on http://0.0.0.0:8484\n") {
+	if !strings.Contains(out, "listening on unix:/var/run/shiplog.sock\n") {
 		t.Fatalf("Ready output missing the listen address:\n%s", out)
 	}
 }

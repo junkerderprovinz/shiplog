@@ -1,6 +1,6 @@
 // Package updater applies the newest image for a container through Unraid's
 // own update path, the one behind the "apply update" button. Elsewhere it does
-// nothing, and the container image stays a read-only advisor.
+// nothing.
 package updater
 
 import (

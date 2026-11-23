@@ -6,11 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/junkerderprovinz/shiplog/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/junkerderprovinz/shiplog/build.yml?branch=main&label=Build&style=for-the-badge&logo=githubactions&logoColor=white" alt="Build" height="36"></a>&nbsp;
   <a href="https://github.com/junkerderprovinz/shiplog/actions/workflows/lint.yml"><img src="https://img.shields.io/github/actions/workflow/status/junkerderprovinz/shiplog/lint.yml?branch=main&label=Lint&style=for-the-badge&logo=go&logoColor=white" alt="Lint" height="36"></a>&nbsp;
-  <a href="https://hub.docker.com/r/junkerderprovinz/shiplog"><img src="https://img.shields.io/docker/pulls/junkerderprovinz/shiplog?style=for-the-badge&logo=docker&logoColor=white&label=Pulls&color=1d99f3" alt="Docker Pulls" height="36"></a>&nbsp;
-  <a href="https://hub.docker.com/r/junkerderprovinz/shiplog"><img src="https://img.shields.io/docker/image-size/junkerderprovinz/shiplog/latest?style=for-the-badge&logo=docker&logoColor=white&label=Size&color=1d99f3" alt="Image Size" height="36"></a>&nbsp;
-  <a href="https://github.com/junkerderprovinz/shiplog/pkgs/container/shiplog"><img src="https://img.shields.io/badge/Arch-amd64%20%7C%20arm64-success?style=for-the-badge&logo=linux&logoColor=white" alt="Arch" height="36"></a>&nbsp;
   <a href="https://ca.unraid.net/apps/shiplog-1lpuit5150ztw5"><img src="https://img.shields.io/badge/Unraid-Plugin-f15a2c?style=for-the-badge&logo=unraid&logoColor=white" alt="Unraid" height="36"></a>&nbsp;
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge&logo=gnu&logoColor=white" alt="License: AGPL-3.0" height="36"></a>
 </p>
@@ -133,22 +129,9 @@ The chips appear in the Docker tab after the first check. The settings are under
 
 Running your own images or templates? [docs/own-apps-checklist.md](docs/own-apps-checklist.md) lists what to set so that both Unraid's update column and ShipLog stay right.
 
-On any other Docker host the engine runs on its own and serves the status page, without the Docker tab and without updates:
-
-```sh
-docker run -d --name shiplog -p 8484:8484 \
-  -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -v /path/to/config:/config \
-  junkerderprovinz/shiplog:latest
-```
-
-The status page has no login, so keep port 8484 inside your network.
-
 ### Notifications
 
 ShipLog can tell you when it first sees an update. An update that auto-update will apply shows up in the run's summary instead, unless it is critical, because breaking notes may ask you to do something before the pull. Under **Settings → ShipLog → Notifications**, **Add a channel** opens a window with a tile for each service: Unraid's own notifications, which reach every agent you set up there, the common chat and push services, a notification gateway, mail and webhooks. A service can be added more than once. Each channel has its own switch, sends everything or only what went wrong, and has a test that works before you save. Every change is saved as you make it and takes effect without a restart, and a token or password you saved is never shown again.
-
-Without Unraid, the container takes `APPRISE_URL`, or `MATRIX_HOMESERVER`, `MATRIX_TOKEN` and `MATRIX_ROOM`.
 
 ### Fortress
 

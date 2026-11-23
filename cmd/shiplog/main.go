@@ -183,11 +183,11 @@ func main() {
 			return hub.Active(ctx)
 		})
 	}
-	if door != nil && cfg.Socket != "" {
+	if door != nil {
 		a.WithDoor(door)
 	}
 	// The key is written through the socket only, which the settings page reaches.
-	if cfg.Socket != "" && cfg.OpenRouterKeyFile != "" {
+	if cfg.OpenRouterKeyFile != "" {
 		a.WithOpenRouter(openRouterSettings(summarize.KeyFile{Path: cfg.OpenRouterKeyFile}))
 	}
 	srv := a.Server()
@@ -252,14 +252,9 @@ func openFortress(cfg config.Config, report *fortress.Source, actions ...kitfort
 	}
 }
 
-// listen opens the API's socket when one is configured, since the API has no
-// login of its own, and the port on every interface otherwise, as the container
-// image needs.
+// listen opens the API's socket. The API has no login of its own, so only
+// root and its group reach it, and Unraid's pages through them.
 func listen(cfg config.Config) (net.Listener, string, error) {
-	if cfg.Socket == "" {
-		ln, err := net.Listen("tcp", ":"+cfg.Port)
-		return ln, "http://0.0.0.0:" + cfg.Port, err
-	}
 	// A socket left by an unclean stop would fail the listen.
 	_ = os.Remove(cfg.Socket)
 	ln, err := net.Listen("unix", cfg.Socket)

@@ -20,8 +20,8 @@ func Init(w io.Writer) {
 	_, _ = fmt.Fprintln(w)
 }
 
-// Ready prints the readiness line once the HTTP listener is up. The smoke test
-// in build.yml greps `docker logs` for "SHIPLOG IS READY"; changing the phrase
+// Ready prints the readiness line once the HTTP listener is up. The plugin
+// smoke test in lint.yml waits for "SHIPLOG IS READY"; changing the phrase
 // means changing it there too.
 func Ready(w io.Writer, addr string) {
 	_, _ = fmt.Fprintf(w, "  \033[0;32m✓ SHIPLOG IS READY\033[0m - listening on %s\n", addr)

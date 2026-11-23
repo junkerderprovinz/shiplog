@@ -6,18 +6,5 @@
   ],
   "postUpdateOptions": [
     "gomodTidy"
-  ],
-  "packageRules": [
-    {
-      "description": "Docker base images (golang build stage, distroless runtime): manual review",
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "groupName": "base images",
-      "commitMessagePrefix": "build:",
-      "labels": [
-        "base-image"
-      ]
-    }
   ]
 }
