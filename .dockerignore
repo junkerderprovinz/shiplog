@@ -6,3 +6,5 @@ LICENSE
 .golangci.yml
 .dockerignore
 **/*_test.go
+ui/node_modules
+ui/dist

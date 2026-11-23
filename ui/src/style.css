@@ -1,0 +1,81 @@
+@import '@glimstone/core/tokens.css';
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--carbon-bg);
+  color: var(--carbon-text);
+}
+
+.sl-signin {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.sl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--carbon-border);
+}
+.sl-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sl-title {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--carbon-text-sub);
+}
+.sl-back {
+  color: var(--carbon-text-sub);
+}
+.sl-back:is(:hover, :focus-visible) {
+  color: var(--accent-ink);
+}
+
+.sl-main {
+  display: grid;
+  gap: 16px;
+  max-width: 860px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.sl-look {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* A toast never blocks the page, so only its card takes the pointer. */
+.sl-toast {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: 16px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.sl-toast p {
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--carbon-surface-3);
+  color: var(--carbon-text);
+  pointer-events: auto;
+}
+.sl-toast p.sl-toast-fail {
+  color: var(--status-fail-text);
+}
