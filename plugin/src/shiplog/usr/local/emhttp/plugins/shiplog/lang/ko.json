@@ -148,6 +148,7 @@
   "s_notes_github": "GitHub에서 보기",
   "s_vc_check": "업데이트 확인",
   "s_vc_checking": "확인 중 …",
+  "s_vc_unchecked": "아직 확인하지 않음",
   "s_vc_current": "최신 상태",
   "s_vc_checked": "마지막 확인 {when}",
   "s_vc_available": "{version}(으)로 업데이트할 수 있음",

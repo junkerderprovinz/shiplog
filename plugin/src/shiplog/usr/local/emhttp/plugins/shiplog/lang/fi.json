@@ -148,6 +148,7 @@
   "s_notes_github": "Näytä GitHubissa",
   "s_vc_check": "Hae päivityksiä",
   "s_vc_checking": "Tarkistetaan …",
+  "s_vc_unchecked": "Ei vielä tarkistettu",
   "s_vc_current": "Ajan tasalla",
   "s_vc_checked": "Viimeksi tarkistettu {when}",
   "s_vc_available": "Päivitys versioon {version} saatavilla",

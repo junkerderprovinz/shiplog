@@ -148,6 +148,7 @@
   "s_notes_github": "GitHub で見る",
   "s_vc_check": "アップデートを確認",
   "s_vc_checking": "確認中 …",
+  "s_vc_unchecked": "まだ確認していません",
   "s_vc_current": "最新です",
   "s_vc_checked": "最終確認 {when}",
   "s_vc_available": "{version} へのアップデートがあります",

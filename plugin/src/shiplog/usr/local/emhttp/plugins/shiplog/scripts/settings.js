@@ -1061,20 +1061,12 @@
   }
   function showUpdate(s) {
     updState = s;
-    var line = T.s_vc_checking, tone = "neutral", note = "";
-    if (s.kind === "current") {
-      line = T.s_vc_current; tone = "ok";
-      if (s.checkedAt) note = T.s_vc_checked.replace("{when}", ago(s.checkedAt));
-    } else if (s.kind === "available") {
-      line = T.s_vc_available.replace("{version}", s.version); tone = "warn";
-    } else if (s.kind === "failed") {
-      line = T.s_vc_failed; tone = "fail"; note = s.reason || "";
-    }
-    byId("sl-vstate").setAttribute("data-tone", tone);
-    byId("sl-vline").textContent = line;
-    byId("sl-vnote").textContent = note;
-    var busy = s.kind === "checking" || s.kind === "unchecked";
-    updCheck.hidden = s.kind === "available";
+    var said = window.ShipLogVersion.updateLine(s, T, ago), check = window.ShipLogVersion.checkButton(s);
+    byId("sl-vstate").setAttribute("data-tone", said.tone);
+    byId("sl-vline").textContent = said.line;
+    byId("sl-vnote").textContent = said.note;
+    var busy = !!check && check.busy;
+    updCheck.hidden = !check;
     updCheck.disabled = busy;
     if (busy) updCheck.setAttribute("aria-busy", "true"); else updCheck.removeAttribute("aria-busy");
     byId("sl-plugins").hidden = s.kind !== "available";

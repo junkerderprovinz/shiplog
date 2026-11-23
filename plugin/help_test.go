@@ -73,13 +73,13 @@ func TestTheComponentsCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.8.2" {
-			t.Errorf("glimstone.json pins %s, want 4.8.2", target.Version)
+		if target.Version != "4.9.0" {
+			t.Errorf("glimstone.json pins %s, want 4.9.0", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.8.2';") {
-		t.Error("the Components card does not name GlimStone 4.8.2")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.9.0';") {
+		t.Error("the Components card does not name GlimStone 4.9.0")
 	}
 	card := regexp.MustCompile(`(?s)aria-labelledby="sl-h-components">(.*?)</section>`).FindStringSubmatch(page)
 	if card == nil || !strings.Contains(card[1], `<span>GlimStone</span><?=$slInfo($L['s_cc_design'])?>`) ||
@@ -117,7 +117,7 @@ func TestTheInfoTabHoldsVersionComponentsHelpAndAbout(t *testing.T) {
 // GlimStone, to every language with the blanks the page fills.
 func TestTheVersionCardSpeaksEveryLanguage(t *testing.T) {
 	blanks := map[string]string{"s_vc_hint": "{app}", "s_vc_checked": "{when}", "s_vc_available": "{version}", "s_vc_unreleased": "{version}", "s_cc_hint": "{app}", "s_notes_title": "{version}"}
-	keys := []string{"s_vc_title", "s_vc_hint", "s_vc_whats_new", "s_vc_check", "s_vc_checking", "s_vc_current", "s_vc_checked",
+	keys := []string{"s_vc_title", "s_vc_hint", "s_vc_whats_new", "s_vc_check", "s_vc_checking", "s_vc_unchecked", "s_vc_current", "s_vc_checked",
 		"s_vc_available", "s_vc_failed", "s_vc_plugins", "s_vc_unreleased", "s_cc_title", "s_cc_hint", "s_cc_design",
 		"s_notes_title", "s_notes_loading", "s_notes_none", "s_notes_failed", "s_notes_github"}
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))
@@ -306,6 +306,61 @@ func TestTheReleaseNotesPassTheirNodeTests(t *testing.T) {
 	}
 }
 
+// TestTheVersionCardPassesItsNodeTests runs the suite for the words and tone
+// of each update state, which the page loads before the script that draws it.
+func TestTheVersionCardPassesItsNodeTests(t *testing.T) {
+	page := read(t, "shiplog.page")
+	cardAt := strings.Index(page, "<script src=\"<?autov('/plugins/shiplog/scripts/version-card.js')?>\">")
+	pageAt := strings.Index(page, "<script src=\"<?autov('/plugins/shiplog/scripts/settings.js')?>\">")
+	if cardAt < 0 || pageAt < cardAt {
+		t.Error("the page does not load version-card.js before settings.js")
+	}
+	node, err := exec.LookPath("node")
+	if err != nil {
+		if os.Getenv("CI") != "" {
+			t.Fatal("node is not installed")
+		}
+		t.Skip("node is not installed")
+	}
+	if out, err := exec.Command(node, "--test", filepath.Join("test", "version-card.test.js")).CombinedOutput(); err != nil {
+		t.Fatalf("node --test: %v\n%s", err, out)
+	}
+}
+
+// TestAVersionNumberIsAFingersTarget gives a linked number GlimStone's 24px
+// target and takes the room back with the margin, so the line keeps its height.
+func TestAVersionNumberIsAFingersTarget(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	rule := regexp.MustCompile(`(?s)\.sl-cfg a\.sl-ver \{([^}]*)\}`).FindStringSubmatch(css)
+	if rule == nil || !strings.Contains(rule[1], "padding: 2px 0;") || !strings.Contains(rule[1], "margin: -2px 0;") {
+		t.Errorf("a linked version is not a 24px target: %v", rule)
+	}
+}
+
+// TestALongNumberDropsUnderTheName lets a branch build's number leave the
+// app's name its line on a phone and break where it has to.
+func TestALongNumberDropsUnderTheName(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`\.sl-vhead \{[^}]*flex-wrap: wrap;[^}]*gap: 2px 8px;`).MatchString(css) {
+		t.Error("the Version card's head does not wrap")
+	}
+	if !regexp.MustCompile(`\.sl-cfg \.sl-vhead \.sl-ver \{[^}]*min-width: 0;[^}]*margin-inline-start: auto;[^}]*overflow-wrap: anywhere;`).MatchString(css) {
+		t.Error("a long number in the head neither keeps to the end nor breaks")
+	}
+}
+
+// TestAComponentRowBreaksBeforeItsEnd moves a row's number under its name on
+// a narrow card, to the end of the line, instead of squeezing it.
+func TestAComponentRowBreaksBeforeItsEnd(t *testing.T) {
+	css := read(t, "styles/settings.css")
+	if !regexp.MustCompile(`\.sl-vrow \{[^}]*flex-wrap: wrap;[^}]*gap: 2px 8px;`).MatchString(css) {
+		t.Error("a component row does not wrap")
+	}
+	if !regexp.MustCompile(`\.sl-cfg \.sl-vrow \.sl-ver \{[^}]*margin-inline-start: auto;`).MatchString(css) {
+		t.Error("a wrapped number leaves the end of the row")
+	}
+}
+
 // TestAReadmeButtonNameKeepsItsDescenders lets the name's clip reach a little
 // past its line, as on GlimStone's README button, so a p or y stays whole.
 func TestAReadmeButtonNameKeepsItsDescenders(t *testing.T) {
@@ -334,7 +389,7 @@ func TestAVersionNeverLooksLikeAButton(t *testing.T) {
 	if rule == nil {
 		t.Fatal("settings.css has no rule for a linked version")
 	}
-	for _, want := range []string{"background: none", "border: 0", "padding: 0", "color: inherit", "text-decoration: none"} {
+	for _, want := range []string{"background: none", "border: 0", "color: inherit", "text-decoration: none"} {
 		if !strings.Contains(rule[1], want) {
 			t.Errorf("a linked version lacks %q, so it can look like a button", want)
 		}

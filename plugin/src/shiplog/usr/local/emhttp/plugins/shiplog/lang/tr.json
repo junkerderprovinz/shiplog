@@ -148,6 +148,7 @@
   "s_notes_github": "GitHub'da görüntüle",
   "s_vc_check": "Güncellemeleri ara",
   "s_vc_checking": "Denetleniyor …",
+  "s_vc_unchecked": "Henüz denetlenmedi",
   "s_vc_current": "Güncel",
   "s_vc_checked": "Son denetim {when}",
   "s_vc_available": "{version} sürümüne güncelleme var",

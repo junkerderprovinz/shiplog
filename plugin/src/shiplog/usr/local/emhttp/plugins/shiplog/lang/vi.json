@@ -148,6 +148,7 @@
   "s_notes_github": "Xem trên GitHub",
   "s_vc_check": "Tìm bản cập nhật",
   "s_vc_checking": "Đang kiểm tra …",
+  "s_vc_unchecked": "Chưa kiểm tra",
   "s_vc_current": "Đã cập nhật",
   "s_vc_checked": "Kiểm tra lần cuối {when}",
   "s_vc_available": "Có bản cập nhật lên {version}",

@@ -148,6 +148,7 @@
   "s_notes_github": "ดูบน GitHub",
   "s_vc_check": "ตรวจหาอัปเดต",
   "s_vc_checking": "กำลังตรวจ …",
+  "s_vc_unchecked": "ยังไม่ได้ตรวจ",
   "s_vc_current": "เป็นปัจจุบัน",
   "s_vc_checked": "ตรวจล่าสุด {when}",
   "s_vc_available": "มีอัปเดตเป็น {version}",

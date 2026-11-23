@@ -148,6 +148,7 @@
   "s_notes_github": "在 GitHub 上查看",
   "s_vc_check": "检查更新",
   "s_vc_checking": "正在检查 …",
+  "s_vc_unchecked": "尚未检查",
   "s_vc_current": "已是最新",
   "s_vc_checked": "上次检查 {when}",
   "s_vc_available": "可更新到 {version}",

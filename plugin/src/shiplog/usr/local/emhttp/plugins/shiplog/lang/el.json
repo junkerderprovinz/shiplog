@@ -148,6 +148,7 @@
   "s_notes_github": "Προβολή στο GitHub",
   "s_vc_check": "Αναζήτηση ενημερώσεων",
   "s_vc_checking": "Έλεγχος …",
+  "s_vc_unchecked": "Δεν έχει ελεγχθεί ακόμα",
   "s_vc_current": "Ενημερωμένο",
   "s_vc_checked": "Τελευταίος έλεγχος {when}",
   "s_vc_available": "Διαθέσιμη ενημέρωση στην {version}",

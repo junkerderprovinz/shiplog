@@ -148,6 +148,7 @@
   "s_notes_github": "הצגה ב-GitHub",
   "s_vc_check": "חיפוש עדכונים",
   "s_vc_checking": "בודק …",
+  "s_vc_unchecked": "עוד לא נבדק",
   "s_vc_current": "מעודכן",
   "s_vc_checked": "בדיקה אחרונה {when}",
   "s_vc_available": "עדכון לגרסה {version} זמין",

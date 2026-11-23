@@ -148,6 +148,7 @@
   "s_notes_github": "Zobrazit na GitHubu",
   "s_vc_check": "Hledat aktualizace",
   "s_vc_checking": "Kontroluje se …",
+  "s_vc_unchecked": "Zatím nezkontrolováno",
   "s_vc_current": "Aktuální",
   "s_vc_checked": "Naposledy zkontrolováno {when}",
   "s_vc_available": "Je dostupná aktualizace na {version}",

@@ -148,6 +148,7 @@
   "s_notes_github": "Vezi pe GitHub",
   "s_vc_check": "Caută actualizări",
   "s_vc_checking": "Se verifică …",
+  "s_vc_unchecked": "Încă neverificat",
   "s_vc_current": "La zi",
   "s_vc_checked": "Ultima verificare {when}",
   "s_vc_available": "Actualizare la {version} disponibilă",

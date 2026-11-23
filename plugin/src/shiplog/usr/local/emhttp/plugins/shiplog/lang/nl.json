@@ -148,6 +148,7 @@
   "s_notes_github": "Bekijken op GitHub",
   "s_vc_check": "Zoeken naar updates",
   "s_vc_checking": "Controleren …",
+  "s_vc_unchecked": "Nog niet gecontroleerd",
   "s_vc_current": "Bijgewerkt",
   "s_vc_checked": "Laatst gecontroleerd {when}",
   "s_vc_available": "Update naar {version} beschikbaar",

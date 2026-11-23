@@ -148,6 +148,7 @@
   "s_notes_github": "عرض على GitHub",
   "s_vc_check": "البحث عن تحديثات",
   "s_vc_checking": "جارٍ الفحص …",
+  "s_vc_unchecked": "لم يُفحص بعد",
   "s_vc_current": "محدَّث",
   "s_vc_checked": "آخر فحص {when}",
   "s_vc_available": "التحديث إلى {version} متاح",

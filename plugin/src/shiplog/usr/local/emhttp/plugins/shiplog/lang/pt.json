@@ -148,6 +148,7 @@
   "s_notes_github": "Ver no GitHub",
   "s_vc_check": "Procurar atualizações",
   "s_vc_checking": "A verificar …",
+  "s_vc_unchecked": "Ainda não verificado",
   "s_vc_current": "Atualizado",
   "s_vc_checked": "Última verificação {when}",
   "s_vc_available": "Atualização para {version} disponível",

@@ -148,6 +148,7 @@
   "s_notes_github": "Відкрити на GitHub",
   "s_vc_check": "Шукати оновлення",
   "s_vc_checking": "Перевірка …",
+  "s_vc_unchecked": "Ще не перевірено",
   "s_vc_current": "Актуально",
   "s_vc_checked": "Остання перевірка {when}",
   "s_vc_available": "Доступне оновлення до {version}",

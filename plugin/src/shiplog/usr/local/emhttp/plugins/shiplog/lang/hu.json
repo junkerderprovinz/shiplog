@@ -148,6 +148,7 @@
   "s_notes_github": "Megnyitás a GitHubon",
   "s_vc_check": "Frissítések keresése",
   "s_vc_checking": "Ellenőrzés …",
+  "s_vc_unchecked": "Még nincs ellenőrizve",
   "s_vc_current": "Naprakész",
   "s_vc_checked": "Utolsó ellenőrzés {when}",
   "s_vc_available": "Elérhető frissítés: {version}",

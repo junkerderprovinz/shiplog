@@ -148,6 +148,7 @@
   "s_notes_github": "Se på GitHub",
   "s_vc_check": "Søg efter opdateringer",
   "s_vc_checking": "Kontrollerer …",
+  "s_vc_unchecked": "Ikke kontrolleret endnu",
   "s_vc_current": "Opdateret",
   "s_vc_checked": "Sidst kontrolleret {when}",
   "s_vc_available": "Opdatering til {version} tilgængelig",
