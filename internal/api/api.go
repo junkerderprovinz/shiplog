@@ -90,6 +90,7 @@ type API struct {
 	hub        func(context.Context) bool
 	channels   Channels
 	openRouter *openRouterRoutes
+	signIn     bool
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -102,6 +103,12 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 	a.verifyFile = func(ctx context.Context, url string) string {
 		return verifyChangelogFile(ctx, publicnet.Client(10*time.Second), url)
 	}
+	return a
+}
+
+// WithSignIn links the status page to the sign-in in front of it.
+func (a *API) WithSignIn() *API {
+	a.signIn = true
 	return a
 }
 
@@ -430,8 +437,9 @@ type pageData struct {
 	// Proxy is the plugin's proxy that fetched the page, empty when the page
 	// comes straight from the engine. CSRF is Unraid's token for the writes the
 	// page sends back through it.
-	Proxy string
-	CSRF  string
+	Proxy  string
+	CSRF   string
+	SignIn bool
 }
 
 func (a *API) statusPage(w http.ResponseWriter, r *http.Request) {
@@ -459,6 +467,7 @@ func (a *API) statusPage(w http.ResponseWriter, r *http.Request) {
 		Mono:     r.URL.Query().Get("mono") == "1",
 		Proxy:    r.Header.Get("X-ShipLog-Proxy"),
 		CSRF:     r.Header.Get("X-ShipLog-CSRF"),
+		SignIn:   a.signIn,
 	})
 }
 
