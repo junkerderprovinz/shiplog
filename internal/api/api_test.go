@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -501,5 +502,37 @@ func TestPinnedAdvisoryIsNotCountedAsUpdate(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest("GET", "/api/container/a", nil))
 	if strings.Contains(rr.Body.String(), "newer_version") {
 		t.Errorf("newer_version is omitted when empty: %s", rr.Body.String())
+	}
+}
+
+// TestThePhoneViewStacksEachContainer gives every cell its column's name and
+// turns each row into a card on a narrow screen, so nothing scrolls sideways.
+func TestThePhoneViewStacksEachContainer(t *testing.T) {
+	h, _ := testAPI()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+	page := rr.Body.String()
+	heads := regexp.MustCompile(`<th>([^<]+)</th>`).FindAllStringSubmatch(page, -1)
+	row := regexp.MustCompile(`(?s)<tbody>\s*<tr>(.*?)</tr>`).FindStringSubmatch(page)
+	if len(heads) != 5 || row == nil {
+		t.Fatalf("heads %v, row %v", heads, row)
+	}
+	cells := regexp.MustCompile(`<td[^>]*>`).FindAllString(row[1], -1)
+	if len(cells) != len(heads) {
+		t.Fatalf("%d cells for %d heads", len(cells), len(heads))
+	}
+	for i, c := range cells {
+		if want := `data-label="` + heads[i][1] + `"`; !strings.Contains(c, want) {
+			t.Errorf("cell %d %s lacks %s", i, c, want)
+		}
+	}
+	narrow := regexp.MustCompile(`(?s)@media \(max-width: 720px\) \{(.*?)\n  \}`).FindStringSubmatch(page)
+	if narrow == nil {
+		t.Fatal("the page has no narrow layout")
+	}
+	for _, want := range []string{"thead{display:none}", "tr{display:block", "td{display:block", "td::before{content:attr(data-label)", "header{flex-wrap:wrap", ".srcin{width:100%"} {
+		if !strings.Contains(narrow[1], want) {
+			t.Errorf("the narrow layout lacks %q", want)
+		}
 	}
 }

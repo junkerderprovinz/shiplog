@@ -47,6 +47,22 @@
   .supmsg{font-size:11px;color:var(--dim2)}
   .empty{color:var(--dim2);text-align:center;padding:60px}
   footer{max-width:1180px;margin:18px auto 0;padding:0 28px;color:var(--dim2);font-size:12px}
+  /* On a phone each container becomes a card, its cells stacked under their column's name. */
+  @media (max-width: 720px) {
+    header{flex-wrap:wrap;gap:8px 12px;padding:14px 16px}
+    .spacer{display:none}
+    .meta{flex-basis:100%;order:1}
+    main,footer{padding:0 16px}
+    table,tbody{display:block}
+    thead{display:none}
+    tr{display:block;margin-bottom:10px;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+    td{display:block;padding:5px 0;border:0!important;border-radius:0!important;background:none!important}
+    td::before{content:attr(data-label);display:block;margin-bottom:2px;color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.7px}
+    td.name::before{display:none}
+    tr:hover{background:var(--bg2)}
+    .clog,.vul{max-width:none}
+    .srcin{width:100%;min-width:0}
+  }
 </style>
 </head>
 <body>
@@ -64,11 +80,11 @@
     <tbody>
     {{range .Statuses}}
       <tr>
-        <td class="name">{{.Container.Name}}<small>{{.Container.Repo}}</small></td>
-        <td class="ver">{{if .Container.Tag}}{{.Container.Tag}}{{else if .Container.PinnedDigest}}pinned{{else}}&mdash;{{end}}</td>
-        <td class="ver">{{if .HasUpdate}}<span class="new">&rarr; {{.NewestTag}}</span>{{else if .NewerVersion}}up to date &middot; pinned, <span class="new">{{.NewerVersion}}</span> available{{else if .Container.PinnedDigest}}pinned by digest{{else if .Container.IsLocal}}local image{{else if not .Container.Repo}}image-ID ref{{else}}up to date{{end}}</td>
-        <td><span class="badge r-{{.Risk}}">{{.Risk}}</span>{{with .VulnNote}}<small class="vul">{{.}}</small>{{end}}</td>
-        <td class="clog" data-repo="{{.Container.Repo}}">
+        <td class="name" data-label="Container">{{.Container.Name}}<small>{{.Container.Repo}}</small></td>
+        <td class="ver" data-label="Running">{{if .Container.Tag}}{{.Container.Tag}}{{else if .Container.PinnedDigest}}pinned{{else}}&mdash;{{end}}</td>
+        <td class="ver" data-label="Newest">{{if .HasUpdate}}<span class="new">&rarr; {{.NewestTag}}</span>{{else if .NewerVersion}}up to date &middot; pinned, <span class="new">{{.NewerVersion}}</span> available{{else if .Container.PinnedDigest}}pinned by digest{{else if .Container.IsLocal}}local image{{else if not .Container.Repo}}image-ID ref{{else}}up to date{{end}}</td>
+        <td data-label="Risk"><span class="badge r-{{.Risk}}">{{.Risk}}</span>{{with .VulnNote}}<small class="vul">{{.}}</small>{{end}}</td>
+        <td class="clog" data-label="What changed" data-repo="{{.Container.Repo}}">
           {{- if .Error}}<span style="color:var(--dim2)">{{.Error}}</span>
           {{- else if .Changelog}}{{if .Changelog.URL}}<a href="{{.Changelog.URL}}" target="_blank" rel="noopener">{{.Changelog.Source}} &#8599;</a>{{else}}{{.Changelog.Source}}{{end}}
           {{- else}}<span style="color:var(--dim2)">&mdash;</span>{{end}}
