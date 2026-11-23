@@ -536,3 +536,14 @@ func TestThePhoneViewStacksEachContainer(t *testing.T) {
 		}
 	}
 }
+
+// TestTheSourceBoxOpensOnlyOnSource keeps the source field folded away until
+// its button opens it, which a display rule of its own would override.
+func TestTheSourceBoxOpensOnlyOnSource(t *testing.T) {
+	h, _ := testAPI()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+	if !strings.Contains(rr.Body.String(), ".srcbox[hidden]{display:none}") {
+		t.Error("a closed source box still shows")
+	}
+}
