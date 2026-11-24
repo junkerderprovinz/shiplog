@@ -8,7 +8,7 @@
  * Both themes embed logo.svg, whose silver ring reads on either background. Text becomes
  * SVG paths, so the SVG renders the same everywhere without the fonts.
  *
- * Deps (global): opentype.js, @resvg/resvg-js. The name is set in Bree Serif Light and the
+ * Deps (global): opentype.js, @resvg/resvg-js. The name is set in Bree Serif Regular and the
  * claim in Bree Light, read as TTF from HOUSE_FONTS (default %LOCALAPPDATA%\halleluja-fonts).
  * Run: node .github/assets/gen-banner.mjs
  */
@@ -40,7 +40,7 @@ const THEMES = [
 
 // The house typeface is licensed, so it is read from a local folder and never committed.
 const fonts = process.env.HOUSE_FONTS ?? join(process.env.LOCALAPPDATA ?? tmpdir(), "halleluja-fonts");
-const font = opentype.parse(readFileSync(join(fonts, "bree-serif-light.ttf")).buffer);
+const font = opentype.parse(readFileSync(join(fonts, "bree-serif-regular.ttf")).buffer);
 const claimFont = opentype.parse(readFileSync(join(fonts, "bree-light.ttf")).buffer);
 
 const startX = 165;

@@ -5,8 +5,8 @@
 // The pictures come from captures/, taken by capture.mjs at twice the pixel density. Everything
 // here is rendered at twice the size and scaled down, which keeps the type crisp through the tilt.
 //
-// The heading is set in Bree Serif Light and the line below in Bree Light. Both are licensed and
-// never committed, so HOUSE_FONTS (default %LOCALAPPDATA%\halleluja-fonts) must hold them as TTF.
+// The heading is set in Bree Serif Regular and the line below in Bree Light. Neither is
+// committed, so HOUSE_FONTS (default %LOCALAPPDATA%\halleluja-fonts) must hold them as TTF.
 // The browser bar keeps Lato, fetched once from Google Fonts.
 //
 // Deps (global): playwright-core with its Chromium installed.
@@ -87,7 +87,7 @@ const logo = dataUrl(readFileSync(join(here, "..", "logo.svg")), "image/svg+xml"
 const pngSize = (buf) => ({ width: buf.readUInt32BE(16) / 2, height: buf.readUInt32BE(20) / 2 });
 
 const STYLE = `
-@font-face { font-family: "Bree Serif"; src: url(${font("bree-serif-light.ttf")}); font-weight: 300; }
+@font-face { font-family: "Bree Serif"; src: url(${font("bree-serif-regular.ttf")}); font-weight: 400; }
 @font-face { font-family: Bree; src: url(${font("bree-light.ttf")}); font-weight: 300; }
 @font-face { font-family: Lato; src: url(${lato}); }
 * { box-sizing: border-box; margin: 0; }
@@ -98,7 +98,8 @@ body { position: relative; width: ${W}px; height: ${H}px; overflow: hidden; font
 .vignette { position: absolute; inset: 0; box-shadow: inset 0 0 200px rgba(0,0,0,.6); }
 .copy { position: absolute; left: 84px; top: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; justify-content: center; gap: 28px; }
 .copy img { width: 132px; }
-h1 { font: 300 64px/1.12 "Bree Serif", serif; color: #f4f4f4; }
+/* A little wider than the line below, so "Every container," and "Right where you" each keep to one line. */
+h1 { font: 400 64px/1.12 "Bree Serif", serif; color: #f4f4f4; margin-right: -10px; }
 h1 em { font-style: normal; color: #FCC419; }
 .sub { font-size: 28px; line-height: 1.35; color: #9d9481; }
 .stage { position: absolute; perspective: 2400px; }
@@ -152,7 +153,7 @@ try {
   for (const shot of SHOTS.filter((s) => !CHOSEN.length || CHOSEN.includes(s.capture.replace(".png", "")))) {
     const big = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 2 });
     await big.setContent(page(shot));
-    await big.evaluate(() => Promise.all(['300 1em "Bree Serif"', "300 1em Bree", "1em Lato"].map((f) => document.fonts.load(f))));
+    await big.evaluate(() => Promise.all(['400 1em "Bree Serif"', "300 1em Bree", "1em Lato"].map((f) => document.fonts.load(f))));
     await big.evaluate(() => Promise.all([...document.images].map((img) => img.decode())));
     const png = await big.screenshot();
     await big.close();
