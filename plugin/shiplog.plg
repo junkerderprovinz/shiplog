@@ -35,6 +35,25 @@ known vulnerabilities. Optional AI summaries (Ollama, llama-swap or OpenRouter),
 Unraid, Discord, Matrix and more, and an auto-update that backs up first when
 your fortress has a backup app.
 
+### 3.9.5
+Changelog files come only from the public internet, the status page fits a phone, and the Version card waits for a real check before it calls ShipLog up to date.
+
+🎨 **Design**
+- **GlimStone 4.9.0.** Until Unraid has looked for updates once, the Version card says Not checked yet, and Check for updates is ready to click. Up to date only shows once a check is behind it.
+- **Version numbers are easier to tap.** Each number on the Info tab has a 24px target. A long one, such as a test build's, moves under ShipLog's name on a phone, and the Components card does the same on a narrow screen.
+
+⚡ **Improved**
+- **The fortress and notification parts come from kit 1.1.0.** Your fortress, your notification channels and your settings carry over as they are.
+- **ShipLog is an Unraid plugin only.** The Docker image for other hosts is gone, and the plugin works as before.
+
+🐛 **Fixed**
+- **Changelog files come only from the public internet.** A changelog source can no longer point ShipLog at an address in your own network or on the server itself. A source like that, saved earlier, is skipped and named once in the log.
+- **The status page fits a phone.** On a narrow screen each container becomes a card with its versions, risk and changelog stacked, so nothing scrolls sideways.
+- **The source field stays folded.** On the status page the field for a changelog source opens when you click **source**, instead of showing on every row.
+
+🌐 **Translations**
+- **Not checked yet in all 26 languages.**
+
 ### 3.9.4
 The Info tab shows where ShipLog's updates stand, and the vulnerability chip tells the flaws with a fix from those that have none yet.
 
