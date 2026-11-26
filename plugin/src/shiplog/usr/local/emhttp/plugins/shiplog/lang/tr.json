@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Anahtar kaydedilemedi",
   "nc_edit": "Düzenle",
   "nc_edit_title": "Kanalı düzenle",
-  "nc_off": "Kapalı"
+  "nc_off": "Kapalı",
+  "nc_no_address": "Henüz adres yok"
 }

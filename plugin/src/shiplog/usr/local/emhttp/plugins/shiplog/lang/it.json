@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Non è stato possibile salvare la chiave",
   "nc_edit": "Modifica",
   "nc_edit_title": "Modifica il canale",
-  "nc_off": "Disattivato"
+  "nc_off": "Disattivato",
+  "nc_no_address": "Ancora nessun indirizzo"
 }

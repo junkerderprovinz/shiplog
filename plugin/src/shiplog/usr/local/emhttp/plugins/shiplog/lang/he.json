@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "לא ניתן היה לשמור את המפתח",
   "nc_edit": "עריכה",
   "nc_edit_title": "עריכת הערוץ",
-  "nc_off": "כבוי"
+  "nc_off": "כבוי",
+  "nc_no_address": "עדיין אין כתובת"
 }

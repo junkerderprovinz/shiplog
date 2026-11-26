@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Nyckeln gick inte att spara",
   "nc_edit": "Redigera",
   "nc_edit_title": "Redigera kanalen",
-  "nc_off": "Avstängd"
+  "nc_off": "Avstängd",
+  "nc_no_address": "Ingen adress än"
 }

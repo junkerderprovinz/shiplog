@@ -342,5 +342,6 @@
   "s_or_err_save_failed": "Cheia nu a putut fi salvată",
   "nc_edit": "Editează",
   "nc_edit_title": "Editează canalul",
-  "nc_off": "Dezactivat"
+  "nc_off": "Dezactivat",
+  "nc_no_address": "Încă nicio adresă"
 }

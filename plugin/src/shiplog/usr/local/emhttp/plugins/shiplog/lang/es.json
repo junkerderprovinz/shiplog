@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "No se ha podido guardar la clave",
   "nc_edit": "Editar",
   "nc_edit_title": "Editar el canal",
-  "nc_off": "Desactivado"
+  "nc_off": "Desactivado",
+  "nc_no_address": "Aún sin dirección"
 }

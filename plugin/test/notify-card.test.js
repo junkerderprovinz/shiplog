@@ -407,21 +407,46 @@ test("a row's switch saves the list at once and keeps the channel's settings and
   assert.deepEqual(p.saved, [[true, en.nc_saved_line]]);
 });
 
-test('a switch the service refuses turns back, shakes and says why', async () => {
-  const bad = () => Promise.reject({ code: 'invalid', problems: [{ index: 0, field: 'slack.url', code: 'invalid' }] });
-  const p = mounted([{ id: 'slack', kind: 'slack', enabled: false, on: 'always', slack: { url: '' } }], { save: bad });
+test("a switch the service refuses for the channel itself opens its form, switched on, with the reason", async () => {
+  let refuse = true;
+  const save = (list) => refuse
+    ? Promise.reject({ code: 'invalid', problems: [{ index: 0, field: 'slack.url', code: 'invalid' }] })
+    : Promise.resolve(JSON.parse(JSON.stringify(list)));
+  const p = mounted([{ id: 'slack', kind: 'slack', enabled: false, on: 'always', slack: { url: '' } }], { save });
   await settle();
   const sw = p.el.byClass('glim-nc-sw')[0];
   sw.checked = true;
   sw.fire('change');
   await settle();
-  const back = p.el.byClass('glim-nc-sw')[0];
-  assert.equal(back.checked, false);
+  assert.equal(p.el.byClass('glim-nc-sw')[0].checked, false, 'the row turns back');
   assert.equal(p.view.list()[0].enabled, false);
+  assert.ok(p.win(), 'the form opens');
+  assert.equal(p.win().byClass('glim-nc-err')[0].textContent, en.nc_not_saved + ': ' + en.nc_fail_invalid);
+  assert.equal(p.el.byClass('glim-nc-err').length, 0, 'the reason stands in the form, not under the row');
+  assert.deepEqual(p.saved, [], 'the form says it, so the page line does not');
+  refuse = false;
+  p.win().querySelector('input').value = 'https://hooks.slack.com/services/a';
+  p.win().querySelector('input').fire('input');
+  p.foot(en.nc_save).click();
+  await settle();
+  assert.equal(p.saves[1][0].enabled, true, 'the form saves the channel switched as asked');
+  assert.equal(p.view.list()[0].enabled, true);
+});
+
+test('a switch the service refuses for another reason turns back, shakes and says why', async () => {
+  const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }], { save: () => Promise.reject({ code: 'engine' }) });
+  await settle();
+  const sw = p.el.byClass('glim-nc-sw')[0];
+  sw.checked = false;
+  sw.fire('change');
+  await settle();
+  const back = p.el.byClass('glim-nc-sw')[0];
+  assert.equal(back.checked, true);
+  assert.equal(p.view.list()[0].enabled, true);
   assert.ok(back.className.includes('glim-nc-shake'));
   assert.equal(p.doc.activeElement, back);
-  assert.equal(p.el.byClass('glim-nc-err')[0].text, en.nc_fail_invalid);
-  assert.deepEqual(p.saved, [[false, en.nc_not_saved + ': ' + en.nc_fail_invalid]]);
+  assert.equal(p.win(), null);
+  assert.deepEqual(p.saved, [[false, en.nc_not_saved]]);
 });
 
 test('a second switch waits while the first one saves', async () => {
@@ -545,6 +570,13 @@ test("a row's line says where the channel sends, then its test or what it sends"
   assert.equal(card.rowStatus({ id: 'unraid', kind: 'unraid', enabled: true, on: 'failure' }, null, en), en.nc_on_failure);
 });
 
+test("a row without an address says so, as GlimStone's does, and Unraid needs none", () => {
+  assert.equal(en.nc_no_address, 'No address yet');
+  assert.equal(card.rowStatus({ id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: '' } }, null, en), en.nc_no_address + ' · ' + en.nc_on_always);
+  assert.equal(card.rowStatus({ id: 'smtp', kind: 'smtp', enabled: false, on: 'always', smtp: {} }, null, en), en.nc_no_address + ' · ' + en.nc_off);
+  assert.equal(card.rowStatus({ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }, null, en), en.nc_on_always);
+});
+
 test('a channel is removed with its button', async () => {
   const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }, { id: 'ntfy', kind: 'ntfy', enabled: true, on: 'always', ntfy: { url: 'https://ntfy.sh/x' } }]);
   await settle();
@@ -571,7 +603,7 @@ test("an empty list reads as GlimStone's empty state over the foot with Add", as
   assert.equal(root.byClass('glim-nc-empty-title')[0].text, en.nc_empty);
   assert.equal(root.byClass('glim-nc-foot')[0].children[0], p.el.byClass('glim-nc-add')[0]);
   const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
-  assert.match(css, /\.glim-nc-empty \{ padding: 24px; text-align: center; \}/);
+  assert.match(css, /\.glim-nc \.glim-nc-empty-title \{[^}]*text-align: center;/, 'the line centres itself, since Unraid justifies every paragraph');
   assert.match(css, /\.glim-nc-foot \{ display: flex; flex-wrap: wrap; justify-content: flex-end;/);
 });
 

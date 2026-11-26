@@ -297,12 +297,12 @@
     try { return new URL(url).hostname; } catch (e) { return ''; }
   }
 
-  // A row's quiet line as GlimStone's notifyRowStatus has it: where the
-  // channel sends, then how its last test went, else that it is off or what
-  // it sends.
+  // A row's quiet line as GlimStone's notifyRows has it: where the channel
+  // sends, or that it has no address yet, then how its last test went, else
+  // that it is off or what it sends. Unraid's own notifications need none.
   function rowStatus(c, test, t) {
     var said = test ? test.text : !c.enabled ? t.nc_off : c.on === 'failure' ? t.nc_on_failure : t.nc_on_always;
-    return [where(c), said].filter(Boolean).join(' · ');
+    return [where(c) || (c.kind === 'unraid' ? '' : t.nc_no_address), said].filter(Boolean).join(' · ');
   }
 
   /* GlimStone's one floating bubble for an (i): a body child placed from the
@@ -418,7 +418,8 @@
     }
 
     // The page's list is saved as it stands. A list the service refuses
-    // gives way to the one before, with the reasons under their rows.
+    // gives way to the one before, with the reasons under their rows, unless
+    // refused() takes the refusal over and answers true.
     function save(before, refused) {
       var sent = JSON.parse(JSON.stringify(list));
       return adapter.save(sent).then(function (saved) {
@@ -429,15 +430,17 @@
         problems = {};
         ((e && e.problems) || []).forEach(function (p) { problems[(sent[p.index] || {}).id] = p; });
         list = before;
-        if (opts.saved) opts.saved(false, (e && e.code) === 'invalid' ? t.nc_not_saved + ': ' + t.nc_fail_invalid : t.nc_not_saved);
         draw();
-        if (refused) refused();
+        var taken = refused && refused();
+        if (!taken && opts.saved) opts.saved(false, (e && e.code) === 'invalid' ? t.nc_not_saved + ': ' + t.nc_fail_invalid : t.nc_not_saved);
       });
     }
 
     /* A row's switch saves at once, as GlimStone's setEnabled does: the row
-     * turns at the press, and a list the service refuses turns it back, and
-     * the switch shakes. One switch saves at a time. */
+     * turns at the press, and a list the service refuses turns it back. A
+     * refusal of the channel itself opens its form, switched as asked, with
+     * the reason, since only a change there can get it saved. Any other
+     * refusal shakes the switch. One switch saves at a time. */
     function setEnabled(id, on) {
       if (switching) {
         switches[id].checked = !on;
@@ -449,10 +452,19 @@
       draw();
       switches[id].focus();
       save(before, function () {
+        var own = problems[id], c = byId(id);
+        if (own && c) {
+          delete problems[id];
+          draw();
+          picker(Object.assign(JSON.parse(JSON.stringify(c)), { enabled: on }), own);
+          return true;
+        }
         var back = switches[id];
-        if (!back) return;
-        back.focus();
-        shake(back);
+        if (back) {
+          back.focus();
+          shake(back);
+        }
+        return false;
       }).then(function () { switching = false; });
     }
 
@@ -607,7 +619,7 @@
      * focus goes back to Add. With a channel the window opens on a copy of
      * its fields, Save puts it back in its place and the focus returns to
      * its Edit. */
-    function picker(editing) {
+    function picker(editing, problem) {
       var query = '', draft = null, busy = false, scroll = null, search = null, picked = null;
       var title = h('h2', { class: 'glim-nc-win-title', id: 'glim-nc-win-t' }, editing
         ? [h('span', { text: t.nc_edit_title })]
@@ -709,11 +721,11 @@
 
       // The form narrows the window to a form's width around the same middle,
       // and its test stands in the foot with its verdict at the foot's start.
-      function form(c) {
+      function form(c, problem) {
         draft = c;
         box.classList.add('glim-nc-win-form');
         var of = function () { return draft; };
-        var err = h('p', { class: 'glim-nc-err', role: 'alert' });
+        var err = h('p', { class: 'glim-nc-err', role: 'alert', text: problem ? t.nc_not_saved + ': ' + fail(t, problem.code) : '' });
         var res = h('span', { class: 'glim-nc-res glim-nc-win-start', role: 'status' });
         var test = tester(of, winButton, 'test', function (r) {
           res.className = 'glim-nc-res glim-nc-win-start ' + (r ? (r.ok ? 'glim-nc-ok' : 'glim-nc-bad') : 'glim-nc-run');
@@ -796,7 +808,7 @@
       // A press beside the window would throw away what was typed into a form.
       scrim.addEventListener('click', function () { if (!busy && !draft) close(); });
       doc.addEventListener('keydown', onKey, true);
-      if (editing) form(JSON.parse(JSON.stringify(editing)));
+      if (editing) form(JSON.parse(JSON.stringify(editing)), problem);
       else tiles();
       return { close: close, box: box };
     }

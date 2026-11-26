@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Không lưu được khóa",
   "nc_edit": "Sửa",
   "nc_edit_title": "Sửa kênh",
-  "nc_off": "Đã tắt"
+  "nc_off": "Đã tắt",
+  "nc_no_address": "Chưa có địa chỉ"
 }

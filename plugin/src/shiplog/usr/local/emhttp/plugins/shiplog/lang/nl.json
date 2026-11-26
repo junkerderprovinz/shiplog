@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "De sleutel kon niet worden opgeslagen",
   "nc_edit": "Bewerken",
   "nc_edit_title": "Kanaal bewerken",
-  "nc_off": "Uitgeschakeld"
+  "nc_off": "Uitgeschakeld",
+  "nc_no_address": "Nog geen adres"
 }

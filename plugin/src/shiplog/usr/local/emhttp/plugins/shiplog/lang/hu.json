@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "A kulcsot nem sikerült menteni",
   "nc_edit": "Szerkesztés",
   "nc_edit_title": "Csatorna szerkesztése",
-  "nc_off": "Kikapcsolva"
+  "nc_off": "Kikapcsolva",
+  "nc_no_address": "Még nincs cím"
 }

@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "キーを保存できませんでした",
   "nc_edit": "編集",
   "nc_edit_title": "チャンネルを編集",
-  "nc_off": "オフ"
+  "nc_off": "オフ",
+  "nc_no_address": "アドレスはまだありません"
 }

@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Avainta ei voitu tallentaa",
   "nc_edit": "Muokkaa",
   "nc_edit_title": "Muokkaa kanavaa",
-  "nc_off": "Pois päältä"
+  "nc_off": "Pois päältä",
+  "nc_no_address": "Ei vielä osoitetta"
 }

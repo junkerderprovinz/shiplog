@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "تعذّر حفظ المفتاح",
   "nc_edit": "تعديل",
   "nc_edit_title": "تعديل القناة",
-  "nc_off": "متوقف"
+  "nc_off": "متوقف",
+  "nc_no_address": "لا يوجد عنوان بعد"
 }

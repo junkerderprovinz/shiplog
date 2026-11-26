@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "키를 저장하지 못했습니다",
   "nc_edit": "편집",
   "nc_edit_title": "채널 편집",
-  "nc_off": "꺼짐"
+  "nc_off": "꺼짐",
+  "nc_no_address": "아직 주소 없음"
 }

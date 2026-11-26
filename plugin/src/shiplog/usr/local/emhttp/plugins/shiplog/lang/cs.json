@@ -342,5 +342,6 @@
   "s_or_err_save_failed": "Klíč se nepodařilo uložit",
   "nc_edit": "Upravit",
   "nc_edit_title": "Upravit kanál",
-  "nc_off": "Vypnuto"
+  "nc_off": "Vypnuto",
+  "nc_no_address": "Zatím bez adresy"
 }

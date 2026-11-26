@@ -59,9 +59,10 @@ html.tt-popups-on .glim-nc {
 }
 .glim-nc *, .glim-nc *::before, .glim-nc *::after { box-sizing: border-box; }
 /* GlimStone's empty state inside a card, which is its surface: one quiet
-   line in the middle. */
-.glim-nc-empty { padding: 24px; text-align: center; }
-.glim-nc .glim-nc-empty-title { margin: 0; color: var(--nc-dim); font-size: 14px; line-height: 20px; }
+   line in the middle. Unraid justifies every paragraph, so the line centres
+   itself. */
+.glim-nc-empty { padding: 24px; }
+.glim-nc .glim-nc-empty-title { margin: 0; color: var(--nc-dim); font-size: 14px; line-height: 20px; text-align: center; }
 
 /* A channel as GlimStone's ConnectionRow: a flat group on the well's surface
    with the service's mark lit on a tile the row's whole height, in the

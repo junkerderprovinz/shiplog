@@ -344,5 +344,6 @@
   "s_or_err_save_failed": "Nie udało się zapisać klucza",
   "nc_edit": "Edytuj",
   "nc_edit_title": "Edytuj kanał",
-  "nc_off": "Wyłączony"
+  "nc_off": "Wyłączony",
+  "nc_no_address": "Brak adresu"
 }

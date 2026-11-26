@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Der Schlüssel ließ sich nicht speichern",
   "nc_edit": "Bearbeiten",
   "nc_edit_title": "Kanal bearbeiten",
-  "nc_off": "Ausgeschaltet"
+  "nc_off": "Ausgeschaltet",
+  "nc_no_address": "Noch keine Adresse"
 }

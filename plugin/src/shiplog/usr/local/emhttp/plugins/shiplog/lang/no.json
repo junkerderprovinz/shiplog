@@ -340,5 +340,6 @@
   "s_or_err_save_failed": "Nøkkelen kunne ikke lagres",
   "nc_edit": "Rediger",
   "nc_edit_title": "Rediger kanalen",
-  "nc_off": "Slått av"
+  "nc_off": "Slått av",
+  "nc_no_address": "Ingen adresse ennå"
 }
