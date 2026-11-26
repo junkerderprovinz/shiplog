@@ -18,6 +18,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/changelog"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/notify"
+	"github.com/junkerderprovinz/shiplog/internal/plugins"
 	"github.com/junkerderprovinz/shiplog/internal/publicnet"
 	"github.com/junkerderprovinz/shiplog/internal/sources"
 	"github.com/junkerderprovinz/shiplog/internal/store"
@@ -90,6 +91,7 @@ type API struct {
 	hub        func(context.Context) bool
 	channels   Channels
 	openRouter *openRouterRoutes
+	plugins    PluginScanner
 }
 
 // New builds the API. ghToken, if set, is used to check a manual source repo
@@ -103,6 +105,28 @@ func New(src StatusSource, ovr OverrideStore, ref Refresher, ghToken string) *AP
 		return verifyChangelogFile(ctx, publicnet.Client(10*time.Second), url)
 	}
 	return a
+}
+
+// PluginScanner reads where the installed Unraid plugins stand, as
+// plugins.Scanner does.
+type PluginScanner interface {
+	Scan() ([]plugins.Plugin, error)
+}
+
+// WithPlugins enables /api/plugins, which lists the installed Unraid plugins
+// and the updates Unraid's last plugin check found for them.
+func (a *API) WithPlugins(s PluginScanner) *API {
+	a.plugins = s
+	return a
+}
+
+func (a *API) listPlugins(w http.ResponseWriter, _ *http.Request) {
+	ps, err := a.plugins.Scan()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, ps)
 }
 
 // WithUpdateCheck enables /api/applied, which reads the containers from docker
@@ -191,6 +215,9 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/unmaintained-suppression", a.deleteSuppression)
 	mux.HandleFunc("GET /api/guards", a.listGuards)
 	mux.HandleFunc("GET /api/notify-hub", a.notifyHub)
+	if a.plugins != nil {
+		mux.HandleFunc("GET /api/plugins", a.listPlugins)
+	}
 	if a.channels != nil {
 		mux.HandleFunc("GET /api/notify", a.listChannels)
 		mux.HandleFunc("PUT /api/notify", a.replaceChannels)

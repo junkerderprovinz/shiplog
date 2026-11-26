@@ -34,6 +34,7 @@ import (
 	"github.com/junkerderprovinz/shiplog/internal/fortress"
 	"github.com/junkerderprovinz/shiplog/internal/model"
 	"github.com/junkerderprovinz/shiplog/internal/notify"
+	"github.com/junkerderprovinz/shiplog/internal/plugins"
 	"github.com/junkerderprovinz/shiplog/internal/resolver"
 	"github.com/junkerderprovinz/shiplog/internal/store"
 	"github.com/junkerderprovinz/shiplog/internal/summarize"
@@ -185,6 +186,11 @@ func main() {
 	}
 	if door != nil {
 		a.WithDoor(door)
+	}
+	// On Unraid the API also lists the installed plugins. It reads what
+	// Unraid's own plugin check fetched and fetches nothing itself.
+	if s := plugins.Default(); s != nil {
+		a.WithPlugins(s)
 	}
 	// The key is written through the socket only, which the settings page reaches.
 	if cfg.OpenRouterKeyFile != "" {
