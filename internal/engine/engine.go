@@ -90,6 +90,12 @@ type Engine struct {
 	workers    int
 	refresh    chan struct{}
 	now        func() time.Time
+	// digest sends the updates a sweep finds as one message once the sweep is
+	// done, when the notifier can, instead of one message per container.
+	digest bool
+	// minRisk holds back the notice of an update below this risk. Empty sends
+	// every one.
+	minRisk model.RiskLevel
 	// watch is how often Run looks for a container no sweep has checked yet
 	// and whose start event it missed.
 	watch time.Duration
@@ -148,6 +154,19 @@ func (e *Engine) WithVulns(v VulnChecker) *Engine {
 // WithNotifier enables update notifications.
 func (e *Engine) WithNotifier(n Notifier) *Engine {
 	e.notifier = n
+	return e
+}
+
+// WithDigest makes each sweep announce its new updates in one message.
+func (e *Engine) WithDigest(on bool) *Engine {
+	e.digest = on
+	return e
+}
+
+// WithMinRisk sends no notice for an update below min. An update whose risk
+// is unknown is always announced, since nothing says it is harmless.
+func (e *Engine) WithMinRisk(min model.RiskLevel) *Engine {
+	e.minRisk = min
 	return e
 }
 
@@ -255,6 +274,20 @@ func (e *Engine) sweep(ctx context.Context, only map[string]struct{}) error {
 		caFeed, _ = e.caFeed(ctx)
 	}
 	resolve := memoResolve(e.resolver)
+	var found *batch
+	if d, ok := e.notifier.(digester); ok && e.digest {
+		found = &batch{}
+		ctx = context.WithValue(ctx, batchKey{}, found)
+		defer func() {
+			sts := found.take()
+			if len(sts) == 0 {
+				return
+			}
+			if err := d.NotifyDigest(ctx, sts); err != nil {
+				log.Printf("shiplog: update digest notify failed: %v", err)
+			}
+		}()
+	}
 	sem := make(chan struct{}, e.workers)
 	var wg sync.WaitGroup
 	var tally vulnTally
@@ -796,6 +829,33 @@ func (e *Engine) maybeResolve(ctx context.Context, st, prior model.UpdateStatus,
 	r.Resolve(ctx, prior)
 }
 
+// digester announces several updates in one message, as notify.Notifier does.
+type digester interface {
+	NotifyDigest(ctx context.Context, sts []model.UpdateStatus) error
+}
+
+// batch collects the updates the workers of one sweep found.
+type batch struct {
+	mu  sync.Mutex
+	sts []model.UpdateStatus
+}
+
+func (b *batch) add(st model.UpdateStatus) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.sts = append(b.sts, st)
+}
+
+func (b *batch) take() []model.UpdateStatus {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	sts := b.sts
+	b.sts = nil
+	return sts
+}
+
+type batchKey struct{}
+
 // maybeNotify notifies when a known container gets an update target it did not
 // have before. The first sighting only seeds the row.
 func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior model.UpdateStatus, hasPrior bool) {
@@ -809,6 +869,13 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 	// now would sit unread after the update is gone. Breaking notes ask for a step
 	// before the pull, so they still go out ahead of the run.
 	if e.autoApplies != nil && e.autoApplies(st) && st.Risk != model.RiskCritical {
+		return
+	}
+	if e.minRisk != "" && st.Risk != model.RiskUnknown && e.minRisk.MoreSevere(st.Risk) {
+		return
+	}
+	if b, ok := ctx.Value(batchKey{}).(*batch); ok {
+		b.add(st)
 		return
 	}
 	_ = e.notifier.Notify(ctx, st)

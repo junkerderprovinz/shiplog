@@ -35,6 +35,25 @@ func TestTheVulnerabilityCheckIsOnUntilSwitchedOff(t *testing.T) {
 	}
 }
 
+func TestTheUpdateNoticesAreSingleAndUnfilteredByDefault(t *testing.T) {
+	t.Setenv("NOTIFY_DIGEST", "")
+	t.Setenv("NOTIFY_MIN_RISK", "")
+	if c := Load(); c.NotifyDigest || c.NotifyMinRisk != "" {
+		t.Errorf("digest %v, min risk %q, want off and none", c.NotifyDigest, c.NotifyMinRisk)
+	}
+}
+
+func TestLoadReadsTheDigestAndTheMinimumRisk(t *testing.T) {
+	t.Setenv("NOTIFY_DIGEST", "true")
+	for v, want := range map[string]string{"medium": "medium", " High ": "high", "critical": "critical", "none": "", "bogus": ""} {
+		t.Setenv("NOTIFY_MIN_RISK", v)
+		c := Load()
+		if !c.NotifyDigest || c.NotifyMinRisk != want {
+			t.Errorf("NOTIFY_MIN_RISK=%q: digest %v, min risk %q, want true and %q", v, c.NotifyDigest, c.NotifyMinRisk, want)
+		}
+	}
+}
+
 func TestBadDurationFallsBack(t *testing.T) {
 	t.Setenv("POLL_INTERVAL", "not-a-duration")
 	if Load().PollInterval != 6*time.Hour {

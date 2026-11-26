@@ -11,6 +11,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"sync"
 
@@ -163,6 +165,24 @@ func (n *Notifier) Notify(ctx context.Context, st model.UpdateStatus) error {
 	return n.Send(ctx, update(st))
 }
 
+// NotifyDigest announces the updates one sweep found together. A single
+// update goes out as Notify sends it. While a TollRoll of the fortress takes
+// the messages, it hears of each update on its own, since it keeps one open
+// message per update until Resolve closes it.
+func (n *Notifier) NotifyDigest(ctx context.Context, sts []model.UpdateStatus) error {
+	if n == nil || len(sts) == 0 {
+		return nil
+	}
+	if len(sts) == 1 || n.hub != nil && n.hub.Active(ctx) {
+		var errs []error
+		for _, st := range sts {
+			errs = append(errs, n.Notify(ctx, st))
+		}
+		return errors.Join(errs...)
+	}
+	return n.Send(ctx, Digest(sts))
+}
+
 // Send delivers e to every channel that takes it. The error names each
 // channel that failed, with its secrets taken out.
 func (n *Notifier) Send(ctx context.Context, e kit.Event) error {
@@ -244,6 +264,45 @@ func update(st model.UpdateStatus) kit.Event {
 		e.Link = link
 		e.HTML += `<br/><a href="` + esc(link) + `">` + esc(link) + `</a>`
 	}
+	return e
+}
+
+// Digest is one message for several updates, the riskiest first. It takes
+// the severity of the riskiest, so a channel that sends only problems carries
+// it whenever one of them is a problem.
+func Digest(sts []model.UpdateStatus) kit.Event {
+	sts = slices.Clone(sts)
+	sort.SliceStable(sts, func(i, j int) bool {
+		if sts[i].Risk != sts[j].Risk {
+			return sts[i].Risk.MoreSevere(sts[j].Risk)
+		}
+		return strings.ToLower(sts[i].Container.Name) < strings.ToLower(sts[j].Container.Name)
+	})
+	head := fmt.Sprintf("%d updates available", len(sts))
+	e := kit.Event{Kind: "update.digest", Severity: severity(sts[0].Risk), Title: head}
+	var t, h []string
+	for _, st := range sts {
+		name, from, to := st.Container.Name, st.Container.Tag, st.Target()
+		risk := strings.ToUpper(string(st.Risk))
+		var tl, hl string
+		if to == "" {
+			tl = fmt.Sprintf("%s: new image for %s (%s)", name, from, risk)
+			hl = fmt.Sprintf("<b>%s</b>: new image for <code>%s</code> (%s)", esc(name), esc(from), esc(risk))
+		} else {
+			tl = fmt.Sprintf("%s: %s → %s (%s)", name, from, to, risk)
+			hl = fmt.Sprintf("<b>%s</b>: <code>%s</code> → <code>%s</code> (%s)", esc(name), esc(from), esc(to), esc(risk))
+		}
+		if note := st.Vulns.Note(true); note != "" {
+			tl += " · " + note
+			hl += " · " + esc(note)
+		}
+		if link := st.Link(); link != "" {
+			hl += ` · <a href="` + esc(link) + `">changelog</a>`
+		}
+		t, h = append(t, "• "+tl), append(h, "• "+hl)
+	}
+	e.Body = strings.Join(t, "\n")
+	e.HTML = "🚢 <b>ShipLog</b> · " + esc(head) + "<br/>" + strings.Join(h, "<br/>")
 	return e
 }
 
