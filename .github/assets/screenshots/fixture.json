@@ -1,0 +1,125 @@
+{
+  "icons": {
+    "radarr": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png",
+    "uptime-kuma": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/uptime-kuma.png",
+    "portainer": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/portainer.png",
+    "traefik": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/traefik.png",
+    "homepage": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/homepage.png",
+    "prowlarr": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png"
+  },
+  "guards": { "backup": false, "guards": [] },
+  "status": [
+    {
+      "container": {
+        "name": "radarr", "image": "lscr.io/linuxserver/radarr:latest", "repo": "lscr.io/linuxserver/radarr", "tag": "latest",
+        "digest": "sha256:3c1f9a4e7b2d8f6015c9e3a7d4b2f81e6a0c5d9b3e7f1a2c4d6e8f0a1b3c5d7e", "state": "running", "managed": true
+      },
+      "running_version": "5.14.0", "newest_tag": "5.16.3", "kind": "minor", "risk": "high",
+      "risk_reason": "minor version bump 5.14 → 5.16 (new features, review the changelog)",
+      "risk_code": { "code": "minor", "args": ["5.14", "5.16"] }, "vuln_raised": true,
+      "changelog": { "from_tag": "5.14.0", "to_tag": "5.16.3", "skipped_count": 2, "source": "GitHub releases (curated source)",
+        "url": "https://github.com/Radarr/Radarr/releases", "provider": "github" },
+      "vulns": { "scope": "system", "critical": 2, "high": 14, "no_fix_high": 5, "newest_known": true, "fixed_critical": 2, "fixed_high": 9 },
+      "checked_at": "2026-11-21T06:00:00+01:00"
+    },
+    {
+      "container": {
+        "name": "uptime-kuma", "image": "louislam/uptime-kuma:latest", "repo": "docker.io/louislam/uptime-kuma", "tag": "latest",
+        "digest": "sha256:8d2e4f6a1c3b5d7e9f0a2b4c6d8e0f1a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d1e", "state": "running", "managed": true
+      },
+      "newest_digest": "sha256:8d2e4f6a1c3b5d7e9f0a2b4c6d8e0f1a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d1e",
+      "running_version": "1.23.16", "newest_tag": "latest", "kind": "none", "risk": "low", "risk_code": { "code": "current" },
+      "vulns": { "scope": "image", "critical": 0, "high": 0 },
+      "checked_at": "2026-11-21T06:00:00+01:00"
+    },
+    {
+      "container": {
+        "name": "portainer", "image": "portainer/portainer-ce:latest", "repo": "docker.io/portainer/portainer-ce", "tag": "latest",
+        "digest": "sha256:1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a", "state": "running", "managed": true
+      },
+      "newest_digest": "sha256:1f3a5c7e9b0d2f4a6c8e0b1d3f5a7c9e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a",
+      "running_version": "2.24.1", "newest_tag": "latest", "kind": "none", "risk": "low", "risk_code": { "code": "current" },
+      "vulns": { "scope": "image", "critical": 0, "high": 0 },
+      "checked_at": "2026-11-21T06:00:00+01:00"
+    },
+    {
+      "container": {
+        "name": "traefik", "image": "traefik:latest", "repo": "docker.io/library/traefik", "tag": "latest",
+        "digest": "sha256:9a7c5e3b1d0f2a4c6e8b9d1f3a5c7e0b2d4f6a8c9e1b3d5f7a0c2e4b6d8f9a1c", "state": "running", "managed": true
+      },
+      "running_version": "v3.2.0", "newest_tag": "3.7.19", "kind": "minor", "risk": "high",
+      "risk_reason": "minor version bump 3.2 → 3.7 (new features, review the changelog)",
+      "risk_code": { "code": "minor", "args": ["3.2", "3.7"] }, "vuln_raised": true,
+      "changelog": {
+        "from_tag": "v3.2.0", "to_tag": "v3.7.19", "skipped_count": 1,
+        "source": "GitHub releases (OCI label)", "url": "https://github.com/traefik/traefik/releases", "provider": "github",
+        "entries": [
+          {
+            "tag": "v3.7.19", "published_at": "2026-11-13T15:04:00Z", "url": "https://github.com/traefik/traefik/releases",
+            "body": "**Bug fixes:**\n- **[acme]** Retry a certificate renewal after the ACME server times out\n- **[middleware]** Keep the compress middleware from buffering server-sent events\n- **[server]** Bump golang.org/x/crypto to v0.59.0\n\n**Documentation:**\n- **[accesslogs]** Drop two fields that the access log never writes\n- **[metrics]** Fix the TOML example and the StatsD defaults in the metrics reference"
+          },
+          {
+            "tag": "v3.7.18", "published_at": "2026-11-10T10:21:00Z", "url": "https://github.com/traefik/traefik/releases",
+            "body": "**Important:** Please read the [migration guide](https://doc.traefik.io/traefik/migrate/v3/).\n\n**CVE fixed:**\n- Advisory [GHSA-4w8r-q2vc-m6jx](https://github.com/traefik/traefik/security/advisories)\n- Advisory [GHSA-9hcf-x3pq-7v2w](https://github.com/traefik/traefik/security/advisories)\n- Advisory [GHSA-m5jr-2wqx-c8fh](https://github.com/traefik/traefik/security/advisories)\n- Advisory [GHSA-r7vg-pc4m-h9x2](https://github.com/traefik/traefik/security/advisories)\n- Advisory [GHSA-x2qm-f6wh-3cjr](https://github.com/traefik/traefik/security/advisories)\n\n**Bug fixes:**\n- **[k8s]** Keep the ingress status when the service has no endpoints\n- **[tcp]** Close idle TCP connections on a config reload"
+          }
+        ]
+      },
+      "vulns": {
+        "scope": "image", "critical": 5, "high": 11, "no_fix_critical": 1, "no_fix_high": 3,
+        "newest_known": true, "fixed_critical": 4, "fixed_high": 8,
+        "items": [
+          { "id": "CVE-2026-27164", "package": "golang.org/x/crypto", "severity": "critical", "fixed": true },
+          { "id": "CVE-2026-30418", "package": "openssl", "severity": "critical", "fixed": true },
+          { "id": "CVE-2026-34752", "package": "google.golang.org/grpc", "severity": "critical", "fixed": true },
+          { "id": "CVE-2026-38097", "package": "github.com/traefik/traefik/v3", "severity": "critical", "fixed": true },
+          { "id": "CVE-2026-40263", "package": "golang.org/x/net", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-41579", "package": "golang.org/x/net", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-43815", "package": "golang.org/x/crypto", "severity": "high", "fixed": true },
+          { "id": "GHSA-4w8r-q2vc-m6jx", "package": "github.com/traefik/traefik/v3", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-47031", "package": "openssl", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-49386", "package": "github.com/quic-go/quic-go", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-52740", "package": "github.com/traefik/traefik/v3", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-56192", "package": "libssl3", "severity": "high", "fixed": true },
+          { "id": "CVE-2026-50817", "package": "busybox", "severity": "critical", "no_fix": true },
+          { "id": "CVE-2026-44906", "package": "libexpat", "severity": "high", "no_fix": true },
+          { "id": "CVE-2026-51273", "package": "zlib", "severity": "high", "no_fix": true },
+          { "id": "CVE-2026-57418", "package": "musl", "severity": "high", "no_fix": true }
+        ]
+      },
+      "checked_at": "2026-11-21T06:00:00+01:00"
+    },
+    {
+      "container": {
+        "name": "homepage", "image": "ghcr.io/gethomepage/homepage:latest", "repo": "ghcr.io/gethomepage/homepage", "tag": "latest",
+        "digest": "sha256:5b7d9f1a3c5e7b9d0f2a4c6e8b0d2f4a6c8e0b2d4f6a8c0e2b4d6f8a0c2e4b6d", "state": "running", "managed": true
+      },
+      "newest_digest": "sha256:5b7d9f1a3c5e7b9d0f2a4c6e8b0d2f4a6c8e0b2d4f6a8c0e2b4d6f8a0c2e4b6d",
+      "running_version": "v1.4.6", "newest_tag": "latest", "kind": "none", "risk": "low", "risk_code": { "code": "current" },
+      "vulns": {
+        "scope": "image", "critical": 0, "high": 2, "no_fix_high": 2, "newest_known": true,
+        "items": [
+          { "id": "CVE-2026-45528", "package": "busybox", "severity": "high", "no_fix": true },
+          { "id": "CVE-2026-53964", "package": "zlib", "severity": "high", "no_fix": true }
+        ]
+      },
+      "checked_at": "2026-11-21T06:00:00+01:00"
+    },
+    {
+      "container": {
+        "name": "prowlarr", "image": "lscr.io/linuxserver/prowlarr:latest", "repo": "lscr.io/linuxserver/prowlarr", "tag": "latest",
+        "digest": "sha256:2e4a6c8e0b2d4f6a8c0e2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4a", "state": "running", "managed": true
+      },
+      "newest_digest": "sha256:2e4a6c8e0b2d4f6a8c0e2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4a",
+      "running_version": "1.28.2", "newest_tag": "latest", "kind": "none", "risk": "low", "risk_code": { "code": "current" },
+      "vulns": {
+        "scope": "system", "critical": 0, "high": 3,
+        "items": [
+          { "id": "CVE-2026-39051", "package": "libcurl", "severity": "high" },
+          { "id": "CVE-2026-42687", "package": "sqlite-libs", "severity": "high" },
+          { "id": "CVE-2026-48329", "package": "libxml2", "severity": "high" }
+        ]
+      },
+      "checked_at": "2026-11-21T06:00:00+01:00"
+    }
+  ]
+}

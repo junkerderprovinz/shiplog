@@ -43,7 +43,7 @@ const SHOTS = [
     file: "shiplog-3.png",
     capture: "vulns.png",
     caption: "See the holes <em>it closes</em>",
-    sub: "The known critical and high vulnerabilities of the running image, and which ones the newest fixes",
+    sub: "The known critical and high vulnerabilities of the running image, which ones the newest image closes and which have no fix yet",
   },
   {
     file: "shiplog-4.png",
