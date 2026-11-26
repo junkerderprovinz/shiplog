@@ -238,7 +238,6 @@
   "nc_name": "Navn",
   "nc_name_hint": "Vises over kanalen og i loggen, når en besked ikke kommer frem.",
   "nc_saved": "Gemt",
-  "nc_use": "Send hertil",
   "nc_address": "Adresse",
   "nc_token": "Token",
   "nc_token_hint": "Lad det stå tomt, når adressen allerede indeholder et.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Nøglen kunne ikke gemmes",
   "nc_edit": "Rediger",
   "nc_edit_title": "Rediger kanalen",
-  "nc_on_state": "Til",
-  "nc_off": "Fra"
+  "nc_off": "Slået fra"
 }

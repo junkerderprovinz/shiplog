@@ -238,7 +238,6 @@
   "nc_name": "Tên",
   "nc_name_hint": "Hiện phía trên kênh và trong nhật ký khi một tin nhắn không gửi được.",
   "nc_saved": "Đã lưu",
-  "nc_use": "Gửi tới đây",
   "nc_address": "Địa chỉ",
   "nc_token": "Token",
   "nc_token_hint": "Để trống nếu địa chỉ đã chứa token.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Không lưu được khóa",
   "nc_edit": "Sửa",
   "nc_edit_title": "Sửa kênh",
-  "nc_on_state": "Bật",
-  "nc_off": "Tắt"
+  "nc_off": "Đã tắt"
 }

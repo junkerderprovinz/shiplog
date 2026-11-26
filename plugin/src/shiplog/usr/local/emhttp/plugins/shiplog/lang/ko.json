@@ -238,7 +238,6 @@
   "nc_name": "이름",
   "nc_name_hint": "메시지가 전달되지 않으면 채널 위와 로그에 표시됩니다.",
   "nc_saved": "저장됨",
-  "nc_use": "여기로 보내기",
   "nc_address": "주소",
   "nc_token": "토큰",
   "nc_token_hint": "주소에 이미 토큰이 들어 있으면 비워 두세요.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "키를 저장하지 못했습니다",
   "nc_edit": "편집",
   "nc_edit_title": "채널 편집",
-  "nc_on_state": "켜짐",
   "nc_off": "꺼짐"
 }

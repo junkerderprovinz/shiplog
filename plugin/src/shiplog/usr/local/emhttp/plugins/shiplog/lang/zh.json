@@ -238,7 +238,6 @@
   "nc_name": "名称",
   "nc_name_hint": "显示在渠道上方，消息没送达时也会写进日志。",
   "nc_saved": "已保存",
-  "nc_use": "发送到这里",
   "nc_address": "地址",
   "nc_token": "令牌",
   "nc_token_hint": "地址里已带令牌时留空。",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "无法保存密钥",
   "nc_edit": "编辑",
   "nc_edit_title": "编辑渠道",
-  "nc_on_state": "开启",
-  "nc_off": "关闭"
+  "nc_off": "已关闭"
 }

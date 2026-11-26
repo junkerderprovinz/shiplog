@@ -242,7 +242,6 @@
   "nc_name": "Nazwa",
   "nc_name_hint": "Widoczna nad kanałem i w dzienniku, gdy wiadomość nie dotrze.",
   "nc_saved": "Zapisano",
-  "nc_use": "Wysyłaj tutaj",
   "nc_address": "Adres",
   "nc_token": "Token",
   "nc_token_hint": "Zostaw puste, jeśli adres już go zawiera.",
@@ -345,6 +344,5 @@
   "s_or_err_save_failed": "Nie udało się zapisać klucza",
   "nc_edit": "Edytuj",
   "nc_edit_title": "Edytuj kanał",
-  "nc_on_state": "Włączony",
   "nc_off": "Wyłączony"
 }

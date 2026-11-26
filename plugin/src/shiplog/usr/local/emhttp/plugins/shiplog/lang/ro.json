@@ -240,7 +240,6 @@
   "nc_name": "Nume",
   "nc_name_hint": "Apare deasupra canalului și în jurnal când un mesaj nu ajunge.",
   "nc_saved": "Salvat",
-  "nc_use": "Trimite aici",
   "nc_address": "Adresă",
   "nc_token": "Token",
   "nc_token_hint": "Lasă gol dacă adresa conține deja unul.",
@@ -343,6 +342,5 @@
   "s_or_err_save_failed": "Cheia nu a putut fi salvată",
   "nc_edit": "Editează",
   "nc_edit_title": "Editează canalul",
-  "nc_on_state": "Pornit",
-  "nc_off": "Oprit"
+  "nc_off": "Dezactivat"
 }

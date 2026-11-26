@@ -238,7 +238,6 @@
   "nc_name": "Név",
   "nc_name_hint": "A csatorna fölött és a naplóban látszik, ha egy üzenet nem jut el.",
   "nc_saved": "Mentve",
-  "nc_use": "Küldés ide",
   "nc_address": "Cím",
   "nc_token": "Token",
   "nc_token_hint": "Hagyd üresen, ha a cím már tartalmaz egyet.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "A kulcsot nem sikerült menteni",
   "nc_edit": "Szerkesztés",
   "nc_edit_title": "Csatorna szerkesztése",
-  "nc_on_state": "Be",
-  "nc_off": "Ki"
+  "nc_off": "Kikapcsolva"
 }

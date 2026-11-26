@@ -359,24 +359,100 @@ test("every channel is a row of GlimStone's connections: its lit tile, its name,
   assert.equal(rows[0].attrs.role, 'group');
   assert.equal(rows[0].attrs['aria-label'], 'Phone');
   assert.equal(rows[0].byClass('glim-nc-conn-name')[0].text, 'Phone');
-  assert.equal(rows[0].byClass('glim-nc-conn-status')[0].text, en.nc_on_failure + ' · ntfy.sh', 'the host alone, never the path that may hold a secret');
+  assert.equal(rows[0].byClass('glim-nc-conn-status')[0].text, 'ntfy.sh · ' + en.nc_on_failure, 'the host alone, never the path that may hold a secret');
   assert.equal(rows[1].byClass('glim-nc-conn-status')[0].text, en.nc_on_always);
   assert.deepEqual(rows[0].byClass('glim-nc-btn').map((b) => b.textContent), [en.nc_test, en.nc_edit, en.nc_remove]);
-  assert.deepEqual(rows[0].byClass('glim-nc-btn').map((b) => b.attrs['data-connection']), ['test', 'edit', 'remove']);
+  assert.deepEqual(rows[0].byClass('glim-nc-conn-actions')[0].children.map((b) => b.attrs['data-connection']), ['switch', 'test', 'edit', 'remove'], 'the switch stands first among the actions');
   for (const b of p.el.byClass('glim-nc-btn')) assert.match(b.children[0].html, /^<svg viewBox=/, b.textContent);
   assert.equal(p.el.byClass('glim-nc-in').length, 0, 'the fields wait in the window');
   const tile = rows[0].byClass('glim-nc-conn-tile')[0];
   assert.match(tile.attrs.style || '', /--nc-tile:/);
   assert.equal(tile.attrs['aria-hidden'], 'true');
-  assert.equal(p.el.byClass('glim-nc-badge').length, 0, 'a channel that is on needs no badge');
+  const sw = rows[0].byClass('glim-nc-sw')[0];
+  assert.equal(sw.tagName, 'INPUT');
+  assert.equal(sw.attrs.role, 'switch');
+  assert.equal(sw.attrs['aria-label'], 'Phone');
+  assert.equal(sw.checked, true);
 });
 
-test('a channel switched off says so on its row, and its test waits', async () => {
+test('a channel switched off says so on its row and can still be tested', async () => {
   const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: false, on: 'always' }]);
   await settle();
   const row = p.el.byClass('glim-nc-conn')[0];
-  assert.deepEqual(row.byClass('glim-nc-badge').map((b) => b.text), [en.nc_off]);
-  assert.equal(row.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test).disabled, true);
+  assert.equal(row.byClass('glim-nc-sw')[0].checked, false);
+  assert.equal(row.byClass('glim-nc-conn-status')[0].text, en.nc_off);
+  const test = row.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test);
+  assert.equal(test.disabled, false);
+  test.click();
+  await settle();
+  assert.equal(p.tests.length, 1);
+});
+
+test("a row's switch saves the list at once and keeps the channel's settings and its secret", async () => {
+  const p = mounted([
+    { id: 'unraid', kind: 'unraid', enabled: true, on: 'always' },
+    { id: 'matrix', kind: 'matrix', enabled: true, on: 'failure', matrix: { homeserver: 'https://m.example', room: '!r:m', token: card.MASK } }
+  ]);
+  await settle();
+  const sw = p.el.byClass('glim-nc-conn')[1].byClass('glim-nc-sw')[0];
+  sw.checked = false;
+  sw.fire('change');
+  const now = p.el.byClass('glim-nc-conn')[1];
+  assert.equal(now.byClass('glim-nc-conn-status')[0].text, 'm.example · ' + en.nc_off, 'the row turns at the press');
+  assert.equal(p.doc.activeElement, now.byClass('glim-nc-sw')[0], 'the switch keeps the focus');
+  await settle();
+  assert.equal(p.saves.length, 1);
+  assert.deepEqual(p.saves[0].map((c) => [c.id, c.enabled]), [['unraid', true], ['matrix', false]]);
+  assert.deepEqual(p.saves[0][1].matrix, { homeserver: 'https://m.example', room: '!r:m', token: card.MASK });
+  assert.deepEqual(p.saved, [[true, en.nc_saved_line]]);
+});
+
+test('a switch the service refuses turns back, shakes and says why', async () => {
+  const bad = () => Promise.reject({ code: 'invalid', problems: [{ index: 0, field: 'slack.url', code: 'invalid' }] });
+  const p = mounted([{ id: 'slack', kind: 'slack', enabled: false, on: 'always', slack: { url: '' } }], { save: bad });
+  await settle();
+  const sw = p.el.byClass('glim-nc-sw')[0];
+  sw.checked = true;
+  sw.fire('change');
+  await settle();
+  const back = p.el.byClass('glim-nc-sw')[0];
+  assert.equal(back.checked, false);
+  assert.equal(p.view.list()[0].enabled, false);
+  assert.ok(back.className.includes('glim-nc-shake'));
+  assert.equal(p.doc.activeElement, back);
+  assert.equal(p.el.byClass('glim-nc-err')[0].text, en.nc_fail_invalid);
+  assert.deepEqual(p.saved, [[false, en.nc_not_saved + ': ' + en.nc_fail_invalid]]);
+});
+
+test('a second switch waits while the first one saves', async () => {
+  let release;
+  const slow = (list) => new Promise((r) => { release = () => r(JSON.parse(JSON.stringify(list))); });
+  const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }, { id: 'ntfy', kind: 'ntfy', enabled: true, on: 'always', ntfy: { url: 'https://ntfy.sh/x' } }], { save: slow });
+  await settle();
+  const first = p.el.byClass('glim-nc-sw')[0];
+  first.checked = false;
+  first.fire('change');
+  const second = p.el.byClass('glim-nc-sw')[1];
+  second.checked = false;
+  second.fire('change');
+  assert.equal(second.checked, true, 'the second switch stays where it was');
+  assert.equal(p.saves.length, 1);
+  release();
+  await settle();
+  assert.deepEqual(p.view.list().map((c) => c.enabled), [false, true]);
+});
+
+test("the form has no switch of its own, since the row's switch says whether a channel sends", async () => {
+  const p = mounted([{ id: 'slack', kind: 'slack', enabled: false, on: 'always', slack: { url: 'https://hooks.slack.com/services/a' } }]);
+  await settle();
+  p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit).click();
+  assert.deepEqual(p.win().byClass('glim-nc-name').map((n) => n.text), [en.nc_name, en.nc_on, en.nc_address]);
+  assert.equal(p.win().byClass('glim-nc-seg').length, 1, 'only what it sends is a choice');
+  p.foot(en.nc_save).click();
+  await settle();
+  assert.equal(p.saves[0][0].enabled, false, 'an edit keeps the switch where it was');
+  assert.equal(en.nc_use, undefined);
+  assert.equal(en.nc_on_state, undefined);
 });
 
 test('Edit opens the channel in the window, and Save puts it back in its place', async () => {
@@ -415,17 +491,15 @@ test('Cancel in the edit window leaves the channel as it was', async () => {
   assert.equal(p.view.list()[0].slack.url, 'https://hooks.slack.com/services/a');
 });
 
-test('a channel is switched off in its window and keeps its settings and its secret', async () => {
+test('a kept secret waits in the edit window as an empty field and goes back as it was', async () => {
   const p = mounted([{ id: 'matrix', kind: 'matrix', enabled: true, on: 'failure', matrix: { homeserver: 'https://m.example', room: '!r:m', token: card.MASK } }]);
   await settle();
   p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_edit).click();
   const token = p.win().byClass('glim-nc-in').find((i) => i.attrs.type === 'password');
   assert.equal(token.value, '');
   assert.equal(token.attrs.placeholder, en.nc_saved);
-  p.win().byClass('glim-nc-seg-opt').find((b) => b.text === en.nc_off).click();
   p.foot(en.nc_save).click();
   await settle();
-  assert.equal(p.saves[0][0].enabled, false);
   assert.deepEqual(p.saves[0][0].matrix, { homeserver: 'https://m.example', room: '!r:m', token: card.MASK });
 });
 
@@ -440,16 +514,35 @@ test('a field the service refuses keeps the edit window open and says why', asyn
   assert.equal(p.win().byClass('glim-nc-err')[0].textContent, en.nc_not_saved + ': ' + en.nc_fail_invalid);
 });
 
-test("a row's test reports on its button and under the name", async () => {
+test("a row's test wears its outcome on its button and in the row's line, and keeps it through a redraw", async () => {
   const p = mounted([{ id: 'slack', kind: 'slack', enabled: true, on: 'always', slack: { url: 'https://hooks.slack.com/services/a' } }], { test: { ok: false, code: 'not_found' } });
   await settle();
+  const verdict = en.nc_test_failed + ': ' + en.nc_fail_not_found;
   const test = p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test);
+  const rest = test.children[0].html;
   test.click();
+  assert.equal(test.attrs['aria-busy'], 'true');
   await settle();
   assert.equal(p.tests[0].slack.url, 'https://hooks.slack.com/services/a');
-  assert.equal(p.el.byClass('glim-nc-res')[0].textContent, en.nc_test_failed + ': ' + en.nc_fail_not_found);
+  assert.equal(p.el.byClass('glim-nc-conn-status')[0].text, 'hooks.slack.com · ' + verdict);
+  assert.equal(p.el.byClass('glim-nc-res').length, 0, 'no line of its own under the row');
   assert.ok(test.className.includes('glim-nc-tone-bad'));
-  assert.equal(test.attrs.title, en.nc_test_failed + ': ' + en.nc_fail_not_found);
+  assert.ok(test.className.includes('glim-nc-shake'));
+  assert.equal(test.attrs.title, verdict);
+  assert.notEqual(test.children[0].html, rest, 'a cross in place of the check');
+  assert.equal(test.textContent, en.nc_test, 'its words stay');
+  p.view.draw();
+  const again = p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_test);
+  assert.ok(again.className.includes('glim-nc-tone-bad'));
+  assert.equal(p.el.byClass('glim-nc-conn-status')[0].text, 'hooks.slack.com · ' + verdict);
+});
+
+test("a row's line says where the channel sends, then its test or what it sends", () => {
+  const c = { id: 'ntfy', kind: 'ntfy', enabled: true, on: 'always', ntfy: { url: 'https://ntfy.sh/topic' } };
+  assert.equal(card.rowStatus(c, null, en), 'ntfy.sh · ' + en.nc_on_always);
+  assert.equal(card.rowStatus(Object.assign({}, c, { enabled: false }), null, en), 'ntfy.sh · ' + en.nc_off);
+  assert.equal(card.rowStatus(Object.assign({}, c, { enabled: false }), { ok: true, text: en.nc_test_ok }, en), 'ntfy.sh · ' + en.nc_test_ok);
+  assert.equal(card.rowStatus({ id: 'unraid', kind: 'unraid', enabled: true, on: 'failure' }, null, en), en.nc_on_failure);
 });
 
 test('a channel is removed with its button', async () => {
@@ -458,6 +551,28 @@ test('a channel is removed with its button', async () => {
   p.el.byClass('glim-nc-conn')[0].byClass('glim-nc-btn').find((b) => b.textContent === en.nc_remove).click();
   await settle();
   assert.deepEqual(p.saves[0].map((c) => c.id), ['ntfy']);
+});
+
+test('a removal the service refuses brings the channel back', async () => {
+  const p = mounted([{ id: 'unraid', kind: 'unraid', enabled: true, on: 'always' }], { save: () => Promise.reject({ code: 'engine' }) });
+  await settle();
+  p.el.byClass('glim-nc-btn').find((b) => b.textContent === en.nc_remove).click();
+  assert.equal(p.el.byClass('glim-nc-conn').length, 0);
+  await settle();
+  assert.equal(p.el.byClass('glim-nc-conn').length, 1);
+  assert.deepEqual(p.saved, [[false, en.nc_not_saved]]);
+});
+
+test("an empty list reads as GlimStone's empty state over the foot with Add", async () => {
+  const p = mounted([]);
+  await settle();
+  const root = p.el.children[0];
+  assert.deepEqual(root.children.map((n) => n.className), ['glim-nc-empty', 'glim-nc-foot']);
+  assert.equal(root.byClass('glim-nc-empty-title')[0].text, en.nc_empty);
+  assert.equal(root.byClass('glim-nc-foot')[0].children[0], p.el.byClass('glim-nc-add')[0]);
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  assert.match(css, /\.glim-nc-empty \{ padding: 24px; text-align: center; \}/);
+  assert.match(css, /\.glim-nc-foot \{ display: flex; flex-wrap: wrap; justify-content: flex-end;/);
 });
 
 test('the window buttons wear their glyphs before their words', async () => {
@@ -521,13 +636,20 @@ test('a mark at rest keeps its colours, Matrix aside, and a field keeps its cont
   assert.match(css, /\.glim-nc-ctl \{ display: flex; justify-content: flex-end;/);
 });
 
-test("a connection row follows GlimStone 4.8.1: the tile the row's height, buttons a surface off the well, the badge a size below them", () => {
+test("a connection row follows GlimStone 4.8.1: the tile the row's height, buttons a surface off the well that a test's outcome colours over", () => {
   const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
   assert.match(css, /\.glim-nc-conn \{[^}]*display: flex;[^}]*overflow: hidden;[^}]*background: var\(--nc-sub\)/);
   assert.match(css, /\.glim-nc-conn-tile \{[^}]*width: 5\.5rem;[^}]*background-color: var\(--nc-tile, var\(--nc-accent\)\)/);
-  assert.match(css, /html\.tt-popups-on \.glim-nc \.glim-nc-conn-actions \.glim-nc-btn:not\(:hover\):not\(:focus-visible\) \{ background: var\(--nc-btn\) !important; \}/);
-  assert.match(css, /\.glim-nc-badge \{[^}]*height: 1\.5rem;/);
+  assert.match(css, /html\.tt-popups-on \.glim-nc \.glim-nc-conn-actions \.glim-nc-btn:not\(:hover, :focus-visible, \.glim-nc-tone-ok, \.glim-nc-tone-bad\) \{ background: var\(--nc-btn\) !important; \}/);
   assert.match(css, /\.glim-nc-conn-foot \{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-end/);
+});
+
+test('a row follows GlimStone 4.9.2: the switch keeps its distance from the buttons, and a hovered button fills with the accent', () => {
+  const css = fs.readFileSync(path.join(PLUGIN, 'styles', 'notify-card.css'), 'utf8');
+  const layer = css.slice(css.indexOf('@layer glim-notify-card'));
+  assert.match(layer, /\.glim-nc-conn-actions > input\.glim-nc-sw:not\(:last-child\) \{ margin-inline-end: 12px !important; \}/);
+  assert.match(layer, /\.glim-nc-conn-actions button\.glim-nc-btn:not\(:disabled, \.glim-nc-tone-ok, \.glim-nc-tone-bad\):is\(:hover, :focus-visible\) \{\s*background: var\(--nc-accent\) !important; color: var\(--nc-accent-ink\) !important;/);
+  assert.doesNotMatch(css, /glim-nc-badge/, 'the switch speaks for itself');
 });
 
 test('every string the card asks for is in every language', () => {
@@ -553,6 +675,7 @@ test("the window's test shows its outcome on its button and at the foot's start,
   assert.ok(test.className.includes('glim-nc-tone-bad'));
   assert.equal(test.attrs.title, en.nc_test_failed + ': ' + en.nc_fail_timeout);
   assert.equal(test.textContent, en.nc_test, 'its words stay');
+  assert.match(test.children[0].html, /d="M11\.957 13\.716/, 'a cross for its glyph');
   const start = p.win().byClass('glim-nc-win-start')[0];
   assert.equal(start.textContent, en.nc_test_failed + ': ' + en.nc_fail_timeout);
   p.doc.body.byClass('glim-nc-scrim')[0].click();

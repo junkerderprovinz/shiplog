@@ -238,7 +238,6 @@
   "nc_name": "Nome",
   "nc_name_hint": "Compare sopra il canale e nel registro quando un messaggio non arriva.",
   "nc_saved": "Salvato",
-  "nc_use": "Invia qui",
   "nc_address": "Indirizzo",
   "nc_token": "Token",
   "nc_token_hint": "Lascialo vuoto se l'indirizzo ne contiene già uno.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Non è stato possibile salvare la chiave",
   "nc_edit": "Modifica",
   "nc_edit_title": "Modifica il canale",
-  "nc_on_state": "Attivo",
-  "nc_off": "Disattivo"
+  "nc_off": "Disattivato"
 }

@@ -238,7 +238,6 @@
   "nc_name": "Ad",
   "nc_name_hint": "Bir mesaj ulaşmadığında kanalın üstünde ve günlükte gösterilir.",
   "nc_saved": "Kaydedildi",
-  "nc_use": "Buraya gönder",
   "nc_address": "Adres",
   "nc_token": "Belirteç",
   "nc_token_hint": "Adres zaten bir tane içeriyorsa boş bırak.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Anahtar kaydedilemedi",
   "nc_edit": "Düzenle",
   "nc_edit_title": "Kanalı düzenle",
-  "nc_on_state": "Açık",
   "nc_off": "Kapalı"
 }

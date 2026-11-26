@@ -1,10 +1,11 @@
 /* The notification channels of a plugin's settings page, for a page without
  * a framework. Every channel is a row as GlimStone's ConnectionRow draws one:
- * its mark lit on a tile, its name, what it sends and where, then Test, Edit
- * and Remove. A channel is added in a picker window, as GlimStone's
- * PickerWindow draws one: the services as tiles with their marks under a
- * search, and once one is picked its fields in the same window. Edit opens
- * those fields for a channel that is there.
+ * its mark lit on a tile, its name, where it sends and what, then its switch,
+ * Test, Edit and Remove, as GlimStone's NotifyCard lines them up. A channel
+ * is added in a picker window, as GlimStone's PickerWindow draws one: the
+ * services as tiles with their marks under a search, and once one is picked
+ * its fields in the same window. Edit opens those fields for a channel that
+ * is there.
  * The channels keep to the kit's notify format, so the same file serves every plugin
  * that keeps its channels that way.
  *
@@ -13,8 +14,8 @@
  * masked) and tests one channel. opts carries the strings (t, the nc_ keys),
  * the language, the kinds the plugin offers, the marks (notify-marks.js), the
  * host's class for buttons, and saved(ok, text) for the page's saved line.
- * A removal is saved at once, a new or edited channel when its window is
- * saved. A secret the service keeps is never shown: its field stays empty and says
+ * A switch or a removal is saved at once, a new or edited channel when its
+ * window is saved. A secret the service keeps is never shown: its field stays empty and says
  * so, and an empty field keeps it. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -251,7 +252,6 @@
     if (f.type === 'headers') return Object.keys(v || {}).sort().map(function (k) { return k + ': ' + v[k]; }).join('\n');
     if (f.type === 'number') return v == null || v === '' ? (f.dflt == null ? '' : String(f.dflt)) : String(v);
     if (f.type === 'choice') return v || f.dflt;
-    if (f.type === 'onoff') return v === false ? 'off' : 'on';
     return v == null ? '' : String(v);
   }
 
@@ -262,7 +262,6 @@
     if (f.type === 'secret') return s.trim() === '' && before === MASK ? MASK : s.trim();
     if (f.type === 'words') return s.split(/\s+/).filter(Boolean);
     if (f.type === 'number') { var n = parseInt(s, 10); return isNaN(n) ? undefined : n; }
-    if (f.type === 'onoff') return s === 'on';
     if (f.type === 'headers') {
       var out = {};
       s.split('\n').forEach(function (l) {
@@ -274,13 +273,11 @@
     return f.type === 'lines' ? s : s.trim();
   }
 
-  var ONOFF = [['on', 'nc_on_state'], ['off', 'nc_off']];
-
-  // The fields a channel shows, its name, whether it is used and what it sends first.
+  // The fields a channel shows, its name and what it sends first. Whether it
+  // sends at all is the switch on its row.
   function fieldsOf(c, t) {
     return [
       { path: 'name', label: 'nc_name', hint: 'nc_name_hint', ph: name(c.kind, t) },
-      { path: 'enabled', label: 'nc_use', type: 'onoff', options: ONOFF },
       { path: 'on', label: 'nc_on', type: 'choice', options: [['always', 'nc_on_always'], ['failure', 'nc_on_failure']], dflt: 'always' }
     ].concat((FIELDS[c.kind] || []).filter(function (f) {
       return !(f.unless && String(get(c, f.unless[0]) || '').toUpperCase() === f.unless[1]);
@@ -298,6 +295,14 @@
     var url = get(c, c.kind + '.url') || get(c, c.kind + '.homeserver');
     if (!url) return '';
     try { return new URL(url).hostname; } catch (e) { return ''; }
+  }
+
+  // A row's quiet line as GlimStone's notifyRowStatus has it: where the
+  // channel sends, then how its last test went, else that it is off or what
+  // it sends.
+  function rowStatus(c, test, t) {
+    var said = test ? test.text : !c.enabled ? t.nc_off : c.on === 'failure' ? t.nc_on_failure : t.nc_on_always;
+    return [where(c), said].filter(Boolean).join(' · ');
   }
 
   /* GlimStone's one floating bubble for an (i): a body child placed from the
@@ -356,7 +361,7 @@
     var t = opts.t || {}, lang = opts.lang || 'en', kinds = opts.kinds || Object.keys(FIELDS);
     var marks = (opts.marks && opts.marks.marks) || {}, lit = (opts.marks && opts.marks.tiles) || {};
     var cls = Object.assign({ button: '' }, opts.classes);
-    var list = [], problems = {}, addBtn = null, edits = {};
+    var list = [], problems = {}, addBtn = null, edits = {}, switches = {}, views = {}, tests = {}, switching = false;
     wireBubble(doc);
 
     function h(tag, attrs, kids) {
@@ -406,20 +411,63 @@
       return null;
     }
 
-    function save() {
+    function shake(b) {
+      b.classList.remove('glim-nc-shake');
+      void b.offsetWidth;
+      b.classList.add('glim-nc-shake');
+    }
+
+    // The page's list is saved as it stands. A list the service refuses
+    // gives way to the one before, with the reasons under their rows.
+    function save(before, refused) {
       var sent = JSON.parse(JSON.stringify(list));
-      adapter.save(sent).then(function (saved) {
+      return adapter.save(sent).then(function (saved) {
         problems = {};
-        // The fields keep what is typed in them, so nothing jumps under the
-        // cursor. The list is the one the service kept.
         list = saved;
         if (opts.saved) opts.saved(true, t.nc_saved_line || '');
       }, function (e) {
         problems = {};
         ((e && e.problems) || []).forEach(function (p) { problems[(sent[p.index] || {}).id] = p; });
+        list = before;
         if (opts.saved) opts.saved(false, (e && e.code) === 'invalid' ? t.nc_not_saved + ': ' + t.nc_fail_invalid : t.nc_not_saved);
         draw();
+        if (refused) refused();
       });
+    }
+
+    /* A row's switch saves at once, as GlimStone's setEnabled does: the row
+     * turns at the press, and a list the service refuses turns it back, and
+     * the switch shakes. One switch saves at a time. */
+    function setEnabled(id, on) {
+      if (switching) {
+        switches[id].checked = !on;
+        return;
+      }
+      switching = true;
+      var before = list;
+      list = list.map(function (o) { return o.id === id ? Object.assign({}, o, { enabled: on }) : o; });
+      draw();
+      switches[id].focus();
+      save(before, function () {
+        var back = switches[id];
+        if (!back) return;
+        back.focus();
+        shake(back);
+      }).then(function () { switching = false; });
+    }
+
+    // A test button wears its outcome as GlimStone's connection test does:
+    // the outcome's colour, a check or a cross for its glyph and the
+    // verdict as its title, its words as they were.
+    function face(b, glyph, r) {
+      b.classList.remove('glim-nc-tone-ok', 'glim-nc-tone-bad');
+      b.removeAttribute('title');
+      if (r) {
+        b.classList.add(r.ok ? 'glim-nc-tone-ok' : 'glim-nc-tone-bad');
+        b.setAttribute('title', r.text);
+      }
+      var g = b.querySelector('.glim-nc-g');
+      if (g) g.innerHTML = GLYPHS[r ? (r.ok ? 'check' : 'close') : glyph];
     }
 
     /* One field of the channel that of() returns, as the window draws it: a
@@ -429,7 +477,7 @@
       var c = of();
       var id = 'glim-nc-win-' + f.path.replace(/\./g, '-');
       var v = get(c, f.path), input;
-      var segs = f.type === 'choice' || f.type === 'onoff';
+      var segs = f.type === 'choice';
       function take(text) {
         var ch = of();
         if (!ch) return;
@@ -471,43 +519,38 @@
       return h('div', { class: 'glim-nc-row' }, [h('span', { class: 'glim-nc-lbl' }, [lbl, info(t[f.hint])]), h('div', { class: 'glim-nc-ctl' }, [input])]);
     }
 
-    /* The test of a channel, its button and the line that says how it went.
-     * The button shows it too, as GlimStone's connection test and window
-     * actions do: busy while it runs, then in the colour of the outcome with
-     * the outcome as its title, its words as they were. In the window's foot
-     * the line stands at the foot's start. */
-    function tester(of, make, inFoot) {
-      var foot = inFoot ? ' glim-nc-win-start' : '';
-      var res = h('span', { class: 'glim-nc-res' + foot, role: 'status' });
-      var b = make(t.nc_test, 'test', '', function () {
+    /* The test of a channel and its button, busy while it runs and then
+     * wearing the outcome. said(r, b) hears the outcome, null as it starts. */
+    function tester(of, make, glyph, said) {
+      var b = make(t.nc_test, glyph, '', function () {
         var ch = of();
         if (!ch) return;
         function done(ok, text) {
-          res.className = 'glim-nc-res ' + (ok ? 'glim-nc-ok' : 'glim-nc-bad') + foot;
-          res.textContent = text;
+          var r = { ok: ok, text: text };
           b.removeAttribute('aria-busy');
           b.disabled = false;
-          b.classList.add(ok ? 'glim-nc-tone-ok' : 'glim-nc-tone-bad');
-          b.setAttribute('title', text);
+          face(b, glyph, r);
+          if (!ok) shake(b);
+          said(r, b);
         }
-        res.className = 'glim-nc-res glim-nc-run' + foot;
-        res.textContent = t.nc_testing;
-        b.classList.remove('glim-nc-tone-ok', 'glim-nc-tone-bad');
-        b.removeAttribute('title');
+        face(b, glyph, null);
         b.setAttribute('aria-busy', 'true');
         b.disabled = true;
+        said(null, b);
         adapter.test(JSON.parse(JSON.stringify(ch))).then(function (r) {
           done(r.ok, r.ok ? t.nc_test_ok : t.nc_test_failed + ': ' + fail(t, r.code));
         }, function () {
           done(false, t.nc_test_failed);
         });
       });
-      return { button: b, result: res };
+      return b;
     }
 
     /* A channel as GlimStone's ConnectionRow: the tile lit in the service's
-     * colours, the name with a badge when it is off, one line on what it
-     * sends and where, and Test, Edit and Remove at the end. */
+     * colours, the name, one line on where it sends and what, and at the end
+     * its switch, then Test, Edit and Remove. The switch says whether it
+     * sends, so the row needs no badge for that. A test's verdict takes the
+     * line's second half until the next test. */
     function channel(c) {
       var title = (c.name || '').trim() || name(c.kind, t);
       var of = function () { return byId(c.id); };
@@ -515,29 +558,41 @@
       var l = lit[c.kind];
       if (l) tile.setAttribute('style', '--nc-tile:' + l.tile + ';--nc-tile-ink:' + l.ink);
       var head = h('div', { class: 'glim-nc-conn-head' }, [
-        h('span', { class: 'glim-nc-conn-title' }, [h('span', { class: 'glim-nc-conn-name', text: title }), info(t[HINTS[c.kind]])]),
-        c.enabled ? null : h('span', { class: 'glim-nc-badges' }, [h('span', { class: 'glim-nc-badge', text: t.nc_off })])
+        h('span', { class: 'glim-nc-conn-title' }, [h('span', { class: 'glim-nc-conn-name', text: title }), info(t[HINTS[c.kind]])])
       ]);
-      var host = where(c);
-      var test = tester(of, function (text, glyph, extra, onclick) { return button(text, 'check', extra, onclick); });
-      test.button.disabled = !c.enabled;
+      var status = h('p', { class: 'glim-nc-conn-status', text: rowStatus(c, tests[c.id], t) });
+      var test = tester(of, button, 'check', function (r, b) {
+        if (r) tests[c.id] = r;
+        else delete tests[c.id];
+        var now = views[c.id], ch = byId(c.id);
+        if (!now || !ch) return;
+        now.status.textContent = rowStatus(ch, r, t);
+        if (now.test !== b) face(now.test, 'check', r);
+      });
+      if (tests[c.id]) face(test, 'check', tests[c.id]);
       var about = h('div', { class: 'glim-nc-conn-about' }, [
-        h('p', { class: 'glim-nc-conn-status', text: (c.on === 'failure' ? t.nc_on_failure : t.nc_on_always) + (host ? ' · ' + host : '') }),
-        problems[c.id] ? h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }) : null,
-        test.result
+        status,
+        problems[c.id] ? h('p', { class: 'glim-nc-err', role: 'alert', text: fail(t, problems[c.id].code) }) : null
       ]);
+      var sw = h('input', { type: 'checkbox', class: 'glim-nc-sw', role: 'switch', 'aria-label': title });
+      sw.checked = !!c.enabled;
+      sw.addEventListener('change', function () { setEnabled(c.id, sw.checked); });
+      switches[c.id] = sw;
       var edit = button(t.nc_edit, 'edit', '', function () { picker(of()); });
       edit.setAttribute('aria-haspopup', 'dialog');
       edits[c.id] = edit;
       var remove = button(t.nc_remove, 'remove', '', function () {
+        var before = list;
         list = list.filter(function (o) { return o.id !== c.id; });
+        delete tests[c.id];
         draw();
-        save();
+        save(before);
       });
-      [[test.button, 'test'], [edit, 'edit'], [remove, 'remove']].forEach(function (p) { p[0].setAttribute('data-connection', p[1]); });
+      [[sw, 'switch'], [test, 'test'], [edit, 'edit'], [remove, 'remove']].forEach(function (p) { p[0].setAttribute('data-connection', p[1]); });
+      views[c.id] = { status: status, test: test };
       return h('div', { class: 'glim-nc-conn', role: 'group', 'aria-label': title, 'data-kind': c.kind }, [
         tile,
-        h('div', { class: 'glim-nc-conn-main' }, [head, h('div', { class: 'glim-nc-conn-foot' }, [about, h('span', { class: 'glim-nc-conn-actions' }, [test.button, edit, remove])])])
+        h('div', { class: 'glim-nc-conn-main' }, [head, h('div', { class: 'glim-nc-conn-foot' }, [about, h('span', { class: 'glim-nc-conn-actions' }, [sw, test, edit, remove])])])
       ]);
     }
 
@@ -659,7 +714,11 @@
         box.classList.add('glim-nc-win-form');
         var of = function () { return draft; };
         var err = h('p', { class: 'glim-nc-err', role: 'alert' });
-        var test = tester(of, winButton, true);
+        var res = h('span', { class: 'glim-nc-res glim-nc-win-start', role: 'status' });
+        var test = tester(of, winButton, 'test', function (r) {
+          res.className = 'glim-nc-res glim-nc-win-start ' + (r ? (r.ok ? 'glim-nc-ok' : 'glim-nc-bad') : 'glim-nc-run');
+          res.textContent = r ? r.text : t.nc_testing;
+        });
         function fill() {
           body.className = 'glim-nc-win-body';
           body.textContent = '';
@@ -704,9 +763,9 @@
             err.textContent = t.nc_not_saved + ': ' + fail(t, mine ? mine.code : (e && e.code) || 'engine');
           });
         });
-        act.appendChild(test.result);
+        act.appendChild(res);
         act.appendChild(h('div', { class: 'glim-nc-win-actions' }, [
-          winButton(t.nc_cancel, 'close', '', close), editing ? null : winButton(t.nc_back, 'back', '', tiles), test.button, keep
+          winButton(t.nc_cancel, 'close', '', close), editing ? null : winButton(t.nc_back, 'back', '', tiles), test, keep
         ]));
         var first = body.querySelector('input, textarea');
         if (first) first.focus();
@@ -745,12 +804,14 @@
     function draw() {
       el.textContent = '';
       var root = h('div', { class: 'glim-nc' });
-      if (!list.length) root.appendChild(h('p', { class: 'glim-nc-sub', text: t.nc_empty }));
+      if (!list.length) root.appendChild(h('div', { class: 'glim-nc-empty' }, [h('p', { class: 'glim-nc-empty-title', text: t.nc_empty })]));
       edits = {};
+      switches = {};
+      views = {};
       list.forEach(function (c) { root.appendChild(channel(c)); });
       addBtn = button(t.nc_add, 'add', 'glim-nc-add', function () { picker(); });
       addBtn.setAttribute('aria-haspopup', 'dialog');
-      root.appendChild(h('div', { class: 'glim-nc-addrow' }, [addBtn]));
+      root.appendChild(h('div', { class: 'glim-nc-foot' }, [addBtn]));
       el.appendChild(root);
     }
 
@@ -763,5 +824,5 @@
     return { list: function () { return list; }, draw: draw, pick: picker };
   }
 
-  return { MASK: MASK, CATALOG: CATALOG, FIELDS: FIELDS, catalogPicker: catalogPicker, newChannel: newChannel, sections: sections, matches: matches, pickKey: pickKey, shown: shown, taken: taken, name: name, get: get, set: set, mount: mount };
+  return { MASK: MASK, CATALOG: CATALOG, FIELDS: FIELDS, catalogPicker: catalogPicker, newChannel: newChannel, sections: sections, matches: matches, pickKey: pickKey, shown: shown, taken: taken, name: name, get: get, set: set, rowStatus: rowStatus, mount: mount };
 });

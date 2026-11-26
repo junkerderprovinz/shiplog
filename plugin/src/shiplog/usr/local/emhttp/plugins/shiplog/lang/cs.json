@@ -240,7 +240,6 @@
   "nc_name": "Název",
   "nc_name_hint": "Zobrazí se nad kanálem a v logu, když zpráva nedorazí.",
   "nc_saved": "Uloženo",
-  "nc_use": "Posílat sem",
   "nc_address": "Adresa",
   "nc_token": "Token",
   "nc_token_hint": "Nechte prázdné, pokud adresa už token obsahuje.",
@@ -343,6 +342,5 @@
   "s_or_err_save_failed": "Klíč se nepodařilo uložit",
   "nc_edit": "Upravit",
   "nc_edit_title": "Upravit kanál",
-  "nc_on_state": "Zapnuto",
   "nc_off": "Vypnuto"
 }

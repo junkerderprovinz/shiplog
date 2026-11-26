@@ -238,7 +238,6 @@
   "nc_name": "Name",
   "nc_name_hint": "Shown above the channel and in the log when a message does not get through.",
   "nc_saved": "Saved",
-  "nc_use": "Send here",
   "nc_address": "Address",
   "nc_token": "Token",
   "nc_token_hint": "Leave it empty when the address already carries one.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "The key could not be saved",
   "nc_edit": "Edit",
   "nc_edit_title": "Edit the channel",
-  "nc_on_state": "On",
-  "nc_off": "Off"
+  "nc_off": "Switched off"
 }

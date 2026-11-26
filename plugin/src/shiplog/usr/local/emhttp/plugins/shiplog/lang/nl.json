@@ -238,7 +238,6 @@
   "nc_name": "Naam",
   "nc_name_hint": "Staat boven het kanaal en in het log als een bericht niet aankomt.",
   "nc_saved": "Opgeslagen",
-  "nc_use": "Hierheen sturen",
   "nc_address": "Adres",
   "nc_token": "Token",
   "nc_token_hint": "Laat leeg als het adres er al een bevat.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "De sleutel kon niet worden opgeslagen",
   "nc_edit": "Bewerken",
   "nc_edit_title": "Kanaal bewerken",
-  "nc_on_state": "Aan",
-  "nc_off": "Uit"
+  "nc_off": "Uitgeschakeld"
 }

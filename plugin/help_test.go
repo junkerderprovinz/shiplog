@@ -73,13 +73,13 @@ func TestTheComponentsCardNamesTheGlimStoneItPorts(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range cfg.Targets {
-		if target.Version != "4.9.0" {
-			t.Errorf("glimstone.json pins %s, want 4.9.0", target.Version)
+		if target.Version != "4.9.2" {
+			t.Errorf("glimstone.json pins %s, want 4.9.2", target.Version)
 		}
 	}
 	page := read(t, "shiplog.page")
-	if !strings.Contains(page, "$slGlimstoneVer = '4.9.0';") {
-		t.Error("the Components card does not name GlimStone 4.9.0")
+	if !strings.Contains(page, "$slGlimstoneVer = '4.9.2';") {
+		t.Error("the Components card does not name GlimStone 4.9.2")
 	}
 	card := regexp.MustCompile(`(?s)aria-labelledby="sl-h-components">(.*?)</section>`).FindStringSubmatch(page)
 	if card == nil || !strings.Contains(card[1], `<span>GlimStone</span><?=$slInfo($L['s_cc_design'])?>`) ||

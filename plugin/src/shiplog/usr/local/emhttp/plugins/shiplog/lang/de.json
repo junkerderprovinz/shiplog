@@ -238,7 +238,6 @@
   "nc_name": "Name",
   "nc_name_hint": "Steht über dem Kanal und im Log, wenn eine Nachricht nicht ankommt.",
   "nc_saved": "Gespeichert",
-  "nc_use": "Hierhin senden",
   "nc_address": "Adresse",
   "nc_token": "Token",
   "nc_token_hint": "Leer lassen, wenn die Adresse schon einen enthält.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Der Schlüssel ließ sich nicht speichern",
   "nc_edit": "Bearbeiten",
   "nc_edit_title": "Kanal bearbeiten",
-  "nc_on_state": "An",
-  "nc_off": "Aus"
+  "nc_off": "Ausgeschaltet"
 }

@@ -238,7 +238,6 @@
   "nc_name": "Namn",
   "nc_name_hint": "Visas ovanför kanalen och i loggen när ett meddelande inte kommer fram.",
   "nc_saved": "Sparat",
-  "nc_use": "Skicka hit",
   "nc_address": "Adress",
   "nc_token": "Token",
   "nc_token_hint": "Lämna tomt om adressen redan innehåller en.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Nyckeln gick inte att spara",
   "nc_edit": "Redigera",
   "nc_edit_title": "Redigera kanalen",
-  "nc_on_state": "På",
-  "nc_off": "Av"
+  "nc_off": "Avstängd"
 }

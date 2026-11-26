@@ -19,6 +19,9 @@
   --nc-r-ctl: 4px;
   --nc-accent: var(--hover-button-background, #e22828);
   --nc-accent-ink: var(--hover-button-text-color, #fff);
+  --nc-track: var(--checkbox-color, #8d8d8d);
+  --nc-on: var(--link-text-color, #486dba);
+  --nc-on-ink: #fff;
   /* The marks drawn in black or navy are lifted on the dark grounds. */
   --brand-discord-0: #6a76f3;
   --brand-ntfy-0: #38907e;
@@ -55,7 +58,10 @@ html.tt-popups-on .glim-nc {
   --nc-accent-ink: var(--tt-accent-text, #161616);
 }
 .glim-nc *, .glim-nc *::before, .glim-nc *::after { box-sizing: border-box; }
-.glim-nc .glim-nc-sub { margin: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
+/* GlimStone's empty state inside a card, which is its surface: one quiet
+   line in the middle. */
+.glim-nc-empty { padding: 24px; text-align: center; }
+.glim-nc .glim-nc-empty-title { margin: 0; color: var(--nc-dim); font-size: 14px; line-height: 20px; }
 
 /* A channel as GlimStone's ConnectionRow: a flat group on the well's surface
    with the service's mark lit on a tile the row's whole height, in the
@@ -70,23 +76,32 @@ html.tt-popups-on .glim-nc {
 }
 .glim-nc .glim-nc-conn-mark { width: 2.5rem; height: 2.5rem; }
 .glim-nc-conn-main { display: flex; flex: 1 1 0; flex-direction: column; gap: 6px; min-width: 0; padding: 12px 16px; }
-/* The name keeps its line and the badge moves under it before it ends in an
-   ellipsis, and the buttons do the same under what the channel sends. */
+/* The buttons move under what the channel sends before the line ends in an
+   ellipsis. */
 .glim-nc-conn-head, .glim-nc-conn-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; min-width: 0; }
 .glim-nc-conn-head { gap: 4px 12px; }
 .glim-nc-conn-foot { gap: 8px 16px; }
 .glim-nc-conn-title { display: inline-flex; flex: 1 1 12rem; align-items: center; gap: 6px; min-width: 0; }
 .glim-nc-conn-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.glim-nc-badges, .glim-nc-conn-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
-/* A badge stays a size below the buttons, so it reads as a state and not as
-   one more thing to press, halfway between the well and the buttons' surface. */
-.glim-nc-badge {
-  display: inline-flex; align-items: center; height: 1.5rem; padding: 0 .625rem; border-radius: 9999px;
-  background: color-mix(in srgb, var(--nc-sub), var(--nc-btn)); color: var(--nc-dim); font-size: 12px; font-weight: 500;
+.glim-nc-conn-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+/* The switch, drawn on the checkbox itself as on the fortress card. The theme
+   plugin draws its own on the same box. It is a setting, not one more button,
+   so it keeps its distance from them. */
+.glim-nc input.glim-nc-sw {
+  -webkit-appearance: none; appearance: none; position: relative; flex: none; vertical-align: middle;
+  width: 44px; height: 24px; margin: 0; padding: 0; border: none; border-radius: 9999px;
+  background: var(--nc-track); cursor: pointer; transition: background-color .12s;
 }
+.glim-nc input.glim-nc-sw::before {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  border-radius: 9999px; background: #fff; transition: left .15s;
+}
+.glim-nc input.glim-nc-sw:checked { background: var(--nc-on); }
+.glim-nc input.glim-nc-sw:checked::before { left: 23px; background: var(--nc-on-ink); }
+.glim-nc input.glim-nc-sw:focus-visible { outline: 2px solid var(--nc-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .glim-nc input.glim-nc-sw, .glim-nc input.glim-nc-sw::before { transition: none; } }
 .glim-nc-conn-about { display: flex; flex: 1 1 12rem; flex-direction: column; gap: 2px; min-width: 0; color: var(--nc-dim); font-size: 13px; text-align: start; }
 .glim-nc .glim-nc-conn-status { margin: 0; overflow-wrap: anywhere; }
-.glim-nc-conn-about .glim-nc-res:empty { display: none; }
 @container glim-nc-conn (max-width: 30rem) {
   .glim-nc-conn-tile { width: 4.5rem; }
   .glim-nc .glim-nc-conn-mark { width: 2rem; height: 2rem; }
@@ -113,7 +128,18 @@ html.tt-popups-on .glim-nc {
 .glim-nc-run { color: var(--nc-dim); }
 .glim-nc-ok { color: var(--nc-ok); }
 .glim-nc-bad { color: var(--nc-err); }
-.glim-nc-addrow { display: flex; justify-content: flex-end; }
+/* The card's foot, a step further from the rows than they are from each other. */
+.glim-nc-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+/* A test that failed shakes its button once, and a switch the service turned
+   back shakes too. */
+@keyframes glim-nc-shake {
+  20%, 60% { transform: translateX(calc(var(--tt-motion-shake-dist, 4px) * -1)); }
+  40%, 80% { transform: translateX(var(--tt-motion-shake-dist, 4px)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .glim-nc-shake { animation: glim-nc-shake var(--tt-motion-shake-dur, 360ms) ease-in-out; }
+}
 
 /* The marks: the service's own drawing in its own colours, at one size. */
 .glim-nc-mark { display: inline-flex; flex: none; width: 20px; height: 20px; line-height: 0; }
@@ -418,13 +444,19 @@ html.tt-popups-on .glim-nc-wins button.glim-nc-win-btn:not(.glim-nc-key, .glim-n
 /* The theme plugin's sheets reach every button, field and switch on a page
    with !important, its buttons a ground the row already wears. An important
    declaration in a cascade layer outranks every unlayered one, so what the
-   card keeps sits here: no line anywhere, and a row's buttons a surface off
-   the well, as GlimStone 4.8.1 sets them. The ground of a resting button
-   only, since the theme plugin lights it under the pointer and draws its
-   glyph as a background image. A test that ran wears its outcome. */
+   card keeps sits here: no line anywhere, a row's buttons a surface off the
+   well, as GlimStone 4.8.1 sets them, and the switch its distance from them.
+   The theme plugin's hover ground would vanish into the row, so under the
+   pointer a row's button fills with the accent, as GlimStone 4.9.2 has it.
+   A test that ran wears its outcome. */
 @layer glim-notify-card {
   .glim-nc button.glim-nc-btn { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: none !important; }
-  html.tt-popups-on .glim-nc .glim-nc-conn-actions .glim-nc-btn:not(:hover):not(:focus-visible) { background: var(--nc-btn) !important; }
+  .glim-nc input.glim-nc-sw { margin: 0 !important; }
+  .glim-nc .glim-nc-conn-actions > input.glim-nc-sw:not(:last-child) { margin-inline-end: 12px !important; }
+  html.tt-popups-on .glim-nc .glim-nc-conn-actions .glim-nc-btn:not(:hover, :focus-visible, .glim-nc-tone-ok, .glim-nc-tone-bad) { background: var(--nc-btn) !important; }
+  html.tt-popups-on .glim-nc .glim-nc-conn-actions button.glim-nc-btn:not(:disabled, .glim-nc-tone-ok, .glim-nc-tone-bad):is(:hover, :focus-visible) {
+    background: var(--nc-accent) !important; color: var(--nc-accent-ink) !important;
+  }
   .glim-nc .glim-nc-conn-actions button.glim-nc-btn:is(.glim-nc-tone-ok, .glim-nc-tone-bad) { color: #161616 !important; }
   .glim-nc .glim-nc-conn-actions button.glim-nc-btn.glim-nc-tone-ok { background: var(--nc-ok) !important; }
   .glim-nc .glim-nc-conn-actions button.glim-nc-btn.glim-nc-tone-bad { background: var(--nc-err) !important; }

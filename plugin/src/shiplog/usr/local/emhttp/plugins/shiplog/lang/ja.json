@@ -238,7 +238,6 @@
   "nc_name": "名前",
   "nc_name_hint": "メッセージが届かなかったとき、チャンネルの上とログに表示されます。",
   "nc_saved": "保存済み",
-  "nc_use": "ここへ送る",
   "nc_address": "アドレス",
   "nc_token": "トークン",
   "nc_token_hint": "アドレスにすでに含まれている場合は空のままにします。",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "キーを保存できませんでした",
   "nc_edit": "編集",
   "nc_edit_title": "チャンネルを編集",
-  "nc_on_state": "オン",
   "nc_off": "オフ"
 }

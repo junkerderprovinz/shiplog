@@ -57,7 +57,7 @@ if ($lang !== 'en' && is_file("$langdir/$lang.json")) {
 
 $slVer = '';
 if (preg_match('/<!ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents('/var/log/plugins/shiplog.plg'), $mv)) $slVer = $mv[1];
-$slGlimstoneVer = '4.9.0';
+$slGlimstoneVer = '4.9.2';
 $U = include '/usr/local/emhttp/plugins/shiplog/include/update.php';
 $slUpdate = $U();
 

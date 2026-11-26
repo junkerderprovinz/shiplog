@@ -238,7 +238,6 @@
   "nc_name": "Nombre",
   "nc_name_hint": "Se muestra sobre el canal y en el registro cuando un mensaje no llega.",
   "nc_saved": "Guardado",
-  "nc_use": "Enviar aquí",
   "nc_address": "Dirección",
   "nc_token": "Token",
   "nc_token_hint": "Déjalo vacío si la dirección ya lleva uno.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "No se ha podido guardar la clave",
   "nc_edit": "Editar",
   "nc_edit_title": "Editar el canal",
-  "nc_on_state": "Activado",
   "nc_off": "Desactivado"
 }

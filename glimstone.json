@@ -3,7 +3,7 @@
     {
       "name": "plugin",
       "mode": "port",
-      "version": "4.9.0",
+      "version": "4.9.2",
       "versionFile": "plugin/src/shiplog/usr/local/emhttp/plugins/shiplog/shiplog.page"
     },
     {

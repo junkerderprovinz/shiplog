@@ -238,7 +238,6 @@
   "nc_name": "Navn",
   "nc_name_hint": "Vises over kanalen og i loggen når en melding ikke kommer fram.",
   "nc_saved": "Lagret",
-  "nc_use": "Send hit",
   "nc_address": "Adresse",
   "nc_token": "Token",
   "nc_token_hint": "La det stå tomt når adressen allerede har et.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Nøkkelen kunne ikke lagres",
   "nc_edit": "Rediger",
   "nc_edit_title": "Rediger kanalen",
-  "nc_on_state": "På",
-  "nc_off": "Av"
+  "nc_off": "Slått av"
 }

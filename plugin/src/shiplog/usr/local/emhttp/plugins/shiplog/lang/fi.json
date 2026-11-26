@@ -238,7 +238,6 @@
   "nc_name": "Nimi",
   "nc_name_hint": "Näkyy kanavan yläpuolella ja lokissa, kun viesti ei mene perille.",
   "nc_saved": "Tallennettu",
-  "nc_use": "Lähetä tänne",
   "nc_address": "Osoite",
   "nc_token": "Tunniste",
   "nc_token_hint": "Jätä tyhjäksi, jos osoitteessa on jo tunniste.",
@@ -341,6 +340,5 @@
   "s_or_err_save_failed": "Avainta ei voitu tallentaa",
   "nc_edit": "Muokkaa",
   "nc_edit_title": "Muokkaa kanavaa",
-  "nc_on_state": "Päällä",
-  "nc_off": "Pois"
+  "nc_off": "Pois päältä"
 }
