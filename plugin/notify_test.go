@@ -161,7 +161,7 @@ func TestTheNotificationsTabSaysWhenTollRollSendsThem(t *testing.T) {
 		t.Error("status.php does not pass the hub's state on")
 	}
 	js := read(t, filepath.Join("scripts", "settings.js"))
-	if !strings.Contains(js, `status.php?path=notify-hub`) || !strings.Contains(js, `byId("sl-hub-note").hidden = !(d && d.hub === true)`) {
+	if !strings.Contains(js, `status.php?path=notify-hub`) || !strings.Contains(js, `var hub = !!(d && d.hub === true);`) || !strings.Contains(js, `byId("sl-hub-note").hidden = !hub`) {
 		t.Error("settings.js does not show the note from the engine's answer")
 	}
 	files, err := filepath.Glob(filepath.Join(pluginDir, "lang", "*.json"))

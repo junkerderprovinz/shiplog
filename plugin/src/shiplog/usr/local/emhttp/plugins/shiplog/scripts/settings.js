@@ -594,11 +594,16 @@
   loadStatus();
 
   /* While a TollRoll of the fortress takes the messages over, the
-     notifications tab says so above the channels it stands in for. */
+     notifications tab says so above the channels it stands in for and on
+     the update notices, whose grouping it then does its own way. */
   function loadHub() {
     fetch("/plugins/shiplog/server/status.php?path=notify-hub", { headers: { Accept: "application/json" } })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { byId("sl-hub-note").hidden = !(d && d.hub === true); })
+      .then(function (d) {
+        var hub = !!(d && d.hub === true);
+        byId("sl-hub-note").hidden = !hub;
+        byId("sl-notices-hub-note").hidden = !hub;
+      })
       .catch(function () {});
   }
   loadHub();

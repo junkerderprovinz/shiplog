@@ -10,7 +10,7 @@ import (
 
 var noticeKeys = []string{
 	"s_notices", "s_notices_sub", "s_notify_batch", "s_notify_batch_desc", "s_notify_min_risk",
-	"s_notify_min_risk_desc", "s_nmr_all", "s_nmr_medium", "s_nmr_high", "s_nmr_critical",
+	"s_notify_min_risk_desc", "s_nmr_all", "s_nmr_medium", "s_nmr_high", "s_nmr_critical", "s_notices_hub",
 }
 
 func TestEveryLanguageNamesTheUpdateNoticeSettings(t *testing.T) {
@@ -41,8 +41,9 @@ func TestEveryLanguageNamesTheUpdateNoticeSettings(t *testing.T) {
 	}
 }
 
-// Without a saved setting every update gets its own message, as before.
-func TestTheUpdateNoticesStayAsTheyWereUntilChosen(t *testing.T) {
+// Without a saved setting every update gets a message of its own, whatever
+// its risk.
+func TestEveryUpdateGetsItsOwnMessageUntilChosen(t *testing.T) {
 	page := read(t, "shiplog.page")
 	for _, want := range []string{
 		`$notifyBatch = (isset($cfg['NOTIFY_BATCH']) && $cfg['NOTIFY_BATCH'] === 'true');`,
@@ -58,5 +59,18 @@ func TestTheUpdateNoticesStayAsTheyWereUntilChosen(t *testing.T) {
 		if !strings.Contains(rc, want) {
 			t.Errorf("rc.shiplog lacks %q", want)
 		}
+	}
+}
+
+// While TollRoll is the hub it takes these messages, so the card says so,
+// from the same answer that shows the note on the channels card.
+func TestTheNoticesCardSaysWhenTollRollTakesTheMessages(t *testing.T) {
+	page := read(t, "shiplog.page")
+	if !strings.Contains(page, `id="sl-notices-hub-note"`) || !strings.Contains(page, "$L['s_notices_hub']") {
+		t.Error("the notices card has no hub note")
+	}
+	js := read(t, filepath.Join("scripts", "settings.js"))
+	if !strings.Contains(js, `byId("sl-notices-hub-note").hidden = !hub`) {
+		t.Error("settings.js does not show the notices card's hub note from d.hub")
 	}
 }

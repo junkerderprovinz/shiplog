@@ -273,6 +273,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
 
     <section class="sl-card" aria-labelledby="sl-h-notices">
       <h3 class="sl-h"><span id="sl-h-notices"><?=$slE($L['s_notices'])?></span><?=$slInfo($L['s_notices_sub'])?></h3>
+      <p class="sl-hubnote" id="sl-notices-hub-note" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_notices_hub'])?></span></p>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-notify-batch-cb"><?=$slE($L['s_notify_batch'])?></label><?=$slInfo($L['s_notify_batch_desc'])?></div>
         <div class="sl-ctl"><?=$slSwitch('sl-notify-batch', 'NOTIFY_BATCH', $notifyBatch)?></div>
