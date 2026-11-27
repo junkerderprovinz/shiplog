@@ -36,20 +36,20 @@ func TestTheVulnerabilityCheckIsOnUntilSwitchedOff(t *testing.T) {
 }
 
 func TestTheUpdateNoticesAreSingleAndUnfilteredByDefault(t *testing.T) {
-	t.Setenv("NOTIFY_DIGEST", "")
+	t.Setenv("NOTIFY_BATCH", "")
 	t.Setenv("NOTIFY_MIN_RISK", "")
-	if c := Load(); c.NotifyDigest || c.NotifyMinRisk != "" {
-		t.Errorf("digest %v, min risk %q, want off and none", c.NotifyDigest, c.NotifyMinRisk)
+	if c := Load(); c.NotifyBatch || c.NotifyMinRisk != "" {
+		t.Errorf("batch %v, min risk %q, want off and none", c.NotifyBatch, c.NotifyMinRisk)
 	}
 }
 
-func TestLoadReadsTheDigestAndTheMinimumRisk(t *testing.T) {
-	t.Setenv("NOTIFY_DIGEST", "true")
+func TestLoadReadsTheBatchAndTheMinimumRisk(t *testing.T) {
+	t.Setenv("NOTIFY_BATCH", "true")
 	for v, want := range map[string]string{"medium": "medium", " High ": "high", "critical": "critical", "none": "", "bogus": ""} {
 		t.Setenv("NOTIFY_MIN_RISK", v)
 		c := Load()
-		if !c.NotifyDigest || c.NotifyMinRisk != want {
-			t.Errorf("NOTIFY_MIN_RISK=%q: digest %v, min risk %q, want true and %q", v, c.NotifyDigest, c.NotifyMinRisk, want)
+		if !c.NotifyBatch || c.NotifyMinRisk != want {
+			t.Errorf("NOTIFY_MIN_RISK=%q: batch %v, min risk %q, want true and %q", v, c.NotifyBatch, c.NotifyMinRisk, want)
 		}
 	}
 }

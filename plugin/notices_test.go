@@ -9,7 +9,7 @@ import (
 )
 
 var noticeKeys = []string{
-	"s_notices", "s_notices_sub", "s_notify_digest", "s_notify_digest_desc", "s_notify_min_risk",
+	"s_notices", "s_notices_sub", "s_notify_batch", "s_notify_batch_desc", "s_notify_min_risk",
 	"s_notify_min_risk_desc", "s_nmr_all", "s_nmr_medium", "s_nmr_high", "s_nmr_critical",
 }
 
@@ -45,8 +45,8 @@ func TestEveryLanguageNamesTheUpdateNoticeSettings(t *testing.T) {
 func TestTheUpdateNoticesStayAsTheyWereUntilChosen(t *testing.T) {
 	page := read(t, "shiplog.page")
 	for _, want := range []string{
-		`$notifyDigest = (isset($cfg['NOTIFY_DIGEST']) && $cfg['NOTIFY_DIGEST'] === 'true');`,
-		`$slSwitch('sl-notify-digest', 'NOTIFY_DIGEST', $notifyDigest)`,
+		`$notifyBatch = (isset($cfg['NOTIFY_BATCH']) && $cfg['NOTIFY_BATCH'] === 'true');`,
+		`$slSwitch('sl-notify-batch', 'NOTIFY_BATCH', $notifyBatch)`,
 		`name="NOTIFY_MIN_RISK"`,
 	} {
 		if !strings.Contains(page, want) {
@@ -54,7 +54,7 @@ func TestTheUpdateNoticesStayAsTheyWereUntilChosen(t *testing.T) {
 		}
 	}
 	rc := read(t, filepath.Join("scripts", "rc.shiplog"))
-	for _, want := range []string{"\nNOTIFY_DIGEST=\"false\"\n", "\nNOTIFY_MIN_RISK=\"\"\n", " NOTIFY_DIGEST NOTIFY_MIN_RISK "} {
+	for _, want := range []string{"\nNOTIFY_BATCH=\"false\"\n", "\nNOTIFY_MIN_RISK=\"\"\n", " NOTIFY_BATCH NOTIFY_MIN_RISK "} {
 		if !strings.Contains(rc, want) {
 			t.Errorf("rc.shiplog lacks %q", want)
 		}

@@ -34,7 +34,7 @@ $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false'
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
 $vulnCheck = (!isset($cfg['VULN_CHECK']) || $cfg['VULN_CHECK'] !== 'false');
 /* Update notices: one per container and every risk unless chosen otherwise. */
-$notifyDigest = (isset($cfg['NOTIFY_DIGEST']) && $cfg['NOTIFY_DIGEST'] === 'true');
+$notifyBatch = (isset($cfg['NOTIFY_BATCH']) && $cfg['NOTIFY_BATCH'] === 'true');
 $notifyMinRisk = (isset($cfg['NOTIFY_MIN_RISK']) && in_array($cfg['NOTIFY_MIN_RISK'], array('medium', 'high', 'critical'), true)) ? $cfg['NOTIFY_MIN_RISK'] : '';
 /* Auto-update settings, all off by default. */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
@@ -273,8 +273,8 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
     <section class="sl-card" aria-labelledby="sl-h-notices">
       <h3 class="sl-h"><span id="sl-h-notices"><?=$slE($L['s_notices'])?></span><?=$slInfo($L['s_notices_sub'])?></h3>
       <div class="sl-row">
-        <div class="sl-lbl"><label for="sl-notify-digest-cb"><?=$slE($L['s_notify_digest'])?></label><?=$slInfo($L['s_notify_digest_desc'])?></div>
-        <div class="sl-ctl"><?=$slSwitch('sl-notify-digest', 'NOTIFY_DIGEST', $notifyDigest)?></div>
+        <div class="sl-lbl"><label for="sl-notify-batch-cb"><?=$slE($L['s_notify_batch'])?></label><?=$slInfo($L['s_notify_batch_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-notify-batch', 'NOTIFY_BATCH', $notifyBatch)?></div>
       </div>
       <div class="sl-row">
         <div class="sl-lbl"><label for="sl-notify-min-risk"><?=$slE($L['s_notify_min_risk'])?></label><?=$slInfo($L['s_notify_min_risk_desc'])?></div>

@@ -90,9 +90,9 @@ type Engine struct {
 	workers    int
 	refresh    chan struct{}
 	now        func() time.Time
-	// digest sends the updates a sweep finds as one message once the sweep is
+	// batched sends the updates a sweep finds as one message once the sweep is
 	// done, when the notifier can, instead of one message per container.
-	digest bool
+	batched bool
 	// minRisk holds back the notice of an update below this risk. Empty sends
 	// every one.
 	minRisk model.RiskLevel
@@ -157,9 +157,9 @@ func (e *Engine) WithNotifier(n Notifier) *Engine {
 	return e
 }
 
-// WithDigest makes each sweep announce its new updates in one message.
-func (e *Engine) WithDigest(on bool) *Engine {
-	e.digest = on
+// WithBatch makes each sweep announce its new updates in one message.
+func (e *Engine) WithBatch(on bool) *Engine {
+	e.batched = on
 	return e
 }
 
@@ -275,7 +275,7 @@ func (e *Engine) sweep(ctx context.Context, only map[string]struct{}) error {
 	}
 	resolve := memoResolve(e.resolver)
 	var found *batch
-	if d, ok := e.notifier.(digester); ok && e.digest {
+	if d, ok := e.notifier.(batcher); ok && e.batched {
 		found = &batch{}
 		ctx = context.WithValue(ctx, batchKey{}, found)
 		defer func() {
@@ -283,8 +283,13 @@ func (e *Engine) sweep(ctx context.Context, only map[string]struct{}) error {
 			if len(sts) == 0 {
 				return
 			}
-			if err := d.NotifyDigest(ctx, sts); err != nil {
-				log.Printf("shiplog: update digest notify failed: %v", err)
+			// A settings save restarts the engine and cancels ctx mid-sweep.
+			// The rows are stored by now, so a later sweep would not announce
+			// these updates again: send them anyway, within a short bound.
+			fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), batchFlushTimeout)
+			defer cancel()
+			if err := d.NotifyBatch(fctx, sts); err != nil {
+				log.Printf("shiplog: update batch notify failed: %v", err)
 			}
 		}()
 	}
@@ -829,9 +834,12 @@ func (e *Engine) maybeResolve(ctx context.Context, st, prior model.UpdateStatus,
 	r.Resolve(ctx, prior)
 }
 
-// digester announces several updates in one message, as notify.Notifier does.
-type digester interface {
-	NotifyDigest(ctx context.Context, sts []model.UpdateStatus) error
+// batchFlushTimeout bounds the batch a cancelled sweep still sends.
+const batchFlushTimeout = 30 * time.Second
+
+// batcher announces several updates in one message, as notify.Notifier does.
+type batcher interface {
+	NotifyBatch(ctx context.Context, sts []model.UpdateStatus) error
 }
 
 // batch collects the updates the workers of one sweep found.
@@ -856,13 +864,19 @@ func (b *batch) take() []model.UpdateStatus {
 
 type batchKey struct{}
 
+// heldBack reports whether the minimum risk keeps st's notice back. A held
+// back update is announced once a later check finds it at the minimum.
+func (e *Engine) heldBack(st model.UpdateStatus) bool {
+	return e.minRisk != "" && st.Risk != model.RiskUnknown && e.minRisk.MoreSevere(st.Risk)
+}
+
 // maybeNotify notifies when a known container gets an update target it did not
 // have before. The first sighting only seeds the row.
 func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior model.UpdateStatus, hasPrior bool) {
 	if e.notifier == nil || !hasPrior {
 		return
 	}
-	if prior.HasUpdate() && prior.NewestDigest == st.NewestDigest {
+	if prior.HasUpdate() && prior.NewestDigest == st.NewestDigest && !e.heldBack(prior) {
 		return
 	}
 	// The run applies it and its summary reports the result, while a notice sent
@@ -871,7 +885,7 @@ func (e *Engine) maybeNotify(ctx context.Context, st model.UpdateStatus, prior m
 	if e.autoApplies != nil && e.autoApplies(st) && st.Risk != model.RiskCritical {
 		return
 	}
-	if e.minRisk != "" && st.Risk != model.RiskUnknown && e.minRisk.MoreSevere(st.Risk) {
+	if e.heldBack(st) {
 		return
 	}
 	if b, ok := ctx.Value(batchKey{}).(*batch); ok {

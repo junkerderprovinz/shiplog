@@ -165,22 +165,27 @@ func (n *Notifier) Notify(ctx context.Context, st model.UpdateStatus) error {
 	return n.Send(ctx, update(st))
 }
 
-// NotifyDigest announces the updates one sweep found together. A single
-// update goes out as Notify sends it. While a TollRoll of the fortress takes
-// the messages, it hears of each update on its own, since it keeps one open
-// message per update until Resolve closes it.
-func (n *Notifier) NotifyDigest(ctx context.Context, sts []model.UpdateStatus) error {
+// NotifyBatch announces the updates one sweep found together. Each update is
+// offered to a TollRoll of the fortress first, with its own key, since it
+// keeps one open message per update until Resolve closes it. What no TollRoll
+// takes goes to the own channels, as one message when there are several.
+func (n *Notifier) NotifyBatch(ctx context.Context, sts []model.UpdateStatus) error {
 	if n == nil || len(sts) == 0 {
 		return nil
 	}
-	if len(sts) == 1 || n.hub != nil && n.hub.Active(ctx) {
-		var errs []error
-		for _, st := range sts {
-			errs = append(errs, n.Notify(ctx, st))
+	var left []model.UpdateStatus
+	for _, st := range sts {
+		if n.hub == nil || !n.hub.Take(ctx, update(st)) {
+			left = append(left, st)
 		}
-		return errors.Join(errs...)
 	}
-	return n.Send(ctx, Digest(sts))
+	switch len(left) {
+	case 0:
+		return nil
+	case 1:
+		return n.deliver(ctx, update(left[0]))
+	}
+	return n.deliver(ctx, Batch(left))
 }
 
 // Send delivers e to every channel that takes it. The error names each
@@ -189,6 +194,11 @@ func (n *Notifier) Send(ctx context.Context, e kit.Event) error {
 	if n == nil || n.hub != nil && n.hub.Take(ctx, e) {
 		return nil
 	}
+	return n.deliver(ctx, e)
+}
+
+// deliver sends e to the own channels only.
+func (n *Notifier) deliver(ctx context.Context, e kit.Event) error {
 	n.mu.Lock()
 	d := n.d
 	n.mu.Unlock()
@@ -267,10 +277,10 @@ func update(st model.UpdateStatus) kit.Event {
 	return e
 }
 
-// Digest is one message for several updates, the riskiest first. It takes
+// Batch is one message for several updates, the riskiest first. It takes
 // the severity of the riskiest, so a channel that sends only problems carries
 // it whenever one of them is a problem.
-func Digest(sts []model.UpdateStatus) kit.Event {
+func Batch(sts []model.UpdateStatus) kit.Event {
 	sts = slices.Clone(sts)
 	sort.SliceStable(sts, func(i, j int) bool {
 		if sts[i].Risk != sts[j].Risk {
@@ -279,7 +289,7 @@ func Digest(sts []model.UpdateStatus) kit.Event {
 		return strings.ToLower(sts[i].Container.Name) < strings.ToLower(sts[j].Container.Name)
 	})
 	head := fmt.Sprintf("%d updates available", len(sts))
-	e := kit.Event{Kind: "update.digest", Severity: severity(sts[0].Risk), Title: head}
+	e := kit.Event{Kind: "update.batch", Severity: severity(sts[0].Risk), Title: head}
 	var t, h []string
 	for _, st := range sts {
 		name, from, to := st.Container.Name, st.Container.Tag, st.Target()

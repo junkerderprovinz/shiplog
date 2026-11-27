@@ -50,9 +50,9 @@ type Config struct {
 	// NotifyFile (NOTIFY_FILE) holds the notification channels. Without it,
 	// as in the container, OldNotify sets them up on every start.
 	NotifyFile string
-	// NotifyDigest (NOTIFY_DIGEST) sends the updates one check finds as one
+	// NotifyBatch (NOTIFY_BATCH) sends the updates one check finds as one
 	// message instead of one message per container.
-	NotifyDigest bool
+	NotifyBatch bool
 	// NotifyMinRisk (NOTIFY_MIN_RISK: low|medium|high|critical) sends no
 	// notice for an update of lower risk. Empty sends every one.
 	NotifyMinRisk string
@@ -117,7 +117,7 @@ func Load() Config {
 		OpenRouterModel:   os.Getenv("OPENROUTER_MODEL"),
 		OpenRouterKeyFile: os.Getenv("OPENROUTER_KEY_FILE"),
 		NotifyFile:        os.Getenv("NOTIFY_FILE"),
-		NotifyDigest:      truthy("NOTIFY_DIGEST"),
+		NotifyBatch:       truthy("NOTIFY_BATCH"),
 		NotifyMinRisk:     minRisk(os.Getenv("NOTIFY_MIN_RISK")),
 		FortressDir:       os.Getenv("FORTRESS_DIR"),
 		RunsFile:          os.Getenv("RUNS_FILE"),

@@ -152,10 +152,10 @@ func main() {
 	// sweep may already notify.
 	if notifier != nil {
 		eng.WithNotifier(notifier).
-			WithDigest(cfg.NotifyDigest).
+			WithBatch(cfg.NotifyBatch).
 			WithMinRisk(model.RiskLevel(cfg.NotifyMinRisk))
-		if cfg.NotifyDigest || cfg.NotifyMinRisk != "" {
-			log.Printf("shiplog: update notices: digest=%v, min risk=%q", cfg.NotifyDigest, cfg.NotifyMinRisk)
+		if cfg.NotifyBatch || cfg.NotifyMinRisk != "" {
+			log.Printf("shiplog: update notices: batch=%v, min risk=%q", cfg.NotifyBatch, cfg.NotifyMinRisk)
 		}
 	}
 	go eng.Run(ctx)

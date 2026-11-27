@@ -294,7 +294,7 @@ func TestSendNamesTheChannelThatFailed(t *testing.T) {
 	}
 }
 
-func digestFixture() []model.UpdateStatus {
+func batchFixture() []model.UpdateStatus {
 	return []model.UpdateStatus{
 		{Container: model.Container{Name: "shelfmark", Tag: "1.4.0"}, NewestTag: "1.4.1", Risk: model.RiskLow},
 		{Container: model.Container{Name: "immich_redis", Tag: "latest"}, NewestTag: "latest", Risk: model.RiskLow},
@@ -302,9 +302,9 @@ func digestFixture() []model.UpdateStatus {
 	}
 }
 
-func TestADigestListsTheRiskiestUpdateFirst(t *testing.T) {
-	e := Digest(digestFixture())
-	if e.Kind != "update.digest" || e.Title != "3 updates available" || e.Severity != kit.SeverityInfo {
+func TestABatchListsTheRiskiestUpdateFirst(t *testing.T) {
+	e := Batch(batchFixture())
+	if e.Kind != "update.batch" || e.Title != "3 updates available" || e.Severity != kit.SeverityInfo {
 		t.Fatalf("event = %+v", e)
 	}
 	want := "• OpenBot: 2.1 → 2.2 (MEDIUM)\n• immich_redis: new image for latest (LOW)\n• shelfmark: 1.4.0 → 1.4.1 (LOW)"
@@ -317,17 +317,17 @@ func TestADigestListsTheRiskiestUpdateFirst(t *testing.T) {
 	}
 }
 
-// A channel that sends only problems still hears of a digest that holds one.
-func TestADigestTakesTheSeverityOfItsRiskiestUpdate(t *testing.T) {
-	sts := append(digestFixture(), model.UpdateStatus{Container: model.Container{Name: "db", Tag: "15"}, NewestTag: "16", Risk: model.RiskCritical})
-	if e := Digest(sts); e.Severity != kit.SeverityCritical || !strings.HasPrefix(e.Body, "• db: 15 → 16 (CRITICAL)") {
+// A channel that sends only problems still hears of a batch that holds one.
+func TestABatchTakesTheSeverityOfItsRiskiestUpdate(t *testing.T) {
+	sts := append(batchFixture(), model.UpdateStatus{Container: model.Container{Name: "db", Tag: "15"}, NewestTag: "16", Risk: model.RiskCritical})
+	if e := Batch(sts); e.Severity != kit.SeverityCritical || !strings.HasPrefix(e.Body, "• db: 15 → 16 (CRITICAL)") {
 		t.Errorf("severity %s, body %q", e.Severity, e.Body)
 	}
 }
 
-func TestADigestReachesUnraidAsOneNotice(t *testing.T) {
+func TestABatchReachesUnraidAsOneNotice(t *testing.T) {
 	n, r := unraidNotifier(t)
-	if err := n.NotifyDigest(context.Background(), digestFixture()); err != nil {
+	if err := n.NotifyBatch(context.Background(), batchFixture()); err != nil {
 		t.Fatal(err)
 	}
 	if len(r.calls) != 1 || argValue(r.calls[0], "-s") != "3 updates available" {
@@ -335,9 +335,9 @@ func TestADigestReachesUnraidAsOneNotice(t *testing.T) {
 	}
 }
 
-func TestADigestOfOneUpdateIsTheUsualNotice(t *testing.T) {
+func TestABatchOfOneUpdateIsTheUsualNotice(t *testing.T) {
 	n, r := unraidNotifier(t)
-	if err := n.NotifyDigest(context.Background(), digestFixture()[:1]); err != nil {
+	if err := n.NotifyBatch(context.Background(), batchFixture()[:1]); err != nil {
 		t.Fatal(err)
 	}
 	if len(r.calls) != 1 || argValue(r.calls[0], "-s") != "shelfmark: update available" {
