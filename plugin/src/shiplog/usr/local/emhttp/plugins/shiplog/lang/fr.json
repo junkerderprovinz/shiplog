@@ -73,7 +73,7 @@
   "t_info": "Infos",
   "s_autoupd": "Mise à jour automatique",
   "s_autoupd_sub": "planifiée, par niveau de version (Unraid uniquement)",
-  "s_ca_warn": "CA Auto Update est également installé. Les deux mettent à jour les containers ; n'en utilisez qu'un pour éviter les doubles mises à jour.",
+  "s_ca_warn": "CA Auto Update met aussi à jour les containers. Désactivez sa mise à jour automatique Docker ou celle de ShipLog pour qu'aucun container ne soit mis à jour deux fois.",
   "s_au_enable": "Activer la mise à jour automatique",
   "s_au_enable_desc": "Applique automatiquement les mises à jour des containers selon la planification ci-dessous, jusqu'au niveau choisi. Désactivé par défaut.",
   "s_au_level": "Jusqu'au niveau",

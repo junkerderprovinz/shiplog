@@ -73,7 +73,7 @@
   "t_info": "Info",
   "s_autoupd": "Automatyczna aktualizacja",
   "s_autoupd_sub": "zaplanowana, według poziomu wersji (tylko Unraid)",
-  "s_ca_warn": "Zainstalowano również CA Auto Update. Oba narzędzia aktualizują kontenery, więc używaj tylko jednego, aby uniknąć podwójnych aktualizacji.",
+  "s_ca_warn": "CA Auto Update również aktualizuje kontenery. Wyłącz w nim automatyczną aktualizację Dockera albo tę w ShipLogu, aby żaden kontener nie był aktualizowany dwa razy.",
   "s_au_enable": "Włącz automatyczną aktualizację",
   "s_au_enable_desc": "Automatycznie stosuje aktualizacje kontenerów według harmonogramu poniżej, do wybranego poziomu. Domyślnie wyłączone.",
   "s_au_level": "Do poziomu",

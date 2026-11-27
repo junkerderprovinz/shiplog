@@ -73,7 +73,7 @@
   "t_info": "Thông tin",
   "s_autoupd": "Tự động cập nhật",
   "s_autoupd_sub": "theo lịch, theo cấp phiên bản (chỉ Unraid)",
-  "s_ca_warn": "CA Auto Update cũng đã được cài đặt. Cả hai đều sẽ cập nhật container, vì vậy chỉ dùng một để tránh cập nhật trùng lặp.",
+  "s_ca_warn": "CA Auto Update cũng cập nhật container. Hãy tắt tự động cập nhật Docker của nó hoặc của ShipLog để không container nào bị cập nhật hai lần.",
   "s_au_enable": "Bật tự động cập nhật",
   "s_au_enable_desc": "Tự động áp dụng các bản cập nhật container theo lịch bên dưới, tối đa đến cấp bạn chọn. Mặc định tắt.",
   "s_au_level": "Tối đa đến cấp",

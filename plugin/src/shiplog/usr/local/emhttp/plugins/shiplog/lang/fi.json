@@ -73,7 +73,7 @@
   "t_info": "Info",
   "s_autoupd": "Automaattipäivitys",
   "s_autoupd_sub": "ajastettu, versiotason mukaan (vain Unraid)",
-  "s_ca_warn": "Myös CA Auto Update on asennettu. Molemmat päivittävät kontteja, joten käytä vain yhtä välttääksesi kaksinkertaiset päivitykset.",
+  "s_ca_warn": "CA Auto Update päivittää myös kontteja. Poista käytöstä sen Docker-automaattipäivitys tai ShipLogin automaattipäivitys, jotta mitään konttia ei päivitetä kahdesti.",
   "s_au_enable": "Ota automaattipäivitys käyttöön",
   "s_au_enable_desc": "Asenna konttien päivitykset automaattisesti alla olevan aikataulun mukaan, valitsemaasi tasoon asti. Oletuksena pois käytöstä.",
   "s_au_level": "Enintään taso",

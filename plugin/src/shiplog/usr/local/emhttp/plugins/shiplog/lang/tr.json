@@ -73,7 +73,7 @@
   "t_info": "Bilgi",
   "s_autoupd": "Otomatik güncelleme",
   "s_autoupd_sub": "zamanlanmış, sürüm düzeyine göre (yalnızca Unraid)",
-  "s_ca_warn": "CA Auto Update de yüklü. İkisi de konteynerleri günceller, bu yüzden çift güncellemeyi önlemek için yalnızca birini kullan.",
+  "s_ca_warn": "CA Auto Update da konteynerleri güncelliyor. Hiçbir konteyner iki kez güncellenmesin diye onun Docker otomatik güncellemesini ya da ShipLog'unkini kapat.",
   "s_au_enable": "Otomatik güncellemeyi etkinleştir",
   "s_au_enable_desc": "Konteyner güncellemelerini aşağıdaki zamanlamaya göre, seçtiğin düzeye kadar otomatik uygular. Varsayılan olarak kapalı.",
   "s_au_level": "Şu düzeye kadar",

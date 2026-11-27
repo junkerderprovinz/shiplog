@@ -73,7 +73,7 @@
   "t_info": "Infó",
   "s_autoupd": "Automatikus frissítés",
   "s_autoupd_sub": "ütemezett, verziószint szerint (csak Unraid)",
-  "s_ca_warn": "A CA Auto Update is telepítve van. Mindkettő frissíti a konténereket, ezért csak az egyiket használd a dupla frissítések elkerülése érdekében.",
+  "s_ca_warn": "A CA Auto Update is frissíti a konténereket. Kapcsold ki benne a Docker automatikus frissítését vagy a ShipLogét, hogy egyetlen konténer se frissüljön kétszer.",
   "s_au_enable": "Automatikus frissítés engedélyezése",
   "s_au_enable_desc": "A konténerfrissítések automatikus alkalmazása az alábbi ütemezés szerint, a kiválasztott szintig. Alapértelmezés szerint kikapcsolva.",
   "s_au_level": "Maximális szint",

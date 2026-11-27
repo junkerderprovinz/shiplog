@@ -43,8 +43,9 @@ $auTime  = !empty($cfg['AUTOUPDATE_SCHED_TIME'])  ? $cfg['AUTOUPDATE_SCHED_TIME'
 $auEvery = !empty($cfg['AUTOUPDATE_SCHED_EVERY']) ? $cfg['AUTOUPDATE_SCHED_EVERY'] : '6';
 $auExclude = isset($cfg['AUTOUPDATE_EXCLUDE_WORDS']) ? $cfg['AUTOUPDATE_EXCLUDE_WORDS'] : '';
 $auSkip    = isset($cfg['AUTOUPDATE_EXCLUDE_CONTAINERS']) ? $cfg['AUTOUPDATE_EXCLUDE_CONTAINERS'] : '';
-/* CA Auto Update coexistence: warn so the user doesn't run both. */
-$caPresent = is_dir('/usr/local/emhttp/plugins/ca.update.applications') || is_dir('/boot/config/plugins/ca.update.applications');
+/* CA Auto Update coexistence: warn so the user doesn't run both on containers. */
+$CA = include '/usr/local/emhttp/plugins/shiplog/include/ca.php';
+$caDocker = $CA();
 
 /* The UI text comes from the locale files, the active language over English. */
 $lang = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
@@ -182,7 +183,7 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
   <div class="sl-pane" role="tabpanel" id="sl-pane-updates" aria-labelledby="sl-tab-updates" hidden>
     <section class="sl-card" aria-labelledby="sl-h-autoupd">
       <h3 class="sl-h"><span id="sl-h-autoupd"><?=$slE($L['s_autoupd'])?></span><?=$slInfo($L['s_autoupd_sub'])?></h3>
-      <?php if ($caPresent): ?>
+      <?php if ($caDocker): ?>
       <p class="sl-warn" role="note"><span class="sl-g"><?=$G['Warning']?></span><span><?=$slE($slPlain($L['s_ca_warn']))?></span></p>
       <?php endif; ?>
       <div class="sl-row">
