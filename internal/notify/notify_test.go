@@ -307,7 +307,7 @@ func TestABatchListsTheRiskiestUpdateFirst(t *testing.T) {
 	if e.Kind != "update.batch" || e.Title != "3 updates available" || e.Severity != kit.SeverityInfo {
 		t.Fatalf("event = %+v", e)
 	}
-	want := "• OpenBot: 2.1 → 2.2 (MEDIUM)\n• immich_redis: new image for latest (LOW)\n• shelfmark: 1.4.0 → 1.4.1 (LOW)"
+	want := "OpenBot: 2.1 → 2.2 (MEDIUM) · immich_redis: new image for latest (LOW) · shelfmark: 1.4.0 → 1.4.1 (LOW)"
 	if e.Body != want {
 		t.Errorf("body\n got %q\nwant %q", e.Body, want)
 	}
@@ -320,7 +320,7 @@ func TestABatchListsTheRiskiestUpdateFirst(t *testing.T) {
 // A channel that sends only problems still hears of a batch that holds one.
 func TestABatchTakesTheSeverityOfItsRiskiestUpdate(t *testing.T) {
 	sts := append(batchFixture(), model.UpdateStatus{Container: model.Container{Name: "db", Tag: "15"}, NewestTag: "16", Risk: model.RiskCritical})
-	if e := Batch(sts); e.Severity != kit.SeverityCritical || !strings.HasPrefix(e.Body, "• db: 15 → 16 (CRITICAL)") {
+	if e := Batch(sts); e.Severity != kit.SeverityCritical || !strings.HasPrefix(e.Body, "db: 15 → 16 (CRITICAL) · ") {
 		t.Errorf("severity %s, body %q", e.Severity, e.Body)
 	}
 }
@@ -331,7 +331,12 @@ func TestABatchReachesUnraidAsOneNotice(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(r.calls) != 1 || argValue(r.calls[0], "-s") != "3 updates available" {
-		t.Errorf("calls = %q", r.calls)
+		t.Fatalf("calls = %q", r.calls)
+	}
+	// Unraid's notify get reads the first line of a description only.
+	d := argValue(r.calls[0], "-d")
+	if strings.Contains(d, "\n") || !strings.Contains(d, "OpenBot") || !strings.Contains(d, "shelfmark") {
+		t.Errorf("description = %q, want every update on one line", d)
 	}
 }
 

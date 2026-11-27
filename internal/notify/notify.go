@@ -309,9 +309,11 @@ func Batch(sts []model.UpdateStatus) kit.Event {
 		if link := st.Link(); link != "" {
 			hl += ` · <a href="` + esc(link) + `">changelog</a>`
 		}
-		t, h = append(t, "• "+tl), append(h, "• "+hl)
+		t, h = append(t, tl), append(h, "• "+hl)
 	}
-	e.Body = strings.Join(t, "\n")
+	// Unraid's notify get reads the first line of a description only, and the
+	// plain body is what an Unraid channel sends.
+	e.Body = strings.Join(t, " · ")
 	e.HTML = "🚢 <b>ShipLog</b> · " + esc(head) + "<br/>" + strings.Join(h, "<br/>")
 	return e
 }
