@@ -158,7 +158,11 @@ func main() {
 			log.Printf("shiplog: update notices: batch=%v, min risk=%q", cfg.NotifyBatch, cfg.NotifyMinRisk)
 		}
 	}
-	go eng.Run(ctx)
+	ran := make(chan struct{})
+	go func() {
+		eng.Run(ctx)
+		close(ran)
+	}()
 	go followStarts(ctx, docker, eng)
 	updating.Unlock()
 	switch {
@@ -213,6 +217,25 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+	if !waitFor(ran, engineGrace) {
+		log.Printf("shiplog: the engine did not stop within %v", engineGrace)
+	}
+}
+
+// engineGrace is how long a sweep cut short by the stop gets to send its
+// batch. rc.shiplog kills the process ten seconds after it asked it to stop.
+const engineGrace = 8 * time.Second
+
+// waitFor reports whether done closed within limit.
+func waitFor(done <-chan struct{}, limit time.Duration) bool {
+	t := time.NewTimer(limit)
+	defer t.Stop()
+	select {
+	case <-done:
+		return true
+	case <-t.C:
+		return false
+	}
 }
 
 // followStarts hands the engine every container that starts, so a container
