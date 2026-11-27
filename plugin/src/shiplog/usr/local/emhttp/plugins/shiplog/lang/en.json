@@ -314,7 +314,7 @@
   "s_ai_local": "Local (Ollama or llama-swap)",
   "s_or_notice": "With OpenRouter, every summary sends the changelog text, the image name and the running and new version to openrouter.ai, which passes them to the provider of the model you pick. Container names, settings and everything else about your server stay here. While Local is chosen, nothing goes to OpenRouter.",
   "s_or_model": "Model",
-  "s_or_model_hint": "Pick a model from OpenRouter's list or type its ID. Several IDs separated by commas are tried in order, so a rate-limited free model falls back to the next one.",
+  "s_or_model_hint": "Pick a model from OpenRouter's list or type its ID. Several IDs separated by commas are tried in order, so a rate-limited free model falls back to the next one. A list of free models only ends in openrouter/free. OpenRouter bills a paid model in the list whenever it falls back to it.",
   "s_or_key": "API key",
   "s_or_key_hint": "Make a key just for ShipLog. It stays on the flash drive, where only root can read it, and goes to openrouter.ai alone. This page shows no more of it than its last four characters.",
   "s_or_key_ph": "Paste a key",

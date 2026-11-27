@@ -393,3 +393,80 @@ func TestAnAnswerCutOffAtItsLimitSaysSo(t *testing.T) {
 		t.Errorf("Try = %v, want bad_answer naming the token limit", err)
 	}
 }
+
+func TestOnlyFreeModelsFallBackToTheFreeRouter(t *testing.T) {
+	for _, tc := range []struct{ list, want string }{
+		{"openai/gpt-oss-20b:free", "openai/gpt-oss-20b:free,openrouter/free"},
+		{"openai/gpt-oss-20b:free,google/gemma:free", "openai/gpt-oss-20b:free,google/gemma:free,openrouter/free"},
+		{"openai/gpt-oss-20b:free,openrouter/free", "openai/gpt-oss-20b:free,openrouter/free"},
+		{"openai/gpt-oss-20b:free,z-ai/glm-4.6", "openai/gpt-oss-20b:free,z-ai/glm-4.6"},
+	} {
+		f := &fakeOpenRouter{}
+		o := openRouterAt(t, f, tc.list, testKey)
+		if _, ok := o.Summarize(context.Background(), model.Container{}, "1.0.0", "1.1.0", "notes"); !ok {
+			t.Fatalf("%s: Summarize failed", tc.list)
+		}
+		var req struct {
+			Models []string `json:"models"`
+		}
+		if err := json.Unmarshal([]byte(f.bodies[0]), &req); err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Join(req.Models, ","); got != tc.want {
+			t.Errorf("%s routes to %q, want %q", tc.list, got, tc.want)
+		}
+	}
+	// The key check looks up what the settings list, not the router ShipLog adds.
+	if err := openRouterAt(t, &fakeOpenRouter{}, "openai/gpt-oss-20b:free", testKey).CheckKey(context.Background()); err != nil {
+		t.Errorf("CheckKey: %v", err)
+	}
+}
+
+func TestEveryRequestCapsItsTokensAndReasoning(t *testing.T) {
+	f := &fakeOpenRouter{}
+	o := openRouterAt(t, f, "z-ai/glm-4.6", testKey)
+	if _, ok := o.Summarize(context.Background(), model.Container{}, "1.0.0", "1.1.0", "notes"); !ok {
+		t.Fatal("Summarize failed")
+	}
+	if err := o.Try(context.Background()); err != nil {
+		t.Fatalf("Try: %v", err)
+	}
+	for i, body := range f.bodies {
+		var req struct {
+			MaxTokens int `json:"max_tokens"`
+			Reasoning struct {
+				Effort string `json:"effort"`
+			} `json:"reasoning"`
+		}
+		if err := json.Unmarshal([]byte(body), &req); err != nil {
+			t.Fatal(err)
+		}
+		if req.MaxTokens != maxTokens || req.Reasoning.Effort != "low" {
+			t.Errorf("request %d asked for max_tokens=%d effort=%q", i, req.MaxTokens, req.Reasoning.Effort)
+		}
+	}
+}
+
+func TestOpenRouterKnowsWhichModelsWriteForIt(t *testing.T) {
+	for _, tc := range []struct {
+		list, id string
+		want     bool
+	}{
+		{"z-ai/glm-4.6", "z-ai/glm-4.6", true},
+		{"z-ai/glm-4.6", "openai/gpt-oss-20b:free", false},
+		{"z-ai/glm-4.6,openai/gpt-oss-20b:free", "openai/gpt-oss-20b:free", true},
+		{"google/gemma:free", "nvidia/nemotron:free", true}, // through openrouter/free
+		{"openrouter/free", "z-ai/glm-4.6", false},
+		{"openrouter/auto", "z-ai/glm-4.6", true},
+	} {
+		if got := NewOpenRouter(tc.list, nil).Writes(tc.id); got != tc.want {
+			t.Errorf("%s writes %s = %v, want %v", tc.list, tc.id, got, tc.want)
+		}
+	}
+	if !New("http://ollama:11434", "llama3").Writes("llama3") || New("http://ollama:11434", "llama3").Writes("z-ai/glm-4.6") {
+		t.Error("Ollama writes for its own model only")
+	}
+	if !NewLlamaSwap("http://swap:8080", "qwen").Writes("qwen") || NewLlamaSwap("http://swap:8080", "qwen").Writes("llama3") {
+		t.Error("llama-swap writes for its own model only")
+	}
+}

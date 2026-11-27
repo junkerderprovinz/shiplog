@@ -47,8 +47,11 @@ type OpenRouter struct {
 	// fallbacks are the models OpenRouter routes to when model fails, a
 	// rate-limited free model among them.
 	fallbacks []string
-	keys      func() (string, error)
-	client    *http.Client
+	// freeRouter appends openrouter/free to a list of free models only, so a
+	// lone free model has somewhere to go that still costs nothing.
+	freeRouter bool
+	keys       func() (string, error)
+	client     *http.Client
 }
 
 // NewOpenRouter returns nil without a model, which turns it off. modelIDs is
@@ -59,7 +62,21 @@ func NewOpenRouter(modelIDs string, keys func() (string, error)) *OpenRouter {
 	if len(ids) == 0 {
 		return nil
 	}
-	return &OpenRouter{base: openRouterBase, model: ids[0], fallbacks: ids[1:], keys: keys, client: openRouterClient()}
+	return &OpenRouter{base: openRouterBase, model: ids[0], fallbacks: ids[1:], freeRouter: allFree(ids), keys: keys, client: openRouterClient()}
+}
+
+// freeRouterID is OpenRouter's router across its free models.
+const freeRouterID = "openrouter/free"
+
+// allFree reports whether every listed model is free and the list does not
+// already end in OpenRouter's free router.
+func allFree(ids []string) bool {
+	for _, id := range ids {
+		if id == freeRouterID || !strings.HasSuffix(id, ":free") {
+			return false
+		}
+	}
+	return true
 }
 
 // ParseModels splits a comma-separated model list, dropping blanks and
@@ -78,9 +95,32 @@ func ParseModels(s string) []string {
 	return ids
 }
 
+// listed is the models as the settings name them, the first one first.
+func (o *OpenRouter) listed() []string {
+	return append([]string{o.model}, o.fallbacks...)
+}
+
 // models is every model a request may route to, the first one first.
 func (o *OpenRouter) models() []string {
-	return append([]string{o.model}, o.fallbacks...)
+	if o.freeRouter {
+		return append(o.listed(), freeRouterID)
+	}
+	return o.listed()
+}
+
+// Writes reports whether a summary credited to id could come from the models
+// set now, so the engine drops a summary kept from another model or provider.
+// A router's answer names the model it picked, not the router.
+func (o *OpenRouter) Writes(id string) bool {
+	for _, m := range o.models() {
+		switch {
+		case m == id, m == "openrouter/auto":
+			return true
+		case m == freeRouterID && strings.HasSuffix(id, ":free"):
+			return true
+		}
+	}
+	return false
 }
 
 // OpenRouterModels fetches OpenRouter's public model list, for the picker.
@@ -133,7 +173,7 @@ func (o *OpenRouter) CheckKey(ctx context.Context) error {
 	for _, m := range list {
 		listed[m.ID] = true
 	}
-	for _, id := range o.models() {
+	for _, id := range o.listed() {
 		if !listed[id] {
 			return &Problem{Code: "model_unavailable", Detail: "not in the model list: " + id}
 		}
@@ -145,16 +185,17 @@ func (o *OpenRouter) CheckKey(ctx context.Context) error {
 // hundred tokens.
 const trialChangelog = "## 1.1.0\n- Adds a dark mode.\n- Fixes a crash when the config file is empty."
 
-// trialMaxTokens bounds what Try may cost. A reasoning model, which most free
-// ones are, counts its thinking against the cap, about a thousand tokens for
-// the trial changelog, and a smaller cap cuts it off before it answers.
-const trialMaxTokens = 4096
+// maxTokens bounds what one request may cost, Try and summaries alike. A
+// reasoning model, which most free ones are, counts its thinking against the
+// cap, about a thousand tokens for the trial changelog, and a smaller cap cuts
+// it off before it answers. Low reasoning effort keeps the thinking short.
+const maxTokens = 4096
 
 // Try runs one small summary, which proves that the model answers and that
 // its answer reads as a summary.
 func (o *OpenRouter) Try(ctx context.Context) error {
 	c := model.Container{Repo: "example/app"}
-	answer, served, err := o.complete(ctx, buildPrompt(c, "1.0.0", "1.1.0", trialChangelog), trialMaxTokens)
+	answer, served, err := o.complete(ctx, buildPrompt(c, "1.0.0", "1.1.0", trialChangelog))
 	if err != nil {
 		return err
 	}
@@ -170,7 +211,7 @@ func (o *OpenRouter) Summarize(ctx context.Context, c model.Container, fromTag, 
 	if strings.TrimSpace(raw) == "" {
 		return nil, false
 	}
-	answer, served, err := o.complete(ctx, buildPrompt(c, fromTag, toTag, raw), 0)
+	answer, served, err := o.complete(ctx, buildPrompt(c, fromTag, toTag, raw))
 	if err != nil {
 		log.Printf("shiplog: OpenRouter %s: %v", c.Name, err)
 		return nil, false
@@ -195,9 +236,8 @@ func (o *OpenRouter) key() (string, error) {
 }
 
 // complete sends one chat completion and returns the answer's text and the
-// model that wrote it, which is a fallback when the first model failed. A cap
-// of 0 leaves the length to the model.
-func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int) (string, string, error) {
+// model that wrote it, which is a fallback when the first model failed.
+func (o *OpenRouter) complete(ctx context.Context, prompt string) (string, string, error) {
 	key, err := o.key()
 	if err != nil {
 		return "", "", err
@@ -206,13 +246,13 @@ func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int)
 		"model":           o.model,
 		"messages":        []map[string]string{{"role": "user", "content": prompt}},
 		"response_format": map[string]string{"type": "json_object"},
+		"max_tokens":      maxTokens,
+		// A model that does not reason ignores this.
+		"reasoning": map[string]string{"effort": "low"},
 	}
-	if len(o.fallbacks) > 0 {
+	if m := o.models(); len(m) > 1 {
 		// OpenRouter tries these in order after model, on a rate limit too.
-		req["models"] = o.models()
-	}
-	if maxTokens > 0 {
-		req["max_tokens"] = maxTokens
+		req["models"] = m
 	}
 	var out struct {
 		Model   string `json:"model"`

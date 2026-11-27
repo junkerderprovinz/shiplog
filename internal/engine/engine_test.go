@@ -1824,10 +1824,10 @@ func TestRunChecksANewContainerOnce(t *testing.T) {
 }
 
 func TestPriorSummaryIsReusedOnlyForTheSameNotes(t *testing.T) {
-	sum := &model.AISummary{Bullets: []string{"Adds a dark mode."}}
+	sum := &model.AISummary{Bullets: []string{"Adds a dark mode."}, Model: "z-ai/glm-4.6"}
 	prior := model.UpdateStatus{Changelog: &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes", Summary: sum}}
 	same := &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes"}
-	if got := priorSummary(prior, true, same); got != sum {
+	if got := priorSummary(prior, true, same, nil); got != sum {
 		t.Error("unchanged notes keep the summary of the last check")
 	}
 	for name, cl := range map[string]*model.Changelog{
@@ -1835,14 +1835,34 @@ func TestPriorSummaryIsReusedOnlyForTheSameNotes(t *testing.T) {
 		"new running":  {FromTag: "1.0.1", ToTag: "1.1.0", Raw: "notes"},
 		"edited notes": {FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes, edited"},
 	} {
-		if priorSummary(prior, true, cl) != nil {
+		if priorSummary(prior, true, cl, nil) != nil {
 			t.Errorf("%s: a changed span needs a new summary", name)
 		}
 	}
-	if priorSummary(prior, false, same) != nil {
+	if priorSummary(prior, false, same, nil) != nil {
 		t.Error("without a prior row there is nothing to reuse")
 	}
-	if priorSummary(model.UpdateStatus{Changelog: &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes"}}, true, same) != nil {
+	if priorSummary(model.UpdateStatus{Changelog: &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes"}}, true, same, nil) != nil {
 		t.Error("a prior check without a summary has none to give")
+	}
+}
+
+// writer is a Summarizer that writes with one model.
+type writer struct{ model string }
+
+func (w writer) Summarize(context.Context, model.Container, string, string, string) (*model.AISummary, bool) {
+	return nil, false
+}
+func (w writer) Writes(id string) bool { return id == w.model }
+
+func TestPriorSummaryIsDroppedAfterAModelChange(t *testing.T) {
+	sum := &model.AISummary{Bullets: []string{"Adds a dark mode."}, Model: "z-ai/glm-4.6"}
+	prior := model.UpdateStatus{Changelog: &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes", Summary: sum}}
+	same := &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes"}
+	if priorSummary(prior, true, same, writer{"z-ai/glm-4.6"}) != sum {
+		t.Error("the same model keeps its summary")
+	}
+	if priorSummary(prior, true, same, writer{"llama3"}) != nil {
+		t.Error("a summary from a model no longer set needs asking again")
 	}
 }

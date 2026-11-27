@@ -53,6 +53,11 @@ type (
 	Summarizer interface {
 		Summarize(ctx context.Context, c model.Container, fromTag, toTag, raw string) (*model.AISummary, bool)
 	}
+	// summaryWriter is a Summarizer that can tell whether a kept summary
+	// came from the model it uses now.
+	summaryWriter interface {
+		Writes(model string) bool
+	}
 	// Notifier announces a newly sighted update.
 	Notifier interface {
 		Notify(ctx context.Context, st model.UpdateStatus) error
@@ -521,9 +526,9 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		}
 		if st.HasUpdate() {
 			if e.summarizer != nil && cl.Raw != "" {
-				if sum := priorSummary(prior, hasPrior, cl); sum != nil {
-					// The notes are unchanged since the last check, so is the
-					// summary. Asking again would spend a free model's small
+				if sum := priorSummary(prior, hasPrior, cl, e.summarizer); sum != nil {
+					// The notes and the model are unchanged since the last
+					// check, so is the summary. Asking again would spend a free model's small
 					// daily allowance on every poll.
 					cl.Summary = sum
 				} else if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, releaseNotes(cl)); ok {
@@ -603,13 +608,17 @@ func scanBreaking(cl *model.Changelog, running, vouched string) (model.Reason, b
 }
 
 // priorSummary is the summary the last check kept for the same release notes,
-// or nil when the span or its notes changed since.
-func priorSummary(prior model.UpdateStatus, hasPrior bool, cl *model.Changelog) *model.AISummary {
+// or nil when the span or its notes changed since, or when s no longer uses the
+// model that wrote it.
+func priorSummary(prior model.UpdateStatus, hasPrior bool, cl *model.Changelog, s Summarizer) *model.AISummary {
 	if !hasPrior || prior.Changelog == nil || prior.Changelog.Summary == nil {
 		return nil
 	}
 	p := prior.Changelog
 	if p.FromTag != cl.FromTag || p.ToTag != cl.ToTag || releaseNotes(p) != releaseNotes(cl) {
+		return nil
+	}
+	if w, ok := s.(summaryWriter); ok && !w.Writes(p.Summary.Model) {
 		return nil
 	}
 	return p.Summary

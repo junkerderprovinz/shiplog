@@ -69,6 +69,10 @@ func (l *LlamaSwap) Ping(ctx context.Context) error {
 	return fmt.Errorf("model %q not found on the llama-swap server", l.model)
 }
 
+// Writes reports whether a summary credited to id comes from the model set
+// now.
+func (l *LlamaSwap) Writes(id string) bool { return id == l.model }
+
 // Summarize asks the server to condense raw into bullets, breaking changes and
 // a risk line. On any error the engine shows the raw changelog instead.
 func (l *LlamaSwap) Summarize(ctx context.Context, c model.Container, fromTag, toTag, raw string) (*model.AISummary, bool) {
