@@ -1822,3 +1822,27 @@ func TestRunChecksANewContainerOnce(t *testing.T) {
 		})
 	}
 }
+
+func TestPriorSummaryIsReusedOnlyForTheSameNotes(t *testing.T) {
+	sum := &model.AISummary{Bullets: []string{"Adds a dark mode."}}
+	prior := model.UpdateStatus{Changelog: &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes", Summary: sum}}
+	same := &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes"}
+	if got := priorSummary(prior, true, same); got != sum {
+		t.Error("unchanged notes keep the summary of the last check")
+	}
+	for name, cl := range map[string]*model.Changelog{
+		"newer target": {FromTag: "1.0.0", ToTag: "1.2.0", Raw: "notes"},
+		"new running":  {FromTag: "1.0.1", ToTag: "1.1.0", Raw: "notes"},
+		"edited notes": {FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes, edited"},
+	} {
+		if priorSummary(prior, true, cl) != nil {
+			t.Errorf("%s: a changed span needs a new summary", name)
+		}
+	}
+	if priorSummary(prior, false, same) != nil {
+		t.Error("without a prior row there is nothing to reuse")
+	}
+	if priorSummary(model.UpdateStatus{Changelog: &model.Changelog{FromTag: "1.0.0", ToTag: "1.1.0", Raw: "notes"}}, true, same) != nil {
+		t.Error("a prior check without a summary has none to give")
+	}
+}

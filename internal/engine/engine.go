@@ -521,7 +521,12 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 		}
 		if st.HasUpdate() {
 			if e.summarizer != nil && cl.Raw != "" {
-				if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, releaseNotes(cl)); ok {
+				if sum := priorSummary(prior, hasPrior, cl); sum != nil {
+					// The notes are unchanged since the last check, so is the
+					// summary. Asking again would spend a free model's small
+					// daily allowance on every poll.
+					cl.Summary = sum
+				} else if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, releaseNotes(cl)); ok {
 					cl.Summary = sum
 				} else {
 					log.Printf("shiplog: no AI summary for %s (summaries configured but nothing came back)", c.Name)
@@ -595,6 +600,19 @@ func scanBreaking(cl *model.Changelog, running, vouched string) (model.Reason, b
 		return risk.ScanRelease(cl, vouched)
 	}
 	return risk.ScanBreaking(cl, running)
+}
+
+// priorSummary is the summary the last check kept for the same release notes,
+// or nil when the span or its notes changed since.
+func priorSummary(prior model.UpdateStatus, hasPrior bool, cl *model.Changelog) *model.AISummary {
+	if !hasPrior || prior.Changelog == nil || prior.Changelog.Summary == nil {
+		return nil
+	}
+	p := prior.Changelog
+	if p.FromTag != cl.FromTag || p.ToTag != cl.ToTag || releaseNotes(p) != releaseNotes(cl) {
+		return nil
+	}
+	return p.Summary
 }
 
 // releaseNotes is the summary's input: every release of a version span, since

@@ -42,19 +42,45 @@ type Model struct {
 // for every request instead of holding it, so a new key works without a
 // restart and the struct has no key to print.
 type OpenRouter struct {
-	base   string
-	model  string
-	keys   func() (string, error)
-	client *http.Client
+	base  string
+	model string
+	// fallbacks are the models OpenRouter routes to when model fails, a
+	// rate-limited free model among them.
+	fallbacks []string
+	keys      func() (string, error)
+	client    *http.Client
 }
 
-// NewOpenRouter returns nil without a model, which turns it off.
-func NewOpenRouter(modelID string, keys func() (string, error)) *OpenRouter {
-	modelID = strings.TrimSpace(modelID)
-	if modelID == "" {
+// NewOpenRouter returns nil without a model, which turns it off. modelIDs is
+// one model ID or a comma-separated list: the first is asked first, and
+// OpenRouter moves on to the next when one fails or is rate-limited.
+func NewOpenRouter(modelIDs string, keys func() (string, error)) *OpenRouter {
+	ids := ParseModels(modelIDs)
+	if len(ids) == 0 {
 		return nil
 	}
-	return &OpenRouter{base: openRouterBase, model: modelID, keys: keys, client: openRouterClient()}
+	return &OpenRouter{base: openRouterBase, model: ids[0], fallbacks: ids[1:], keys: keys, client: openRouterClient()}
+}
+
+// ParseModels splits a comma-separated model list, dropping blanks and
+// repeats.
+func ParseModels(s string) []string {
+	var ids []string
+	seen := map[string]bool{}
+	for _, id := range strings.Split(s, ",") {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// models is every model a request may route to, the first one first.
+func (o *OpenRouter) models() []string {
+	return append([]string{o.model}, o.fallbacks...)
 }
 
 // OpenRouterModels fetches OpenRouter's public model list, for the picker.
@@ -103,12 +129,16 @@ func (o *OpenRouter) CheckKey(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	listed := map[string]bool{}
 	for _, m := range list {
-		if m.ID == o.model {
-			return nil
+		listed[m.ID] = true
+	}
+	for _, id := range o.models() {
+		if !listed[id] {
+			return &Problem{Code: "model_unavailable", Detail: "not in the model list: " + id}
 		}
 	}
-	return &Problem{Code: "model_unavailable", Detail: "not in the model list: " + o.model}
+	return nil
 }
 
 // trialChangelog is what Try summarises: a real request at the cost of a few
@@ -119,11 +149,11 @@ const trialChangelog = "## 1.1.0\n- Adds a dark mode.\n- Fixes a crash when the 
 // its answer reads as a summary.
 func (o *OpenRouter) Try(ctx context.Context) error {
 	c := model.Container{Repo: "example/app"}
-	answer, err := o.complete(ctx, buildPrompt(c, "1.0.0", "1.1.0", trialChangelog), 300)
+	answer, served, err := o.complete(ctx, buildPrompt(c, "1.0.0", "1.1.0", trialChangelog), 300)
 	if err != nil {
 		return err
 	}
-	if _, err := parseSummary(answer, o.model); err != nil {
+	if _, err := parseSummary(answer, served); err != nil {
 		return &Problem{Code: "bad_answer", Detail: err.Error()}
 	}
 	return nil
@@ -135,12 +165,12 @@ func (o *OpenRouter) Summarize(ctx context.Context, c model.Container, fromTag, 
 	if strings.TrimSpace(raw) == "" {
 		return nil, false
 	}
-	answer, err := o.complete(ctx, buildPrompt(c, fromTag, toTag, raw), 0)
+	answer, served, err := o.complete(ctx, buildPrompt(c, fromTag, toTag, raw), 0)
 	if err != nil {
 		log.Printf("shiplog: OpenRouter %s: %v", c.Name, err)
 		return nil, false
 	}
-	sum, err := parseSummary(answer, o.model)
+	sum, err := parseSummary(answer, served)
 	if err != nil {
 		log.Printf("shiplog: OpenRouter %s: %v; got: %s", c.Name, err, snippet(answer))
 		return nil, false
@@ -159,22 +189,28 @@ func (o *OpenRouter) key() (string, error) {
 	return key, nil
 }
 
-// complete sends one chat completion and returns the answer's text. A cap of
-// 0 leaves the length to the model.
-func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int) (string, error) {
+// complete sends one chat completion and returns the answer's text and the
+// model that wrote it, which is a fallback when the first model failed. A cap
+// of 0 leaves the length to the model.
+func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int) (string, string, error) {
 	key, err := o.key()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	req := map[string]any{
 		"model":           o.model,
 		"messages":        []map[string]string{{"role": "user", "content": prompt}},
 		"response_format": map[string]string{"type": "json_object"},
 	}
+	if len(o.fallbacks) > 0 {
+		// OpenRouter tries these in order after model, on a rate limit too.
+		req["models"] = o.models()
+	}
 	if maxTokens > 0 {
 		req["max_tokens"] = maxTokens
 	}
 	var out struct {
+		Model   string `json:"model"`
 		Choices []struct {
 			Message struct {
 				Content string `json:"content"`
@@ -183,22 +219,53 @@ func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int)
 		Error *apiError `json:"error"`
 	}
 	if err := o.call(ctx, http.MethodPost, "/chat/completions", key, req, &out); err != nil {
-		return "", err
+		return "", "", err
 	}
 	// A provider that fails after OpenRouter accepted the request answers 200
 	// with the error in the body.
 	if out.Error != nil {
-		return "", problemFor(out.Error.Code, out.Error.Message, key)
+		return "", "", problemFor(out.Error.Code, out.Error.message(), key)
 	}
 	if len(out.Choices) == 0 || strings.TrimSpace(out.Choices[0].Message.Content) == "" {
-		return "", &Problem{Code: "bad_answer", Detail: "the model produced nothing"}
+		return "", "", &Problem{Code: "bad_answer", Detail: "the model produced nothing"}
 	}
-	return strings.TrimSpace(out.Choices[0].Message.Content), nil
+	served := out.Model
+	if served == "" {
+		served = o.model
+	}
+	return strings.TrimSpace(out.Choices[0].Message.Content), served, nil
 }
 
 type apiError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code     int    `json:"code"`
+	Message  string `json:"message"`
+	Metadata struct {
+		// Raw is the provider's own words. For a free model it tells a
+		// provider's exhausted shared pool apart from the key's daily cap,
+		// which the message alone ("Provider returned error") does not.
+		Raw          json.RawMessage `json:"raw"`
+		ProviderName string          `json:"provider_name"`
+	} `json:"metadata"`
+}
+
+// message is the error's message with the provider's reason after it.
+func (e *apiError) message() string {
+	msg := e.Message
+	raw := strings.TrimSpace(string(e.Metadata.Raw))
+	var text string
+	if json.Unmarshal(e.Metadata.Raw, &text) == nil {
+		raw = strings.TrimSpace(text)
+	}
+	if raw == "" || raw == "null" || raw == msg {
+		return msg
+	}
+	if p := e.Metadata.ProviderName; p != "" {
+		raw = p + ": " + raw
+	}
+	if msg == "" {
+		return raw
+	}
+	return msg + " (" + raw + ")"
 }
 
 // call sends one request and decodes a 200 into out. Everything it reports
@@ -239,7 +306,7 @@ func (o *OpenRouter) call(ctx context.Context, method, path, key string, in, out
 			Error apiError `json:"error"`
 		}
 		_ = json.Unmarshal(raw, &e)
-		msg := e.Error.Message
+		msg := e.Error.message()
 		if msg == "" {
 			msg = string(raw)
 		}
