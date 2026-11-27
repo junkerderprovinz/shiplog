@@ -151,7 +151,12 @@ func main() {
 	// The engine starts once the notifier knows the fortress, since its first
 	// sweep may already notify.
 	if notifier != nil {
-		eng.WithNotifier(notifier)
+		eng.WithNotifier(notifier).
+			WithBatch(cfg.NotifyBatch).
+			WithMinRisk(model.RiskLevel(cfg.NotifyMinRisk))
+		if cfg.NotifyBatch || cfg.NotifyMinRisk != "" {
+			log.Printf("shiplog: update notices: batch=%v, min risk=%q", cfg.NotifyBatch, cfg.NotifyMinRisk)
+		}
 	}
 	go eng.Run(ctx)
 	go followStarts(ctx, docker, eng)

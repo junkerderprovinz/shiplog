@@ -50,6 +50,12 @@ type Config struct {
 	// NotifyFile (NOTIFY_FILE) holds the notification channels. Without it,
 	// as in the container, OldNotify sets them up on every start.
 	NotifyFile string
+	// NotifyBatch (NOTIFY_BATCH) sends the updates one check finds as one
+	// message instead of one message per container.
+	NotifyBatch bool
+	// NotifyMinRisk (NOTIFY_MIN_RISK: low|medium|high|critical) sends no
+	// notice for an update of lower risk. Empty sends every one.
+	NotifyMinRisk string
 	// OldNotify holds the variables notifications were set up with before
 	// NotifyFile, which the plugin reads once to build it.
 	OldNotify map[string]string
@@ -111,6 +117,8 @@ func Load() Config {
 		OpenRouterModel:   os.Getenv("OPENROUTER_MODEL"),
 		OpenRouterKeyFile: os.Getenv("OPENROUTER_KEY_FILE"),
 		NotifyFile:        os.Getenv("NOTIFY_FILE"),
+		NotifyBatch:       truthy("NOTIFY_BATCH"),
+		NotifyMinRisk:     minRisk(os.Getenv("NOTIFY_MIN_RISK")),
 		FortressDir:       os.Getenv("FORTRESS_DIR"),
 		RunsFile:          os.Getenv("RUNS_FILE"),
 		OldNotify:         oldNotify(),
@@ -165,6 +173,15 @@ func provider(s string) string {
 		return "openrouter"
 	}
 	return "local"
+}
+
+// minRisk keeps a known risk level and reads anything else as no minimum.
+func minRisk(s string) string {
+	switch s = strings.ToLower(strings.TrimSpace(s)); s {
+	case "low", "medium", "high", "critical":
+		return s
+	}
+	return ""
 }
 
 func levelOrOff(s string) string {

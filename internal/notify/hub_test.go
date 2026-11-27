@@ -201,3 +201,67 @@ func TestAnAppliedUpdateClosesItsMessage(t *testing.T) {
 	}
 	own.Resolve(context.Background(), planka)
 }
+
+// TollRoll keeps one open message per update, so it hears of each one.
+func TestTollRollHearsOfEachUpdateOfABatch(t *testing.T) {
+	own, sent := ownChannel(t)
+	f := &fakeFortress{members: []fortress.Member{tollroll("tr", true, DeliverAction)}, answer: map[string]func() ([]byte, error){"tr": taken}}
+	n := WithHub(own, &Hub{Fortress: f, Report: func(context.Context, string) (status.Report, error) {
+		return status.Report{Capabilities: []string{HubCapability}}, nil
+	}})
+	other := planka
+	other.Container.Name, other.NewestDigest = "other", "sha256:fedcba9876543210"
+	if err := n.NotifyBatch(context.Background(), []model.UpdateStatus{planka, other}); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.bodies) != 2 || f.bodies[0]["key"] == f.bodies[1]["key"] || sent.Load() != 0 {
+		t.Errorf("tollroll got %v, own channels %d, want two keyed messages and nothing of its own", f.bodies, sent.Load())
+	}
+}
+
+func TestABatchGoesToTheOwnChannelsWithoutATollRoll(t *testing.T) {
+	own, sent := ownChannel(t)
+	n := WithHub(own, &Hub{Fortress: &fakeFortress{}, Report: func(context.Context, string) (status.Report, error) {
+		return status.Report{}, nil
+	}})
+	other := planka
+	other.Container.Name = "other"
+	if err := n.NotifyBatch(context.Background(), []model.UpdateStatus{planka, other}); err != nil {
+		t.Fatal(err)
+	}
+	if sent.Load() != 1 {
+		t.Errorf("own channels got %d messages, want one batch", sent.Load())
+	}
+}
+
+// Without a status report TollRoll may still take the messages, and each
+// update it takes keeps its key.
+func TestTollRollTakesABatchWhenItsStatusReportFails(t *testing.T) {
+	own, sent := ownChannel(t)
+	f := &fakeFortress{members: []fortress.Member{tollroll("tr", true, DeliverAction)}, answer: map[string]func() ([]byte, error){"tr": taken}}
+	n := WithHub(own, &Hub{Fortress: f, Report: func(context.Context, string) (status.Report, error) {
+		return status.Report{}, context.DeadlineExceeded
+	}})
+	other := planka
+	other.Container.Name, other.NewestDigest = "other", "sha256:fedcba9876543210"
+	if err := n.NotifyBatch(context.Background(), []model.UpdateStatus{planka, other}); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.bodies) != 2 || f.bodies[0]["key"] == "" || sent.Load() != 0 {
+		t.Errorf("tollroll got %v, own channels %d, want two keyed messages and nothing of its own", f.bodies, sent.Load())
+	}
+}
+
+func TestWhatTollRollRefusesGoesOutAsOneBatch(t *testing.T) {
+	own, sent := ownChannel(t)
+	f := &fakeFortress{members: []fortress.Member{tollroll("tr", true, DeliverAction)}, answer: map[string]func() ([]byte, error){"tr": hubOff}}
+	n := WithHub(own, &Hub{Fortress: f})
+	other := planka
+	other.Container.Name = "other"
+	if err := n.NotifyBatch(context.Background(), []model.UpdateStatus{planka, other}); err != nil {
+		t.Fatal(err)
+	}
+	if sent.Load() != 1 {
+		t.Errorf("own channels got %d messages, want one batch", sent.Load())
+	}
+}

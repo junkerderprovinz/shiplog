@@ -33,6 +33,9 @@ $confirm= isset($cfg['CONFIRM_UPDATE'])    ? $cfg['CONFIRM_UPDATE']    : 'true';
 $silent = isset($cfg['SILENT_UPDATE'])     ? $cfg['SILENT_UPDATE']     : 'false';  // default off
 $ignoreUnmanaged = (isset($cfg['IGNORE_UNMANAGED']) && $cfg['IGNORE_UNMANAGED']==='true'); // default off
 $vulnCheck = (!isset($cfg['VULN_CHECK']) || $cfg['VULN_CHECK'] !== 'false');
+/* Update notices: one per container and every risk unless chosen otherwise. */
+$notifyBatch = (isset($cfg['NOTIFY_BATCH']) && $cfg['NOTIFY_BATCH'] === 'true');
+$notifyMinRisk = (isset($cfg['NOTIFY_MIN_RISK']) && in_array($cfg['NOTIFY_MIN_RISK'], array('medium', 'high', 'critical'), true)) ? $cfg['NOTIFY_MIN_RISK'] : '';
 /* Auto-update settings, all off by default. */
 $auEn    = (isset($cfg['AUTOUPDATE_ENABLED']) && $cfg['AUTOUPDATE_ENABLED']==='true');
 $auLevel = isset($cfg['AUTOUPDATE_LEVEL'])     ? $cfg['AUTOUPDATE_LEVEL']     : 'off';
@@ -266,6 +269,25 @@ $slWin = function ($id, $title, $intro, $body) use ($slE, $slBtn, $L) {
       <h3 class="sl-h"><span id="sl-h-channels"><?=$slE($L['s_channels'])?></span><?=$slInfo($L['s_notif_sub'])?></h3>
       <p class="sl-hubnote" id="sl-hub-note" role="note" hidden><span class="sl-g"><?=$G['Info']?></span><span><?=$slE($L['s_notify_hub'])?></span></p>
       <div id="sl-notify"></div>
+    </section>
+
+    <section class="sl-card" aria-labelledby="sl-h-notices">
+      <h3 class="sl-h"><span id="sl-h-notices"><?=$slE($L['s_notices'])?></span><?=$slInfo($L['s_notices_sub'])?></h3>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-notify-batch-cb"><?=$slE($L['s_notify_batch'])?></label><?=$slInfo($L['s_notify_batch_desc'])?></div>
+        <div class="sl-ctl"><?=$slSwitch('sl-notify-batch', 'NOTIFY_BATCH', $notifyBatch)?></div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><label for="sl-notify-min-risk"><?=$slE($L['s_notify_min_risk'])?></label><?=$slInfo($L['s_notify_min_risk_desc'])?></div>
+        <div class="sl-ctl">
+          <select class="sl-sel" id="sl-notify-min-risk" name="NOTIFY_MIN_RISK">
+            <option value=""         <?=$notifyMinRisk===''?'selected':''?>><?=$slE($L['s_nmr_all'])?></option>
+            <option value="medium"   <?=$notifyMinRisk==='medium'?'selected':''?>><?=$slE($L['s_nmr_medium'])?></option>
+            <option value="high"     <?=$notifyMinRisk==='high'?'selected':''?>><?=$slE($L['s_nmr_high'])?></option>
+            <option value="critical" <?=$notifyMinRisk==='critical'?'selected':''?>><?=$slE($L['s_nmr_critical'])?></option>
+          </select>
+        </div>
+      </div>
     </section>
   </div>
 
