@@ -53,8 +53,8 @@ type Plugin struct {
 	Max     string `json:"max,omitempty"`
 	Support string `json:"support,omitempty"`
 	URL     string `json:"pluginURL"`
-	// Changes holds the release notes newer than the installed version, when
-	// the newest .plg carries them.
+	// Changes holds the release notes newer than the installed version while
+	// an update waits, and the notes of the installed release otherwise.
 	Changes   string    `json:"changes,omitempty"`
 	CheckedAt time.Time `json:"checkedAt,omitzero"`
 }
@@ -111,7 +111,8 @@ func (s *Scanner) Scan() ([]Plugin, error) {
 		if err != nil || inst.URL == "" {
 			continue
 		}
-		p := Plugin{File: file, Name: inst.Name, Author: inst.Author, Installed: inst.Version, Support: inst.Support, URL: inst.URL, State: StateUnchecked}
+		p := Plugin{File: file, Name: inst.Name, Author: inst.Author, Installed: inst.Version, Support: inst.Support, URL: inst.URL, State: StateUnchecked,
+			Changes: Running(inst.Changes, inst.Version)}
 		if p.Name == "" {
 			p.Name = strings.TrimSuffix(file, ".plg")
 		}
@@ -294,6 +295,28 @@ func Newer(changes, installed string) string {
 		keep = append(keep, strings.TrimSpace(changes[m[0]:end]))
 	}
 	return strings.Join(keep, "\n\n")
+}
+
+// Running keeps the release-note section of the installed version, or the
+// newest section when none is headed with it. Notes without version headings
+// come back whole.
+func Running(changes, installed string) string {
+	idx := headingRE.FindAllStringSubmatchIndex(changes, -1)
+	if len(idx) == 0 {
+		return changes
+	}
+	pick := 0
+	for i, m := range idx {
+		if changes[m[2]:m[3]] == installed {
+			pick = i
+			break
+		}
+	}
+	end := len(changes)
+	if pick+1 < len(idx) {
+		end = idx[pick+1][0]
+	}
+	return strings.TrimSpace(changes[idx[pick][0]:end])
 }
 
 var versionRE = regexp.MustCompile(`(?m)^version="?([^"\s]+)"?`)

@@ -1,0 +1,23 @@
+Menu="Plugins"
+Icon="anchor"
+Tag="anchor"
+---
+<?php
+/* Renders no panel of its own; it loads the script that adds the changelog
+   chip to each plugin in the Plugins tab, as shiplog.Docker.page does for the
+   containers. */
+$slLang    = strtolower(substr((string)(isset($_SESSION['locale']) ? $_SESSION['locale'] : ''), 0, 2));
+$slLangDir = '/usr/local/emhttp/plugins/shiplog/lang';
+$slAll     = json_decode(@file_get_contents("$slLangDir/en.json"), true) ?: array();
+if ($slLang !== 'en' && is_file("$slLangDir/$slLang.json")) {
+  $slTr = json_decode(@file_get_contents("$slLangDir/$slLang.json"), true);
+  if (is_array($slTr)) $slAll = array_merge($slAll, $slTr);
+}
+$slI18n = array();
+foreach ($slAll as $slK => $slV) { if (substr($slK, 0, 2) === 'd_') $slI18n[$slK] = $slV; }
+$slG      = include '/usr/local/emhttp/plugins/shiplog/include/glyphs.php';
+$slGlyphs = array('Sync' => $slG['Sync'], 'ExternalLink' => $slG['ExternalLink'], 'Close' => $slG['Close'], 'Warning' => $slG['Warning']);
+?>
+<link type="text/css" rel="stylesheet" href="<?autov('/plugins/shiplog/styles/docker.css')?>">
+<script>window.shiplogI18n=<?=json_encode($slI18n, JSON_UNESCAPED_UNICODE)?>;window.shiplogGlyphs=<?=json_encode($slGlyphs, JSON_UNESCAPED_SLASHES)?>;</script>
+<script defer src="<?autov('/plugins/shiplog/scripts/plugins.js')?>"></script>

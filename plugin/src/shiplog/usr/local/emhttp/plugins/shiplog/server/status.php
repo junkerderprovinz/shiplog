@@ -15,6 +15,7 @@
  *   GET  status.php?path=fortress-member&member=<member id>[&lang=de]
  *                                                       -> another member's status and log
  *   GET  status.php?path=openrouter|openrouter-models   -> whether a key is saved, the model list
+ *   GET  status.php?path=plugins                        -> the installed Unraid plugins (/api/plugins)
  *   POST status.php  path=refresh|override|unmaintained-suppression|fortress/join|fortress/leave|notify|notify/test,
  *                    method=POST|PUT|DELETE, data=<JSON body>
  *   POST status.php  path=fortress/member, method=DELETE, id=<member id>
@@ -30,7 +31,8 @@ $reads  = ['page' => '/', 'logo' => '/logo.svg', 'overrides' => '/api/overrides'
            'fortress-status' => '/api/fortress/v1/status', 'fortress-log' => '/api/fortress/v1/log',
            'fortress' => '/api/fortress', 'fortress-member' => '/api/fortress/members/',
            'notify-hub' => '/api/notify-hub', 'notify' => '/api/notify',
-           'openrouter' => '/api/openrouter', 'openrouter-models' => '/api/openrouter/models'];
+           'openrouter' => '/api/openrouter', 'openrouter-models' => '/api/openrouter/models',
+           'plugins' => '/api/plugins'];
 $writes = ['refresh' => ['POST'], 'override' => ['PUT', 'DELETE'],
            'unmaintained-suppression' => ['PUT', 'DELETE'], 'fortress/join' => ['POST'],
            'fortress/leave' => ['POST'], 'fortress/member' => ['DELETE'],

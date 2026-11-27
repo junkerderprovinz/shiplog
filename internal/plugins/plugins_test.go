@@ -122,16 +122,37 @@ func TestTheSameOrAnOlderFetchedPlgIsCurrent(t *testing.T) {
 	h.install("b.plg", plg("2026.03.01", ""))
 	h.fetch("b.plg", plg("2026.02.01", ""))
 	for _, p := range h.scan("") {
-		if p.State != StateCurrent || p.Changes != "" {
+		if p.State != StateCurrent {
 			t.Errorf("%s = %+v, want current", p.File, p)
 		}
+	}
+}
+
+// Like an up-to-date container, a current plugin shows the notes of the
+// release it runs.
+func TestACurrentPluginShowsTheNotesOfItsRelease(t *testing.T) {
+	h := newHost(t)
+	notes := []string{"###2026.03.01\n- Running", "###2026.02.01\n- Older"}
+	h.install("demo.plg", plg("2026.03.01", "", notes...))
+	h.fetch("demo.plg", plg("2026.03.01", "", notes...))
+	if ps := h.scan(""); ps[0].Changes != "###2026.03.01\n- Running" {
+		t.Errorf("changes = %q", ps[0].Changes)
+	}
+}
+
+func TestRunningFallsBackToTheNewestSection(t *testing.T) {
+	if got := Running("###2.0\n- Two\n\n###1.0\n- One", "1.5"); got != "###2.0\n- Two" {
+		t.Errorf("got %q", got)
+	}
+	if got := Running("###2.0\n- Two\n\n###1.0\n- One", "1.0"); got != "###1.0\n- One" {
+		t.Errorf("got %q", got)
 	}
 }
 
 func TestWithoutACheckSinceBootThePluginIsUnchecked(t *testing.T) {
 	h := newHost(t)
 	h.install("demo.plg", plg("2026.01.01", ""))
-	if ps := h.scan(""); len(ps) != 1 || ps[0].State != StateUnchecked || ps[0].Latest != "" {
+	if ps := h.scan(""); len(ps) != 1 || ps[0].State != StateUnchecked || ps[0].Latest != "" || ps[0].Changes != "" {
 		t.Errorf("plugins = %+v", ps)
 	}
 }
