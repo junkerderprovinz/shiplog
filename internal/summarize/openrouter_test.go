@@ -31,6 +31,7 @@ type fakeOpenRouter struct {
 	echo     bool   // error bodies repeat the Authorization header
 	served   string // model of the chat answer, absent when ""
 	raw      string // metadata.raw of a chat error, absent when ""
+	cutOff   bool   // the chat answer is empty, cut off at its token limit
 }
 
 func (f *fakeOpenRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +82,11 @@ func (f *fakeOpenRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if answer == "" {
 			answer = `{"bullets":["Adds a dark mode."],"breaking":[],"risk":"Low."}`
 		}
-		resp := map[string]any{"choices": []map[string]any{{"message": map[string]string{"content": answer}}}}
+		choice := map[string]any{"message": map[string]string{"content": answer}}
+		if f.cutOff {
+			choice = map[string]any{"finish_reason": "length", "message": map[string]string{"content": ""}}
+		}
+		resp := map[string]any{"choices": []map[string]any{choice}}
 		if f.served != "" {
 			resp["model"] = f.served
 		}
@@ -213,8 +218,8 @@ func TestTheTrialGeneratesATinySummary(t *testing.T) {
 	if err := json.Unmarshal([]byte(f.bodies[0]), &req); err != nil {
 		t.Fatal(err)
 	}
-	if req.Model != "z-ai/glm-4.6" || req.MaxTokens == 0 || req.MaxTokens > 400 {
-		t.Errorf("the trial asked for %+v, want the model and a small cap", req)
+	if req.Model != "z-ai/glm-4.6" || req.MaxTokens < 2000 || req.MaxTokens > 4096 {
+		t.Errorf("the trial asked for %+v, want the model and a cap that leaves a reasoning model room to answer", req)
 	}
 }
 
@@ -378,5 +383,13 @@ func TestARateLimitNamesTheProvidersReason(t *testing.T) {
 	out := captureLog(t, func() { o.Summarize(context.Background(), model.Container{Name: "app"}, "1", "2", "notes") })
 	if !strings.Contains(out, "rate_limited") || !strings.Contains(out, "Google AI Studio: google/gemma:free is temporarily rate-limited upstream.") {
 		t.Errorf("the log should say why the provider refused: %s", out)
+	}
+}
+
+func TestAnAnswerCutOffAtItsLimitSaysSo(t *testing.T) {
+	f := &fakeOpenRouter{cutOff: true}
+	err := openRouterAt(t, f, "z-ai/glm-4.6", testKey).Try(context.Background())
+	if code(err) != "bad_answer" || !strings.Contains(err.Error(), "token limit") {
+		t.Errorf("Try = %v, want bad_answer naming the token limit", err)
 	}
 }

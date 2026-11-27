@@ -145,11 +145,16 @@ func (o *OpenRouter) CheckKey(ctx context.Context) error {
 // hundred tokens.
 const trialChangelog = "## 1.1.0\n- Adds a dark mode.\n- Fixes a crash when the config file is empty."
 
+// trialMaxTokens bounds what Try may cost. A reasoning model, which most free
+// ones are, counts its thinking against the cap, about a thousand tokens for
+// the trial changelog, and a smaller cap cuts it off before it answers.
+const trialMaxTokens = 4096
+
 // Try runs one small summary, which proves that the model answers and that
 // its answer reads as a summary.
 func (o *OpenRouter) Try(ctx context.Context) error {
 	c := model.Container{Repo: "example/app"}
-	answer, served, err := o.complete(ctx, buildPrompt(c, "1.0.0", "1.1.0", trialChangelog), 300)
+	answer, served, err := o.complete(ctx, buildPrompt(c, "1.0.0", "1.1.0", trialChangelog), trialMaxTokens)
 	if err != nil {
 		return err
 	}
@@ -212,7 +217,8 @@ func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int)
 	var out struct {
 		Model   string `json:"model"`
 		Choices []struct {
-			Message struct {
+			FinishReason string `json:"finish_reason"`
+			Message      struct {
 				Content string `json:"content"`
 			} `json:"message"`
 		} `json:"choices"`
@@ -227,7 +233,11 @@ func (o *OpenRouter) complete(ctx context.Context, prompt string, maxTokens int)
 		return "", "", problemFor(out.Error.Code, out.Error.message(), key)
 	}
 	if len(out.Choices) == 0 || strings.TrimSpace(out.Choices[0].Message.Content) == "" {
-		return "", "", &Problem{Code: "bad_answer", Detail: "the model produced nothing"}
+		detail := "the model produced nothing"
+		if len(out.Choices) > 0 && out.Choices[0].FinishReason == "length" {
+			detail = "the model reached its token limit before it answered"
+		}
+		return "", "", &Problem{Code: "bad_answer", Detail: detail}
 	}
 	served := out.Model
 	if served == "" {
