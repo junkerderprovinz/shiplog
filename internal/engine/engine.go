@@ -572,8 +572,8 @@ func (e *Engine) check(ctx context.Context, c model.Container, resolve resolveFu
 			if e.summarizer != nil && cl.Raw != "" {
 				if sum := priorSummary(prior, hasPrior, cl, e.summarizer); sum != nil {
 					// The notes and the model are unchanged since the last
-					// check, so is the summary. Asking again would spend a free model's small
-					// daily allowance on every poll.
+					// check, so is the summary. Asking again would spend a
+					// free model's small daily allowance on every poll.
 					cl.Summary = sum
 				} else if sum, ok := e.summarizer.Summarize(ctx, c, c.Tag, newestTag, releaseNotes(cl)); ok {
 					cl.Summary = sum
