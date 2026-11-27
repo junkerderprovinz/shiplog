@@ -143,17 +143,35 @@ func (c *cancelStore) Upsert(s model.UpdateStatus) error {
 	return err
 }
 
-// ctxBatchNotifier records whether the context of each batch was still live.
+// ctxBatchNotifier records whether the context of each batch was still live
+// and whether it carried a deadline.
 type ctxBatchNotifier struct {
 	batchNotifier
-	live []bool
+	live    []bool
+	bounded []bool
 }
 
 func (d *ctxBatchNotifier) NotifyBatch(ctx context.Context, sts []model.UpdateStatus) error {
+	_, bounded := ctx.Deadline()
 	d.mu.Lock()
 	d.live = append(d.live, ctx.Err() == nil)
+	d.bounded = append(d.bounded, bounded)
 	d.mu.Unlock()
 	return d.batchNotifier.NotifyBatch(ctx, sts)
+}
+
+// A slow hub can take a while to turn the updates down, and the channels
+// still need their turn after it.
+func TestAnUncancelledSweepSendsItsBatchWithoutTheShortBound(t *testing.T) {
+	col, res, st := threeMoved()
+	nf := &ctxBatchNotifier{}
+	e := New(col, res, &fakeChangelog{}, st, time.Hour).WithNotifier(nf).WithBatch(true)
+	if err := e.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(nf.bounded) != 1 || nf.bounded[0] {
+		t.Errorf("bounded = %v, want one batch on the sweep's own context", nf.bounded)
+	}
 }
 
 func TestACancelledSweepStillSendsItsBatch(t *testing.T) {
@@ -166,8 +184,8 @@ func TestACancelledSweepStillSendsItsBatch(t *testing.T) {
 	if ctx.Err() == nil {
 		t.Fatal("the sweep should have been cancelled")
 	}
-	if len(nf.batches) != 1 || len(nf.batches[0]) != 3 || !nf.live[0] {
-		t.Errorf("batches = %v, live = %v, want the three stored updates sent on a live context", nf.batches, nf.live)
+	if len(nf.batches) != 1 || len(nf.batches[0]) != 3 || !nf.live[0] || !nf.bounded[0] {
+		t.Errorf("batches = %v, live = %v, bounded = %v, want the three stored updates sent on a live, bounded context", nf.batches, nf.live, nf.bounded)
 	}
 }
 

@@ -290,9 +290,15 @@ func (e *Engine) sweep(ctx context.Context, only map[string]struct{}) error {
 			}
 			// A settings save restarts the engine and cancels ctx mid-sweep.
 			// The rows are stored by now, so a later sweep would not announce
-			// these updates again: send them anyway, within a short bound.
-			fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), batchFlushTimeout)
-			defer cancel()
+			// these updates again: send them anyway, within a short bound. A
+			// sweep that runs on keeps its own context, so a hub that is slow
+			// to answer leaves the channels their time.
+			fctx := ctx
+			if ctx.Err() != nil {
+				var cancel context.CancelFunc
+				fctx, cancel = context.WithTimeout(context.WithoutCancel(ctx), batchFlushTimeout)
+				defer cancel()
+			}
 			if err := d.NotifyBatch(fctx, sts); err != nil {
 				log.Printf("shiplog: update batch notify failed: %v", err)
 			}
