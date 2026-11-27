@@ -73,7 +73,7 @@
   "t_info": "情報",
   "s_autoupd": "自動更新",
   "s_autoupd_sub": "スケジュールに従い、バージョンレベル単位で実行（Unraidのみ）",
-  "s_ca_warn": "CA Auto Update もインストールされています。どちらもコンテナを更新するため、二重更新を避けるにはいずれか一方だけを使用してください。",
+  "s_ca_warn": "CA Auto Update もコンテナを更新します。二重更新を避けるため、CA Auto Update の Docker 自動更新か ShipLog の自動更新のどちらかをオフにしてください。",
   "s_au_enable": "自動更新を有効化",
   "s_au_enable_desc": "以下のスケジュールに従い、選択したレベルまでコンテナの更新を自動的に適用します。デフォルトはオフです。",
   "s_au_level": "上限レベル",

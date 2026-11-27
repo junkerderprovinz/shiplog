@@ -73,7 +73,7 @@
   "t_info": "信息",
   "s_autoupd": "自动更新",
   "s_autoupd_sub": "按计划、按版本级别（仅限 Unraid）",
-  "s_ca_warn": "同时也安装了 CA Auto Update。两者都会更新容器，请只使用其中一个，以避免重复更新。",
+  "s_ca_warn": "CA Auto Update 也会更新容器。请关闭它的 Docker 自动更新或 ShipLog 的自动更新，以免容器被重复更新。",
   "s_au_enable": "启用自动更新",
   "s_au_enable_desc": "按下方的计划自动应用容器更新，最高至你所选的级别。默认关闭。",
   "s_au_level": "最高级别",

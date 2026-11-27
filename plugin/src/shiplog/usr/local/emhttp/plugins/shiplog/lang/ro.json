@@ -73,7 +73,7 @@
   "t_info": "Info",
   "s_autoupd": "Actualizare automată",
   "s_autoupd_sub": "programată, în funcție de nivelul versiunii (doar Unraid)",
-  "s_ca_warn": "CA Auto Update este de asemenea instalat. Ambele vor actualiza containerele, așa că folosiți doar unul pentru a evita actualizările duble.",
+  "s_ca_warn": "CA Auto Update actualizează și el containerele. Dezactivați actualizarea automată Docker din el sau pe cea din ShipLog, ca niciun container să nu fie actualizat de două ori.",
   "s_au_enable": "Activează actualizarea automată",
   "s_au_enable_desc": "Aplică automat actualizările containerelor conform programului de mai jos, până la nivelul ales. Dezactivat implicit.",
   "s_au_level": "Până la nivelul",

@@ -73,7 +73,7 @@
   "t_info": "Info",
   "s_autoupd": "Auto-opdatering",
   "s_autoupd_sub": "planlagt, efter versionsniveau (kun Unraid)",
-  "s_ca_warn": "CA Auto Update er også installeret. Begge vil opdatere containere, så brug kun én for at undgå dobbelte opdateringer.",
+  "s_ca_warn": "CA Auto Update opdaterer også containere. Slå dens Docker-auto-opdatering eller ShipLogs fra, så ingen container bliver opdateret to gange.",
   "s_au_enable": "Aktivér auto-opdatering",
   "s_au_enable_desc": "Anvend container-opdateringer automatisk efter tidsplanen nedenfor, op til det niveau, du vælger. Slået fra som standard.",
   "s_au_level": "Op til niveau",
