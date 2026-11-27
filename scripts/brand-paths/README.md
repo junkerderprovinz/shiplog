@@ -22,7 +22,7 @@ The Unraid mark is a trademark of Lime Technology. It is used the one way a
 trademark may be used without permission, which is to refer to the thing it
 names: it sits on the button that installs ShipLog on Unraid, unmodified, and
 nothing here claims endorsement by or affiliation with Lime Technology. The ZIP
-is no one's mark; it stands for the source archive.
+is no one's mark. It stands for the source archive.
 
 ## Adding one
 
