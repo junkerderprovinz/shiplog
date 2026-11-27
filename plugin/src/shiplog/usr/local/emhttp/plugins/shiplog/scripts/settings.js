@@ -488,16 +488,27 @@
       .catch(function () { orLoaded = false; orFailed(orKeyOut, plain(T.s_unreachable)); });
     orGet("openrouter-models")
       .then(function (d) {
-        var list = byId("sl-or-models");
-        ((d && d.models) || []).forEach(function (m) {
-          var o = document.createElement("option");
-          o.value = m.id;
-          if (m.name) o.label = m.name;
-          list.appendChild(o);
-        });
+        orModels = (d && d.models) || [];
+        orSuggest();
       })
       .catch(function () {});
   }
+  // The field takes several models, so its suggestions follow what is in it.
+  var orModels = [], orField = byId("sl-OPENROUTER_MODEL");
+  function orSuggest() {
+    var list = byId("sl-or-models"), names = {};
+    orModels.forEach(function (m) { names[m.id] = m.name; });
+    var ids = orModels.map(function (m) { return m.id; });
+    list.textContent = "";
+    window.ShipLogModels.suggestions(orField.value, ids).forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v;
+      var name = names[v.slice(v.lastIndexOf(",") + 1).trim()];
+      if (name) o.label = name;
+      list.appendChild(o);
+    });
+  }
+  orField.addEventListener("input", orSuggest);
   // Resolves true once a typed key is kept, or when there is none to keep.
   function orSaveKey() {
     var v = orKey.value.trim();

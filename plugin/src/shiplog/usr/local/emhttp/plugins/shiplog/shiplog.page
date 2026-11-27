@@ -537,6 +537,7 @@ var SL_LANG = <?=json_encode($lang !== '' ? $lang : 'en')?>;
 <script src="<?autov('/plugins/shiplog/scripts/notify-card.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/release-notes.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/version-card.js')?>"></script>
+<script src="<?autov('/plugins/shiplog/scripts/model-list.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/settings.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/fortress-card.js')?>"></script>
 <script src="<?autov('/plugins/shiplog/scripts/fortress.js')?>"></script>
