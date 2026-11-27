@@ -1,17 +1,5 @@
 #!/bin/bash
-# Unraid runs this once the array has started. On systems where shfs or pool
-# mounts take a few seconds to mount /mnt/user, wait in the background until
-# DATA_DIR leaves the root filesystem before starting the daemon.
-(
-  for _ in $(seq 1 60); do
-    probe="/mnt/user/appdata"
-    [ -f /boot/config/plugins/shiplog/shiplog.cfg ] && . /boot/config/plugins/shiplog/shiplog.cfg
-    probe="${DATA_DIR:-$probe}"
-    while [ ! -e "$probe" ] && [ "$probe" != "/" ]; do probe=$(dirname "$probe"); done
-    if [ "$(stat -c %d "$probe" 2>/dev/null)" != "$(stat -c %d / 2>/dev/null)" ]; then
-      break
-    fi
-    sleep 1
-  done
-  /usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog start
-) >/dev/null 2>&1 &
+# Unraid runs this once the array has started and the user shares are mounted.
+# DATA_DIR can sit on a mount that comes up later, such as Unassigned Devices,
+# rclone or a plugin's dataset, so rc.shiplog waits for it in the background.
+/usr/local/emhttp/plugins/shiplog/scripts/rc.shiplog started

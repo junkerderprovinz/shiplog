@@ -64,6 +64,16 @@ RUNS_FILE="/boot/config/plugins/${NAME}/runs.json"
 
 is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }
 
+# data_on_rootfs reports whether DATA_DIR, or the nearest folder above it that
+# exists, still sits on the root filesystem.
+data_on_rootfs() {
+  local probe="$DATA_DIR"
+  while [ ! -e "$probe" ] && [ "$probe" != "/" ]; do probe=$(dirname "$probe"); done
+  [ "$(stat -c %d "$probe" 2>/dev/null)" = "$(stat -c %d / 2>/dev/null)" ]
+}
+
+array_started() { grep -q '^mdState="STARTED"' /var/local/emhttp/var.ini 2>/dev/null; }
+
 start() {
   if [ "$ENABLE" = "false" ]; then echo "shiplog: disabled in settings"; return 0; fi
   if is_running; then echo "shiplog: already running (pid $(cat "$PIDFILE"))"; return 0; fi
@@ -71,9 +81,7 @@ start() {
   # the database on the root tmpfs, wiped at every reboot, and creating
   # /mnt/user/... early can keep the user shares from mounting. event/started
   # starts the daemon once the array is up.
-  probe="$DATA_DIR"
-  while [ ! -e "$probe" ] && [ "$probe" != "/" ]; do probe=$(dirname "$probe"); done
-  if [ "$(stat -c %d "$probe" 2>/dev/null)" = "$(stat -c %d / 2>/dev/null)" ]; then
+  if data_on_rootfs; then
     echo "shiplog: $DATA_DIR still on the root filesystem (array/pool not mounted yet); deferring until array-start"
     return 0
   fi
@@ -117,10 +125,26 @@ status() {
   else echo "shiplog: stopped"; fi
 }
 
+# start_when_mounted gives a DATA_DIR on a mount that comes up after the array,
+# such as Unassigned Devices, rclone or a plugin's dataset, up to a minute.
+# It waits in the background so the array start goes on.
+start_when_mounted() {
+  (
+    if data_on_rootfs; then echo "shiplog: waiting for $DATA_DIR to be mounted"; fi
+    for _ in $(seq 1 60); do
+      data_on_rootfs || break
+      if ! array_started; then echo "shiplog: the array stopped before $DATA_DIR was mounted"; exit 0; fi
+      sleep 1
+    done
+    start
+  ) </dev/null >>"$LOG" 2>&1 &
+}
+
 case "$1" in
   start)   start ;;
+  started) start_when_mounted ;;
   stop)    stop ;;
   restart) stop; start ;;
   status)  status ;;
-  *) echo "usage: $0 {start|stop|restart|status}"; exit 1 ;;
+  *) echo "usage: $0 {start|started|stop|restart|status}"; exit 1 ;;
 esac
